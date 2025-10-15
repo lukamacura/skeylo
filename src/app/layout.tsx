@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css"; // ✅ fajl ti je u /app, ne u /styles
 import { Analytics } from "@vercel/analytics/react";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
+
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -29,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sr">
+    <html lang="sr" className={inter.className}>
       <body className="">
         <header className="border-b">
           <div className="mx-auto font-medium max-w-7xl h-14 px-4 flex items-center">

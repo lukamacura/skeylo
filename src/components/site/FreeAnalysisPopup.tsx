@@ -231,7 +231,7 @@ export default function FreeAnalysisWizard({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-lg p-0 overflow-hidden">
+      <DialogContent className="max-w-[95%] p-0 overflow-hidden">
         {/* progress bar ili prazan prostor na success ekranu */}
         {!submitted ? (
           <div className="h-1 bg-secondary/50">

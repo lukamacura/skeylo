@@ -14,32 +14,32 @@ const items = [
   {
     icon: FileText,
     title: "Audit izveštaj",
-    copy: "PDF sa nalazima i prioritetima (High / Medium / Low).",
+    copy: "Kratak PDF (1–2 str) sa nalazima i jasnim prioritetima.",
   },
   {
     icon: Bug,
     title: "Tracking & podaci",
-    copy: "GA4/Pixel/Events verifikacija + lista grešaka i tačnih fix koraka.",
+    copy: "Lista konkretnih grešaka + tačni koraci za ispravku (GA4/Pixel/Events).",
   },
   {
     icon: Map,
     title: "Funnel mapa",
-    copy: "Vizuelna mapa od oglasa do kupovine sa označenim tačkama curenja.",
+    copy: "Jednostavna mapa toka korisnika sa označenim tačkama curenja.",
   },
   {
     icon: Sparkles,
     title: "Kreativa & poruke",
-    copy: "Pregled oglasa/landing-a + predlog hookova i varijacija za test.",
+    copy: "3–5 predloga hookova/visuala spremnih za sledeće testove.",
   },
   {
     icon: Wrench,
     title: "SEO/tehnički snapshot",
-    copy: "CWV, indeksiranje, on-page — ključne ispravke za vidljivost.",
+    copy: "5 ključnih tehničkih ispravki (CWV, indeksiranje, on-page).",
   },
   {
     icon: CalendarCheck,
     title: "30-60-90 plan",
-    copy: "Plan sprintova sa procenom uticaja na KPI i redosledom akcija.",
+    copy: "Plan po nedeljama sa zadacima, odgovornima i očekivanim uticajem.",
   },
 ];
 
