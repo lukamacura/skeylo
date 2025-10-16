@@ -226,15 +226,18 @@ export default function FreeAnalysisWizard({
       }}
     >
       <DialogTrigger asChild>
-        <Button size="lg" className="cursor-pointer">
+        <Button
+          size="lg"
+          className="cursor-pointer bg-primary hover:bg-amber-600 text-background"
+        >
           {triggerText}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-[95%] p-0 overflow-hidden">
+      <DialogContent className="max-w-[95%] p-0 overflow-hidden text-foreground">
         {/* progress bar ili prazan prostor na success ekranu */}
         {!submitted ? (
-          <div className="h-1 bg-secondary/50">
+          <div className="h-2 bg-foreground/70">
             <div
               className="h-full bg-primary"
               style={{ width: `${progress}%` }}
@@ -256,7 +259,7 @@ export default function FreeAnalysisWizard({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-4">
+          <div className="mt-4 ">
             <AnimatePresence mode="wait">
               {!submitted ? (
                 <motion.div
@@ -265,7 +268,7 @@ export default function FreeAnalysisWizard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="grid gap-2"
+                  className="grid gap-2 "
                 >
                   <label className="text-sm flex items-center gap-2">
                     <step.icon className="size-4" />
@@ -330,7 +333,7 @@ export default function FreeAnalysisWizard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="grid place-items-center gap-3 text-center py-6"
+                  className="grid place-items-center gap-3  text-center py-6"
                 >
                   <CheckCircle2 className="size-12" aria-hidden />
                   <p className="text-lg font-medium">Poslat zahtev 🎉</p>
@@ -341,7 +344,7 @@ export default function FreeAnalysisWizard({
                   </p>
                   <div className="mt-4 flex items-center gap-2">
                     <Button
-                      className="cursor-pointer"
+                      className="cursor-pointer text-background"
                       onClick={() => resetAll(true)}
                     >
                       Zatvori
@@ -379,7 +382,7 @@ export default function FreeAnalysisWizard({
               <Button
                 onClick={next}
                 disabled={loading}
-                className="cursor-pointer"
+                className="cursor-pointer text-background"
               >
                 {idx === STEPS.length - 1
                   ? loading

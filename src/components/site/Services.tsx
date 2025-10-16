@@ -13,8 +13,8 @@ import { motion, useReducedMotion } from "framer-motion";
 const items = [
   {
     icon: FileText,
-    title: "Audit izveštaj",
-    copy: "Kratak PDF (1–2 str) sa nalazima i jasnim prioritetima.",
+    title: "Izveštaj",
+    copy: "Kratak izveštaj sa nalazima i jasnim prioritetima.",
   },
   {
     icon: Bug,
@@ -39,7 +39,7 @@ const items = [
   {
     icon: CalendarCheck,
     title: "30-60-90 plan",
-    copy: "Plan po nedeljama sa zadacima, odgovornima i očekivanim uticajem.",
+    copy: "Plan po mesecima sa zadacima, odgovornima i očekivanim rezultatima.",
   },
 ];
 
@@ -48,7 +48,7 @@ export default function Services() {
   const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1]; // ✔ type-safe easing
 
   return (
-    <section className="py-16">
+    <section className="py-16" id="services">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.h2
           initial={{ opacity: 0, y: reduce ? 0 : 10 }}
@@ -72,7 +72,7 @@ export default function Services() {
                 y: reduce ? 0 : -4,
                 boxShadow: reduce ? "none" : "0 6px 24px rgba(0,0,0,0.08)",
               }}
-              className="group rounded-2xl border p-6 bg-background/60 backdrop-blur-sm relative overflow-hidden"
+              className="group rounded-2xl border border-foreground/20 p-6 backdrop-blur-sm relative overflow-hidden"
             >
               <div
                 className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -86,7 +86,7 @@ export default function Services() {
                   scale: reduce ? 1 : 1.05,
                   rotate: reduce ? 0 : 1,
                 }}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/20"
               >
                 <Icon className="size-5" />
               </motion.div>

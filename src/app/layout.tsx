@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css"; // ✅ fajl ti je u /app, ne u /styles
 import { Analytics } from "@vercel/analytics/react";
 import { Inter } from "next/font/google";
+import Link from "next/link";
+import Image from "next/image";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,7 +16,7 @@ import {
 
 export const metadata: Metadata = {
   title: {
-    default: "Skeylo — Full-stack marketing agencija",
+    default: "Skeylo: Full-stack marketing agencija",
     template: "%s | Skeylo",
   },
   description:
@@ -34,24 +36,52 @@ export default function RootLayout({
 }) {
   return (
     <html lang="sr" className={inter.className}>
-      <body className="">
+      <body>
         <header className="border-b">
-          <div className="mx-auto font-medium max-w-7xl h-14 px-4 flex items-center">
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuLink>Početna</NavigationMenuLink>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <NavigationMenuLink>Work</NavigationMenuLink>
-                </NavigationMenuItem>
-                <NavigationMenuItem>
-                  <NavigationMenuLink>Kontakt</NavigationMenuLink>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
+          <div className="mx-auto max-w-7xl h-14 px-8 flex items-center gap-6 font-medium">
+            {/* Logo levo */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 shrink-0"
+              aria-label="Skeylo — Početna"
+            >
+              <Image
+                src="/logo.png"
+                alt="Skeylo"
+                width={300}
+                height={300}
+                priority
+                className="h-18 w-18 object-contain"
+              />
+            </Link>
+
+            {/* Meni desno */}
+            <div className="ml-auto">
+              <NavigationMenu viewport={false}>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                      <Link href="/">Početna</Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+
+                  <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                      <Link href="/services">Usluge</Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+
+                  <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                      <Link href="/kontakt">Kontakt</Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
           </div>
         </header>
+
         <main className="flex-1">{children}</main>
         <Analytics />
       </body>
