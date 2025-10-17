@@ -17,7 +17,7 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
-    const WEBHOOK_URL = process.env.WEBHOOK_URL;
+    const LEAD_WEBHOOK_URL = process.env.LEAD_WEBHOOK_URL;
     const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET; // opcionalno
 
     // 1) JSON koji stiže iz Wizard-a (svi unosi)
@@ -50,17 +50,17 @@ export async function POST(req: NextRequest) {
       data: body, // 👈 sve što si poslao iz Wizard-a ide dalje
     };
 
-    // 3) Ako nema WEBHOOK_URL — nemoj fail, nego samo loguj i potvrdi prijem
-    if (!WEBHOOK_URL) {
+    // 3) Ako nema LEAD_WEBHOOK_URL — nemoj fail, nego samo loguj i potvrdi prijem
+    if (!LEAD_WEBHOOK_URL) {
       console.warn(
-        "WEBHOOK_URL is not set. Lead payload:",
+        "LEAD_WEBHOOK_URL is not set. Lead payload:",
         JSON.stringify(payload, null, 2),
       );
       return NextResponse.json({ ok: true, forwarded: false });
     }
 
     // 4) Prosledi na webhook (Zapier/Make/n8n/Slack…)
-    const res = await fetch(WEBHOOK_URL, {
+    const res = await fetch(LEAD_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

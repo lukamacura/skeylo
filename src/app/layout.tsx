@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="sr" className={inter.className}>
       <body>
-        <header className="border-b">
+        <header className="w-full fixed bg-background z-10">
           <div className="mx-auto max-w-7xl h-14 px-8 flex items-center gap-6 font-medium">
             {/* Logo levo */}
             <Link
@@ -82,7 +82,7 @@ export default function RootLayout({
           </div>
         </header>
 
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pt-14">{children}</main>
         <Analytics />
       </body>
     </html>

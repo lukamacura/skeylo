@@ -24,8 +24,7 @@ export default function Hero() {
             <FreeAnalysisPopup triggerText="Saznaj besplatno" />
 
             <Button
-              variant="outline"
-              className="border border-foreground"
+              className="border border-foreground bg-transparent"
               size="lg"
               asChild
             >
