@@ -1,9 +1,6 @@
 // app/meet/confirm/page.tsx
 "use client";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 import { Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, CalendarClock, MapPin, Video, Mail } from "lucide-react";
