@@ -228,7 +228,7 @@ export default function FreeAnalysisWizard({
       <DialogTrigger asChild>
         <Button
           size="lg"
-          className="cursor-pointer bg-primary hover:bg-amber-600 text-background"
+          className="cursor-pointer bg-primary font-extrabold text-background"
         >
           {triggerText}
         </Button>
@@ -382,7 +382,7 @@ export default function FreeAnalysisWizard({
               <Button
                 onClick={next}
                 disabled={loading}
-                className="cursor-pointer text-background"
+                className="cursor-pointer text-background font-bold"
               >
                 {idx === STEPS.length - 1
                   ? loading

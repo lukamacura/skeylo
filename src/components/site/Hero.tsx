@@ -20,7 +20,7 @@ export default function Hero() {
             da tvoj biznis dođe do više prodaja, kreirano od fullstack marketing
             tima koji <b>garantuje rezultate</b>.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3 font-bold">
             <FreeAnalysisPopup triggerText="Saznaj besplatno" />
 
             <Button

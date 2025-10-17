@@ -36,9 +36,9 @@ export default function Niches() {
           <p className="text-xl md:text-2xl leading-snug">
             Evo sa kojim biznisima najviše radimo i kojima možemo doneti
             konkretan rast,{" "}
-            <span className="inline-flex items-center gap-2 font-semibold text-primary">
+            <span className="inline-flex items-center gap-2 font-semibold text-foreground">
               GARANTOVANO
-              <ShieldCheck className="size-8 text-[#f18f01]" aria-hidden />
+              <ShieldCheck className="size-8 text-primary" aria-hidden />
             </span>
             .
           </p>
