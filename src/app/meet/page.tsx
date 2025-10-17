@@ -11,10 +11,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { enUS } from "date-fns/locale"; // preporuka za stabilnu hidraciju
+import { enUS } from "date-fns/locale";
 
 export default function MeetPage() {
-  const router = useRouter(); // ✅ inicijalizacija router-a
+  const router = useRouter(); // <-- dodaj odmah na početku komponente
 
   const [mounted, setMounted] = useState(false);
   const [slotISO, setSlotISO] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export default function MeetPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return alert("Unesite ispravan email");
 
-    // ✅ slotLocalStr postoji pre upotrebe i u payload-u i u router.push
+    // u handleReserve(), odmah nakon što dobiješ effectiveISO:
     const slotLocalStr = new Date(effectiveISO).toLocaleString("sr-RS", {
       timeZone: "Europe/Belgrade",
       weekday: "long",
@@ -101,7 +101,6 @@ export default function MeetPage() {
         throw new Error(err?.message || "Greška prilikom rezervacije");
       }
 
-      // ✅ koristimo router da odemo na confirm sa svim podacima
       router.push(
         `/meet/confirm?` +
           `name=${encodeURIComponent(name)}` +
