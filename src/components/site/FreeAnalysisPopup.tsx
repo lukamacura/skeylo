@@ -237,7 +237,7 @@ export default function FreeAnalysisWizard({
       <DialogContent className="max-w-[95%] p-0 overflow-hidden text-foreground">
         {/* progress bar ili prazan prostor na success ekranu */}
         {!submitted ? (
-          <div className="h-2 bg-foreground/70">
+          <div className="h-3 bg-background">
             <div
               className="h-full bg-primary"
               style={{ width: `${progress}%` }}
@@ -304,7 +304,7 @@ export default function FreeAnalysisWizard({
                       onChange={(e) => setValue(step.key, e.target.value)}
                       placeholder={step.placeholder}
                       className={
-                        errors[step.key] ? "border-red-500" : undefined
+                        errors[step.key] ? " border-red-500" : undefined
                       }
                     />
                   )}
