@@ -29,7 +29,7 @@ export default function SalesFocused() {
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Zašto biste sarađivali sa nama?
             </h2>
-            <p className="mt-2 max-w-3xl text-foreground/50">
+            <p className="mt-2 max-w-3xl text-foreground/70">
               Ne prodajemo vam generičke online usluge poput video editinga,
               dizajna ili razvoja. Imamo samo jedan cilj:{" "}
               <b className="text-primary/60 font-extrabold uppercase">
@@ -48,7 +48,7 @@ export default function SalesFocused() {
                 <Target className="h-8 w-8 text-primary/60" />
                 Tehnika je samo alat, ali cilj je profit
               </h3>
-              <p className="mt-2 text-foreground/50">
+              <p className="mt-2 text-foreground/70">
                 Video editing, web development, AI automatizacije i ostale
                 tehničke veštine su sredstvo kojim dolazimo do{" "}
                 <b className="text-foreground/70">rezultata</b>.
@@ -81,7 +81,7 @@ export default function SalesFocused() {
                 </li>
               </ul>
 
-              <p className="mt-5  text-foreground/50">
+              <p className="mt-5  text-foreground/70">
                 Kada se napravi dobar plan i pravilno iskoristi svaki
                 marketinški alat,{" "}
                 <b className="text-foreground/70">rezultat je profit</b>.
@@ -98,14 +98,14 @@ export default function SalesFocused() {
                   Vreme je novac
                 </h3>
               </div>
-              <p className="text-foreground/50">
+              <p className="text-foreground/70">
                 Vi treba da se posvetite <b>svom biznisu i klijentima.</b>{" "}
                 Upravo zato ne morate godinama da učite veštine i stičete
                 iskustvo koje smo mi već prošli.
               </p>
 
-              <div className="mt-6 rounded-2xl border border-foreground/50 bg-primary/60/60 p-5">
-                <p className="text-2xl text-background font-bold">
+              <div className="mt-6 rounded-2xl border border-foreground/70 bg-primary/60/60 p-5">
+                <p className="text-2xl text-foreground font-bold">
                   Mi donosimo plan i operativu za rezultat, kako biste vi
                   zadržali fokus na onome što najbolje znate da radite.
                 </p>

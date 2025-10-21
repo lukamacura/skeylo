@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="sr" className={inter.className}>
       <body>
-        <header className="w-full fixed bg-background z-10">
+        <header className="w-full fixed bg-background z-100">
           <div className="mx-auto max-w-7xl h-14 px-8 flex items-center gap-6 font-medium">
             {/* Logo levo */}
             <Link

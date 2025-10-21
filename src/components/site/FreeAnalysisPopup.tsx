@@ -228,7 +228,7 @@ export default function FreeAnalysisWizard({
       <DialogTrigger asChild>
         <Button
           size="lg"
-          className="cursor-pointer bg-primary font-extrabold text-background"
+          className="cursor-pointer py-8 md:py-4 w-full md:w-fit bg-primary font-extrabold text-background"
         >
           {triggerText}
         </Button>

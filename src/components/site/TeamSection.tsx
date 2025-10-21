@@ -59,23 +59,23 @@ const DEFAULT_MEMBERS: TeamMember[] = [
   {
     id: "luka",
     name: "Luka Macura",
-    role: "Full‑stack & AI Developer",
+    role: "Full‑stack marketer",
     avatarUrl: "/luka.webp", // replace if available
-    email: "luka@example.com",
+    email: "luka.xzy@gmail.com",
     linkedin: "https://www.linkedin.com/in/example",
-    Instagram: "https://Instagram.com/example",
+    Instagram: "https://www.instagram.com/macura.fullstack/",
     location: "Belgrade, RS",
-    bio: "Radim na web aplikacijama i LLM integracijama, sa fokusom na Next.js i RAG sisteme. Zanimaju me načini na koje tehnologija i marketing zajedno doprinose razvoju biznisa, rastu i ostvarivanju profita.",
+    bio: "Od malih nogu me pokreće preduzetnički duh i potraga za načinima da ideje pretvorim u vrednost. Fokus mi je na web aplikacijama, AI automacijama i LLM integracijama (Next.js, RAG sistemi i AI agenti). Verujem da spoj tehnologije i marketinga može značajno doprineti rastu biznisa, razvoju brenda i ostvarivanju profita.",
     skills: ["Next.js", "TypeScript", "AI", "RAG", "Tailwind", "Marketing"],
     focus: ["Web & AI developing", "Funnel research", "Marketing strategies"],
   },
   {
     id: "filip",
     name: "Filip Ruvčeski",
-    role: "Full-stack",
+    role: "Growth & Media Strategist",
     avatarUrl: "/filip.webp",
     email: "ana@example.com",
-    linkedin: "https://www.linkedin.com/in/example",
+    Instagram: "https://www.instagram.com/filipruvceski/",
     location: "Novi Sad, RS",
     bio: "UX istraživanje, prototipiranje i dizajn sistema. Voli da spaja brand i funkcionalnost.",
     skills: ["UX", "UI", "Figma", "Design Systems", "Illustration"],
@@ -84,14 +84,20 @@ const DEFAULT_MEMBERS: TeamMember[] = [
   {
     id: "mihac",
     name: "Mihajlo Obradović",
-    role: "Content production & edit",
+    role: "Content production & Edit",
     avatarUrl: "/mihac.webp",
     email: "marko@example.com",
-    Instagram: "https://Instagram.com/example",
+    Instagram: "https://Instagram.com/justmihac",
     location: "Remote",
-    bio: "Eksperimenti, metrike i automatizacije. Spaja marketing i inženjering za brži rast.",
-    skills: ["Analytics", "SEO", "Automation", "SQL", "Python"],
-    focus: ["Experiment design", "Attribution"],
+    bio: "Sa preko 5 godina iskustva u profesionalnoj video produkciji svoje znanje usmeravam na to da svaki kadar ima svoju priču. Verujem da emocija, estetika i ritam čine srž svake uspešne video kampanje. Uz moj rad Vaš brend će da se odvoji od većine i u očima publike ostavi utisak za pamćenje.",
+    skills: [
+      "Video Production",
+      "Cinematography",
+      "Editing",
+      "Storytelling",
+      "Creative Direction",
+    ],
+    focus: ["Brand Identity", "Marketing Content", "Post-Production Workflow"],
   },
 ];
 
@@ -155,7 +161,7 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
           {member.bio && (
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <p className="text-sm leading-relaxed text-foreground/80">
               {member.bio}
             </p>
           )}
