@@ -1,18 +1,11 @@
+// app/layout.tsx
 import type { Metadata } from "next";
-import "./globals.css"; // ✅ fajl ti je u /app, ne u /styles
-import { Analytics } from "@vercel/analytics/react";
+import "./globals.css";
 import { Inter } from "next/font/google";
-import Link from "next/link";
-import Image from "next/image";
+import { Analytics } from "@vercel/analytics/react";
+import HeaderClient from "@/components/site/HeaderClient";
 
 const inter = Inter({ subsets: ["latin"] });
-
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuLink,
-} from "@/components/ui/Navbar";
 
 export const metadata: Metadata = {
   title: {
@@ -37,51 +30,7 @@ export default function RootLayout({
   return (
     <html lang="sr" className={inter.className}>
       <body>
-        <header className="w-full fixed bg-background z-100">
-          <div className="mx-auto max-w-7xl h-14 px-8 flex items-center gap-6 font-medium">
-            {/* Logo levo */}
-            <Link
-              href="/"
-              className="flex items-center gap-2 shrink-0"
-              aria-label="Skeylo — Početna"
-            >
-              <Image
-                src="/logo.png"
-                alt="Skeylo"
-                width={300}
-                height={300}
-                priority
-                className="h-18 w-18 object-contain"
-              />
-            </Link>
-
-            {/* Meni desno */}
-            <div className="ml-auto">
-              <NavigationMenu viewport={false}>
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <NavigationMenuLink asChild>
-                      <Link href="/">Početna</Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuLink asChild>
-                      <Link href="/services">Usluge</Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuLink asChild>
-                      <Link href="/kontakt">Kontakt</Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-            </div>
-          </div>
-        </header>
-
+        <HeaderClient />
         <main className="flex-1 pt-14">{children}</main>
         <Analytics />
       </body>

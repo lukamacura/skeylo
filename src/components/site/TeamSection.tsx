@@ -311,7 +311,7 @@ export default function TeamSection({
   }, [members, featuredIds]);
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+    <section id="team" className="mx-auto max-w-6xl px-4 py-10 md:py-14">
       <div className="mb-10">
         <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
           {title}

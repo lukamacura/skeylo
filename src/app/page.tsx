@@ -4,6 +4,7 @@ import Niches from "@/components/site/Niches";
 import HowWeWork from "@/components/site/HowWeWork";
 import TeamSection from "@/components/site/TeamSection";
 import SalesFocused from "@/components/site/SalesFocused";
+import Faq from "@/components/site/Faq";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         <HowWeWork />
         <TeamSection />
         <SalesFocused />
+        <Faq />
       </>
     </div>
   );

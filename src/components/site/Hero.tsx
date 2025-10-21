@@ -57,8 +57,9 @@ export default function Hero() {
             className="text-4xl/tight md:text-5xl font-bold"
             variants={itemUp}
           >
-            Saznaj zašto tvoj marketing ne donosi novac i kako da to promeniš
-            POTPUNO BESPLATNO
+            Saznaj zašto tvoj marketing{" "}
+            <b className="text-primary/80">ne donosi novac</b> i kako da to
+            promeniš <b className="text-primary/80">POTPUNO BESPLATNO</b>
           </motion.h1>
 
           <motion.p
