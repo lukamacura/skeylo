@@ -65,7 +65,7 @@ const DEFAULT_MEMBERS: TeamMember[] = [
     linkedin: "https://www.linkedin.com/in/example",
     Instagram: "https://www.instagram.com/macura.fullstack/",
     location: "Belgrade, RS",
-    bio: "Od malih nogu me pokreće preduzetnički duh i potraga za načinima da ideje pretvorim u vrednost. Fokus mi je na web aplikacijama, AI automacijama i LLM integracijama (Next.js, RAG sistemi i AI agenti). Verujem da spoj tehnologije i marketinga može značajno doprineti rastu biznisa, razvoju brenda i ostvarivanju profita.",
+    bio: "Oduvek me pokreće preduzetnički način razmišljanja - kako da ideje pretvorim u konkretne rezultate. Danas mi je fokus na web aplikacijama, AI automatizacijama i integracijama velikih jezičkih modela (Next.js, RAG sistemi, AI agenti). Verujem da je pravi i jedini smisao tehnologije i marketinga rast i profit.",
     skills: [
       "Next.js",
       "TypeScript",
