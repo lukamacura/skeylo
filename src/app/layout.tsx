@@ -4,6 +4,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import HeaderClient from "@/components/site/HeaderClient";
+import Preloader from "@/components/site/Preloader";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="sr" className={inter.className}>
       <body>
+        <Preloader loop={false} autoHide />
         <HeaderClient />
         <main className="flex-1 pt-14">{children}</main>
         <Analytics />
