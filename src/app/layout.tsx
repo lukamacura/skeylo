@@ -31,7 +31,7 @@ export default function RootLayout({
     <html lang="sr" className={inter.className}>
       <body>
         <HeaderClient />
-        <main className="flex-1 pt-8 px-14">{children}</main>
+        <main className="flex-1 md:pt-8 pt-12 md:px-14">{children}</main>
         <Analytics />
       </body>
     </html>

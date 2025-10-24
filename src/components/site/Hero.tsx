@@ -39,7 +39,7 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden">
       <motion.div
-        className="mx-auto max-screen px-4 sm:px-6 lg:px-8 py-4 grid lg:grid-cols-2 gap-10 items-center"
+        className="mx-auto max-screen px-4 sm:px-6 lg:px-8 py-4 grid lg:grid-cols-2 gap-5 items-center"
         variants={container}
         initial="hidden"
         whileInView="show"
@@ -63,7 +63,7 @@ export default function Hero() {
           </motion.h1>
 
           <motion.p
-            className="mt-4 text-xl text-muted-foreground max-w-prose"
+            className="mt-4 text-md md:text-xl text-muted-foreground max-w-prose"
             variants={itemUp}
           >
             Dobijaš <b>personalizovanu marketing analizu</b> i jasan plan kako
@@ -82,7 +82,10 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        <motion.div className="relative aspect-[16/12]" variants={imageReveal}>
+        <motion.div
+          className="relative w-[100%] md:w-[80%] mx-auto aspect-[16/12]"
+          variants={imageReveal}
+        >
           {/* Soft shadow + subtle hover parallax */}
           <motion.div
             className="absolute inset-0 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.08)]"
