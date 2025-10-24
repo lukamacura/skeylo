@@ -39,7 +39,7 @@ export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden">
       <motion.div
-        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 grid lg:grid-cols-2 gap-10 items-center"
+        className="mx-auto max-screen px-4 sm:px-6 lg:px-8 py-4 grid lg:grid-cols-2 gap-10 items-center"
         variants={container}
         initial="hidden"
         whileInView="show"
@@ -54,7 +54,7 @@ export default function Hero() {
           </motion.p>
 
           <motion.h1
-            className="text-4xl/tight md:text-5xl font-bold"
+            className="text-4xl/tight md:text-6xl font-bold"
             variants={itemUp}
           >
             Saznaj zašto tvoj marketing{" "}
@@ -63,7 +63,7 @@ export default function Hero() {
           </motion.h1>
 
           <motion.p
-            className="mt-4 text-muted-foreground max-w-prose"
+            className="mt-4 text-xl text-muted-foreground max-w-prose"
             variants={itemUp}
           >
             Dobijaš <b>personalizovanu marketing analizu</b> i jasan plan kako

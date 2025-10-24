@@ -24,7 +24,7 @@ const items: Item[] = [
 export default function Niches() {
   return (
     <section className="py-16">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-6xl px-4">
         {/* Header copy */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -36,7 +36,7 @@ export default function Niches() {
           <p className="text-xl md:text-2xl leading-snug">
             Evo sa kojim biznisima najviše radimo i kojima možemo doneti
             konkretan rast,{" "}
-            <span className="inline-flex items-center gap-2 font-semibold text-foreground">
+            <span className="inline-flex items-center gap-1 font-semibold text-foreground">
               GARANTOVANO
               <ShieldCheck className="size-8 text-primary" aria-hidden />
             </span>

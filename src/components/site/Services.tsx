@@ -1,45 +1,24 @@
 "use client";
 
-import {
-  FileText,
-  Bug,
-  Map,
-  Sparkles,
-  Wrench,
-  CalendarCheck,
-} from "lucide-react";
+import { FileText, Map, CalendarCheck } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
 const items = [
   {
     icon: FileText,
     title: "Izveštaj",
-    copy: "Kratak izveštaj sa nalazima i jasnim prioritetima.",
-  },
-  {
-    icon: Bug,
-    title: "Tracking & podaci",
-    copy: "Lista konkretnih grešaka + tačni koraci za ispravku (GA4/Pixel/Events).",
+    copy: "Kratak izveštaj sa trenutnim problemima.",
   },
   {
     icon: Map,
     title: "Funnel mapa",
-    copy: "Jednostavna mapa toka korisnika sa označenim tačkama curenja.",
+    copy: "Jednostavna ilustracija kako bi marketing funnel trebao da izgleda.",
   },
-  {
-    icon: Sparkles,
-    title: "Kreativa & poruke",
-    copy: "3–5 predloga hookova/visuala spremnih za sledeće testove.",
-  },
-  {
-    icon: Wrench,
-    title: "SEO/tehnički snapshot",
-    copy: "5 ključnih tehničkih ispravki (CWV, indeksiranje, on-page).",
-  },
+
   {
     icon: CalendarCheck,
     title: "30-60-90 plan",
-    copy: "Plan po mesecima sa zadacima, odgovornima i očekivanim rezultatima.",
+    copy: "Plan po mesecima daljim koracima i očekivanim rezultatima.",
   },
 ];
 
@@ -49,15 +28,15 @@ export default function Services() {
 
   return (
     <section className="py-16" id="services">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <motion.h2
           initial={{ opacity: 0, y: reduce ? 0 : 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
           transition={{ duration: 0.5, ease: easeOut }}
-          className="text-3xl font-semibold"
+          className="text-3xl font-semibold text-center"
         >
-          Šta dobijaš besplatnom analizom
+          Šta dobijate besplatnom analizom
         </motion.h2>
 
         <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

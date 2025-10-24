@@ -1,13 +1,6 @@
 "use client";
 import React from "react";
-import {
-  Target,
-  AlarmClock,
-  Wand2,
-  Code2,
-  Palette,
-  Handshake,
-} from "lucide-react";
+import { Target, AlarmClock, Wand2, Code2, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 /**
@@ -19,17 +12,14 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function SalesFocused() {
   return (
     <section className="w-full bg-gbackground">
-      <div className="mx-auto max-w-5xl px-4 py-14 sm:py-20">
+      <div className="mx-auto max-w-screen px-4 py-14 sm:py-20">
         {/* Intro */}
-        <div className="mb-10 flex items-start gap-4">
-          <div className="rounded-2xl bg-foreground/20 p-3 text-white shadow-sm shadow-neutral-300/40">
-            <Handshake className="text-primary/60 h-6 w-6" />
-          </div>
-          <div className="flex-1">
+        <div className="mb-10 text-center gap-4">
+          <div className="">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Zašto biste sarađivali sa nama?
             </h2>
-            <p className="mt-2 max-w-3xl text-foreground/70">
+            <p className="mt-2  text-foreground/70">
               Ne prodajemo vam generičke online usluge poput video editinga,
               dizajna ili razvoja. Imamo samo jedan cilj:{" "}
               <b className="text-primary/60 font-extrabold uppercase">
@@ -46,7 +36,7 @@ export default function SalesFocused() {
             <CardContent className="p-6">
               <h3 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
                 <Target className="h-8 w-8 text-primary/60" />
-                Tehnika je samo alat, ali cilj je profit
+                Cilj je profit
               </h3>
               <p className="mt-2 text-foreground/70">
                 Video editing, web development, AI automatizacije i ostale

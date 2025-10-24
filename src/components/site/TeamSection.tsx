@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { Mail, Linkedin, Globe, Instagram, Users2 } from "lucide-react";
 import {
   Card,
@@ -25,7 +26,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 // ------------------------------------------------------------
 // Types
@@ -65,7 +68,7 @@ const DEFAULT_MEMBERS: TeamMember[] = [
     linkedin: "https://www.linkedin.com/in/example",
     Instagram: "https://www.instagram.com/macura.fullstack/",
     location: "Belgrade, RS",
-    bio: "Oduvek me pokreće preduzetnički način razmišljanja - kako da ideje pretvorim u konkretne rezultate. Danas mi je fokus na web aplikacijama, AI automatizacijama i integracijama velikih jezičkih modela (Next.js, RAG sistemi, AI agenti). Verujem da je pravi i jedini smisao tehnologije i marketinga rast i profit.",
+    bio: "Oduvek me pokreće preduzetnički način razmišljanja - kako da ideje pretvorim u konkretne rezultate. Danas mi je fokus na web aplikacijama, AI automatizacijama i kreiranju RAG modela (AI botovi koji imaju svoju bazu znanja). Verujem da je pravi i jedini smisao tehnologije i marketinga rast i profit.",
     skills: [
       "Next.js",
       "TypeScript",
@@ -118,14 +121,35 @@ const DEFAULT_MEMBERS: TeamMember[] = [
 ];
 
 // ------------------------------------------------------------
+// Motion variants (scroll-reveal + subtle hover)
+// ------------------------------------------------------------
+const containerVariants: Variants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+// ------------------------------------------------------------
 // Utilities
 // ------------------------------------------------------------
-
 function Portrait({ name, src }: { name: string; src?: string }) {
   // Large, portrait (3:4-ish) image container that works without the Tailwind aspect plugin
   return (
     <div
-      className="relative overflow-hidden rounded-2xl bg-transparent ring-1"
+      className="relative overflow-hidden rounded-2xl bg-transparent ring-1 ring-foreground/10"
       style={{ width: "14rem", height: "19rem" }}
     >
       {src ? (
@@ -155,12 +179,12 @@ function Portrait({ name, src }: { name: string; src?: string }) {
 function TeamMemberCard({ member }: { member: TeamMember }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      layout
+      variants={cardVariants}
+      whileHover={{ y: -4 }}
+      className="h-full"
     >
-      <Card className="group relative h-full gap-2 rounded-2xl bg-transparent p-4 shadow-sm border-1 border-foreground/30 backdrop-blur-sm transition hover:shadow-lg">
+      <Card className="group relative h-full gap-2 rounded-2xl bg-transparent p-4 shadow-sm border border-foreground/20  transition hover:shadow-lg">
         <CardHeader className="pb-3">
           <div className="flex flex-col items-center gap-6">
             <Portrait name={member.name} src={member.avatarUrl} />
@@ -177,7 +201,7 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
           {member.bio && (
-            <p className="text-sm leading-relaxed text-foreground/80">
+            <p className="text-md leading-relaxed text-foreground/80">
               {member.bio}
             </p>
           )}
@@ -197,22 +221,20 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
           )}
 
           <div className="flex flex-wrap gap-2">
-            {member.skills.slice(0, 8).map((s) => (
-              <TooltipProvider key={s}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="cursor-default rounded-full px-2 border-primary/60 border-2 py-1 text-xs "
-                    >
-                      {s}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Veština: {s}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            {(member.skills ?? []).slice(0, 8).map((s) => (
+              <Tooltip key={s}>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="cursor-default rounded-full px-2 border-primary/60 border-2 py-1 text-xs "
+                  >
+                    {s}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Veština: {s}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </CardContent>
@@ -240,8 +262,13 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
             )}
           </div>
 
-          {/* Quick bio dialog */}
+          {/* Quick bio dialog with trigger */}
           <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" className="px-3 py-1 text-xs">
+                Bio
+              </Button>
+            </DialogTrigger>
             <DialogContent className="max-w-xl">
               <DialogHeader>
                 <DialogTitle>{member.name}</DialogTitle>
@@ -253,7 +280,7 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
                     {member.bio}
                   </p>
                 )}
-                {member.skills?.length > 0 && (
+                {(member.skills?.length ?? 0) > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {member.skills.map((s) => (
                       <Badge
@@ -294,7 +321,7 @@ function IconLink({
 }
 
 // ------------------------------------------------------------
-// Main section (filters removed — 3 members only)
+// Main section (scroll-reveal on container; TooltipProvider moved up)
 // ------------------------------------------------------------
 export default function TeamSection({
   title = "Naš tim",
@@ -311,20 +338,28 @@ export default function TeamSection({
   }, [members, featuredIds]);
 
   return (
-    <section id="team" className="mx-auto max-w-6xl px-4 py-10 md:py-14">
-      <div className="mb-10">
+    <section id="team" className="mx-auto max-w-screen px-4 py-10 md:py-14">
+      <div className="mb-10 text-center">
         <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
           {title}
         </h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">{subtitle}</p>
+        <p className="mt-2 text-muted-foreground">{subtitle}</p>
       </div>
 
-      {/* Simple grid for 3 people */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {ordered.map((member) => (
-          <TeamMemberCard key={member.id} member={member} />
-        ))}
-      </div>
+      <TooltipProvider delayDuration={150}>
+        {/* Scroll-reveal grid */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+        >
+          {ordered.map((member) => (
+            <TeamMemberCard key={member.id} member={member} />
+          ))}
+        </motion.div>
+      </TooltipProvider>
     </section>
   );
 }

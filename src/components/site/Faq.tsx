@@ -8,7 +8,7 @@ const faqs: FaqItem[] = [
   {
     question: "Da li stvarno dobijam nešto besplatno?",
     answer:
-      "Da. Analiza je potpuno besplatna - ali nije generička. Prolazimo kroz kanale, podatke i oglase i dajemo konkretne preporuke zasnovane na brojkama.",
+      "Da. Analiza je potpuno besplatna - ali nije generička. Analizu detaljno kreiramo potpuno personalizovano koristeći informacije koje dobijemo od Vas. Prolazimo kroz kanale, podatke i oglase i dajemo konkretne preporuke zasnovane na brojkama.",
   },
   {
     question: "Šta znači 'fullstack marketing'?",
