@@ -129,7 +129,7 @@ const agitation = [
 const benefits = [
   {
     icon: Megaphone,
-    title: "Marketing pod ključem",
+    title: "Kompletan marketing",
     desc: "Analiza tržišta, premium kreative i Meta kampanje - sve vodi naš tim.",
   },
   {
@@ -430,7 +430,7 @@ export default function ProfitZaTebeLanding() {
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <SectionLabel>Šta tačno dobijaš</SectionLabel>
             <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-4xl md:text-5xl">
-              Ceo biznis online - ključ u ruke
+              Ceo biznis online
             </h2>
           </div>
 
