@@ -54,7 +54,7 @@ export default function HeaderClient() {
         <Link
           href="/"
           className="flex items-center gap-2 shrink-0"
-          aria-label="Skeylo — Početna"
+          aria-label="Skeylo - Početna"
         >
           <Image
             src="/logo.png"
@@ -74,30 +74,27 @@ export default function HeaderClient() {
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Link
-                    href="/"
-                    className={`${linkBase} ${isActive("/") ? linkActive : linkHover}`}
+                    href="/#rezultati"
+                    className={`${linkBase} ${linkHover}`}
                   >
-                    Početna
+                    Rezultati
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/#paketi" className={`${linkBase} ${linkHover}`}>
+                    Paketi
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
                   <Link
-                    href="#team"
-                    className={`${linkBase} ${isActive("#team") ? linkActive : linkHover}`}
+                    href="/meet"
+                    className={`${linkBase} ${isActive("/meet") ? linkActive : linkHover}`}
                   >
-                    Tim
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href="#faq"
-                    className={`${linkBase} ${isActive("#faq") ? linkActive : linkHover}`}
-                  >
-                    Česta pitanja
+                    Kontakt
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -136,43 +133,42 @@ export default function HeaderClient() {
           <ul className="py-1">
             <li>
               <Link
-                href="/"
+                href="/#rezultati"
                 onClick={() => setOpen(false)}
-                className={`${linkBase} ${isActive("/") ? linkActive : linkHover}`}
+                className={`${linkBase} ${linkHover}`}
               >
-                Početna
+                Rezultati
               </Link>
             </li>
             <li>
               <Link
-                href="#team"
+                href="/#paketi"
                 onClick={() => setOpen(false)}
-                className={`${linkBase} ${isActive("#team") ? linkActive : linkHover}`}
+                className={`${linkBase} ${linkHover}`}
               >
-                Tim
+                Paketi
               </Link>
             </li>
             <li>
               <Link
-                href="#faq"
+                href="/meet"
                 onClick={() => setOpen(false)}
-                className={`${linkBase} ${isActive("#faq") ? linkActive : linkHover}`}
+                className={`${linkBase} ${isActive("/meet") ? linkActive : linkHover}`}
               >
-                Česta pitanja
+                Kontakt
               </Link>
             </li>
           </ul>
 
-          {/* (opciono) CTA ispod linkova */}
-          {/* <div className="p-2">
+          <div className="p-2">
             <Link
-              href="/analiza"
+              href="/#paketi"
               onClick={() => setOpen(false)}
-              className="block w-full text-center rounded-lg bg-primary text-primary-foreground py-3 font-semibold hover:opacity-90"
+              className="block w-full rounded-lg bg-primary py-3 text-center font-bold text-primary-foreground hover:opacity-90"
             >
-              Besplatna analiza
+              Pogledaj pakete
             </Link>
-          </div> */}
+          </div>
         </nav>
       </div>
     </header>

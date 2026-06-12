@@ -1,22 +1,34 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Bricolage_Grotesque, Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import HeaderClient from "@/components/site/HeaderClient";
+import Footer from "@/components/site/Footer";
 
-const inter = Inter({ subsets: ["latin"] });
+const display = Bricolage_Grotesque({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const sans = Geist({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "Skeylo: Full-stack marketing agencija",
+    default: "Skeylo - Marketing koji donosi profit",
     template: "%s | Skeylo",
   },
   description:
-    "Performance, SEO, kreativa i CRM u jednom timu. Gradimo sistem koji raste uz vaš biznis.",
+    "Full-stack marketing agencija. Kreativa, performance kampanje i sistemi rasta u jednom timu. Tri paketa, jedan cilj - više prodaja.",
   openGraph: {
-    title: "Skeylo — Full-stack marketing agencija",
-    description: "Performance, SEO, kreativa i CRM u jednom timu.",
+    title: "Skeylo - Marketing koji donosi profit",
+    description:
+      "Kreativa, performance i sistemi rasta u jednom timu. Tri paketa, jedan cilj - više prodaja.",
     images: [{ url: "/og.png" }],
   },
   twitter: { card: "summary_large_image" },
@@ -28,10 +40,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sr" className={inter.className}>
-      <body>
+    <html lang="sr" className={`${display.variable} ${sans.variable}`}>
+      <body className="font-sans antialiased bg-background text-foreground">
         <HeaderClient />
-        <main className="flex-1 md:pt-8 pt-12 md:px-14">{children}</main>
+        <main>{children}</main>
+        <Footer />
         <Analytics />
       </body>
     </html>

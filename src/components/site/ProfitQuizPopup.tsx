@@ -15,95 +15,125 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Link as LinkIcon,
-  Target,
-  Banknote,
-  PiggyBank,
-  Bug,
-  Send,
   User2,
+  Building2,
+  BadgeCheck,
+  Percent,
+  Gauge,
+  Handshake,
+  BarChart3,
+  Phone,
+  MessageCircle,
   CheckCircle2,
-  Mail,
   PartyPopper,
+  Check,
 } from "lucide-react";
 
-type StepType = "text" | "number" | "input" | "textarea" | "email" | "url";
+const GOLD = "#f0b656";
+
+type StepType = "text" | "textarea" | "tel" | "choice";
 
 type Step = {
   key: string;
-  label: string;
-  required?: boolean;
+  kicker: string; // mali tekst iznad
+  label: string; // pitanje
   type: StepType;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  required?: boolean;
   placeholder?: string;
   rows?: number;
+  options?: string[];
 };
 
 const STEPS: Step[] = [
   {
     key: "name",
-    label: "Ime i prezime",
+    kicker: "Hajde da krenemo od vas",
+    label: "Kako se zovete?",
     type: "text",
     icon: User2,
     required: true,
     placeholder: "Petar Petrović",
   },
   {
-    key: "email",
-    label: "Email za izveštaj",
-    type: "email",
-    icon: Send,
+    key: "brand",
+    kicker: "Malo detaljnije da se upoznamo",
+    label: "Koji je naziv vašeg brenda?",
+    type: "text",
+    icon: Building2,
     required: true,
-    placeholder: "founder@firma.com",
+    placeholder: "npr. Infinity Laser Studio",
   },
   {
-    key: "goal90",
-    label: "Glavni cilj u narednih 90 dana",
-    type: "input",
-    icon: Target,
+    key: "registered",
+    kicker: "Čisto da znamo",
+    label: "Da li imate registrovanu firmu?",
+    type: "choice",
+    icon: BadgeCheck,
     required: true,
-    placeholder: "npr. Dobiti 40% više klijenata",
+    options: ["Da", "Ne", "U procesu"],
   },
   {
-    key: "unitProfit",
-    label: "Prosečna zarada po kupovini / klijentu (€)",
-    type: "input",
-    icon: Banknote,
+    key: "margin",
+    kicker: "Ovo diktira profitabilnost",
+    label: "Koja je vaša prosečna profitna marža?",
+    type: "text",
+    icon: Percent,
     required: true,
-    placeholder: "npr. 35 (€)",
+    placeholder: "npr. 30%",
   },
   {
-    key: "budget",
-    label: "Trenutni marketing budžet (mesečno)",
+    key: "capacity",
+    kicker: "Ovo takođe diktira profitabilnost",
+    label: "Da li ste spremni da podržite veći kapacitet?",
+    type: "choice",
+    icon: Gauge,
+    required: true,
+    options: ["Da", "Ne", "Nisam siguran/na"],
+  },
+  {
+    key: "agencies",
+    kicker: "Kakva iskustva imate",
+    label: "Da li ste sarađivali sa agencijama?",
+    type: "choice",
+    icon: Handshake,
+    required: true,
+    options: ["Da", "Ne"],
+  },
+  {
+    key: "results",
+    kicker: "I kakvi su rezultati bili",
+    label: "Opišite ukratko rezultate dosadašnje saradnje",
     type: "textarea",
-    icon: PiggyBank,
-    rows: 2,
-    placeholder: "npr. 300 € mesečno",
+    icon: BarChart3,
+    rows: 3,
+    placeholder: "npr. Potrošili smo budžet bez jasnih rezultata...",
   },
   {
-    key: "tracking",
-    label: "Tehnički izazovi (opciono)",
-    type: "textarea",
-    icon: Bug,
-    rows: 2,
-    placeholder: "Ne znam kako da pratim potencijalne klijente.",
+    key: "phone",
+    kicker: "Skoro smo gotovi",
+    label: "Broj telefona",
+    type: "tel",
+    icon: Phone,
+    required: true,
+    placeholder: "+381 6x xxx xxxx",
   },
   {
-    key: "url",
-    label: "URL sajta / glavnog landinga",
-    type: "input",
-    icon: LinkIcon,
-    placeholder: "https://...",
+    key: "contact",
+    kicker: "Poslednji korak",
+    label: "Kako želite da Vas kontaktiramo?",
+    type: "choice",
+    icon: MessageCircle,
+    required: true,
+    options: ["WhatsApp", "Viber", "SMS", "Poziv"],
   },
 ];
 
 type Props = {
-  triggerText?: string;
+  children: React.ReactNode; // trigger
 };
 
-export default function FreeAnalysisWizard({
-  triggerText = "Zakaži besplatnu analizu",
-}: Props) {
+export default function ProfitQuizPopup({ children }: Props) {
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -114,41 +144,13 @@ export default function FreeAnalysisWizard({
   const step = STEPS[idx];
   const progress = useMemo(() => ((idx + 1) / STEPS.length) * 100, [idx]);
 
-  // ---------- Validacija ----------
   function validate(step: Step, value: string): string {
     const v = (value ?? "").trim();
-
-    if (step.required && !v) {
-      return "Ovo polje je obavezno.";
+    if (step.required && !v) return "Ovo polje je obavezno.";
+    if (v && step.type === "tel") {
+      const re = /^[+]?[\d\s()-]{6,}$/;
+      if (!re.test(v)) return "Unesite važeći broj telefona.";
     }
-
-    if (v) {
-      switch (step.type) {
-        case "email": {
-          const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!re.test(v)) return "Unesite važeću email adresu.";
-          break;
-        }
-        case "url": {
-          try {
-            const u = new URL(v);
-            if (!["http:", "https:"].includes(u.protocol)) {
-              return "URL mora počinjati sa http(s)://";
-            }
-          } catch {
-            return "Unesite važeći URL (npr. https://primer.com).";
-          }
-          break;
-        }
-        case "number": {
-          const num = Number(v.replace(",", "."));
-          if (Number.isNaN(num)) return "Unesite broj (npr. 35).";
-          if (num < 0) return "Vrednost ne može biti negativna.";
-          break;
-        }
-      }
-    }
-
     return "";
   }
 
@@ -156,13 +158,11 @@ export default function FreeAnalysisWizard({
     setData((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) {
       const stepDef = STEPS.find((s) => s.key === key)!;
-      const msg = validate(stepDef, value);
-      setErrors((e) => ({ ...e, [key]: msg }));
+      setErrors((e) => ({ ...e, [key]: validate(stepDef, value) }));
     }
   }
 
   async function submitAll() {
-    // finalna validacija svih required polja
     const newErrors: Record<string, string> = {};
     STEPS.forEach((s) => {
       const msg = validate(s, data[s.key] ?? "");
@@ -180,11 +180,10 @@ export default function FreeAnalysisWizard({
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "free-analysis", ...data }),
+        body: JSON.stringify({ type: "profit-za-tebe-quiz", ...data }),
       });
       if (!res.ok) throw new Error("Network error");
       toast.success("Zahtev poslat.");
-      // ✅ ostajemo u istom modalu i prikazujemo success deo
       setSubmitted(true);
       setErrors({});
     } catch {
@@ -208,6 +207,13 @@ export default function FreeAnalysisWizard({
     if (idx > 0) setIdx(idx - 1);
   }
 
+  function pickChoice(value: string) {
+    setValue(step.key, value);
+    setErrors((e) => ({ ...e, [step.key]: "" }));
+    if (idx < STEPS.length - 1) setIdx(idx + 1);
+    else setData((prev) => ({ ...prev, [step.key]: value }));
+  }
+
   function resetAll(close = false) {
     setIdx(0);
     setData({});
@@ -224,22 +230,15 @@ export default function FreeAnalysisWizard({
         if (!v) resetAll(false);
       }}
     >
-      <DialogTrigger asChild>
-        <Button
-          size="lg"
-          className="cursor-pointer w-100 text-md md:text-sm py-8 px-10 md:py-4 md:px-6 md:w-fit bg-primary font-extrabold text-background"
-        >
-          {triggerText}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="max-w-[95%] p-0 overflow-hidden text-foreground">
-        {/* progress bar ili prazan prostor na success ekranu */}
+      <DialogContent className="max-w-[95%] sm:max-w-lg p-0 overflow-hidden text-foreground">
+        {/* progress */}
         {!submitted ? (
           <div className="h-3 bg-background">
             <div
-              className="h-full bg-primary"
-              style={{ width: `${progress}%` }}
+              className="h-full transition-all duration-300"
+              style={{ width: `${progress}%`, background: GOLD }}
             />
           </div>
         ) : (
@@ -249,16 +248,16 @@ export default function FreeAnalysisWizard({
         <div className="p-6">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {submitted ? "Zahtev je poslat" : "Besplatna analiza marketinga"}
+              {submitted ? "Zahtev je poslat" : "Profit Za Tebe - upitnik"}
             </DialogTitle>
             <DialogDescription>
               {submitted
-                ? "Javićemo vam se na email sa izveštajem i sledećim koracima."
-                : `Odgovori na ${STEPS.length} kratkih pitanja ~ 1 minut.`}
+                ? "Javićemo vam se uskoro na izabrani kanal."
+                : `${STEPS.length} kratkih pitanja ~ 1 minut.`}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-4 ">
+          <div className="mt-5">
             <AnimatePresence mode="wait">
               {!submitted ? (
                 <motion.div
@@ -267,15 +266,47 @@ export default function FreeAnalysisWizard({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="grid gap-2 "
+                  className="grid gap-3"
                 >
-                  <label className="text-sm flex items-center gap-2">
-                    <step.icon className="size-4" />
+                  <p
+                    className="text-xs font-semibold uppercase tracking-widest"
+                    style={{ color: GOLD }}
+                  >
+                    {step.kicker}
+                  </p>
+                  <label className="flex items-center gap-2 text-base font-semibold">
+                    <step.icon className="size-4" style={{ color: GOLD }} />
                     {step.label}
                     {step.required ? " *" : ""}
                   </label>
 
-                  {step.type === "textarea" ? (
+                  {step.type === "choice" ? (
+                    <div className="mt-1 grid gap-2">
+                      {step.options!.map((opt) => {
+                        const active = data[step.key] === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => pickChoice(opt)}
+                            className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                              active
+                                ? "border-[#f0b656] bg-[#f0b656]/10"
+                                : "border-border hover:border-[#f0b656]/50 hover:bg-[#f0b656]/5"
+                            }`}
+                          >
+                            {opt}
+                            {active && (
+                              <Check
+                                className="size-4"
+                                style={{ color: GOLD }}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : step.type === "textarea" ? (
                     <Textarea
                       rows={step.rows ?? 3}
                       value={data[step.key] ?? ""}
@@ -287,59 +318,46 @@ export default function FreeAnalysisWizard({
                     />
                   ) : (
                     <Input
-                      type={
-                        step.type === "url"
-                          ? "url"
-                          : step.type === "email"
-                            ? "email"
-                            : step.type === "number"
-                              ? "number"
-                              : "text"
-                      }
-                      {...(step.type === "number"
-                        ? { min: 0, step: "0.01", inputMode: "decimal" }
-                        : {})}
+                      type={step.type === "tel" ? "tel" : "text"}
+                      {...(step.type === "tel" ? { inputMode: "tel" } : {})}
                       value={data[step.key] ?? ""}
                       onChange={(e) => setValue(step.key, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          next();
+                        }
+                      }}
                       placeholder={step.placeholder}
                       className={
-                        errors[step.key] ? " border-red-500" : undefined
+                        errors[step.key] ? "border-red-500" : undefined
                       }
                     />
                   )}
 
-                  {/* inline error */}
                   {errors[step.key] && (
                     <p className="text-xs text-red-600">{errors[step.key]}</p>
                   )}
-
-                  {/* hint za email/privatnost */}
-                  {step.key === "email" && (
-                    <p className="text-xs text-muted-foreground">
-                      Tvoj email koristimo isključivo za slanje izveštaja.{" "}
-                      <a href="/privacy" className="underline">
-                        Politika privatnosti
-                      </a>
-                      .
-                    </p>
-                  )}
                 </motion.div>
               ) : (
-                // ✅ SUCCESS EKRAN
                 <motion.div
                   key="success"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="grid place-items-center gap-3  text-center py-6"
+                  className="grid place-items-center gap-3 py-6 text-center"
                 >
-                  <CheckCircle2 className="size-12" aria-hidden />
+                  <CheckCircle2
+                    className="size-12"
+                    style={{ color: GOLD }}
+                    aria-hidden
+                  />
                   <p className="text-lg font-medium">Poslat zahtev 🎉</p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Mail className="size-4" />
-                    Javićemo vam se na mail
-                    {data.email ? ` (${data.email})` : ""}.
+                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MessageCircle className="size-4" />
+                    Kontaktiraćemo vas putem
+                    {data.contact ? ` ${data.contact}` : " izabranog kanala"}.
                   </p>
                   <div className="mt-4 flex items-center gap-2">
                     <Button
@@ -348,15 +366,8 @@ export default function FreeAnalysisWizard({
                     >
                       Zatvori
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="cursor-pointer"
-                      onClick={() => resetAll(false)}
-                    >
-                      Novi zahtev
-                    </Button>
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                     <PartyPopper className="size-4" />
                     Hvala na poverenju!
                   </div>
@@ -381,7 +392,7 @@ export default function FreeAnalysisWizard({
               <Button
                 onClick={next}
                 disabled={loading}
-                className="cursor-pointer text-background font-bold"
+                className="cursor-pointer font-bold text-background"
               >
                 {idx === STEPS.length - 1
                   ? loading
@@ -393,7 +404,6 @@ export default function FreeAnalysisWizard({
           )}
         </div>
 
-        {/* suptilni glow */}
         <div className="pointer-events-none h-8 w-full bg-[radial-gradient(40%_60%_at_50%_0%,hsl(var(--primary)/0.25),transparent)]" />
       </DialogContent>
     </Dialog>

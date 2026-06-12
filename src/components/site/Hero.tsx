@@ -1,126 +1,146 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import FreeAnalysisPopup from "@/components/site/FreeAnalysisPopup";
+import { ArrowRight, Star } from "lucide-react";
 
 export default function Hero() {
-  const prefersReducedMotion = useReducedMotion();
+  const reduce = useReducedMotion();
 
   const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.05,
-      },
-    },
+    hidden: {},
+    show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
   } as const;
 
-  const itemUp = {
-    hidden: { y: prefersReducedMotion ? 0 : 12, opacity: 0 },
+  const up = {
+    hidden: { y: reduce ? 0 : 18, opacity: 0 },
     show: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring", stiffness: 200, damping: 22 },
-    },
-  } as const;
-
-  const imageReveal = {
-    hidden: { scale: prefersReducedMotion ? 1 : 0.98, opacity: 0 },
-    show: {
-      scale: 1,
-      opacity: 1,
-      transition: { type: "spring", stiffness: 160, damping: 20, delay: 0.1 },
+      transition: { type: "spring", stiffness: 180, damping: 24 },
     },
   } as const;
 
   return (
-    <section className="relative isolate overflow-hidden">
+    <section className="relative isolate overflow-hidden grain pt-28 pb-16 md:pt-36 md:pb-24">
+      {/* Atmosphere */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 right-[-10%] h-[42rem] w-[42rem] rounded-full opacity-60 blur-[120px]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(216,121,40,0.45), transparent 60%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 grid-lines opacity-[0.4] [mask-image:radial-gradient(80%_60%_at_50%_0%,black,transparent)]"
+      />
+
       <motion.div
-        className="mx-auto max-screen px-4 sm:px-6 lg:px-8 py-4 grid lg:grid-cols-2 gap-5 items-center"
+        className="container-x relative grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]"
         variants={container}
         initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-100px" }}
+        animate="show"
       >
-        <div>
-          <motion.p
-            className="inline-flex items-center text-xs uppercase tracking-widest rounded-full border px-2 py-1 mb-4"
-            variants={itemUp}
+        <div className="relative z-10">
+          <motion.div
+            variants={up}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-foreground/[0.03] px-3 py-1.5 text-xs font-medium tracking-wide text-muted-foreground"
           >
-            Skeylo
-          </motion.p>
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Full-stack marketing agencija
+          </motion.div>
 
           <motion.h1
-            className="text-4xl/tight md:text-6xl font-bold"
-            variants={itemUp}
+            variants={up}
+            className="mt-6 text-balance text-5xl font-extrabold leading-[0.95] sm:text-6xl lg:text-7xl"
           >
-            Saznaj zašto tvoj marketing{" "}
-            <b className="text-primary/80">ne donosi novac</b> i kako da to
-            promeniš <b className="text-primary/80">POTPUNO BESPLATNO</b>
+            Marketing koji <span className="text-gradient">donosi profit</span>,
+            a ne samo preglede i lajkove.
           </motion.h1>
 
           <motion.p
-            className="mt-4 text-md md:text-xl text-muted-foreground max-w-prose"
-            variants={itemUp}
+            variants={up}
+            className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground"
           >
-            Dobijaš <b>personalizovanu marketing analizu</b> i jasan plan kako
-            da tvoj biznis dođe do više prodaja, kreirano od fullstack marketing
-            tima koji <b>garantuje rezultate</b>.
+            Kreative, plaćene kampanje i sajt u <b>jednom timu</b>. Gradimo
+            sistem koji tvoj budžet pretvara u <b>vidljive prodaje</b> - i
+            puštamo je da radi za tebe.
           </motion.p>
 
           <motion.div
-            className="mt-6 flex flex-wrap gap-3 font-bold"
-            variants={itemUp}
+            variants={up}
+            className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center"
           >
-            {/* Lift on hover/tap for a tactile feel */}
-            <motion.div whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
-              <FreeAnalysisPopup triggerText="Saznaj besplatno" />
-            </motion.div>
+            <Link
+              href="#paketi"
+              className="group inline-flex items-center justify-center gap-2 rounded-md bg-primary px-8 py-4 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5"
+            >
+              Pogledaj pakete
+              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link
+              href="/meet"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-foreground/90 transition-colors hover:text-primary"
+            >
+              Zakaži poziv
+            </Link>
+          </motion.div>
+
+          <motion.div
+            variants={up}
+            className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground"
+          >
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="size-4 fill-primary text-primary" />
+              ))}
+              <span className="ml-1 font-medium text-foreground">
+                Svaki projekat profitabilan
+              </span>
+            </div>
+            <div className="h-4 w-px bg-border" />
+            <span>
+              Prosečan{" "}
+              <span className="font-semibold text-foreground">4.2x</span> povrat
+              na uloženo
+            </span>
           </motion.div>
         </div>
 
+        {/* Hero image */}
         <motion.div
-          className="relative w-[100%] md:w-[80%] mx-auto aspect-[16/12]"
-          variants={imageReveal}
+          variants={up}
+          className="relative mx-auto w-full max-w-lg lg:max-w-none"
         >
-          {/* Soft shadow + subtle hover parallax */}
-          <motion.div
-            className="absolute inset-0 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.08)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 translate-y-8 scale-95 rounded-full opacity-70 blur-3xl"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(216,121,40,0.4), transparent 65%)",
+            }}
           />
-
           <motion.div
-            className="absolute inset-0"
-            whileHover={
-              prefersReducedMotion ? undefined : { rotate: -0.3, scale: 1.01 }
-            }
-            transition={{ type: "spring", stiffness: 180, damping: 18 }}
+            whileHover={reduce ? undefined : { rotate: -0.4, scale: 1.01 }}
+            transition={{ type: "spring", stiffness: 160, damping: 18 }}
+            className="relative aspect-[16/13]"
           >
             <Image
               src="/hero.png"
-              alt="Skeylo hero"
+              alt="Skeylo tim"
               fill
-              className="object-contain"
               priority
+              className="object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
             />
           </motion.div>
         </motion.div>
       </motion.div>
-
-      {/* Gentle spotlight background already present; add a faint animated blur pulse */}
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.08),transparent)]"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      />
     </section>
   );
 }

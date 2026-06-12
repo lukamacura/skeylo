@@ -1,78 +1,120 @@
 "use client";
 
-import { FileText, Map, CalendarCheck } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import {
+  Palette,
+  Megaphone,
+  Globe,
+  LineChart,
+  ShieldCheck,
+  Users,
+  Gauge,
+} from "lucide-react";
 
-const items = [
+const services = [
   {
-    icon: FileText,
-    title: "Izveštaj",
-    copy: "Kratak izveštaj sa trenutnim problemima.",
+    icon: Palette,
+    title: "Kreativa i dizajn",
+    desc: "Reels i statične kreative prilagođene tvom brendu - dizajnirane da prodaju, ne samo da izgledaju lepo.",
   },
   {
-    icon: Map,
-    title: "Funnel mapa",
-    copy: "Jednostavna ilustracija kako bi marketing funnel trebao da izgleda.",
+    icon: Megaphone,
+    title: "Meta oglašavanje",
+    desc: "Vođenje, optimizacija i praćenje Facebook i Instagram kampanja sa fokusom na povrat investicije.",
   },
-
   {
-    icon: CalendarCheck,
-    title: "30-60-90 plan",
-    copy: "Plan po mesecima daljim koracima i očekivanim rezultatima.",
+    icon: Globe,
+    title: "Web development",
+    desc: "Moderni i brzi sajtovi: webshop, sistem za zakazivanje i finansijski admin panel - ključ u ruke.",
+  },
+  {
+    icon: LineChart,
+    title: "Analiza i strategija",
+    desc: "Detaljan pregled tvog marketinga i sajta uz konkretne predloge koji podižu konverzije.",
+  },
+];
+
+const why = [
+  {
+    icon: Users,
+    title: "Jedan tim za sve",
+  },
+  {
+    icon: Gauge,
+    title: "Fokus na profit",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Sistem, ne kampanja",
   },
 ];
 
 export default function Services() {
-  const reduce = useReducedMotion();
-  const easeOut: [number, number, number, number] = [0.22, 1, 0.36, 1]; // ✔ type-safe easing
-
   return (
-    <section className="py-16" id="services">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <motion.h2
-          initial={{ opacity: 0, y: reduce ? 0 : 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.6 }}
-          transition={{ duration: 0.5, ease: easeOut }}
-          className="text-3xl font-semibold text-center"
-        >
-          Šta dobijate besplatnom analizom
-        </motion.h2>
+    <section id="usluge" className="relative py-20 md:py-28">
+      <div className="container-x">
+        <div className="mb-12 max-w-2xl">
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary">
+            Usluge
+          </p>
+          <h2 className="mt-3 text-balance text-4xl font-extrabold sm:text-5xl">
+            Sve što tvom biznisu treba da raste - na jednom mestu
+          </h2>
+        </div>
 
-        <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map(({ icon: Icon, title, copy }, i) => (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {services.map((s, i) => (
             <motion.div
-              key={title}
-              initial={{ opacity: 0, y: reduce ? 0 : 14 }}
+              key={s.title}
+              initial={{ opacity: 0, y: 22 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.45, ease: easeOut, delay: i * 0.08 }}
-              whileHover={{
-                y: reduce ? 0 : -4,
-                boxShadow: reduce ? "none" : "0 6px 24px rgba(0,0,0,0.08)",
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{
+                delay: i * 0.08,
+                type: "spring",
+                stiffness: 140,
+                damping: 20,
               }}
-              className="group rounded-2xl border border-foreground/20 p-6 backdrop-blur-sm relative overflow-hidden"
+              className="group rounded-2xl card-glass p-6 transition-colors hover:border-primary/40"
             >
-              <div
-                className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{
-                  background:
-                    "radial-gradient(600px 150px at 10% -10%, hsl(var(--primary)/0.08), transparent)",
-                }}
-              />
-              <motion.div
-                whileHover={{
-                  scale: reduce ? 1 : 1.05,
-                  rotate: reduce ? 0 : 1,
-                }}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/20"
-              >
-                <Icon className="size-5" />
-              </motion.div>
-              <h3 className="mt-3 font-medium">{title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{copy}</p>
+              <div className="inline-flex rounded-xl bg-primary/15 p-3 transition-transform group-hover:-translate-y-0.5">
+                <s.icon className="size-6 text-primary" />
+              </div>
+              <h3 className="mt-5 text-lg font-bold">{s.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
             </motion.div>
           ))}
+        </div>
+
+        {/* Why us */}
+        <div className="mt-16 rounded-3xl border border-border bg-card/40 p-8 md:p-12">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-widest text-primary">
+                Zašto Skeylo
+              </p>
+              <h3 className="mt-3 text-balance text-3xl font-extrabold sm:text-4xl">
+                Full-stack tim koji razmišlja kao tvoj prijatelj, ne kao
+                agencija
+              </h3>
+              <p className="mt-4 text-muted-foreground">
+                Većina agencija prodaje jednu uslugu i izveštaje koje ne
+                razumeš. Mi pokrivamo ceo lanac - od kreative do sajta - i
+                vodimo ga ka jednom cilju: više prodaja.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {why.map((w) => (
+                <div
+                  key={w.title}
+                  className="rounded-2xl border border-border bg-background/40 p-5"
+                >
+                  <w.icon className="size-6 text-accent" />
+                  <h4 className="mt-3 text-sm font-bold">{w.title}</h4>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
