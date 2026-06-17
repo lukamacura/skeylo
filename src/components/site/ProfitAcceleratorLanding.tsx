@@ -100,7 +100,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 const fomo = [
   {
     icon: HelpCircle,
-    title: "Paljaš oglase naslepo",
+    title: "Vodiš oglase naslepo",
     desc: "Bez prave optimizacije ne znaš koji oglas donosi novac, a koji samo troši budžet. Svaki dan nagađanja je izgubljen novac.",
   },
   {
@@ -189,7 +189,7 @@ export default function ProfitAcceleratorLanding() {
               animate="show"
               className="mt-6 text-balance text-4xl font-extrabold leading-[1.02] sm:text-5xl lg:text-6xl"
             >
-              Troši budžet na oglase, a ne znaš šta{" "}
+              Trošiš budžet na oglase, a ne znaš šta{" "}
               <span
                 style={{
                   background: `linear-gradient(100deg, ${GOLD}, ${ORANGE})`,
