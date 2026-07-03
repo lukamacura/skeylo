@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Bricolage_Grotesque, Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { headers } from "next/headers";
 import HeaderClient from "@/components/site/HeaderClient";
 import Footer from "@/components/site/Footer";
 
@@ -34,17 +35,19 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const construction = (await headers()).get("x-construction") === "1";
+
   return (
     <html lang="sr" className={`${display.variable} ${sans.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
-        <HeaderClient />
+        {!construction && <HeaderClient />}
         <main>{children}</main>
-        <Footer />
+        {!construction && <Footer />}
         <Analytics />
       </body>
     </html>
