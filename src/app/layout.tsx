@@ -40,14 +40,17 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const construction = (await headers()).get("x-construction") === "1";
+  const h = await headers();
+  const construction = h.get("x-construction") === "1";
+  const isAdmin = (h.get("x-pathname") ?? "").startsWith("/admin");
+  const hideChrome = construction || isAdmin;
 
   return (
     <html lang="sr" className={`${display.variable} ${sans.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
-        {!construction && <HeaderClient />}
+        {!hideChrome && <HeaderClient />}
         <main>{children}</main>
-        {!construction && <Footer />}
+        {!hideChrome && <Footer />}
         <Analytics />
       </body>
     </html>

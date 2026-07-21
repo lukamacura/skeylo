@@ -69,8 +69,7 @@ export default function Hero() {
             className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground"
           >
             Kreative, plaćene kampanje i sajt u <b>jednom timu</b>. Gradimo
-            sistem koji tvoj budžet pretvara u <b>vidljive prodaje</b> - i
-            puštamo je da radi za tebe.
+            sistem koji tvoj budžet pretvara u <b>vidljive prodaje</b>.
           </motion.p>
 
           <motion.div
@@ -83,12 +82,6 @@ export default function Hero() {
             >
               Pogledaj pakete
               <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="/meet"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-foreground/90 transition-colors hover:text-primary"
-            >
-              Zakaži poziv
             </Link>
           </motion.div>
 
@@ -106,9 +99,8 @@ export default function Hero() {
             </div>
             <div className="h-4 w-px bg-border" />
             <span>
-              Prosečan{" "}
-              <span className="font-semibold text-foreground">4.2x</span> povrat
-              na uloženo
+              <span className="font-semibold text-foreground">4.2x</span>{" "}
+              prosečan povrat na uloženo
             </span>
           </motion.div>
         </div>

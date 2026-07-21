@@ -164,7 +164,7 @@ export default function BentoGrid() {
                 1 mesec
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                period potreban za profit
+                prosečan period potreban za profit
               </p>
             </div>
           </Cell>

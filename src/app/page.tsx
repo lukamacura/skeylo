@@ -4,6 +4,7 @@ import BentoGrid from "@/components/site/BentoGrid";
 import Services from "@/components/site/Services";
 import CaseStudies from "@/components/site/CaseStudies";
 import Process from "@/components/site/Process";
+import Team from "@/components/site/Team";
 import Packages from "@/components/site/Packages";
 import FinalCta from "@/components/site/FinalCta";
 
@@ -22,6 +23,8 @@ export default function Home() {
       <CaseStudies />
       {/* 5. Kako radimo - proces */}
       <Process />
+      {/* 5b. Tim koji radi za tebe */}
+      <Team />
       {/* 6. Ponuda - paketi */}
       <Packages />
       {/* 6b. Finalni CTA + risk reversal */}

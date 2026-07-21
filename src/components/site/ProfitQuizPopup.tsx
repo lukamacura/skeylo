@@ -24,8 +24,6 @@ import {
   BarChart3,
   Phone,
   MessageCircle,
-  CheckCircle2,
-  PartyPopper,
   Check,
 } from "lucide-react";
 
@@ -346,31 +344,30 @@ export default function ProfitQuizPopup({ children }: Props) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="grid place-items-center gap-3 py-6 text-center"
+                  className="grid place-items-center gap-4 py-10 text-center"
                 >
-                  <CheckCircle2
-                    className="size-12"
-                    style={{ color: GOLD }}
-                    aria-hidden
-                  />
-                  <p className="text-lg font-medium">Poslat zahtev 🎉</p>
-                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MessageCircle className="size-4" />
-                    Kontaktiraćemo vas putem
-                    {data.contact ? ` ${data.contact}` : " izabranog kanala"}.
-                  </p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <Button
-                      className="cursor-pointer text-background"
-                      onClick={() => resetAll(true)}
-                    >
-                      Zatvori
-                    </Button>
+                  <div
+                    className="grid size-14 place-items-center rounded-full"
+                    style={{ background: `${GOLD}1f`, color: GOLD }}
+                  >
+                    <Check className="size-7" strokeWidth={2.5} aria-hidden />
                   </div>
-                  <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <PartyPopper className="size-4" />
-                    Hvala na poverenju!
+                  <div className="space-y-1.5">
+                    <p className="text-lg font-semibold">Zahtev je poslat</p>
+                    <p className="text-sm text-muted-foreground">
+                      Kontaktiraćemo vas putem
+                      {data.contact
+                        ? ` ${data.contact}`
+                        : " izabranog kanala"}{" "}
+                      uskoro.
+                    </p>
                   </div>
+                  <Button
+                    className="mt-1 cursor-pointer text-background"
+                    onClick={() => resetAll(true)}
+                  >
+                    Zatvori
+                  </Button>
                 </motion.div>
               )}
             </AnimatePresence>

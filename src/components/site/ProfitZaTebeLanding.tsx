@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Play,
@@ -14,8 +15,6 @@ import {
   ShoppingCart,
   CalendarCheck,
   LineChart,
-  Wallet,
-  PieChart,
   Sparkles,
   Phone,
 } from "lucide-react";
@@ -146,30 +145,6 @@ const benefits = [
     icon: LineChart,
     title: "Finansije na dlanu",
     desc: "Prihodi, rashodi i ROI u realnom vremenu - jasna slika svakog dana.",
-  },
-];
-
-const dashboard = [
-  {
-    icon: Wallet,
-    label: "Prihodi",
-    value: "812.400 RSD",
-    trend: "+18%",
-    up: true,
-  },
-  {
-    icon: ArrowDownRight,
-    label: "Rashodi",
-    value: "214.900 RSD",
-    trend: "-6%",
-    up: false,
-  },
-  {
-    icon: PieChart,
-    label: "Povrat (ROI)",
-    value: "3.8x",
-    trend: "+0.4",
-    up: true,
   },
 ];
 
@@ -509,68 +484,49 @@ export default function ProfitZaTebeLanding() {
                 </ul>
               </div>
 
-              {/* dashboard mockup */}
+              {/* finances doc mockup */}
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ type: "spring", stiffness: 140, damping: 22 }}
-                className="rounded-3xl border border-border bg-[#0a0a0a]/60 p-6 backdrop-blur md:p-8"
+                className="group relative"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    Finansijski panel
-                  </span>
-                  <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
-                    <span className="size-1.5 rounded-full bg-emerald-400" />
-                    Uživo
-                  </span>
-                </div>
+                {/* stacked pages behind — the "book" */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 origin-bottom-left rounded-2xl border border-border bg-white/50 transition-transform duration-500 ease-out group-hover:rotate-[5deg]"
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-0 origin-bottom-left rounded-2xl border border-border bg-white/75 transition-transform duration-500 ease-out group-hover:rotate-[2.5deg]"
+                />
 
-                <div className="mt-6 space-y-3">
-                  {dashboard.map((d) => (
-                    <div
-                      key={d.label}
-                      className="flex items-center justify-between rounded-2xl border border-border bg-foreground/[0.02] px-5 py-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="inline-flex size-9 items-center justify-center rounded-lg"
-                          style={{ background: `${GOLD}1a` }}
-                        >
-                          <d.icon className="size-4" style={{ color: GOLD }} />
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {d.label}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-display font-bold">{d.value}</div>
-                        <div
-                          className={`text-xs font-semibold ${
-                            d.up ? "text-emerald-400" : "text-red-400"
-                          }`}
-                        >
-                          {d.trend}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* faux chart */}
-                <div className="mt-5 flex h-24 items-end gap-1.5 rounded-2xl border border-border bg-foreground/[0.02] p-4">
-                  {[40, 55, 48, 70, 62, 85, 78, 96].map((h, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 rounded-t"
-                      style={{
-                        height: `${h}%`,
-                        background: `linear-gradient(180deg, ${GOLD}, ${ORANGE})`,
-                        opacity: 0.45 + i * 0.07,
-                      }}
-                    />
-                  ))}
+                {/* top page — the real screenshot */}
+                <div
+                  className="relative origin-bottom-left overflow-hidden rounded-2xl border border-border bg-white shadow-lg ring-1 ring-black/5 transition-all duration-500 ease-out group-hover:-rotate-[1.5deg] group-hover:shadow-2xl"
+                  style={{ boxShadow: `0 22px 50px -24px ${GOLD}55` }}
+                >
+                  <div className="flex items-center gap-1.5 border-b border-black/5 bg-neutral-50 px-4 py-2.5">
+                    <span className="size-2.5 rounded-full bg-red-400/70" />
+                    <span className="size-2.5 rounded-full bg-amber-400/70" />
+                    <span className="size-2.5 rounded-full bg-emerald-400/70" />
+                    <span className="ml-3 text-xs font-medium text-neutral-400">
+                      Finansijski panel
+                    </span>
+                  </div>
+                  <Image
+                    src="/finances.webp"
+                    alt="Finansijski izveštaji — prihodi, rashodi i povrat na investiciju"
+                    width={1900}
+                    height={980}
+                    className="block w-full transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                  />
+                  {/* sheen */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-[1100ms] ease-out group-hover:translate-x-full"
+                  />
                 </div>
               </motion.div>
             </div>
