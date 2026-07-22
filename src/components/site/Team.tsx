@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import YouTubePlayer from "./YouTubePlayer";
 
 const team = [
   {
@@ -32,6 +33,14 @@ export default function Team() {
           <h2 className="mt-3 text-balance text-4xl font-extrabold sm:text-5xl">
             Tim koji radi za tebe
           </h2>
+        </div>
+
+        <div className="mb-10">
+          <YouTubePlayer
+            videoId="yYFNyOaZ-Pw"
+            title="Upoznaj Skeylo tim"
+            caption="Upoznaj tim koji stoji iza rezultata"
+          />
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">

@@ -18,27 +18,19 @@ const logos = [
 const testimonials = [
   {
     quote:
-      "Za 30 dana smo udvostručili broj upita preko Instagrama. Prvi put da nam marketing zaista donosi kupce, a ne samo lajkove.",
-    name: "Marko Jovanović",
-    role: "Vlasnik, MaxFit studio",
-    result: "2x više upita",
-    initials: "MJ",
+      "Momci su veoma profesionalni, kulturni, u toku sa dešavanjima, imaju veoma individualan i inovativan pristup. Njihov marketing je pokrenuo naš posao napred u najkraćem mogućem roku kada je bilo najpotrebnije. Rezultati su neverovatni, sarađujemo već neko vreme i planiramo da nastavimo! Iskrene preporuke, vredi uložiti u njihove ideje.",
+    name: "Ana Kasap",
+    role: "Vlasnik, Infinity Laser Studio",
+    result: "300.000 rsd nakon mesec dana",
+    initials: "AK",
   },
   {
     quote:
-      "Webshop i zakazivanje su nam promenili poslovanje iz korena. Termini se popunjavaju sami, a ja konačno vidim sve finansije na jednom mestu.",
-    name: "Ana Petrović",
-    role: "Osnivačica, Aurora beauty",
-    result: "+40% prodaje",
-    initials: "AP",
-  },
-  {
-    quote:
-      "Kreative su odmah podigle nivo brenda. Ljudi su počeli da nas shvataju ozbiljno čim su videli novi vizuelni identitet.",
-    name: "Nikola Ilić",
-    role: "Direktor, Vinea",
-    result: "3x engagement",
-    initials: "NI",
+      "Svaka preporuka za momke, profesionalci u svim poljima. Svaka saradnja sa njima je bila po dogovoru u najboljem mogucem kvalitetu. Ubedljivo No.1 u svom poslu 👌🏻👏🏻",
+    name: "David Markov",
+    role: "Vlasnik, RealReselling",
+    result: "+200% prodaje",
+    initials: "DM",
   },
 ];
 
@@ -65,7 +57,7 @@ export default function SocialProof() {
         </div>
 
         {/* Testimonials */}
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-6 md:grid-cols-2">
           {testimonials.map((t, i) => (
             <motion.figure
               key={t.name}
