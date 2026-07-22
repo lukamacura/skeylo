@@ -52,9 +52,9 @@ function Cell({
 
 export default function BentoGrid() {
   return (
-    <section id="rezultati" className="relative py-20 md:py-28">
+    <section id="rezultati" className="relative py-16 md:py-20">
       <div className="container-x">
-        <div className="mb-12 max-w-2xl">
+        <div className="mb-10 max-w-2xl">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Šta dobijaš
           </p>

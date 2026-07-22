@@ -23,7 +23,7 @@ export default function Hero() {
   } as const;
 
   return (
-    <section className="relative isolate overflow-hidden grain pt-28 pb-16 md:pt-36 md:pb-24">
+    <section className="relative isolate overflow-hidden grain pt-28 pb-14 md:pt-36 md:pb-20">
       {/* Atmosphere */}
       <div
         aria-hidden

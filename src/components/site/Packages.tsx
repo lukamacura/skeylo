@@ -7,7 +7,7 @@ import { PACKAGES, formatPrice } from "@/lib/packages";
 
 export default function Packages() {
   return (
-    <section id="paketi" className="relative py-20 md:py-28">
+    <section id="paketi" className="relative py-16 md:py-20">
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 h-[30rem] w-[60rem] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"
@@ -17,7 +17,7 @@ export default function Packages() {
         }}
       />
       <div className="container-x relative">
-        <div className="mx-auto mb-14 max-w-2xl text-center">
+        <div className="mx-auto mb-10 max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Paketi
           </p>

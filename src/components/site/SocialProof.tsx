@@ -65,7 +65,7 @@ export default function SocialProof() {
         </div>
 
         {/* Testimonials */}
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
           {testimonials.map((t, i) => (
             <motion.figure
               key={t.name}

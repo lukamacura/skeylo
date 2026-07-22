@@ -51,9 +51,9 @@ const why = [
 
 export default function Services() {
   return (
-    <section id="usluge" className="relative py-20 md:py-28">
+    <section id="usluge" className="relative py-16 md:py-20">
       <div className="container-x">
-        <div className="mb-12 max-w-2xl">
+        <div className="mb-10 max-w-2xl">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Usluge
           </p>
@@ -87,7 +87,7 @@ export default function Services() {
         </div>
 
         {/* Why us */}
-        <div className="mt-16 rounded-3xl border border-border bg-card/40 p-8 md:p-12">
+        <div className="mt-12 rounded-3xl border border-border bg-card/40 p-8 md:p-12">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-primary">

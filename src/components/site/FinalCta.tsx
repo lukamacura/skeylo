@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ShieldCheck, Clock, Ban, ArrowRight } from "lucide-react";
+import { ShieldCheck, Clock, Users, ArrowRight } from "lucide-react";
 
 const guarantees = [
-  { icon: Ban, label: "Staviti jos nes" },
+  { icon: Users, label: "Jedan tim za sve" },
   { icon: Clock, label: "Odgovor za manje od 48h" },
   { icon: ShieldCheck, label: "Jasna cena, jasan rezultat" },
 ];
 
 export default function FinalCta() {
   return (
-    <section className="relative py-20 md:py-28">
+    <section className="relative py-16 md:py-20">
       <div className="container-x">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
