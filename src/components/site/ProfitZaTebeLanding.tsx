@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { getPackage, formatPrice } from "@/lib/packages";
 import ProfitQuizPopup from "@/components/site/ProfitQuizPopup";
+import YouTubePlayer from "@/components/site/YouTubePlayer";
 
 const GOLD = "#f0b656";
 const ORANGE = "#d87928";
@@ -211,8 +212,10 @@ export default function ProfitZaTebeLanding() {
               animate="show"
               className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground"
             >
-              Naš tim će SVE uraditi za tebe - od analize tržišta, produkcije
-              kreativa i Meta reklama, pa do sajta sa finansijskim izveštajima.
+              Naš tim će SVE uraditi za tebe - od <b>analize tržišta</b>,
+              produkcije,
+              <b> kreativa</b> i Meta <b>reklama</b>, pa do <b>sajta</b> sa
+              finansijskim izveštajima.
             </motion.p>
 
             <motion.div
@@ -235,9 +238,10 @@ export default function ProfitZaTebeLanding() {
 
           {/* ── VSL ── */}
           <div className="mx-auto mt-14 max-w-4xl">
-            <VideoFrame
-              label="Pogledaj video"
-              caption="VSL - kako za 30 dana preuzimamo ceo tvoj digitalni nastup"
+            <YouTubePlayer
+              videoId="dlUPtygQnR8"
+              title="Profit za tebe"
+              caption="Profit za tebe"
             />
           </div>
         </div>

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getPackage, formatPrice } from "@/lib/packages";
 import CreativeQuizPopup from "@/components/site/CreativeQuizPopup";
+import YouTubePlayer from "@/components/site/YouTubePlayer";
 
 const GOLD = "#f0b656";
 const ORANGE = "#d87928";
@@ -244,9 +245,10 @@ export default function CreativeEngineLanding() {
 
           {/* ── VSL ── */}
           <div className="mx-auto mt-14 max-w-4xl">
-            <VideoFrame
-              label="Pogledaj video"
-              caption="Kako kreative pretvaramo u rezultate"
+            <YouTubePlayer
+              videoId="7gtOE3FhnEE"
+              title="Creative Engine"
+              caption="Creative Engine"
             />
           </div>
         </div>

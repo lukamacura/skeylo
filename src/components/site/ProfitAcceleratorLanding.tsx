@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { getPackage, formatPrice } from "@/lib/packages";
 import AcceleratorQuizPopup from "@/components/site/AcceleratorQuizPopup";
+import YouTubePlayer from "@/components/site/YouTubePlayer";
 
 const GOLD = "#f0b656";
 const ORANGE = "#d87928";
@@ -242,9 +243,10 @@ export default function ProfitAcceleratorLanding() {
 
           {/* ── VSL ── */}
           <div className="mx-auto mt-14 max-w-4xl">
-            <VideoFrame
-              label="Pogledaj video"
-              caption="Kako budžet pretvaramo u predvidiv profit"
+            <YouTubePlayer
+              videoId="N9XojZpNSQg"
+              title="Profit Accelerator"
+              caption="Profit Accelerator"
             />
           </div>
         </div>
