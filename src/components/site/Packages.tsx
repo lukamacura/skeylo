@@ -7,7 +7,7 @@ import { PACKAGES, formatPrice } from "@/lib/packages";
 
 export default function Packages() {
   return (
-    <section id="paketi" className="relative py-16 md:py-20">
+    <section id="paketi" className="relative py-12 md:py-20">
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 h-[30rem] w-[60rem] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"
@@ -17,14 +17,14 @@ export default function Packages() {
         }}
       />
       <div className="container-x relative">
-        <div className="mx-auto mb-10 max-w-2xl text-center">
+        <div className="mx-auto mb-8 max-w-2xl text-center sm:mb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Paketi
           </p>
-          <h2 className="mt-3 text-balance text-4xl font-extrabold sm:text-5xl">
+          <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
             Izaberi paket shodno budžetu
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
             Tri paketa, jedan cilj - više prodaja. Svaki ima svoju stranicu sa
             detaljima.
           </p>
@@ -45,7 +45,7 @@ export default function Packages() {
                   stiffness: 140,
                   damping: 20,
                 }}
-                className={`group relative flex flex-col rounded-2xl border p-7 transition-colors ${
+                className={`group relative flex flex-col rounded-2xl border p-6 transition-colors sm:p-7 ${
                   premium
                     ? "gold-frame border-transparent glow-gold bg-gradient-to-b from-[#f0b656]/[0.12] via-card to-card lg:-mt-4 lg:mb-4"
                     : "border-border card-glass hover:border-primary/40"
@@ -67,7 +67,7 @@ export default function Packages() {
                 </div>
 
                 <h3
-                  className={`mt-5 text-2xl font-bold ${
+                  className={`mt-5 text-xl font-bold sm:text-2xl ${
                     premium ? "text-gradient" : ""
                   }`}
                 >
@@ -77,8 +77,8 @@ export default function Packages() {
                   {pkg.tagline}
                 </p>
 
-                <div className="mt-6 flex items-baseline gap-1.5">
-                  <span className="font-display text-5xl font-extrabold">
+                <div className="mt-5 flex items-baseline gap-1.5 sm:mt-6">
+                  <span className="font-display text-4xl font-extrabold sm:text-5xl">
                     {formatPrice(pkg.price)}€
                   </span>
                   <span className="text-sm text-muted-foreground">
@@ -86,7 +86,7 @@ export default function Packages() {
                   </span>
                 </div>
 
-                <ul className="mt-7 flex-1 space-y-3">
+                <ul className="mt-6 flex-1 space-y-3 sm:mt-7">
                   {pkg.deliverables.map((d) => (
                     <li
                       key={d.title}
@@ -104,7 +104,7 @@ export default function Packages() {
 
                 <Link
                   href={`/paketi/${pkg.slug}`}
-                  className={`mt-8 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-bold transition-transform hover:-translate-y-0.5 ${
+                  className={`mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-transform hover:-translate-y-0.5 sm:mt-8 sm:text-base ${
                     premium
                       ? "bg-gradient-to-r from-[#f0b656] to-[#d87928] text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20"
                       : "border border-border text-foreground hover:border-primary"

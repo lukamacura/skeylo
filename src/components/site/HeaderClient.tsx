@@ -62,7 +62,7 @@ export default function HeaderClient() {
             width={40}
             height={40}
             priority
-            className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+            className="h-12 w-12 sm:h-16 sm:w-16 object-contain"
           />
           <span className="sr-only">Skeylo</span>
         </Link>

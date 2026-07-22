@@ -21,16 +21,16 @@ const cases = [
 
 export default function CaseStudies() {
   return (
-    <section id="rezultati-studije" className="relative py-16 md:py-20">
+    <section id="rezultati-studije" className="relative py-12 md:py-20">
       <div className="container-x">
-        <div className="mb-10 max-w-2xl">
+        <div className="mb-8 max-w-2xl sm:mb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Studije slučaja
           </p>
-          <h2 className="mt-3 text-balance text-4xl font-extrabold sm:text-5xl">
+          <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
             Brojke, ne obećanja
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
             Evo šta se desi kada problem, strategija i sistem rade zajedno.
           </p>
         </div>
@@ -48,9 +48,9 @@ export default function CaseStudies() {
                 stiffness: 140,
                 damping: 20,
               }}
-              className="flex flex-col rounded-3xl card-glass p-7 md:p-8"
+              className="flex flex-col rounded-3xl card-glass p-6 md:p-8"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-display text-xl font-bold">{c.client}</h3>
                 <span className="rounded-full bg-foreground/[0.06] px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   {c.tag}
@@ -82,10 +82,10 @@ export default function CaseStudies() {
                 </div>
               </div>
 
-              <div className="mt-7 grid grid-cols-3 gap-3 border-t border-border pt-6">
+              <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border pt-5 sm:mt-7 sm:pt-6">
                 {c.results.map((r) => (
                   <div key={r.label}>
-                    <div className="font-display text-2xl font-extrabold text-gradient sm:text-3xl">
+                    <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
                       {r.value}
                     </div>
                     <p className="mt-1 text-xs leading-snug text-muted-foreground">

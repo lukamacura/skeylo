@@ -36,7 +36,7 @@ const testimonials = [
 
 export default function SocialProof() {
   return (
-    <section className="relative border-y border-border py-16 md:py-20">
+    <section className="relative border-y border-border py-12 md:py-20">
       <div className="container-x">
         <p className="text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
           Brendovi koji nam veruju
@@ -44,11 +44,11 @@ export default function SocialProof() {
 
         {/* Logo strip */}
         <div className="relative mt-8 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-          <div className="flex animate-[marquee_28s_linear_infinite] gap-12 whitespace-nowrap pr-12">
+          <div className="flex animate-[marquee_28s_linear_infinite] gap-8 whitespace-nowrap pr-8 sm:gap-12 sm:pr-12">
             {[...logos, ...logos].map((l, i) => (
               <span
                 key={`${l}-${i}`}
-                className="font-display text-2xl font-bold tracking-tight text-foreground/35"
+                className="font-display text-xl font-bold tracking-tight text-foreground/35 sm:text-2xl"
               >
                 {l}
               </span>
@@ -57,7 +57,7 @@ export default function SocialProof() {
         </div>
 
         {/* Testimonials */}
-        <div className="mt-12 grid gap-6 md:grid-cols-2">
+        <div className="mt-10 grid gap-5 sm:gap-6 md:grid-cols-2">
           {testimonials.map((t, i) => (
             <motion.figure
               key={t.name}

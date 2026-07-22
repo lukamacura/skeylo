@@ -39,7 +39,7 @@ const fadeUp = {
 };
 
 const ctaCls =
-  "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-7 py-4 text-base font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5";
+  "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-6 py-3.5 text-base font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4";
 
 /* Reusable video placeholder - swap `<div>` for a real <video>/embed later */
 function VideoFrame({
@@ -70,17 +70,17 @@ function VideoFrame({
       {/* play button */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <span
-          className="inline-flex size-20 items-center justify-center rounded-full border border-[#f0b656]/40 bg-[#0a0a0a]/40 backdrop-blur transition-transform group-hover:scale-110"
+          className="inline-flex size-14 items-center justify-center rounded-full border border-[#f0b656]/40 bg-[#0a0a0a]/40 backdrop-blur transition-transform group-hover:scale-110 sm:size-20"
           style={{ boxShadow: `0 0 40px -6px ${GOLD}66` }}
         >
-          <Play className="size-8 translate-x-0.5 fill-[#f0b656] text-[#f0b656]" />
+          <Play className="size-6 translate-x-0.5 fill-[#f0b656] text-[#f0b656] sm:size-8" />
         </span>
         <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
       </div>
       {caption && (
-        <span className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-sm text-muted-foreground">
+        <span className="absolute bottom-3 left-1/2 max-w-[90%] -translate-x-1/2 truncate whitespace-nowrap text-xs text-muted-foreground sm:bottom-4 sm:text-sm">
           {caption}
         </span>
       )}
@@ -154,7 +154,7 @@ export default function CreativeEngineLanding() {
   return (
     <div className="relative pb-28 sm:pb-24">
       {/* ───────────── HERO ───────────── */}
-      <section className="relative isolate overflow-hidden grain pt-28 pb-16 md:pt-36 md:pb-20">
+      <section className="relative isolate overflow-hidden grain pt-24 pb-12 md:pt-36 md:pb-20">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full opacity-50 blur-[130px]"
@@ -189,7 +189,7 @@ export default function CreativeEngineLanding() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-6 text-balance text-4xl font-extrabold leading-[1.02] sm:text-5xl lg:text-6xl"
+              className="mt-5 text-balance text-3xl font-extrabold leading-[1.08] sm:mt-6 sm:text-5xl sm:leading-[1.02] lg:text-6xl"
             >
               Nisi zadovoljan{" "}
               <span
@@ -210,7 +210,7 @@ export default function CreativeEngineLanding() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-muted-foreground"
+              className="mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg"
             >
               Skeylo kreative su izgenerisale preko{" "}
               <span className="font-bold text-foreground">113.000€</span>.
@@ -226,7 +226,7 @@ export default function CreativeEngineLanding() {
               className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row"
             >
               <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-3xl font-extrabold">
+                <span className="font-display text-2xl font-extrabold sm:text-3xl">
                   {formatPrice(pkg.price)}€
                 </span>
                 <span className="text-sm text-muted-foreground">
@@ -244,7 +244,7 @@ export default function CreativeEngineLanding() {
           </div>
 
           {/* ── VSL ── */}
-          <div className="mx-auto mt-14 max-w-4xl">
+          <div className="mx-auto mt-10 max-w-4xl sm:mt-14">
             <YouTubePlayer
               videoId="7gtOE3FhnEE"
               title="Creative Engine"
@@ -255,15 +255,15 @@ export default function CreativeEngineLanding() {
       </section>
 
       {/* ───────────── STORYTELLING / FOMO ───────────── */}
-      <section className="py-16 md:py-20">
+      <section className="py-12 md:py-20">
         <div className="container-x">
           <div className="mx-auto max-w-3xl text-center">
             <SectionLabel>Zašto kampanja podbacuje</SectionLabel>
-            <h2 className="mt-3 text-balance text-3xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
+            <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
               Problem najčešće nije budžet -{" "}
               <span className="text-gradient">nego kreativa</span>
             </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:mt-5 sm:text-lg">
               Meta algoritam je pametan, ali ne može da proda slabim vizuelom.
               Kreativa je ono što zaustavlja skrol, gradi poverenje i pretvara
               klik u kupca.
@@ -279,7 +279,7 @@ export default function CreativeEngineLanding() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: "-60px" }}
-                className="rounded-2xl border border-border bg-card/40 p-7"
+                className="rounded-2xl border border-border bg-card/40 p-6 sm:p-7"
               >
                 <span className="inline-flex size-11 items-center justify-center rounded-xl bg-red-500/10">
                   <f.icon className="size-5 text-red-400" />
@@ -295,15 +295,15 @@ export default function CreativeEngineLanding() {
       </section>
 
       {/* ───────────── CASE STUDY (video) ───────────── */}
-      <section className="py-16 md:py-20">
+      <section className="py-12 md:py-20">
         <div className="container-x">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <SectionLabel>Studija slučaja</SectionLabel>
-              <h2 className="mt-3 text-balance text-3xl font-extrabold leading-tight sm:text-4xl">
+              <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
                 Brojke, ne obećanja
               </h2>
-              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
                 Iste kampanje, ista publika - samo nove kreative. Premium
                 vizueli su zaustavili skrol, podigli CTR i spustili cenu po
                 kupcu. Rezultat: preko 113.000€ generisano kroz Skeylo kreative.
@@ -316,7 +316,7 @@ export default function CreativeEngineLanding() {
                   { value: "100%", label: "prilagođeno tvom brendu" },
                 ].map((r) => (
                   <div key={r.label}>
-                    <div className="font-display text-2xl font-extrabold text-gradient sm:text-3xl">
+                    <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
                       {r.value}
                     </div>
                     <p className="mt-1 text-xs leading-snug text-muted-foreground">
@@ -341,11 +341,11 @@ export default function CreativeEngineLanding() {
       </section>
 
       {/* ───────────── PROBLEM → SOLUTION ───────────── */}
-      <section className="py-16 md:py-20">
+      <section className="py-12 md:py-20">
         <div className="container-x grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-border bg-card/40 p-8 md:p-10">
+          <div className="rounded-3xl border border-border bg-card/40 p-6 sm:p-8 md:p-10">
             <SectionLabel>Zvuči poznato?</SectionLabel>
-            <h3 className="mt-3 text-2xl font-bold">
+            <h3 className="mt-3 text-xl font-bold sm:text-2xl">
               Ovako izgleda bez prave kreative
             </h3>
             <ul className="mt-6 space-y-4">
@@ -361,17 +361,17 @@ export default function CreativeEngineLanding() {
           </div>
 
           <div
-            className="rounded-3xl border p-8 md:p-10"
+            className="rounded-3xl border p-6 sm:p-8 md:p-10"
             style={{
               borderColor: `${GOLD}55`,
               background: `linear-gradient(160deg, ${GOLD}1f, transparent)`,
             }}
           >
             <SectionLabel>Rešenje</SectionLabel>
-            <h3 className="mt-3 text-2xl font-bold">
+            <h3 className="mt-3 text-xl font-bold sm:text-2xl">
               Kreative koje zaustavljaju skrol
             </h3>
-            <p className="mt-6 text-lg leading-relaxed text-foreground/90">
+            <p className="mt-6 text-base leading-relaxed text-foreground/90 sm:text-lg">
               {pkg.promise}
             </p>
             <p className="mt-4 leading-relaxed text-muted-foreground">
@@ -384,11 +384,11 @@ export default function CreativeEngineLanding() {
       </section>
 
       {/* ───────────── CORE BENEFITS ───────────── */}
-      <section className="py-16 md:py-20">
+      <section className="py-12 md:py-20">
         <div className="container-x">
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <SectionLabel>Šta tačno dobijaš</SectionLabel>
-            <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-4xl md:text-5xl">
+            <h2 className="mt-3 text-balance text-2xl font-extrabold sm:text-4xl md:text-5xl">
               Creative Engine
             </h2>
           </div>
@@ -402,7 +402,7 @@ export default function CreativeEngineLanding() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: "-60px" }}
-                className="rounded-2xl card-glass p-7 text-center"
+                className="rounded-2xl card-glass p-6 text-center sm:p-7"
               >
                 <span
                   className="mx-auto inline-flex size-12 items-center justify-center rounded-xl"
@@ -421,9 +421,9 @@ export default function CreativeEngineLanding() {
       </section>
 
       {/* ───────────── IRRESISTIBLE OFFER ───────────── */}
-      <section className="py-16 md:py-24">
+      <section className="py-12 md:py-24">
         <div className="container-x">
-          <div className="relative overflow-hidden rounded-3xl border border-[#f0b656]/30 p-8 md:p-14 grain">
+          <div className="relative overflow-hidden rounded-3xl border border-[#f0b656]/30 p-6 sm:p-8 md:p-14 grain">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[40rem] -translate-x-1/2 rounded-full blur-[110px]"
@@ -432,19 +432,19 @@ export default function CreativeEngineLanding() {
 
             <div className="relative mx-auto max-w-2xl text-center">
               <SectionLabel>Neodoljiva ponuda</SectionLabel>
-              <h2 className="mt-3 text-balance text-3xl font-extrabold leading-tight sm:text-4xl">
+              <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
                 10 kreativa + strateški vodič za{" "}
                 <span className="text-gradient">{formatPrice(pkg.price)}€</span>
               </h2>
-              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
                 Jednokratno ulaganje u kreative koje su deo sistema koji je
                 generisao preko 113.000€. Spremno za objavu, prilagođeno tvom
                 brendu.
               </p>
 
-              <div className="mt-10 flex flex-col items-center gap-4 border-t border-border pt-10">
+              <div className="mt-8 flex flex-col items-center gap-4 border-t border-border pt-8 sm:mt-10 sm:pt-10">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-display text-5xl font-extrabold">
+                  <span className="font-display text-4xl font-extrabold sm:text-5xl">
                     {formatPrice(pkg.price)}€
                   </span>
                   <span className="text-muted-foreground">

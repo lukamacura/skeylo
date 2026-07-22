@@ -24,18 +24,18 @@ const team = [
 
 export default function Team() {
   return (
-    <section className="relative py-16 md:py-20">
+    <section className="relative py-12 md:py-20">
       <div className="container-x">
-        <div className="mb-10 max-w-2xl">
+        <div className="mb-8 max-w-2xl sm:mb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Ko stoji iza rezultata
           </p>
-          <h2 className="mt-3 text-balance text-4xl font-extrabold sm:text-5xl">
+          <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
             Tim koji radi za tebe
           </h2>
         </div>
 
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
           <YouTubePlayer
             videoId="yYFNyOaZ-Pw"
             title="Upoznaj Skeylo tim"
@@ -43,7 +43,7 @@ export default function Team() {
           />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
           {team.map((m, i) => (
             <motion.div
               key={m.name}
@@ -56,9 +56,9 @@ export default function Team() {
                 stiffness: 140,
                 damping: 20,
               }}
-              className="relative overflow-hidden rounded-2xl card-glass p-7"
+              className="relative overflow-hidden rounded-2xl card-glass p-6 sm:p-7"
             >
-              <div className="relative mx-auto size-32 overflow-hidden rounded-full ring-2 ring-primary/30">
+              <div className="relative mx-auto size-24 overflow-hidden rounded-full ring-2 ring-primary/30 sm:size-32">
                 <Image
                   src={m.img}
                   alt={m.name}
@@ -67,8 +67,12 @@ export default function Team() {
                   className="object-cover"
                 />
               </div>
-              <h3 className="mt-6 text-center text-xl font-bold">{m.name}</h3>
-              <p className="mt-1 text-center text-muted-foreground">{m.role}</p>
+              <h3 className="mt-5 text-center text-lg font-bold sm:mt-6 sm:text-xl">
+                {m.name}
+              </h3>
+              <p className="mt-1 text-center text-sm text-muted-foreground sm:text-base">
+                {m.role}
+              </p>
             </motion.div>
           ))}
         </div>

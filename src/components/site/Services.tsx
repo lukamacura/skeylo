@@ -51,18 +51,18 @@ const why = [
 
 export default function Services() {
   return (
-    <section id="usluge" className="relative py-16 md:py-20">
+    <section id="usluge" className="relative py-12 md:py-20">
       <div className="container-x">
-        <div className="mb-10 max-w-2xl">
+        <div className="mb-8 max-w-2xl sm:mb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-primary">
             Usluge
           </p>
-          <h2 className="mt-3 text-balance text-4xl font-extrabold sm:text-5xl">
+          <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
             Sve što tvom biznisu treba da raste - na jednom mestu
           </h2>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {services.map((s, i) => (
             <motion.div
               key={s.title}
@@ -87,17 +87,17 @@ export default function Services() {
         </div>
 
         {/* Why us */}
-        <div className="mt-12 rounded-3xl border border-border bg-card/40 p-8 md:p-12">
-          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div className="mt-10 rounded-3xl border border-border bg-card/40 p-6 sm:p-8 md:p-12">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-10">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-primary">
                 Zašto Skeylo
               </p>
-              <h3 className="mt-3 text-balance text-3xl font-extrabold sm:text-4xl">
+              <h3 className="mt-3 text-balance text-2xl font-extrabold sm:text-4xl">
                 Full-stack tim koji razmišlja kao tvoj prijatelj, ne kao
                 agencija
               </h3>
-              <p className="mt-4 text-muted-foreground">
+              <p className="mt-4 text-sm text-muted-foreground sm:text-base">
                 Većina agencija prodaje jednu uslugu i izveštaje koje ne
                 razumeš. Mi pokrivamo ceo lanac - od kreative do sajta - i
                 vodimo ga ka jednom cilju: više prodaja.

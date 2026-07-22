@@ -23,7 +23,7 @@ export default function Hero() {
   } as const;
 
   return (
-    <section className="relative isolate overflow-hidden grain pt-28 pb-14 md:pt-36 md:pb-20">
+    <section className="relative isolate overflow-hidden grain pt-24 pb-12 md:pt-36 md:pb-20">
       {/* Atmosphere */}
       <div
         aria-hidden
@@ -39,7 +39,7 @@ export default function Hero() {
       />
 
       <motion.div
-        className="container-x relative grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]"
+        className="container-x relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12"
         variants={container}
         initial="hidden"
         animate="show"
@@ -58,7 +58,7 @@ export default function Hero() {
 
           <motion.h1
             variants={up}
-            className="mt-6 text-balance text-5xl font-extrabold leading-[0.95] sm:text-6xl lg:text-7xl"
+            className="mt-5 text-balance text-4xl font-extrabold leading-[1.02] sm:mt-6 sm:text-6xl sm:leading-[0.95] lg:text-7xl"
           >
             Marketing koji <span className="text-gradient">donosi profit</span>,
             a ne samo preglede i lajkove.
@@ -66,7 +66,7 @@ export default function Hero() {
 
           <motion.p
             variants={up}
-            className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground"
+            className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg"
           >
             Kreative, plaćene kampanje i sajt u <b>jednom timu</b>. Gradimo
             sistem koji tvoj budžet pretvara u <b>vidljive prodaje</b>.
@@ -78,7 +78,7 @@ export default function Hero() {
           >
             <Link
               href="#paketi"
-              className="group inline-flex items-center justify-center gap-2 rounded-md bg-primary px-8 py-4 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5"
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-8 py-3.5 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:w-auto sm:py-4"
             >
               Pogledaj pakete
               <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
@@ -87,7 +87,7 @@ export default function Hero() {
 
           <motion.div
             variants={up}
-            className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground"
+            className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground sm:mt-10"
           >
             <div className="flex items-center gap-1.5">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -108,7 +108,7 @@ export default function Hero() {
         {/* Hero image */}
         <motion.div
           variants={up}
-          className="relative mx-auto w-full max-w-lg lg:max-w-none"
+          className="relative mx-auto w-full max-w-xs sm:max-w-lg lg:max-w-none"
         >
           <div
             aria-hidden
