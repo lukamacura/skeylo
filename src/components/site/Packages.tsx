@@ -10,7 +10,7 @@ export default function Packages() {
     <section id="paketi" className="relative py-12 md:py-20">
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[30rem] w-[60rem] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"
+        className="pointer-events-none absolute left-1/2 top-0 h-[30rem] w-[min(60rem,100%)] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"
         style={{
           background:
             "radial-gradient(circle, rgba(216,121,40,0.3), transparent 65%)",

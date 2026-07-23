@@ -3,6 +3,10 @@
 
 html {
   scroll-behavior: smooth;
+  /* Safety net: clip any stray horizontal overflow (decorative blurs, etc.)
+     without creating a scroll container — `clip` keeps vertical scroll and
+     sticky/fixed positioning fully intact, unlike `hidden`. */
+  overflow-x: clip;
 }
 
 @theme inline {
