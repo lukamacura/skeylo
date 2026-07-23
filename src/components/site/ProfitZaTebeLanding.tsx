@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
-  Play,
   ArrowLeft,
   ArrowRight,
   ArrowDownRight,
@@ -16,7 +15,6 @@ import {
   CalendarCheck,
   LineChart,
   Sparkles,
-  Phone,
 } from "lucide-react";
 import { getPackage, formatPrice } from "@/lib/packages";
 import ProfitQuizPopup from "@/components/site/ProfitQuizPopup";
@@ -41,53 +39,6 @@ const fadeUp = {
 
 const ctaCls =
   "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-6 py-3.5 text-base font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4";
-
-/* Reusable video placeholder - swap `<div>` for a real <video>/embed later */
-function VideoFrame({
-  label,
-  caption,
-  aspect = "aspect-video",
-}: {
-  label: string;
-  caption?: string;
-  aspect?: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ type: "spring", stiffness: 140, damping: 22 }}
-      className={`group relative ${aspect} w-full overflow-hidden rounded-3xl border border-border card-glass`}
-    >
-      {/* glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background: `radial-gradient(circle at 50% 40%, ${GOLD}1f, transparent 60%)`,
-        }}
-      />
-      {/* play button */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-        <span
-          className="inline-flex size-14 items-center justify-center rounded-full border border-[#f0b656]/40 bg-[#0a0a0a]/40 backdrop-blur transition-transform group-hover:scale-110 sm:size-20"
-          style={{ boxShadow: `0 0 40px -6px ${GOLD}66` }}
-        >
-          <Play className="size-6 translate-x-0.5 fill-[#f0b656] text-[#f0b656] sm:size-8" />
-        </span>
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {label}
-        </span>
-      </div>
-      {caption && (
-        <span className="absolute bottom-3 left-1/2 max-w-[90%] -translate-x-1/2 truncate whitespace-nowrap text-xs text-muted-foreground sm:bottom-4 sm:text-sm">
-          {caption}
-        </span>
-      )}
-    </motion.div>
-  );
-}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -287,74 +238,36 @@ export default function ProfitZaTebeLanding() {
         </div>
       </section>
 
-      {/* ───────────── CASE STUDY (video) ───────────── */}
-      <section className="py-12 md:py-20">
-        <div className="container-x">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div>
-              <SectionLabel>Studija slučaja</SectionLabel>
-              <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
-                Brojke, ne obećanja
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-                Infinity Laser Studio je sve termine zakazivao ručno, bez
-                marketinga. Napravili smo sajt sa sistemom za zakazivanje i
-                pokrenuli Meta kampanje sa 20 novih kreativa.
-              </p>
-
-              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-6">
-                {[
-                  { value: "1.245.000", label: "RSD prihoda za 3 meseca" },
-                  { value: "~100", label: "online zakazivanja / mesec" },
-                  { value: "4.14x", label: "povrat na uloženo" },
-                ].map((r) => (
-                  <div key={r.label}>
-                    <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
-                      {r.value}
-                    </div>
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                      {r.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-                <TrendingUp className="size-4 text-primary" />
-                Pogledaj kako smo to uradili korak po korak u videu.
-              </div>
-            </div>
-
-            <VideoFrame
-              label="Video studija slučaja"
-              caption="Infinity Laser Studio - cela priča"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────── "POZIV SA ANOM" (video) ───────────── */}
+      {/* ───────────── CASE STUDY ───────────── */}
       <section className="py-12 md:py-20">
         <div className="container-x">
           <div className="mx-auto max-w-3xl text-center">
-            <span
-              className="inline-flex items-center gap-2 rounded-full border border-[#f0b656]/30 bg-[#f0b656]/[0.06] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
-              style={{ color: GOLD }}
-            >
-              <Phone className="size-3.5" />
-              Iz prve ruke
-            </span>
-            <h2 className="mt-5 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
-              Poziv sa <span className="text-gradient">Anom</span>
+            <SectionLabel>Studija slučaja</SectionLabel>
+            <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
+              Brojke, ne obećanja
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:mt-5 sm:text-lg">
-              Poslušaj kako izgleda saradnja iz ugla klijenta - bez scenarija,
-              direktno sa poziva.
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
+              Infinity Laser Studio je sve termine zakazivao ručno, bez
+              marketinga. Napravili smo sajt sa sistemom za zakazivanje i
+              pokrenuli Meta kampanje sa 20 novih kreativa.
             </p>
-          </div>
 
-          <div className="mx-auto mt-10 max-w-4xl">
-            <VideoFrame label="Pusti snimak poziva" caption="Poziv sa Anom" />
+            <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-4 border-t border-border pt-8">
+              {[
+                { value: "1.245.000", label: "RSD prihoda za 3 meseca" },
+                { value: "~100", label: "online zakazivanja / mesec" },
+                { value: "4.14x", label: "povrat na uloženo" },
+              ].map((r) => (
+                <div key={r.label}>
+                  <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
+                    {r.value}
+                  </div>
+                  <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    {r.label}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

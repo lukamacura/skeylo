@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Play,
   ArrowLeft,
   ArrowRight,
   ArrowDownRight,
-  TrendingUp,
   Image as ImageIcon,
   PenTool,
   Layers,
@@ -40,53 +38,6 @@ const fadeUp = {
 
 const ctaCls =
   "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-6 py-3.5 text-base font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4";
-
-/* Reusable video placeholder - swap `<div>` for a real <video>/embed later */
-function VideoFrame({
-  label,
-  caption,
-  aspect = "aspect-video",
-}: {
-  label: string;
-  caption?: string;
-  aspect?: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ type: "spring", stiffness: 140, damping: 22 }}
-      className={`group relative ${aspect} w-full overflow-hidden rounded-3xl border border-border card-glass`}
-    >
-      {/* glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background: `radial-gradient(circle at 50% 40%, ${GOLD}1f, transparent 60%)`,
-        }}
-      />
-      {/* play button */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-        <span
-          className="inline-flex size-14 items-center justify-center rounded-full border border-[#f0b656]/40 bg-[#0a0a0a]/40 backdrop-blur transition-transform group-hover:scale-110 sm:size-20"
-          style={{ boxShadow: `0 0 40px -6px ${GOLD}66` }}
-        >
-          <Play className="size-6 translate-x-0.5 fill-[#f0b656] text-[#f0b656] sm:size-8" />
-        </span>
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {label}
-        </span>
-      </div>
-      {caption && (
-        <span className="absolute bottom-3 left-1/2 max-w-[90%] -translate-x-1/2 truncate whitespace-nowrap text-xs text-muted-foreground sm:bottom-4 sm:text-sm">
-          {caption}
-        </span>
-      )}
-    </motion.div>
-  );
-}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -294,48 +245,36 @@ export default function CreativeEngineLanding() {
         </div>
       </section>
 
-      {/* ───────────── CASE STUDY (video) ───────────── */}
+      {/* ───────────── CASE STUDY ───────────── */}
       <section className="py-12 md:py-20">
         <div className="container-x">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div>
-              <SectionLabel>Studija slučaja</SectionLabel>
-              <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
-                Brojke, ne obećanja
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-                Iste kampanje, ista publika - samo nove kreative. Premium
-                vizueli su zaustavili skrol, podigli CTR i spustili cenu po
-                kupcu. Rezultat: preko 113.000€ generisano kroz Skeylo kreative.
-              </p>
+          <div className="mx-auto max-w-3xl text-center">
+            <SectionLabel>Studija slučaja</SectionLabel>
+            <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
+              Brojke, ne obećanja
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
+              Iste kampanje, ista publika - samo nove kreative. Premium vizueli
+              su zaustavili skrol, podigli CTR i spustili cenu po kupcu.
+              Rezultat: preko 113.000€ generisano kroz Skeylo kreative.
+            </p>
 
-              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-6">
-                {[
-                  { value: "113.000€", label: "generisano kroz kreative" },
-                  { value: "10", label: "premium kreativa po brendu" },
-                  { value: "100%", label: "prilagođeno tvom brendu" },
-                ].map((r) => (
-                  <div key={r.label}>
-                    <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
-                      {r.value}
-                    </div>
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                      {r.label}
-                    </p>
+            <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-4 border-t border-border pt-8">
+              {[
+                { value: "113.000€", label: "generisano kroz kreative" },
+                { value: "10", label: "premium kreativa po brendu" },
+                { value: "100%", label: "prilagođeno tvom brendu" },
+              ].map((r) => (
+                <div key={r.label}>
+                  <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
+                    {r.value}
                   </div>
-                ))}
-              </div>
-
-              <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-                <TrendingUp className="size-4 text-primary" />
-                Pogledaj kreative koje su donele rezultat u videu.
-              </div>
+                  <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                    {r.label}
+                  </p>
+                </div>
+              ))}
             </div>
-
-            <VideoFrame
-              label="Video studija slučaja"
-              caption="Kreative koje prodaju - cela priča"
-            />
           </div>
         </div>
       </section>
