@@ -43,12 +43,12 @@ export default function SocialProof() {
         </p>
 
         {/* Logo strip */}
-        <div className="relative mt-8 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-          <div className="flex animate-[marquee_28s_linear_infinite] gap-8 whitespace-nowrap pr-8 sm:gap-12 sm:pr-12">
+        <div className="relative mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] sm:mt-8">
+          <div className="flex animate-[marquee_28s_linear_infinite] gap-6 whitespace-nowrap pr-6 sm:gap-12 sm:pr-12">
             {[...logos, ...logos].map((l, i) => (
               <span
                 key={`${l}-${i}`}
-                className="font-display text-xl font-bold tracking-tight text-foreground/35 sm:text-2xl"
+                className="font-display text-lg font-bold tracking-tight text-foreground/35 sm:text-2xl"
               >
                 {l}
               </span>
@@ -57,7 +57,7 @@ export default function SocialProof() {
         </div>
 
         {/* Testimonials */}
-        <div className="mt-10 grid gap-5 sm:gap-6 md:grid-cols-2">
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-6 md:grid-cols-2">
           {testimonials.map((t, i) => (
             <motion.figure
               key={t.name}
@@ -70,28 +70,31 @@ export default function SocialProof() {
                 stiffness: 140,
                 damping: 20,
               }}
-              className="relative flex flex-col rounded-2xl card-glass p-6"
+              className="relative flex flex-col rounded-2xl card-glass p-5 sm:p-6"
             >
-              <Quote className="size-7 text-primary/40" />
-              <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-foreground/90">
+              <Quote className="size-6 text-primary/40 sm:size-7" />
+              <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-foreground/90 sm:mt-4 sm:text-[15px]">
                 „{t.quote}”
               </blockquote>
-              <div className="mt-5 flex items-center gap-1">
+              <div className="mt-4 flex items-center gap-1 sm:mt-5">
                 {Array.from({ length: 5 }).map((_, s) => (
-                  <Star key={s} className="size-4 fill-primary text-primary" />
+                  <Star
+                    key={s}
+                    className="size-3.5 fill-primary text-primary sm:size-4"
+                  />
                 ))}
               </div>
-              <figcaption className="mt-4 flex items-center gap-3 border-t border-border pt-4">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
+              <figcaption className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-3 border-t border-border pt-4">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary sm:size-10">
                   {t.initials}
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">{t.name}</div>
                   <div className="truncate text-xs text-muted-foreground">
                     {t.role}
                   </div>
                 </div>
-                <span className="ml-auto shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
                   {t.result}
                 </span>
               </figcaption>
