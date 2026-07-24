@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
         </div>
         <h1 className="text-xl font-semibold">Admin panel</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Unesi lozinku za pristup leadovima.
+          Unesi lozinku za pristup CRM.
         </p>
 
         <div className="mt-6 grid gap-2">

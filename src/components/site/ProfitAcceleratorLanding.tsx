@@ -396,7 +396,7 @@ export default function ProfitAcceleratorLanding() {
                   </button>
                 </AcceleratorQuizPopup>
                 <p className="text-sm text-muted-foreground">
-                  Bez obaveze · Odgovor na upit za manje od 48h
+                  Posvećeni tim · Odgovor na upit za manje od 48h
                 </p>
               </div>
             </div>
@@ -427,7 +427,7 @@ export default function ProfitAcceleratorLanding() {
               </button>
             </AcceleratorQuizPopup>
             <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground sm:text-xs">
-              <span>Bez obaveze</span>
+              <span>Posvećeni tim</span>
               <span aria-hidden>·</span>
               <span>Besplatna konsultacija</span>
               <span aria-hidden>·</span>
