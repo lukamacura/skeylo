@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, isAuthed } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { isLeadStatus } from "@/lib/crm";
+import { isLeadStatus, isRevenueArray } from "@/lib/crm";
 
 export const runtime = "nodejs";
 
@@ -19,6 +19,7 @@ export async function PATCH(
     status?: unknown;
     next_follow_up?: unknown;
     value?: unknown;
+    revenue?: unknown;
     notes?: unknown;
   };
 
@@ -58,6 +59,16 @@ export async function PATCH(
       );
     }
     update.value = v;
+  }
+
+  if ("revenue" in body) {
+    if (!isRevenueArray(body.revenue)) {
+      return NextResponse.json(
+        { ok: false, error: "INVALID_REVENUE" },
+        { status: 400 },
+      );
+    }
+    update.revenue = body.revenue;
   }
 
   if ("notes" in body) {

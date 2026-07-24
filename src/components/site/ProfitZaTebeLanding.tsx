@@ -152,7 +152,7 @@ export default function ProfitZaTebeLanding() {
                   color: "transparent",
                 }}
               >
-                baviš marketingom
+                baviš marketingom?
               </span>
             </motion.h1>
 
@@ -163,10 +163,19 @@ export default function ProfitZaTebeLanding() {
               animate="show"
               className="mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg"
             >
-              Naš tim će SVE uraditi za tebe - od <b>analize tržišta</b>,
-              produkcije,
-              <b> kreativa</b> i Meta <b>reklama</b>, pa do <b>sajta</b> sa
-              finansijskim izveštajima.
+              Naš tim će uraditi{" "}
+              <strong className="font-semibold text-foreground">
+                SVE za tebe
+              </strong>{" "}
+              - od analize tržišta, produkcije, kreativa i{" "}
+              <strong className="font-semibold text-foreground">
+                Meta reklama
+              </strong>
+              , pa do{" "}
+              <strong className="font-semibold text-foreground">
+                sajta sa finansijskim izveštajima
+              </strong>
+              .
             </motion.p>
 
             <motion.div
@@ -202,15 +211,20 @@ export default function ProfitZaTebeLanding() {
       <section className="py-12 md:py-20">
         <div className="container-x">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>Cena neaktivnosti</SectionLabel>
+            <SectionLabel>Cena čekanja</SectionLabel>
             <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
               Šta se dešava ako{" "}
               <span className="text-gradient">ništa ne promeniš</span>?
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:mt-5 sm:text-lg">
-              Najskuplja odluka u biznisu je ona koju stalno odlažeš. Dok
-              razmišljaš, konkurencija već radi - a tvoj potencijal stoji
-              neiskorišćen.
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
+              <strong className="font-semibold text-foreground">
+                Najskuplja odluka u biznisu
+              </strong>{" "}
+              je ona koju stalno odlažeš. Dok razmišljaš,{" "}
+              <strong className="font-semibold text-foreground">
+                konkurencija već radi
+              </strong>{" "}
+              - a tvoj potencijal stoji neiskorišćen.
             </p>
           </div>
 
@@ -247,9 +261,15 @@ export default function ProfitZaTebeLanding() {
               Brojke, ne obećanja
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-              Infinity Laser Studio je sve termine zakazivao ručno, bez
-              marketinga. Napravili smo sajt sa sistemom za zakazivanje i
-              pokrenuli Meta kampanje sa 20 novih kreativa.
+              Infinity Laser Studio je sve termine zakazivao{" "}
+              <strong className="font-semibold text-foreground">
+                ručno, bez marketinga
+              </strong>
+              . Napravili smo sajt sa sistemom za zakazivanje i pokrenuli{" "}
+              <strong className="font-semibold text-foreground">
+                Meta kampanje sa 20 novih kreativa
+              </strong>
+              .
             </p>
 
             <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-4 border-t border-border pt-8">
@@ -307,10 +327,16 @@ export default function ProfitZaTebeLanding() {
               {pkg.promise}
             </p>
             <p className="mt-4 leading-relaxed text-muted-foreground">
-              Ti se fokusiraš na vođenje biznisa. Mi se brinemo o tržištu,
-              kreativama, oglasima, sajtu, zakazivanju i finansijskim
-              izveštajima - sve na jednom mestu, bez spajanja deset alata i
-              agencija.
+              Ti se fokusiraš na{" "}
+              <strong className="font-semibold text-foreground">
+                vođenje biznisa
+              </strong>
+              . Mi se brinemo o tržištu, kreativama, oglasima, sajtu,
+              zakazivanju i finansijskim izveštajima -{" "}
+              <strong className="font-semibold text-foreground">
+                sve na jednom mestu
+              </strong>
+              , bez spajanja deset alata i agencija.
             </p>
           </div>
         </div>
@@ -366,7 +392,7 @@ export default function ProfitZaTebeLanding() {
             <div className="relative grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
               {/* copy */}
               <div>
-                <SectionLabel>Neodoljiva ponuda</SectionLabel>
+                <SectionLabel>ponuda za vas</SectionLabel>
                 <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
                   Web aplikacija sa{" "}
                   <span className="text-gradient">
@@ -374,9 +400,15 @@ export default function ProfitZaTebeLanding() {
                   </span>
                 </h2>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-                  Prihodi, rashodi, povrat na investiciju - vidiš sve. Zamisli
-                  da svaki dan uđeš u aplikaciju i tačno znaš na čemu si. Bez
-                  tabela, bez nagađanja, bez čekanja knjigovođe.
+                  Prihodi, rashodi, povrat na investiciju -{" "}
+                  <strong className="font-semibold text-foreground">
+                    vidiš sve
+                  </strong>
+                  . Zamisli da svaki dan uđeš u aplikaciju i{" "}
+                  <strong className="font-semibold text-foreground">
+                    tačno znaš na čemu si
+                  </strong>
+                  . Bez tabela, bez nagađanja, bez čekanja knjigovođe.
                 </p>
 
                 <ul className="mt-8 space-y-3">
@@ -457,7 +489,7 @@ export default function ProfitZaTebeLanding() {
                 <span className="text-muted-foreground">/ {pkg.priceNote}</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Bez obaveze · Odgovor na upit za manje od 48h
+                Odgovor za manje od 48h
               </p>
             </div>
           </div>
@@ -487,7 +519,7 @@ export default function ProfitZaTebeLanding() {
               </button>
             </ProfitQuizPopup>
             <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground sm:text-xs">
-              <span>Bez obaveze</span>
+              <span>Tvoj posvećeni tim</span>
               <span aria-hidden>·</span>
               <span>Besplatna konsultacija</span>
               <span aria-hidden>·</span>

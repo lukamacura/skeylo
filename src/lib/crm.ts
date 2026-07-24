@@ -51,5 +51,43 @@ export function leadValue(lead: {
   return packageForType(lead.type)?.price ?? 0;
 }
 
+/** Dodatni prihod od klijenta nakon prve prodaje (nove kreative, retainer, sledeći tier). */
+export type RevenueEntry = {
+  id: string;
+  label: string;
+  amount: number;
+  date: string; // ISO
+};
+
+export function isRevenueEntry(v: unknown): v is RevenueEntry {
+  if (!v || typeof v !== "object") return false;
+  const e = v as Record<string, unknown>;
+  return (
+    typeof e.id === "string" &&
+    typeof e.label === "string" &&
+    typeof e.amount === "number" &&
+    typeof e.date === "string"
+  );
+}
+
+export function isRevenueArray(v: unknown): v is RevenueEntry[] {
+  return Array.isArray(v) && v.every(isRevenueEntry);
+}
+
+/** Zbir dodatnih prihoda (line-items). */
+export function sumRevenue(revenue?: RevenueEntry[] | null): number {
+  if (!Array.isArray(revenue)) return 0;
+  return revenue.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+}
+
+/** Ukupna vrednost klijenta: osnovni posao + svi dodatni prihodi. */
+export function leadTotal(lead: {
+  type: string;
+  value?: number | null;
+  revenue?: RevenueEntry[] | null;
+}): number {
+  return leadValue(lead) + sumRevenue(lead.revenue);
+}
+
 export const formatEur = (n: number) =>
   `${new Intl.NumberFormat("sr-RS").format(n)} €`;

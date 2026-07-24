@@ -2,6 +2,7 @@
 // NIKAD ne importuj u client komponentu.
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import type { RevenueEntry } from "@/lib/crm";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -31,5 +32,6 @@ export type SkeyloLead = {
   status: string;
   next_follow_up: string | null;
   value: number | null;
+  revenue: RevenueEntry[] | null;
   notes: string | null;
 };

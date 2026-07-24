@@ -17,8 +17,11 @@ import {
   LEAD_STATUSES,
   statusMeta,
   leadValue,
+  leadTotal,
+  sumRevenue,
   formatEur,
   type LeadStatus,
+  type RevenueEntry,
 } from "@/lib/crm";
 import { cn } from "@/lib/utils";
 import type { SkeyloLead } from "@/lib/supabase-admin";
@@ -31,6 +34,8 @@ import {
   ChevronDown,
   StickyNote,
   Plus,
+  TrendingUp,
+  X,
 } from "lucide-react";
 
 const GOLD = "#f0b656";
@@ -38,7 +43,7 @@ const GOLD = "#f0b656";
 const ADMIN_ACCENTS: Record<string, string> = {
   "creative-engine": "#6366f1",
   "profit-accelerator": "#10b981",
-  "profit-za-tebe": "#f0b656",
+  "profit-za-tebe": "#d87928",
 };
 
 function pkgFor(type: string) {
@@ -99,7 +104,7 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
-/** Pipeline dropdown — jezgro CRM-a. Krupni tap-target na mobilnom. */
+/** Pipeline dropdown - jezgro CRM-a. Krupni tap-target na mobilnom. */
 function StatusSelect({
   status,
   pending,
@@ -193,6 +198,10 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
   const [notesMap, setNotesMap] = useState<Record<string, string | null>>(() =>
     Object.fromEntries(leads.map((l) => [l.id, l.notes])),
   );
+  // Lokalni state za dodatne prihode (optimistički), po lead-u.
+  const [revenueMap, setRevenueMap] = useState<Record<string, RevenueEntry[]>>(
+    () => Object.fromEntries(leads.map((l) => [l.id, l.revenue ?? []])),
+  );
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -231,6 +240,13 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
     if (!ok) setStatus((m) => ({ ...m, [id]: prev }));
   }
 
+  async function saveRevenue(id: string, next: RevenueEntry[]) {
+    const prev = revenueMap[id] ?? [];
+    setRevenueMap((m) => ({ ...m, [id]: next }));
+    const ok = await patchLead(id, { revenue: next });
+    if (!ok) setRevenueMap((m) => ({ ...m, [id]: prev }));
+  }
+
   async function deleteLead(id: string) {
     setDeleting(true);
     try {
@@ -255,18 +271,27 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
     const byStatus: Record<string, number> = {};
     let pipeline = 0;
     let won = 0;
+    let realized = 0;
+    let extra = 0;
     let hot = 0;
     for (const l of visibleLeads) {
       const s = status[l.id] ?? l.status;
       byStatus[s] = (byStatus[s] ?? 0) + 1;
-      const val = leadValue({ type: l.type, value: l.value });
+      const base = leadValue({ type: l.type, value: l.value });
+      const rev = sumRevenue(revenueMap[l.id] ?? l.revenue);
       const meta = statusMeta(s);
-      if (meta.active) pipeline += val;
-      if (s === "won") won += val;
+      if (meta.active) pipeline += base;
+      if (s === "won") {
+        won += base;
+        realized += base;
+      }
+      // Dodatni prihodi su već naplaćen novac - uvek se broje u ostvareno.
+      realized += rev;
+      extra += rev;
       if (s === "qualified" || s === "proposal") hot += 1;
     }
-    return { byStatus, pipeline, won, hot };
-  }, [visibleLeads, status]);
+    return { byStatus, pipeline, won, realized, extra, hot };
+  }, [visibleLeads, status, revenueMap]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -326,21 +351,20 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
           accent={GOLD}
         />
         <StatCard
-          label="Zatvoreno"
-          value={formatEur(stats.won)}
+          label="Ostvareno"
+          value={formatEur(stats.realized)}
           accent="#10b981"
+        />
+        <StatCard
+          label="Dodatni prihod"
+          value={formatEur(stats.extra)}
+          accent="#6366f1"
         />
         <StatCard
           label="Kvalifikovani"
           value={String(stats.hot)}
-          accent="#6366f1"
+          accent="#a855f7"
           onClick={() => setStatusFilter("qualified")}
-        />
-        <StatCard
-          label="Nova"
-          value={String(stats.byStatus["new"] ?? 0)}
-          accent="#64748b"
-          onClick={() => setStatusFilter("new")}
         />
       </div>
 
@@ -425,18 +449,29 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
                       </td>
                       <td className="px-4 py-3 font-medium">
                         <span className="inline-flex items-center gap-2">
-                          {l.name ?? "—"}
+                          {l.name ?? "-"}
                           {notesMap[l.id] && (
                             <StickyNote className="size-3.5 text-muted-foreground" />
                           )}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{l.brand ?? "—"}</td>
+                      <td className="px-4 py-3">{l.brand ?? "-"}</td>
                       <td className="px-4 py-3">
                         <TypeBadge type={l.type} />
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                        {formatEur(leadValue({ type: l.type, value: l.value }))}
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatEur(
+                            leadTotal({
+                              type: l.type,
+                              value: l.value,
+                              revenue: revenueMap[l.id] ?? l.revenue,
+                            }),
+                          )}
+                          {sumRevenue(revenueMap[l.id] ?? l.revenue) > 0 && (
+                            <TrendingUp className="size-3.5 text-emerald-500" />
+                          )}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <StatusSelect
@@ -468,7 +503,7 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="flex items-center gap-1.5 text-base font-semibold">
-                      {l.name ?? "—"}
+                      {l.name ?? "-"}
                       {notesMap[l.id] && (
                         <StickyNote className="size-4 text-muted-foreground" />
                       )}
@@ -476,19 +511,28 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
                     <TypeBadge type={l.type} />
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {l.brand ?? "—"} ·{" "}
-                    <span className="font-medium text-foreground/70">
-                      {formatEur(leadValue({ type: l.type, value: l.value }))}
+                    {l.brand ?? "-"} ·{" "}
+                    <span className="inline-flex items-center gap-1 font-medium text-foreground/70">
+                      {formatEur(
+                        leadTotal({
+                          type: l.type,
+                          value: l.value,
+                          revenue: revenueMap[l.id] ?? l.revenue,
+                        }),
+                      )}
+                      {sumRevenue(revenueMap[l.id] ?? l.revenue) > 0 && (
+                        <TrendingUp className="size-3.5 text-emerald-500" />
+                      )}
                     </span>
                   </p>
                   <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                       <Phone className="size-4" />
-                      {l.phone ?? "—"}
+                      {l.phone ?? "-"}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <MessageCircle className="size-4" />
-                      {l.contact ?? "—"}
+                      {l.contact ?? "-"}
                     </span>
                   </div>
                   <div className="mt-3" onClick={(e) => e.stopPropagation()}>
@@ -512,8 +556,10 @@ export default function LeadsTable({ leads }: { leads: SkeyloLead[] }) {
         status={active ? (status[active.id] ?? active.status) : "new"}
         pending={active ? pending[active.id] : false}
         notes={active ? (notesMap[active.id] ?? "") : ""}
+        revenue={active ? (revenueMap[active.id] ?? active.revenue ?? []) : []}
         onStatus={(s) => active && changeStatus(active.id, s)}
         onNotesSaved={(id, v) => setNotesMap((m) => ({ ...m, [id]: v }))}
+        onRevenueChange={(entries) => active && saveRevenue(active.id, entries)}
         onDelete={() => active && deleteLead(active.id)}
         deleting={deleting}
       />
@@ -597,8 +643,10 @@ function LeadDialog({
   status,
   pending,
   notes,
+  revenue,
   onStatus,
   onNotesSaved,
+  onRevenueChange,
   onDelete,
   deleting,
 }: {
@@ -607,8 +655,10 @@ function LeadDialog({
   status: string;
   pending?: boolean;
   notes: string;
+  revenue: RevenueEntry[];
   onStatus: (s: LeadStatus) => void;
   onNotesSaved: (id: string, value: string | null) => void;
+  onRevenueChange: (entries: RevenueEntry[]) => void;
   onDelete: () => void;
   deleting?: boolean;
 }) {
@@ -665,14 +715,38 @@ function LeadDialog({
                 />
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-muted-foreground">Vrednost</span>
+                <span className="text-sm text-muted-foreground">
+                  Ukupna vrednost
+                </span>
                 <span className="text-base font-semibold">
-                  {formatEur(leadValue({ type: lead.type, value: lead.value }))}
+                  {formatEur(
+                    leadTotal({
+                      type: lead.type,
+                      value: lead.value,
+                      revenue,
+                    }),
+                  )}
                 </span>
               </div>
+              {sumRevenue(revenue) > 0 && (
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>
+                    Paket{" "}
+                    {formatEur(
+                      leadValue({ type: lead.type, value: lead.value }),
+                    )}
+                  </span>
+                  <span className="text-emerald-500">
+                    + {formatEur(sumRevenue(revenue))} dodatno
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Beleške — auto-save */}
+            {/* Dodatni prihodi - nove kreative, retainer, sledeći tier */}
+            <RevenueEditor entries={revenue} onChange={onRevenueChange} />
+
+            {/* Beleške - auto-save */}
             <NotesEditor
               leadId={lead.id}
               initial={notes}
@@ -842,6 +916,214 @@ function NotesEditor({
         className="mt-2 text-base sm:text-sm"
       />
     </div>
+  );
+}
+
+/** Dodatni prihodi po klijentu - lista line-items + dugme za standalone popup. */
+function RevenueEditor({
+  entries,
+  onChange,
+}: {
+  entries: RevenueEntry[];
+  onChange: (entries: RevenueEntry[]) => void;
+}) {
+  const [addOpen, setAddOpen] = useState(false);
+
+  const sorted = useMemo(
+    () => [...entries].sort((a, b) => b.date.localeCompare(a.date)),
+    [entries],
+  );
+
+  function addEntry(entry: RevenueEntry) {
+    onChange([...entries, entry]);
+  }
+
+  function remove(id: string) {
+    onChange(entries.filter((e) => e.id !== id));
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <h3 className="flex items-center gap-1.5 text-sm font-medium">
+          <TrendingUp className="size-4" />
+          Dodatni prihodi
+        </h3>
+        {sumRevenue(entries) > 0 && (
+          <span className="text-xs font-semibold text-emerald-500">
+            {formatEur(sumRevenue(entries))}
+          </span>
+        )}
+      </div>
+
+      {sorted.length > 0 && (
+        <ul className="mt-2 divide-y divide-foreground/10 rounded-xl border border-foreground/10">
+          {sorted.map((e) => (
+            <li
+              key={e.id}
+              className="flex items-center gap-3 px-3 py-2.5 text-sm"
+            >
+              <span className="w-20 shrink-0 text-xs text-muted-foreground">
+                {new Date(e.date).toLocaleDateString("sr-RS", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "2-digit",
+                })}
+              </span>
+              <span className="flex-1 truncate font-medium">{e.label}</span>
+              <span className="shrink-0 font-semibold">
+                {formatEur(e.amount)}
+              </span>
+              <button
+                type="button"
+                onClick={() => remove(e.id)}
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                aria-label="Obriši prihod"
+              >
+                <X className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setAddOpen(true)}
+        className="mt-2 h-11 w-full text-base sm:h-9 sm:text-sm hover:bg-green-500/20 cursor-pointer"
+      >
+        <Plus className="size-4" />
+        Dodaj prihod
+      </Button>
+
+      <AddRevenueDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onAdd={(entry) => {
+          addEntry(entry);
+          setAddOpen(false);
+        }}
+      />
+    </div>
+  );
+}
+
+/** Standalone popup za unos jednog dodatnog prihoda. */
+function AddRevenueDialog({
+  open,
+  onClose,
+  onAdd,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdd: (entry: RevenueEntry) => void;
+}) {
+  const today = () => new Date().toISOString().slice(0, 10);
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(today);
+
+  function reset() {
+    setLabel("");
+    setAmount("");
+    setDate(today());
+  }
+
+  const valid = label.trim() !== "" && Number(amount) > 0;
+
+  function submit() {
+    if (!valid) return;
+    onAdd({
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      label: label.trim(),
+      amount: Number(amount),
+      date: date || today(),
+    });
+    reset();
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) {
+          reset();
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="gap-3 p-4 sm:max-w-md sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <TrendingUp className="size-5 text-emerald-500" />
+            Dodatni prihod
+          </DialogTitle>
+          <DialogDescription>
+            Novac zarađen nakon prve prodaje - nove kreative, retainer, sledeći
+            tier.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-3">
+          <Field label="Opis *">
+            <Input
+              autoFocus
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+              placeholder="npr. Nove kreative"
+              className="h-11 text-base sm:h-9 sm:text-sm"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Iznos (€) *">
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                placeholder="400"
+                className="h-11 text-base sm:h-9 sm:text-sm"
+              />
+            </Field>
+            <Field label="Datum">
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-11 text-base sm:h-9 sm:text-sm"
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+          <Button
+            variant="outline"
+            className="h-11 w-full text-base sm:h-9 sm:w-auto sm:text-sm"
+            onClick={() => {
+              reset();
+              onClose();
+            }}
+          >
+            Otkaži
+          </Button>
+          <Button
+            className="h-11 w-full text-base sm:h-9 sm:w-auto sm:text-sm "
+            disabled={!valid}
+            onClick={submit}
+          >
+            <Plus className="size-4" />
+            Dodaj prihod
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
