@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, TrendingUp } from "lucide-react";
 
 export default function Hero() {
   const reduce = useReducedMotion();
@@ -44,21 +44,10 @@ export default function Hero() {
         initial="hidden"
         animate="show"
       >
-        <div className="relative z-10">
-          <motion.div
-            variants={up}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-foreground/[0.03] px-3 py-1.5 text-xs font-medium tracking-wide text-muted-foreground"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-            </span>
-            Full-stack marketing agencija
-          </motion.div>
-
+        <div className="relative z-10 text-center lg:text-left">
           <motion.h1
             variants={up}
-            className="mt-5 text-balance text-4xl font-extrabold leading-[1.02] sm:mt-6 sm:text-6xl sm:leading-[0.95] lg:text-7xl"
+            className="text-balance text-4xl font-extrabold leading-[1.1] sm:text-6xl sm:leading-[0.95] lg:text-7xl"
           >
             Marketing koji <span className="text-gradient">donosi profit</span>,
             a ne samo preglede i lajkove.
@@ -66,15 +55,15 @@ export default function Hero() {
 
           <motion.p
             variants={up}
-            className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg"
+            className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg lg:mx-0"
           >
             Kreative, plaćene kampanje i sajt u <b>jednom timu</b>. Gradimo
-            sistem koji tvoj budžet pretvara u <b>vidljive prodaje</b>.
+            sistem koji tvoj budžet pretvara u <b>profit</b>.
           </motion.p>
 
           <motion.div
             variants={up}
-            className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center"
+            className="mt-8 flex flex-col items-center gap-2 sm:mt-10 lg:items-start"
           >
             <Link
               href="#paketi"
@@ -83,21 +72,10 @@ export default function Hero() {
               Pogledaj pakete
               <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
             </Link>
-          </motion.div>
-
-          <motion.div
-            variants={up}
-            className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground sm:mt-10"
-          >
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="size-4 fill-primary text-primary" />
-              ))}
-              <span className="ml-1 font-medium text-foreground">
-                Svaki projekat profitabilan
-              </span>
-            </div>
-            <div className="h-4 w-px bg-border" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <TrendingUp className="size-3.5 text-primary" />
+              Svaki projekat profitabilan
+            </span>
           </motion.div>
         </div>
 
