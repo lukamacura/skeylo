@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 
@@ -15,7 +16,18 @@ const logos = [
   "RealReselling",
 ];
 
-const testimonials = [
+type Testimonial = {
+  quote: string;
+  name: string;
+  role: string;
+  result: string;
+  initials: string;
+  img?: string;
+  /** Fokus kropa u krugu — podrazumevano centar. */
+  imgPosition?: string;
+};
+
+const testimonials: Testimonial[] = [
   {
     quote:
       "Momci su veoma profesionalni, kulturni, u toku sa dešavanjima, imaju veoma individualan i inovativan pristup. Njihov marketing je pokrenuo naš posao napred u najkraćem mogućem roku kada je bilo najpotrebnije. Rezultati su neverovatni, sarađujemo već neko vreme i planiramo da nastavimo! Iskrene preporuke, vredi uložiti u njihove ideje.",
@@ -23,6 +35,8 @@ const testimonials = [
     role: "Vlasnik, Infinity Laser Studio",
     result: "1.600.000RSD u mesecu",
     initials: "AK",
+    img: "/ana.webp",
+    imgPosition: "object-top",
   },
   {
     quote:
@@ -31,6 +45,7 @@ const testimonials = [
     role: "Vlasnik, RealReselling",
     result: "+200% prodaje",
     initials: "DM",
+    img: "/rr.webp",
   },
 ];
 
@@ -85,9 +100,21 @@ export default function SocialProof() {
                 ))}
               </div>
               <figcaption className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-3 border-t border-border pt-4">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary sm:size-10">
-                  {t.initials}
-                </span>
+                {t.img ? (
+                  <span className="relative size-9 shrink-0 overflow-hidden rounded-full bg-primary/15 sm:size-10">
+                    <Image
+                      src={t.img}
+                      alt={t.name}
+                      fill
+                      sizes="40px"
+                      className={`object-cover ${t.imgPosition ?? "object-center"}`}
+                    />
+                  </span>
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary sm:size-10">
+                    {t.initials}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">{t.name}</div>
                   <div className="truncate text-xs text-muted-foreground">
