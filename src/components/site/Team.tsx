@@ -31,7 +31,7 @@ export default function Team() {
             Ko stoji iza rezultata
           </p>
           <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
-            Tim koji radi za tebe
+            Upoznaj Osnivače
           </h2>
         </div>
 

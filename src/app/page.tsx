@@ -16,6 +16,7 @@ export default function Home() {
       {/* 2. Social proof - logoi + testimonijali */}
       <SocialProof />
       {/* 3. UVP / rezultati */}
+      <Packages />
       <BentoGrid />
       {/* 3b. Usluge + zašto mi */}
       <Services />
@@ -26,7 +27,7 @@ export default function Home() {
       {/* 5b. Tim koji radi za tebe */}
       <Team />
       {/* 6. Ponuda - paketi */}
-      <Packages />
+
       {/* 6b. Finalni CTA + risk reversal */}
       <FinalCta />
     </>

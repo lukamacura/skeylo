@@ -98,10 +98,6 @@ export default function Hero() {
               </span>
             </div>
             <div className="h-4 w-px bg-border" />
-            <span>
-              <span className="font-semibold text-foreground">4.2x</span>{" "}
-              prosečan povrat na uloženo
-            </span>
           </motion.div>
         </div>
 
@@ -121,13 +117,14 @@ export default function Hero() {
           <motion.div
             whileHover={reduce ? undefined : { rotate: -0.4, scale: 1.01 }}
             transition={{ type: "spring", stiffness: 160, damping: 18 }}
-            className="relative aspect-[16/13]"
+            className="relative aspect-[4/3]"
           >
             <Image
-              src="/hero.png"
+              src="/hero.jpeg"
               alt="Skeylo tim"
               fill
               priority
+              sizes="(max-width: 640px) 90vw, (max-width: 1024px) 60vw, 45vw"
               className="object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
             />
           </motion.div>

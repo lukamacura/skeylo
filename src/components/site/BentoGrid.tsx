@@ -122,10 +122,10 @@ export default function BentoGrid() {
             <Target className="size-6 text-accent" />
             <div>
               <div className="font-display text-2xl font-extrabold sm:text-4xl lg:text-5xl">
-                113.000€
+                133.000€
               </div>
               <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                generisano skeylo kreativama
+                generisano Skeylo kreativama
               </p>
             </div>
           </Cell>

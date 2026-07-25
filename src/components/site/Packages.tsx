@@ -22,7 +22,7 @@ export default function Packages() {
             Paketi
           </p>
           <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
-            Izaberi paket shodno budžetu
+            Izaberi paket shodno cilju
           </h2>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
             Tri paketa, jedan cilj - više prodaja. Svaki ima svoju stranicu sa
@@ -82,7 +82,7 @@ export default function Packages() {
                     {formatPrice(pkg.price)}€
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    / {pkg.priceNote}
+                    {pkg.priceNote}
                   </span>
                 </div>
 

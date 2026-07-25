@@ -6,18 +6,18 @@ import { Search, PenTool, Rocket } from "lucide-react";
 const steps = [
   {
     icon: Search,
-    title: "Analiza i strategija",
-    desc: "Radimo detaljno istraživanje tržišta, definišemo kupce i kreiramo funnel.",
+    title: "Temelj",
+    desc: "Detaljno istražujemo tržište, definišemo ciljnu publiku i osmišljamo prodajni levak.",
   },
   {
     icon: PenTool,
-    title: "Kreativa i postavka",
-    desc: "Snimamo kreative sa našim modelima. Sve se postavlja da meri svaki uloženi evro.",
+    title: "Izrada",
+    desc: "Izlazimo na teren i snimamo kreative, u pozadini se izrađuje sajt i kreira kampanja.",
   },
   {
     icon: Rocket,
-    title: "Skaliranje profita",
-    desc: "Optimizujemo iz nedelje u nedelju. Što radi - pojačavamo, što ne - gasimo.",
+    title: "Skaliranje",
+    desc: "Kampanja je dokazala da radi. Vreme je da se poveća budžet i ostvari maksimalan profit.",
   },
 ];
 

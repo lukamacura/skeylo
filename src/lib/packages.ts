@@ -40,7 +40,7 @@ export const PACKAGES: Package[] = [
     tagline:
       "Poboljšaj performans tvoje Meta Kampanje kreativama koje su zaradile preko 100.000€",
     price: 720,
-    priceNote: "jednokratno",
+    priceNote: "",
     badge: "Start",
     cta: "Želim kreative",
     heroKicker: "Paket 01 - Creative Engine",
@@ -63,7 +63,7 @@ export const PACKAGES: Package[] = [
         desc: "Profesionalno dizajnirani vizueli prilagođeni tvom brendu.",
       },
       {
-        title: "Strateški PDF vodič",
+        title: "PDF vodič kako da iskoristiš kreative",
         desc: "Detaljna uputstva i strategije kako da maksimalno iskoristiš kreative za najbolji efekat.",
       },
     ],
@@ -81,7 +81,7 @@ export const PACKAGES: Package[] = [
     name: "Profit Accelerator",
     tagline: "Ozbiljan rast kroz Meta oglašavanje",
     price: 1600,
-    priceNote: "jednokratno",
+    priceNote: "",
     badge: "Rast",
     cta: "Želim rast",
     heroKicker: "Paket 02 - Profit Accelerator",
@@ -104,11 +104,11 @@ export const PACKAGES: Package[] = [
         desc: "Veća količina vizuelnog sadržaja za testiranje i skaliranje.",
       },
       {
-        title: "Meta reklame (FB & IG)",
+        title: "Vođenje Meta Ads kampanje",
         desc: "Kompletno vođenje, optimizacija i praćenje oglasnih kampanja.",
       },
       {
-        title: "Analiza sajta",
+        title: "Analiza sajta uz instrukcije za unapređenje",
         desc: "Detaljan pregled uz konkretne UX/UI predloge za povećanje prodaje.",
       },
     ],
@@ -127,7 +127,7 @@ export const PACKAGES: Package[] = [
     tagline:
       "Dok se Vi fokusirate na upravljanje biznisom, Skeylo tim radi sve što je potrebno da Vaš brend dostigne svoj maksimalni potencijal.",
     price: 2550,
-    priceNote: "jednokratno",
+    priceNote: "",
     badge: "All-in-one",
     cta: "Želim sve",
     premium: true,
@@ -151,15 +151,15 @@ export const PACKAGES: Package[] = [
         desc: "Vizuelni materijali najvišeg nivoa za sve marketinške kanale.",
       },
       {
-        title: "Napredne Meta reklame",
+        title: "Vođenje Meta Ads kampanje",
         desc: "Strategije oglašavanja fokusirane na maksimalan povrat investicije (ROI).",
       },
       {
-        title: "Web aplikacija",
+        title: "Website/Webshop",
         desc: "Moderan i brz sajt bilo da je webshop ili običan landing page.",
       },
       {
-        title: "Sistem za zakazivanje",
+        title: "Sistem za kupovinu/zakazivanje",
         desc: "Automatizovano bukiranje termina i usluga - bez ručnog rada.",
       },
       {
