@@ -141,7 +141,7 @@ export default function PersonBio({ person }: { person: Person }) {
               className="mt-8 flex flex-col items-center gap-3 lg:items-start"
             >
               <a
-                href={waHref ?? "/meet"}
+                href={waHref ?? "mailto:office@skeylo.com"}
                 target={waHref ? "_blank" : undefined}
                 rel={waHref ? "noopener noreferrer" : undefined}
                 className="group inline-flex w-full items-center justify-center gap-2.5 rounded-md bg-primary px-8 py-3.5 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:w-auto sm:py-4"
@@ -150,13 +150,6 @@ export default function PersonBio({ person }: { person: Person }) {
                 Piši mi na WhatsApp
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </a>
-              <Link
-                href="/meet"
-                className="group inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
-              >
-                ili zakaži sastanak
-                <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </Link>
             </motion.div>
           </div>
 
@@ -297,7 +290,7 @@ export default function PersonBio({ person }: { person: Person }) {
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <a
-                href={waHref ?? "/meet"}
+                href={waHref ?? "mailto:office@skeylo.com"}
                 target={waHref ? "_blank" : undefined}
                 rel={waHref ? "noopener noreferrer" : undefined}
                 className="group inline-flex w-full items-center justify-center gap-2.5 rounded-md bg-primary px-8 py-3.5 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:w-auto sm:py-4"
@@ -306,12 +299,6 @@ export default function PersonBio({ person }: { person: Person }) {
                 WhatsApp
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </a>
-              <Link
-                href="/meet"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border px-8 py-3.5 text-base font-bold text-foreground/85 transition-colors hover:border-primary/40 hover:text-primary sm:w-auto sm:py-4"
-              >
-                Zakaži sastanak
-              </Link>
             </div>
 
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row sm:gap-7">

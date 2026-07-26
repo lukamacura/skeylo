@@ -81,7 +81,7 @@ export const PEOPLE: Person[] = [
     chips: [
       "Novi Sad, Srbija",
       "Web development od 2019.",
-      "Osnivač Macura Solutions LLC",
+      "Macura Solutions LLC",
     ],
     chapters: [
       {

@@ -5,7 +5,6 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -15,7 +14,6 @@ import {
 
 export default function HeaderClient() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
 
   // Zaključaj skrol kada je meni otvoren
   useEffect(() => {
@@ -37,11 +35,8 @@ export default function HeaderClient() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onKeyDown]);
 
-  const isActive = (href: string) => pathname === href;
-
   const linkBase =
     "block rounded-lg px-4 py-3 text-sm font-medium transition-colors";
-  const linkActive = "bg-primary text-background font-bold";
   const linkHover = "hover:bg-primary/50 ";
 
   return (
@@ -85,16 +80,6 @@ export default function HeaderClient() {
                 <NavigationMenuLink asChild>
                   <Link href="/#paketi" className={`${linkBase} ${linkHover}`}>
                     Paketi
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href="/meet"
-                    className={`${linkBase} ${isActive("/meet") ? linkActive : linkHover}`}
-                  >
-                    Kontakt
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -147,15 +132,6 @@ export default function HeaderClient() {
                 className={`${linkBase} ${linkHover}`}
               >
                 Paketi
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/meet"
-                onClick={() => setOpen(false)}
-                className={`${linkBase} ${isActive("/meet") ? linkActive : linkHover}`}
-              >
-                Kontakt
               </Link>
             </li>
           </ul>

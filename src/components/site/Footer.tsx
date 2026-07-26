@@ -78,14 +78,6 @@ export default function Footer() {
                   Paketi
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/meet"
-                  className="text-foreground/80 transition-colors hover:text-primary"
-                >
-                  Zakaži sastanak
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
