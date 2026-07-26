@@ -105,7 +105,7 @@ export default function CreativeEngineLanding() {
   return (
     <div className="relative pb-28 sm:pb-24">
       {/* ───────────── HERO ───────────── */}
-      <section className="relative isolate overflow-hidden grain pt-24 pb-12 md:pt-36 md:pb-20">
+      <section className="relative isolate overflow-hidden grain pt-16 pb-12 sm:pt-20 md:pt-24 md:pb-20">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full opacity-50 blur-[130px]"
@@ -122,7 +122,7 @@ export default function CreativeEngineLanding() {
             Svi paketi
           </Link>
 
-          <div className="mx-auto mt-8 max-w-4xl text-center">
+          <div className="mx-auto mt-6 max-w-4xl text-center">
             <motion.div
               custom={0}
               variants={fadeUp}

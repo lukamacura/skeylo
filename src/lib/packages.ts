@@ -43,7 +43,7 @@ export const PACKAGES: Package[] = [
     priceNote: "",
     badge: "Start",
     cta: "Pogledaj ponudu",
-    heroKicker: "Paket 01 - Creative Engine",
+    heroKicker: "Creative Engine",
     heroTitle: "Kreativa koja",
     heroHighlight: "privlači prve kupce",
     heroSubtitle:
@@ -84,7 +84,7 @@ export const PACKAGES: Package[] = [
     priceNote: "",
     badge: "Rast",
     cta: "Pogledaj ponudu",
-    heroKicker: "Paket 02 - Profit Accelerator",
+    heroKicker: "Profit Accelerator",
     heroTitle: "Pretvaramo budžet u",
     heroHighlight: "predvidiv profit",
     heroSubtitle:
@@ -131,7 +131,7 @@ export const PACKAGES: Package[] = [
     badge: "All-in-one",
     cta: "Pogledaj ponudu",
     premium: true,
-    heroKicker: "Paket 03 - Profit Za Tebe",
+    heroKicker: "Profit Za Tebe",
     heroTitle: "Ceo biznis online -",
     heroHighlight: "ključ u ruke",
     heroSubtitle:

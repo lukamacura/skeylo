@@ -251,7 +251,7 @@ export default function ProfitQuizPopup({ children }: Props) {
             <DialogDescription>
               {submitted
                 ? "Javićemo vam se uskoro na izabrani kanal."
-                : `${STEPS.length} kratkih pitanja (~1 minut). Na osnovu odgovora pripremamo razgovor i proveravamo da li vam se paket isplati - konsultacija je besplatna i bez obaveze.`}
+                : `${STEPS.length} kratkih pitanja (~1 minut). Na osnovu odgovora pripremamo razgovor i proveravamo da li vam se paket isplati - konsultacija je besplatna, bez ikakvih obaveza s vaše strane.`}
             </DialogDescription>
           </DialogHeader>
 

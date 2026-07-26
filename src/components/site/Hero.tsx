@@ -98,7 +98,7 @@ export default function Hero() {
             className="relative aspect-[4/3]"
           >
             <Image
-              src="/hero.jpeg"
+              src="/hero.png"
               alt="Skeylo tim"
               fill
               priority
