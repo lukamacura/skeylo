@@ -89,21 +89,27 @@ export default function Team() {
         </div>
 
         <div className="relative -mx-4 px-4 sm:mx-0 sm:px-0">
+          {/* `overflow-x-auto` tera `overflow-y` na `auto`, pa svaki piksel koji
+              kartica prekorači po visini napravi ugnežden vertikalni skrol koji
+              na dodir otima potez stranici. `overflow-y-hidden` to seče, a ulazna
+              animacija ispod zato ide bez pomaka po Y — da nema šta da se seče. */}
           <div
             ref={scrollRef}
-            className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden"
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-6 [&::-webkit-scrollbar]:hidden"
           >
             {PEOPLE.map((m, i) => (
               <motion.div
                 key={m.key}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.94 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{
                   delay: (i % 3) * 0.12,
                   type: "spring",
                   stiffness: 140,
-                  damping: 20,
+                  // Kritično prigušeno: prebačaj preko 1 bi kartica plaćala
+                  // sečenjem po visini i skokom u širini skrol-kontejnera.
+                  damping: 24,
                 }}
                 className="w-[68%] shrink-0 snap-center sm:w-[45%] md:w-[31%] lg:w-[23%]"
               >

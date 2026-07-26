@@ -11,7 +11,7 @@ import {
   TimerIcon,
 } from "lucide-react";
 
-const team = ["/luka.webp", "/mihac.webp", "/filip.webp"];
+const team = ["/people/luka.webp", "/people/mihac.webp", "/people/filip.webp"];
 
 const ease = [0.22, 1, 0.36, 1] as const;
 

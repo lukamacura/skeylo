@@ -91,7 +91,18 @@ export const PEOPLE: Person[] = [
           "Web developmentom sam počeo da se bavim 2019. godine. Šest godina sam pravio sajtove za lokalne biznise i sve je izgledalo kako treba — uradim sajt, naplatim, i tu se priča završava.",
           "U jednom trenutku mi je bilo jasno da nešto nije u redu. Sajt bez kampanje i kreative nema gde da radi: lep je, funkcioniše, i ne donosi ništa.",
         ],
-        quote: "Uradim sajt, naplatim, i to je to.",
+        point: "Uradim sajt, naplatim, i to je to.",
+        shots: [
+          {
+            src: "/people/luka/money.webp",
+            alt: "Luka drži gotovinu naplaćenu za izradu sajta",
+            w: 3000,
+            h: 4000,
+            // Kadar je 3:4, a okvir ga seče po visini — težište je na
+            // novcu i šaci u donjoj trećini, ne na kuhinjskim elementima.
+            position: "object-[50%_62%]",
+          },
+        ],
       },
       {
         year: "Skeylo",
@@ -169,14 +180,12 @@ export const PEOPLE: Person[] = [
             alt: "Luka na No Gi Challenge takmičenju u Novom Sadu",
             w: 2976,
             h: 1984,
-            caption: "Meč na No Gi Challenge-u.",
           },
           {
             src: "/people/luka/bjj-2.webp",
             alt: "Luka u dominantnoj poziciji tokom meča",
             w: 2976,
             h: 1984,
-            caption: "Isti meč, bolja pozicija.",
           },
         ],
       },
