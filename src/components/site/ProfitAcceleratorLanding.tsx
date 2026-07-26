@@ -186,11 +186,22 @@ export default function ProfitAcceleratorLanding() {
 
               <AcceleratorQuizPopup>
                 <button type="button" className={ctaCls}>
-                  Želim rast
+                  Zatraži plan rasta
                   <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </button>
               </AcceleratorQuizPopup>
             </motion.div>
+
+            <motion.p
+              custom={4}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-4 text-sm text-muted-foreground"
+            >
+              5 kratkih pitanja o biznisu · javljamo se u roku od 48h · razgovor
+              je besplatan i bez obaveze
+            </motion.p>
           </div>
 
           {/* ── VSL ── */}
@@ -391,12 +402,13 @@ export default function ProfitAcceleratorLanding() {
                 </div>
                 <AcceleratorQuizPopup>
                   <button type="button" className={ctaCls}>
-                    Želim rast
+                    Zatraži plan rasta
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                   </button>
                 </AcceleratorQuizPopup>
                 <p className="text-sm text-muted-foreground">
-                  Posvećeni tim · Odgovor na upit za manje od 48h
+                  Odgovoriš na 5 pitanja, javljamo se za 48h i na razgovoru
+                  prolazimo kroz tvoje kampanje - bez obaveze.
                 </p>
               </div>
             </div>
@@ -422,16 +434,16 @@ export default function ProfitAcceleratorLanding() {
                 type="button"
                 className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
               >
-                Želim rast
+                Zatraži plan rasta
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </button>
             </AcceleratorQuizPopup>
             <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground sm:text-xs">
-              <span>Posvećeni tim</span>
+              <span>5 kratkih pitanja</span>
               <span aria-hidden>·</span>
-              <span>Besplatna konsultacija</span>
+              <span>Besplatan razgovor</span>
               <span aria-hidden>·</span>
-              <span>Odgovor za 48h</span>
+              <span>Javljamo se za 48h</span>
             </p>
           </div>
         </div>

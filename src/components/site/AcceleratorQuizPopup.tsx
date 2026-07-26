@@ -204,12 +204,14 @@ export default function AcceleratorQuizPopup({ children }: Props) {
         <div className="p-6">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {submitted ? "Zahtev je poslat" : "Profit Accelerator - upitnik"}
+              {submitted
+                ? "Zahtev je poslat"
+                : "Profit Accelerator - prvi korak"}
             </DialogTitle>
             <DialogDescription>
               {submitted
                 ? "Javićemo vam se uskoro na izabrani kanal."
-                : `${STEPS.length} kratkih pitanja ~ 30 sekundi.`}
+                : `${STEPS.length} kratkih pitanja (~30 sekundi). Zatim vas zovemo na kanal koji izaberete i prolazimo kroz vaše kampanje - razgovor je besplatan.`}
             </DialogDescription>
           </DialogHeader>
 

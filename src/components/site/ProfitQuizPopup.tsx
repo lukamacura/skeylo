@@ -246,12 +246,12 @@ export default function ProfitQuizPopup({ children }: Props) {
         <div className="p-6">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {submitted ? "Zahtev je poslat" : "Profit Za Tebe - upitnik"}
+              {submitted ? "Zahtev je poslat" : "Pre nego što se čujemo"}
             </DialogTitle>
             <DialogDescription>
               {submitted
                 ? "Javićemo vam se uskoro na izabrani kanal."
-                : `${STEPS.length} kratkih pitanja ~ 1 minut.`}
+                : `${STEPS.length} kratkih pitanja (~1 minut). Na osnovu odgovora pripremamo razgovor i proveravamo da li vam se paket isplati - konsultacija je besplatna i bez obaveze.`}
             </DialogDescription>
           </DialogHeader>
 

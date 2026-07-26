@@ -193,7 +193,26 @@ export default function ProfitZaTebeLanding() {
                   / {pkg.priceNote}
                 </span>
               </div>
+
+              <ProfitQuizPopup>
+                <button type="button" className={ctaCls}>
+                  Zatraži besplatnu konsultaciju
+                  <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                </button>
+              </ProfitQuizPopup>
             </motion.div>
+
+            <motion.p
+              custom={4}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground"
+            >
+              Prvo nam u minutu opišeš svoj biznis, pa na razgovoru zajedno
+              proveravamo da li ti se ovaj paket uopšte isplati. Ne plaćaš ništa
+              dok se ne dogovorimo.
+            </motion.p>
           </div>
 
           {/* ── VSL ── */}
@@ -488,8 +507,18 @@ export default function ProfitZaTebeLanding() {
                 </span>
                 <span className="text-muted-foreground">/ {pkg.priceNote}</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Odgovor za manje od 48h
+
+              <ProfitQuizPopup>
+                <button type="button" className={ctaCls}>
+                  Zatraži besplatnu konsultaciju
+                  <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                </button>
+              </ProfitQuizPopup>
+
+              <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+                Sledeći korak: 9 kratkih pitanja (~1 minut), zatim te zovemo u
+                roku od 48h na kanal koji izabereš. Na razgovoru dobijaš plan
+                lansiranja i tačne rokove - odluku donosiš posle toga.
               </p>
             </div>
           </div>
@@ -514,16 +543,16 @@ export default function ProfitZaTebeLanding() {
                 type="button"
                 className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
               >
-                Želim sve
+                Zatraži besplatnu konsultaciju
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </button>
             </ProfitQuizPopup>
             <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground sm:text-xs">
-              <span>Tvoj posvećeni tim</span>
+              <span>~1 minut pitanja</span>
               <span aria-hidden>·</span>
-              <span>Besplatna konsultacija</span>
+              <span>Razgovor bez obaveze</span>
               <span aria-hidden>·</span>
-              <span>Odgovor za 48h</span>
+              <span>Javljamo se za 48h</span>
             </p>
           </div>
         </div>

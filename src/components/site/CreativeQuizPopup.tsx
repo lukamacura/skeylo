@@ -204,12 +204,12 @@ export default function CreativeQuizPopup({ children }: Props) {
         <div className="p-6">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {submitted ? "Zahtev je poslat" : "Creative Engine - upitnik"}
+              {submitted ? "Zahtev je poslat" : "Creative Engine - prvi korak"}
             </DialogTitle>
             <DialogDescription>
               {submitted
                 ? "Javićemo vam se uskoro na izabrani kanal."
-                : `${STEPS.length} kratkih pitanja ~ 30 sekundi.`}
+                : `${STEPS.length} kratkih pitanja (~30 sekundi). Zatim vas kontaktiramo na kanal koji izaberete i dogovaramo detalje - ništa ne plaćate sada.`}
             </DialogDescription>
           </DialogHeader>
 

@@ -187,11 +187,22 @@ export default function CreativeEngineLanding() {
 
               <CreativeQuizPopup>
                 <button type="button" className={ctaCls}>
-                  Želim kreative
+                  Zatraži svojih 10 kreativa
                   <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </button>
               </CreativeQuizPopup>
             </motion.div>
+
+            <motion.p
+              custom={4}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-4 text-sm text-muted-foreground"
+            >
+              5 kratkih pitanja o tvom brendu · javljamo se u roku od 48h ·
+              ništa ne plaćaš na sajtu
+            </motion.p>
           </div>
 
           {/* ── VSL ── */}
@@ -392,12 +403,13 @@ export default function CreativeEngineLanding() {
                 </div>
                 <CreativeQuizPopup>
                   <button type="button" className={ctaCls}>
-                    Želim kreative
+                    Zatraži svojih 10 kreativa
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                   </button>
                 </CreativeQuizPopup>
                 <p className="text-sm text-muted-foreground">
-                  Posvećeni tim · Odgovor na upit za manje od 48h
+                  Odgovoriš na 5 pitanja, javljamo se za 48h i dogovaramo
+                  detalje - plaćaš tek kad prihvatiš ponudu.
                 </p>
               </div>
             </div>
@@ -423,16 +435,16 @@ export default function CreativeEngineLanding() {
                 type="button"
                 className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
               >
-                Želim kreative
+                Zatraži svojih 10 kreativa
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </button>
             </CreativeQuizPopup>
             <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground sm:text-xs">
-              <span>Posvećeni tim</span>
+              <span>5 kratkih pitanja</span>
               <span aria-hidden>·</span>
-              <span>Besplatna konsultacija</span>
+              <span>Javljamo se za 48h</span>
               <span aria-hidden>·</span>
-              <span>Odgovor za 48h</span>
+              <span>Bez plaćanja na sajtu</span>
             </p>
           </div>
         </div>
