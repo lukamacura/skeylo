@@ -136,14 +136,12 @@ export const PEOPLE: Person[] = [
             alt: "MenoLisa na App Store-u",
             w: 945,
             h: 2048,
-            caption: "MenoLisa 1.0.7 — AI pratilac kroz menopauzu.",
           },
           {
             src: "/people/luka/radni-sto.webp",
             alt: "Radni sto sa dva monitora — strategija levka i MenoLisa aplikacija",
             w: 2252,
             h: 4000,
-            caption: "Levo strategija prodajnog levka, desno aplikacija.",
           },
         ],
       },
@@ -169,7 +167,7 @@ export const PEOPLE: Person[] = [
     offscreen: [
       {
         icon: "swords",
-        title: "Brazilski džiu-džicu",
+        title: "Brazilska džiu-džica",
         text: [
           "Posle teškog dana izbaci svu lošu energiju iz tebe. Veoma težak i zahtevan sport — traži da uložiš mnogo energije u njega.",
         ],

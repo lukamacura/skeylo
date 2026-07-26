@@ -22,21 +22,25 @@ export default function Hero() {
     },
   } as const;
 
+  // Bez `grain` klase: zrno preko soft-light-a podiže crnu u sivu i celu
+  // sekciju čini mutnom. Pozadina ostaje čisto #070707 da bi mreža i
+  // narandžasti sjaj ostali oštri.
   return (
-    <section className="relative isolate overflow-hidden grain pt-24 pb-12 md:pt-36 md:pb-20">
-      {/* Atmosphere */}
+    <section className="relative isolate overflow-hidden pt-24 pb-12 md:pt-36 md:pb-20">
+      {/* Atmosphere: square grid → radial glow → fade back into the page.
+          Everything is sized relatively so it holds up from 360px to ultrawide. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 right-[-10%] h-[42rem] w-[42rem] rounded-full opacity-60 blur-[120px]"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(216,121,40,0.45), transparent 60%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 grid-lines opacity-[0.4] [mask-image:radial-gradient(80%_60%_at_50%_0%,black,transparent)]"
-      />
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
+        <div className="hero-grid absolute inset-0" />
+
+        <div className="hero-radial absolute inset-0" />
+
+        <div className="hero-glow absolute left-1/2 top-0 h-[20rem] w-[130%] -translate-x-1/2 rounded-full bg-primary/20 blur-[90px] sm:h-[24rem] sm:w-[80%] md:h-[28rem]" />
+
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-background sm:h-48" />
+      </div>
 
       <motion.div
         className="container-x relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12"
@@ -86,10 +90,10 @@ export default function Hero() {
         >
           <div
             aria-hidden
-            className="absolute inset-0 -z-10 translate-y-8 scale-95 rounded-full opacity-70 blur-3xl"
+            className="absolute inset-0 -z-10 translate-y-8 scale-95 rounded-full opacity-60 blur-3xl"
             style={{
               background:
-                "radial-gradient(circle, rgba(216,121,40,0.4), transparent 65%)",
+                "radial-gradient(circle, rgba(240,182,86,0.30), rgba(216,121,40,0.22) 45%, transparent 68%)",
             }}
           />
           <motion.div

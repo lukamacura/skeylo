@@ -84,8 +84,9 @@ export default function SocialProof() {
     }, 1500);
   };
 
+  // Samo donja linija: gornja bi presekla radijalni sjaj iz heroja.
   return (
-    <section className="relative border-y border-border py-12 md:py-20">
+    <section className="relative border-b border-border py-12 md:py-20">
       <div className="container-x">
         <p className="text-center text-sm font-medium uppercase tracking-widest text-muted-foreground">
           Brendovi koji nam veruju

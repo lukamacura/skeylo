@@ -144,6 +144,64 @@ html {
     border-color: rgba(240, 182, 86, 0.55);
   }
 
+  /* --- Hero atmosphere ---------------------------------------------------
+     The hero sits on the same black canvas as every other section; the only
+     additions are a square grid and one centered radial glow in the brand
+     colors. Both gradients are sized in percentages of the element, so the
+     glow keeps the same proportions on a phone and on a wide desktop instead
+     of being anchored to fixed pixel blobs. */
+  .hero-radial {
+    background:
+      radial-gradient(
+        80% 55% at 50% 0%,
+        rgba(216, 121, 40, 0.3),
+        rgba(216, 121, 40, 0.07) 45%,
+        transparent 68%
+      ),
+      radial-gradient(
+        38% 26% at 50% 0%,
+        rgba(240, 182, 86, 0.22),
+        transparent 62%
+      );
+  }
+
+  /* Square grid. Lines are tinted with the brand orange rather than the cream
+     `--border`: at 10% alpha over pure black, cream desaturates into a flat
+     gray. A warm tint keeps the mesh reading as lit by the glow above it.
+     Tighter cells on phones so the squares still read as a pattern in a
+     narrow viewport rather than as a few stray lines. */
+  .hero-grid {
+    background-image:
+      linear-gradient(to right, rgba(216, 121, 40, 0.16) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(216, 121, 40, 0.16) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center top;
+    /* Sharper falloff than a plain fade — the mesh stays crisp through the
+       lit area, then cuts out fast instead of smearing into a haze. */
+    -webkit-mask-image: radial-gradient(
+      68% 58% at 50% 0%,
+      black 35%,
+      transparent 82%
+    );
+    mask-image: radial-gradient(68% 58% at 50% 0%, black 35%, transparent 82%);
+  }
+  @media (min-width: 768px) {
+    .hero-grid {
+      background-size: 64px 64px;
+    }
+  }
+
+  /* Gentle breathing on the glow keeps the section from feeling static. */
+  .hero-glow {
+    will-change: transform, opacity;
+    animation: hero-breathe 14s ease-in-out infinite alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-glow {
+      animation: none;
+    }
+  }
+
   /* Animated gold edge for the premium card */
   .gold-frame {
     position: relative;
@@ -167,6 +225,17 @@ html {
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
+  }
+}
+
+@keyframes hero-breathe {
+  from {
+    transform: translate3d(-50%, 0, 0) scale(1);
+    opacity: 0.75;
+  }
+  to {
+    transform: translate3d(-50%, 0, 0) scale(1.12);
+    opacity: 1;
   }
 }
 
