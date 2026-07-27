@@ -6,15 +6,15 @@ import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 
 const logos = [
-  "Kinged",
-  "Infinity Laser Studio",
-  "Ego tike",
-  "Novak Invest",
-  "Bulevar company",
-  "RS barbershop",
-  "Powerade",
-  "Nowa",
-  "RealReselling",
+  { name: "Kinged" },
+  { name: "Infinity Laser Studio", img: "/logos/ils-logo.png" },
+  { name: "Ego tike", img: "/logos/egotike.webp" },
+  { name: "Novak Invest", img: "/logos/novak.webp" },
+  { name: "Bulevar company", img: "/logos/bulevar.webp" },
+  { name: "RS barbershop", img: "/logos/rsbarbershop.webp" },
+  { name: "Powerade", img: "/logos/powerade.webp" },
+  { name: "Nowa", img: "/logos/nowa.webp" },
+  { name: "RealReselling" },
 ];
 
 type Testimonial = {
@@ -65,6 +65,7 @@ export default function SocialProof() {
   }, []);
 
   useEffect(() => {
+    if (isUserScrolling.current) return;
     const el = scrollRef.current;
     const child = el?.children[index] as HTMLElement | undefined;
     if (el && child) {
@@ -74,13 +75,16 @@ export default function SocialProof() {
 
   const handleScroll = () => {
     isUserScrolling.current = true;
+
+    const el = scrollRef.current;
+    if (el) {
+      const nearest = Math.round(el.scrollLeft / el.clientWidth);
+      setIndex(Math.min(Math.max(nearest, 0), testimonials.length - 1));
+    }
+
     if (userScrollTimeout.current) clearTimeout(userScrollTimeout.current);
     userScrollTimeout.current = setTimeout(() => {
       isUserScrolling.current = false;
-      const el = scrollRef.current;
-      if (!el) return;
-      const nearest = Math.round(el.scrollLeft / el.clientWidth);
-      setIndex(Math.min(Math.max(nearest, 0), testimonials.length - 1));
     }, 1500);
   };
 
@@ -94,15 +98,30 @@ export default function SocialProof() {
 
         {/* Logo strip */}
         <div className="relative mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] sm:mt-8">
-          <div className="flex animate-[marquee_28s_linear_infinite] gap-6 whitespace-nowrap pr-6 sm:gap-12 sm:pr-12">
-            {[...logos, ...logos].map((l, i) => (
-              <span
-                key={`${l}-${i}`}
-                className="font-display text-lg font-bold tracking-tight text-foreground/35 sm:text-2xl"
-              >
-                {l}
-              </span>
-            ))}
+          <div className="flex animate-[marquee_14s_linear_infinite] items-center gap-6 whitespace-nowrap pr-6 sm:gap-12 sm:pr-12">
+            {[...logos, ...logos].map((l, i) =>
+              l.img ? (
+                <span
+                  key={`${l.name}-${i}`}
+                  className="relative h-6 w-24 shrink-0 opacity-70 sm:h-8 sm:w-32"
+                >
+                  <Image
+                    src={l.img}
+                    alt={l.name}
+                    fill
+                    sizes="128px"
+                    className="object-contain"
+                  />
+                </span>
+              ) : (
+                <span
+                  key={`${l.name}-${i}`}
+                  className="font-display text-lg font-bold tracking-tight text-foreground/35 sm:text-2xl"
+                >
+                  {l.name}
+                </span>
+              ),
+            )}
           </div>
         </div>
 

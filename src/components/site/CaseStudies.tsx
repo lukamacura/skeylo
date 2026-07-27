@@ -8,7 +8,7 @@ import YouTubePlayer from "./YouTubePlayer";
 const cases = [
   {
     client: "Infinity Laser Studio",
-    logo: "/ils-logo.png",
+    logo: "/logos/ils-logo.png",
     problem:
       "Uspešan salon u Somboru želeo je da se proširi u Novi Sad. Marketing nije bio u planu. Salon je sve termine zakazivao ručno preko telefona.",
     strategy:

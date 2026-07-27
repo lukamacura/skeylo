@@ -15,6 +15,85 @@ const ICONS: Record<IconName, LucideIcon> = {
 };
 
 /* -------------------------------------------------------------------------- */
+/* Inline markup u tekstu poglavlja                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `**podebljano**` i `==istaknuto==` u people.ts. Namerno minimalan skup —
+ * tekst u podacima ostaje čitljiv, bez JSX-a u sadržaju.
+ */
+const MARKUP = /(\*\*[^*]+\*\*|==[^=]+==)/g;
+
+/**
+ * Potez markerom preko reči. Trag stoji ispod teksta bez z-index-a: apsolutni
+ * element dolazi prvi u DOM-u, a `relative` na samom tekstu ga slika preko —
+ * tako highlight ne zavisi od stacking konteksta sekcije oko njega.
+ */
+function Highlight({ children }: { children: string }) {
+  const reduce = useReducedMotion();
+
+  return (
+    <span className="relative inline-block whitespace-nowrap">
+      {/* Jedan element nosi oba prelaza markerom — glavni potez i kraći,
+          zasićeniji preko donje trećine — kao dva sloja iste pozadine. Dva
+          zasebna motion elementa bi značila i dva IntersectionObservera i dva
+          kompozitna sloja po istaknutoj reči, za isti izgled.
+
+          Animira se samo scaleX: transform ide na GPU, bez layout-a i bez
+          ponovnog crtanja gradijenta. `clip-path` bi lepše čuvao oblik
+          krajeva, ali ga framer-motion ovde ne interpolira — potez ostane
+          trajno zaklonjen.
+
+          Kačenje za sredinu, ne za dno: visina inline-block-a je ceo line box
+          (leading-relaxed ≈ 1.6em), pa bi `bottom-0` potez spustio ispod
+          slova, u prazninu između redova. Rotacija i centriranje idu kroz
+          motion props jer framer piše ceo `transform`, pa bi Tailwind klase
+          tipa `-rotate-*` bile pregažene. */}
+      <motion.span
+        aria-hidden
+        initial={{ scaleX: reduce ? 1 : 0, y: "-50%", rotate: -1.2 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute inset-x-[-0.3em] top-1/2 h-[0.98em] rounded-[0.6em_0.2em_0.5em_0.25em]"
+        style={{
+          transformOrigin: "0% 50%",
+          // Prvi sloj je gornji: kraći prelaz preko dna reči. Drugi je glavni
+          // potez — mastilo se sliva ka krajevima, pa gradijent ide ukoso i
+          // gasi se u providno tek na samim ivicama.
+          backgroundImage:
+            "linear-gradient(99deg, transparent 1%, rgba(216,121,40,0.42) 6%, rgba(216,121,40,0.3) 94%, transparent 99%), linear-gradient(101deg, transparent 0.6%, rgba(216,121,40,0.62) 3%, rgba(216,121,40,0.5) 55%, rgba(216,121,40,0.6) 96%, transparent 99.4%)",
+          backgroundSize: "94% 38%, 100% 100%",
+          backgroundPosition: "3% 86%, 0 0",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      <span className="relative font-semibold text-foreground">{children}</span>
+    </span>
+  );
+}
+
+function RichText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(MARKUP).map((part, i) => {
+        if (part.startsWith("**")) {
+          return (
+            <strong key={i} className="font-semibold text-foreground">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        if (part.startsWith("==")) {
+          return <Highlight key={i}>{part.slice(2, -2)}</Highlight>;
+        }
+        return part;
+      })}
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Strelica od teksta ka fotografiji                                          */
 /* -------------------------------------------------------------------------- */
 
@@ -294,7 +373,7 @@ export default function StoryChapter({
               key={p}
               className="text-base leading-relaxed text-muted-foreground sm:text-lg"
             >
-              {p}
+              <RichText text={p} />
             </p>
           ))}
         </div>

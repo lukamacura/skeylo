@@ -33,6 +33,10 @@ export type Chapter = {
   /** Marker van priče */
   icon?: IconName;
   title: string;
+  /**
+   * `**podebljano**` i `==istaknuto==` (traka u primarnoj boji, iscrtava se
+   * pri skrolu). Highlight ne prelama red - drži ga na par reči.
+   */
   text: string[];
   /** Istaknuta rečenica - prikazuje se kao panel kad poglavlje nema fotografiju */
   quote?: string;
@@ -85,10 +89,10 @@ export const PEOPLE: Person[] = [
     chapters: [
       {
         year: "2019.",
-        title: "Prvi red koda",
+        title: "Prva linija koda",
         text: [
-          "Web developmentom sam počeo da se bavim 2019. godine. Šest godina sam pravio sajtove za lokalne biznise i sve je izgledalo kako treba - uradim sajt, naplatim, i tu se priča završava.",
-          "U jednom trenutku mi je bilo jasno da nešto nije u redu. Sajt bez kampanje i kreative nema gde da radi: lep je, funkcioniše, i ne donosi ništa.",
+          "Web developmentom sam počeo da se bavim 2019. godine. **Šest godina** sam pravio sajtove za lokalne biznise i sve je izgledalo kako treba - uradim sajt, naplatim, i tu se priča završava.",
+          "U jednom trenutku mi je bilo jasno da nešto nije u redu. Sajt bez kampanje i kreative nema gde da radi: lep je, funkcioniše, i ==ne donosi ništa==.",
         ],
         point: "Uradim sajt, naplatim, i to je to.",
         shots: [
@@ -107,8 +111,8 @@ export const PEOPLE: Person[] = [
         year: "Skeylo",
         title: "Upoznao sam Filipa i Mihajla",
         text: [
-          "Odatle je krenuo full-stack marketing. Kreativa, kampanje i sajt više ne žive odvojeno, nego rade na istom cilju.",
-          "To je bila razlika koja je sve promenila. Sada svaki projekat ima smisla, profitabilan je, i klijentima zaista pomažemo umesto da im isporučimo fajl i odemo.",
+          "Odatle je krenuo ==full-stack marketing==. Kreativa, kampanje i sajt više ne žive odvojeno, nego rade na istom cilju.",
+          "To je bila razlika koja je sve promenila. Sada **svaki projekat ima smisla**, profitabilan je, i klijentima zaista pomažemo umesto da im isporučimo fajl i odemo.",
         ],
         point: "Filip, Mihajlo i ja",
         shots: [
@@ -125,8 +129,8 @@ export const PEOPLE: Person[] = [
         year: "Danas",
         title: "MenoLisa",
         text: [
-          "Paralelno gradim svoj projekat - MenoLisu, AI aplikaciju za žene u menopauzi, podupretu velikom bazom znanja (RAG).",
-          "Aplikacija je na App Store-u i trenutno je u fazi marketinga. Imam velika očekivanja od nje.",
+          "Paralelno gradim svoj projekat - MenoLisu, **AI aplikaciju za žene u menopauzi**, podupretu velikom bazom znanja (RAG).",
+          "Aplikacija je ==na App Store-u== i trenutno je u fazi marketinga. Imam velika očekivanja od nje.",
         ],
         point: "Uživo na App Store-u",
         shots: [
@@ -148,8 +152,8 @@ export const PEOPLE: Person[] = [
         year: "Macura Solutions LLC",
         title: "Firma u Americi",
         text: [
-          "Zbog MenoLise sam otvorio firmu u Americi, kako bih mogao da naplaćujem bilo kome u svetu.",
-          "Isti pristup nosim i u Skeylo: ne isporučujem sajt, nego sistem koji nekome donosi novac.",
+          "Zbog MenoLise sam otvorio **firmu u Americi**, kako bih mogao da naplaćujem bilo kome u svetu.",
+          "Isti pristup nosim i u Skeylo: ne isporučujem sajt, nego sistem koji nekome ==donosi novac==.",
         ],
         point: "Prve kartice firme",
         shots: [
@@ -159,6 +163,23 @@ export const PEOPLE: Person[] = [
             w: 2252,
             h: 4000,
             position: "object-[50%_45%]",
+          },
+        ],
+      },
+      {
+        year: "Studije",
+        title: "Upisao sam Fakultet tehničkih nauka",
+        text: [
+          "Paralelno sa firmom, upisao sam **Fakultet tehničkih nauka** u Novom Sadu. Predavanja ujutru, klijenti i kod popodne - dva sveta koja sam morao da uskladim.",
+          "Fakultet mi je dao teorijsku podlogu za ono što sam do tada učio isključivo kroz praksu - potvrdu da ==inženjerski način== razmišljanja stoji iza svakog dobrog proizvoda, ne samo koda.",
+        ],
+        point: "Zgrada FTN-a u Novom Sadu",
+        shots: [
+          {
+            src: "/people/luka/ftn.webp",
+            alt: "Fakultet tehničkih nauka u Novom Sadu",
+            w: 549,
+            h: 364,
           },
         ],
       },
