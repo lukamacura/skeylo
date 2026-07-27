@@ -14,7 +14,7 @@ const logos = [
   { name: "RS barbershop", img: "/logos/rsbarbershop.webp" },
   { name: "Powerade", img: "/logos/powerade.webp" },
   { name: "Nowa", img: "/logos/nowa.webp" },
-  { name: "RealReselling" },
+  { name: "RealReselling", img: "/logos/rr.webp" },
 ];
 
 type Testimonial = {
