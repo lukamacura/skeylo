@@ -26,13 +26,18 @@ const ICONS: Record<IconName, LucideIcon> = {
 function Pointer({ label, flip }: { label: string; flip: boolean }) {
   const reduce = useReducedMotion();
 
-  const draw = reduce
-    ? {}
-    : {
-        initial: { pathLength: 0, opacity: 0 },
-        whileInView: { pathLength: 1, opacity: 1 },
-        viewport: { once: true, margin: "-80px" },
-      };
+  /** Nacrtano stanje — i polazno kada je animacija isključena. */
+  const drawn = { pathLength: 1, opacity: 1 };
+
+  const line = {
+    hidden: reduce ? drawn : { pathLength: 0, opacity: 0 },
+    show: { ...drawn, transition: { duration: 0.7, ease: "easeInOut" } },
+  } as const;
+
+  const head = {
+    hidden: reduce ? drawn : { pathLength: 0, opacity: 0 },
+    show: { ...drawn, transition: { duration: 0.25, ease: "easeOut" } },
+  } as const;
 
   return (
     <div
@@ -44,35 +49,54 @@ function Pointer({ label, flip }: { label: string; flip: boolean }) {
         {label}
       </span>
 
+      {/* Kutija mora da pokrije zarotiranu krivu: 80×32 pod 58° zauzima ~70×85,
+          pa manja kutija pušta strelicu da viri u pasus iznad. Od `lg` je
+          rotacija 0, pa je dovoljna tačna veličina same krive. */}
       <span
         aria-hidden
-        className="relative block h-12 w-12 shrink-0 lg:h-10 lg:w-28"
+        className="relative block h-[5.5rem] w-[4.5rem] shrink-0 lg:h-10 lg:w-28"
       >
-        <svg
+        {/* Jedan whileInView na <svg> umesto po jednog na svakoj putanji:
+            jedan IntersectionObserver po poglavlju i glava strelice ne može
+            da se odvoji od linije. `amount` umesto piksel margine — prag u
+            procentima se ponaša isto na niskom telefonu i na desktopu, dok
+            je fiksnih -80px na kratkom ekranu često značilo da se crtanje
+            odigra pre nego što strelica uđe u vidno polje. */}
+        <motion.svg
           viewBox="0 0 120 40"
           fill="none"
-          className={`absolute left-1/2 top-1/2 h-8 w-20 -translate-x-1/2 -translate-y-1/2 rotate-[58deg] text-primary lg:h-10 lg:w-28 lg:rotate-0 ${
+          variants={{
+            hidden: {},
+            show: { transition: { delayChildren: 0.55 } },
+          }}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.6 }}
+          className={`absolute left-1/2 top-1/2 h-8 w-20 -translate-x-1/2 -translate-y-1/2 rotate-[58deg] overflow-visible text-primary lg:h-10 lg:w-28 lg:rotate-0 ${
             flip ? "lg:-scale-x-100" : ""
           }`}
         >
+          {/* non-scaling-stroke: viewBox se na telefonu skalira na 80px, pa bi
+              potez od 2 jedinice pao na ~1.3px i strelica bi bila vidljivo
+              tanja i bleđa nego na desktopu. Ovako je težina svuda ista. */}
           <motion.path
-            {...draw}
-            transition={{ duration: 0.7, ease: "easeInOut" }}
+            variants={line}
             d="M2 12C40 4 78 8 108 26"
             stroke="currentColor"
             strokeWidth={2}
             strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
           />
           <motion.path
-            {...draw}
-            transition={{ duration: 0.25, ease: "easeOut", delay: 0.6 }}
+            variants={head}
             d="M100 14.5L108 26L94 24.6"
             stroke="currentColor"
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
           />
-        </svg>
+        </motion.svg>
       </span>
     </div>
   );

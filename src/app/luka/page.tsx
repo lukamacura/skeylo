@@ -5,13 +5,12 @@ import PersonBio from "@/components/site/PersonBio";
 const person = getPerson("luka")!;
 
 export const metadata: Metadata = {
-  title: `${person.name} - ${person.role}`,
+  title: `${person.name} - Entrepreneur`,
   description:
-    "Luka Macura - web development i CRO u Skeylo timu. Sajtove pravim od 2019. i vodim Macura Solutions LLC. Baza: Novi Sad, Srbija.",
+    "Luka Macura - preduzetnik i deo Skeylo tima. Sajtove pravim od 2019, studiram na Fakultetu tehničkih nauka. Baza: Novi Sad, Srbija.",
   openGraph: {
     title: `${person.name} | Skeylo`,
-    description:
-      "Web development i CRO. Sajtovi koji prodaju, a ne samo dobro izgledaju.",
+    description: "Sajtovi koji prodaju, a ne samo dobro izgledaju.",
     images: [{ url: person.img }],
   },
 };

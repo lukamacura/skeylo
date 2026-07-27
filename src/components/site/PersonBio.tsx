@@ -9,7 +9,7 @@ import type { Person } from "@/lib/people";
 import EuropeMap from "./EuropeMap";
 import StoryChapter from "./StoryChapter";
 
-/** Brend znak — lucide nema WhatsApp, pa ide inline putanja. */
+/** Brend znak - lucide nema WhatsApp, pa ide inline putanja. */
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -23,7 +23,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-/** Zaglavlje sekcije — isti obrazac kao Process.tsx / Team.tsx */
+/** Zaglavlje sekcije - isti obrazac kao Process.tsx / Team.tsx */
 function SectionHead({ kicker, title }: { kicker: string; title: string }) {
   return (
     <div className="mb-8 max-w-2xl sm:mb-10">
@@ -69,7 +69,7 @@ export default function PersonBio({ person }: { person: Person }) {
   return (
     <>
       {/* ---------------------------------------------------------------- */}
-      {/* HERO — portret izranja iz dna sekcije                             */}
+      {/* HERO - portret izranja iz dna sekcije                             */}
       {/* ---------------------------------------------------------------- */}
       {/* Bez `grain` klase: zrno preko soft-light-a podiže crnu u sivu, pa bi
           se tamna pozadina fotografije videla kao pravougaonik. Ovde pozadina
@@ -90,75 +90,17 @@ export default function PersonBio({ person }: { person: Person }) {
         />
 
         <motion.div
-          className="container-x relative grid items-end gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-12"
+          className="container-x relative flex flex-col items-center"
           variants={container}
           initial="hidden"
           animate="show"
         >
-          {/* Tekst */}
-          <div className="relative z-10 pb-4 text-center lg:pb-24 lg:text-left">
-            <motion.p
-              variants={up}
-              className="text-sm font-semibold uppercase tracking-widest text-primary"
-            >
-              {person.role}
-            </motion.p>
-
-            <motion.h1
-              variants={up}
-              className="mt-3 text-balance text-4xl font-extrabold leading-[1.05] sm:text-6xl lg:text-7xl"
-            >
-              {person.heading ?? person.name}
-            </motion.h1>
-
-            {person.tagline && (
-              <motion.p
-                variants={up}
-                className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg lg:mx-0"
-              >
-                {person.tagline}
-              </motion.p>
-            )}
-
-            {person.chips && (
-              <motion.ul
-                variants={up}
-                className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start"
-              >
-                {person.chips.map((c) => (
-                  <li
-                    key={c}
-                    className="rounded-full card-glass px-3.5 py-1.5 text-xs font-medium text-foreground/80 sm:text-sm"
-                  >
-                    {c}
-                  </li>
-                ))}
-              </motion.ul>
-            )}
-
-            <motion.div
-              variants={up}
-              className="mt-8 flex flex-col items-center gap-3 lg:items-start"
-            >
-              <a
-                href={waHref ?? "mailto:office@skeylo.com"}
-                target={waHref ? "_blank" : undefined}
-                rel={waHref ? "noopener noreferrer" : undefined}
-                className="group inline-flex w-full items-center justify-center gap-2.5 rounded-md bg-primary px-8 py-3.5 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:w-auto sm:py-4"
-              >
-                <WhatsAppIcon className="size-5" />
-                Piši mi na WhatsApp
-                <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-              </a>
-            </motion.div>
-          </div>
-
           {/* Portret */}
-          {/* `isolate` drži -z-10 mrlje unutar ovog konteksta — bez toga
+          {/* `isolate` drži -z-10 mrlje unutar ovog konteksta - bez toga
               propadnu iza pozadine sekcije i uopšte se ne vide. */}
           <motion.div
             variants={up}
-            className="relative isolate mx-auto w-full max-w-sm self-end sm:max-w-md lg:max-w-none"
+            className="relative isolate w-full max-w-[17rem] sm:max-w-sm lg:max-w-md"
           >
             {/* Nepravilna pozadina iza portreta */}
             <div
@@ -180,7 +122,7 @@ export default function PersonBio({ person }: { person: Person }) {
 
             {/* Kadar je 3:4; aspect-[10/11] seče donjih ~18% i sklanja vodeni žig.
                 Maska ima dva sloja koja se presecaju: radijalni rastvara bočne
-                ivice i vrh, a linearni garantuje da dno potpuno iščezne — inače
+                ivice i vrh, a linearni garantuje da dno potpuno iščezne - inače
                 overflow-hidden na sekciji ostavi vidljiv rez. */}
             <div
               className="relative aspect-[10/11] w-full"
@@ -195,28 +137,80 @@ export default function PersonBio({ person }: { person: Person }) {
             >
               {/* Portreti su snimljeni na skoro crnoj pozadini, ali sa plavom
                   refleksijom. Kontrast spušta tu pozadinu na čistu crnu, a
-                  `screen` je onda potpuno stapa sa stranicom — bez toga se
+                  `screen` je onda potpuno stapa sa stranicom - bez toga se
                   vidi pravougaonik hladnijeg tona oko lika. */}
               <Image
                 src={person.img}
-                alt={`${person.name} — ${person.role}`}
+                alt={`${person.name} - ${person.role}`}
                 fill
                 priority
-                sizes="(max-width: 640px) 92vw, (max-width: 1024px) 60vw, 42vw"
+                sizes="(max-width: 640px) 72vw, (max-width: 1024px) 24rem, 28rem"
                 className="object-cover object-top mix-blend-screen [filter:contrast(1.3)_brightness(0.9)_saturate(0.9)]"
               />
             </div>
           </motion.div>
+
+          {/* Tekst - negativna margina uvlači naslov u izbledelo dno portreta,
+              da između slike i teksta ne ostane prazan pojas. */}
+          <div className="relative z-10 -mt-10 w-full text-center sm:-mt-14">
+            <motion.h1
+              variants={up}
+              className="text-balance text-4xl font-extrabold leading-[1.05] sm:text-6xl lg:text-7xl"
+            >
+              {person.heading ?? person.name}
+            </motion.h1>
+
+            {person.tagline && (
+              <motion.p
+                variants={up}
+                className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg"
+              >
+                {person.tagline}
+              </motion.p>
+            )}
+
+            {person.chips && (
+              <motion.ul
+                variants={up}
+                className="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-2"
+              >
+                {person.chips.map((c) => (
+                  <li
+                    key={c}
+                    className="rounded-full card-glass px-3.5 py-1.5 text-xs font-medium text-foreground/80 sm:text-sm"
+                  >
+                    {c}
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+
+            <motion.div
+              variants={up}
+              className="mt-8 flex flex-col items-center gap-3"
+            >
+              <a
+                href={waHref ?? "mailto:office@skeylo.com"}
+                target={waHref ? "_blank" : undefined}
+                rel={waHref ? "noopener noreferrer" : undefined}
+                className="group inline-flex w-full items-center justify-center gap-2.5 rounded-md bg-primary px-8 py-3.5 text-base font-extrabold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:w-auto sm:py-4"
+              >
+                <WhatsAppIcon className="size-5" />
+                Piši mi na WhatsApp
+                <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+              </a>
+            </motion.div>
+          </div>
         </motion.div>
       </section>
 
       {/* ---------------------------------------------------------------- */}
-      {/* PRIČA — tekst i fotografije u istom toku                          */}
+      {/* PRIČA - tekst i fotografije u istom toku                          */}
       {/* ---------------------------------------------------------------- */}
       {person.chapters && (
         <section className="relative py-14 md:py-24">
           <div className="container-x">
-            <SectionHead kicker="Priča" title="Kako sam došao dovde" />
+            <SectionHead kicker="Priča" title="Kako sam došao ovde" />
 
             <div className="space-y-16 sm:space-y-20 lg:space-y-28">
               {person.chapters.map((c, i) => (
@@ -245,7 +239,7 @@ export default function PersonBio({ person }: { person: Person }) {
       )}
 
       {/* ---------------------------------------------------------------- */}
-      {/* BAZA — mapa                                                       */}
+      {/* BAZA - mapa                                                       */}
       {/* ---------------------------------------------------------------- */}
       <section className="relative py-12 md:py-20">
         <div className="container-x">
@@ -285,7 +279,7 @@ export default function PersonBio({ person }: { person: Person }) {
               Imaš projekat na umu?
             </h2>
             <p className="mx-auto mt-3 max-w-md text-base text-muted-foreground sm:text-lg">
-              Napiši mi poruku na WhatsApp — odgovaram lično, obično isti dan.
+              Napiši mi poruku na WhatsApp.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
