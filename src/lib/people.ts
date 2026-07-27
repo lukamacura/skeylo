@@ -81,8 +81,7 @@ export const PEOPLE: Person[] = [
     location: "Novi Sad, Srbija",
     whatsapp: "381631012474",
     chips: [
-      "Novi Sad, Srbija",
-      "Web development od 2019.",
+      "Web developer & Marketer",
       "Entrepreneur",
       "Studying at Faculty of Technical Science",
     ],

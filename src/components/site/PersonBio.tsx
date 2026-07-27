@@ -3,7 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, ArrowUpRight, Mail, MapPin } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Mail,
+  MapPin,
+} from "lucide-react";
 
 import type { Person } from "@/lib/people";
 import EuropeMap from "./EuropeMap";
@@ -74,7 +80,7 @@ export default function PersonBio({ person }: { person: Person }) {
       {/* Bez `grain` klase: zrno preko soft-light-a podiže crnu u sivu, pa bi
           se tamna pozadina fotografije videla kao pravougaonik. Ovde pozadina
           mora da ostane čisto #070707 da bi portret mogao da se stopi s njom. */}
-      <section className="relative isolate overflow-hidden pt-24 md:pt-36">
+      <section className="relative isolate overflow-hidden pt-20 md:pt-28">
         {/* Atmosfera */}
         <div
           aria-hidden
@@ -95,6 +101,18 @@ export default function PersonBio({ person }: { person: Person }) {
           initial="hidden"
           animate="show"
         >
+          {/* Izlaz nazad na sajt - hero je pun ekran, pa logo u headeru nije
+              dovoljno očigledan povratak na početnu. */}
+          <motion.div variants={up} className="mb-6 self-start sm:mb-8">
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-2 rounded-full card-glass px-3.5 py-1.5 text-xs font-semibold text-foreground/80 transition-colors hover:text-primary sm:text-sm"
+            >
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              Nazad na Skeylo
+            </Link>
+          </motion.div>
+
           {/* Portret */}
           {/* `isolate` drži -z-10 mrlje unutar ovog konteksta - bez toga
               propadnu iza pozadine sekcije i uopšte se ne vide. */}
