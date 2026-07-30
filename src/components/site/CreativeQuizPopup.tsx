@@ -20,6 +20,7 @@ import {
   Phone,
   MessageCircle,
   Check,
+  ArrowLeft,
 } from "lucide-react";
 
 const GOLD = "#f0b656";
@@ -76,7 +77,7 @@ const STEPS: Step[] = [
   },
   {
     key: "contact",
-    kicker: "Poslednji korak",
+    kicker: "Za vaše najbolje iskustvo",
     label: "Kako želite da Vas kontaktiramo?",
     type: "choice",
     icon: MessageCircle,
@@ -84,6 +85,37 @@ const STEPS: Step[] = [
     options: ["WhatsApp", "Viber", "SMS", "Poziv"],
   },
 ];
+
+const CONTACT_LINES: Record<string, (contact: string) => string> = {
+  Poziv: (contact) => `Pozvaćemo vas${contact ? ` na ${contact}` : ""}`,
+  WhatsApp: (contact) =>
+    `Pišemo vam na WhatsApp${contact ? ` (${contact})` : ""}`,
+  Viber: (contact) => `Pišemo vam na Viber${contact ? ` (${contact})` : ""}`,
+  SMS: (contact) => `Šaljemo vam SMS${contact ? ` na ${contact}` : ""}`,
+};
+
+function successCopy(data: Record<string, string>) {
+  const firstName = (data.name ?? "").trim().split(/\s+/)[0] ?? "";
+  const brand = (data.brand ?? "").trim();
+  const phone = (data.phone ?? "").trim();
+
+  const line = CONTACT_LINES[data.contact];
+  const channelLine = `${
+    line ? line(phone) : "Kontaktiraćemo vas na izabrani kanal"
+  } u narednih 48 sati.`;
+
+  const brandLine = brand
+    ? data.registered === "Da"
+      ? `Do tada pripremamo konkretne predloge za ${brand}.`
+      : `Do tada pripremamo predloge za ${brand}.`
+    : "Do tada pripremamo predloge za vaš brend.";
+
+  return {
+    title: firstName ? `Hvala, ${firstName}!` : "Zahtev je poslat",
+    channelLine,
+    brandLine,
+  };
+}
 
 type Props = {
   children: React.ReactNode; // trigger
@@ -99,6 +131,7 @@ export default function CreativeQuizPopup({ children }: Props) {
 
   const step = STEPS[idx];
   const progress = useMemo(() => ((idx + 1) / STEPS.length) * 100, [idx]);
+  const success = useMemo(() => successCopy(data), [data]);
 
   function validate(step: Step, value: string): string {
     const v = (value ?? "").trim();
@@ -201,15 +234,33 @@ export default function CreativeQuizPopup({ children }: Props) {
           <div className="h-1 bg-secondary/50" />
         )}
 
-        <div className="p-6">
+        <div className="p-6 pt-4">
+          {!submitted && (
+            <button
+              type="button"
+              onClick={back}
+              disabled={idx === 0 || loading}
+              aria-label="Nazad"
+              className={`-ml-2 mb-2 inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground ${
+                idx === 0 ? "invisible" : ""
+              }`}
+            >
+              <ArrowLeft className="size-3.5" aria-hidden />
+              Nazad
+            </button>
+          )}
+
           <DialogHeader>
-            <DialogTitle className="text-xl">
-              {submitted ? "Zahtev je poslat" : "Creative Engine - prvi korak"}
+            <DialogTitle
+              className="text-xl"
+              style={submitted ? undefined : { color: GOLD }}
+            >
+              {submitted ? success.title : step.kicker}
             </DialogTitle>
             <DialogDescription>
               {submitted
-                ? "Javićemo vam se uskoro na izabrani kanal."
-                : `${STEPS.length} kratkih pitanja (~30 sekundi). Zatim vas kontaktiramo na kanal koji izaberete i dogovaramo detalje - ništa ne plaćate sada.`}
+                ? "Vaš zahtev je stigao do nas."
+                : `${STEPS.length} kratkih pitanja kako bismo se bolje razumeli.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -224,16 +275,9 @@ export default function CreativeQuizPopup({ children }: Props) {
                   transition={{ duration: 0.25, ease: "easeOut" }}
                   className="grid gap-3"
                 >
-                  <p
-                    className="text-xs font-semibold uppercase tracking-widest"
-                    style={{ color: GOLD }}
-                  >
-                    {step.kicker}
-                  </p>
                   <label className="flex items-center gap-2 text-base font-semibold">
                     <step.icon className="size-4" style={{ color: GOLD }} />
                     {step.label}
-                    {step.required ? " *" : ""}
                   </label>
 
                   {step.type === "choice" ? (
@@ -301,13 +345,11 @@ export default function CreativeQuizPopup({ children }: Props) {
                     <Check className="size-7" strokeWidth={2.5} aria-hidden />
                   </div>
                   <div className="space-y-1.5">
-                    <p className="text-lg font-semibold">Zahtev je poslat</p>
+                    <p className="text-lg font-semibold">
+                      {success.channelLine}
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      Kontaktiraćemo vas putem
-                      {data.contact
-                        ? ` ${data.contact}`
-                        : " izabranog kanala"}{" "}
-                      uskoro.
+                      {success.brandLine}
                     </p>
                   </div>
                   <Button
@@ -322,29 +364,22 @@ export default function CreativeQuizPopup({ children }: Props) {
           </div>
 
           {!submitted && (
-            <div className="mt-6 flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={back}
-                disabled={idx === 0 || loading}
-                className="cursor-pointer"
-              >
-                Nazad
-              </Button>
-              <div className="text-xs text-muted-foreground">
-                {idx + 1} / {STEPS.length}
-              </div>
+            <div className="mt-6 grid gap-3">
               <Button
                 onClick={next}
                 disabled={loading}
-                className="cursor-pointer font-bold text-background"
+                size="lg"
+                className="h-14 w-full cursor-pointer text-base font-bold text-background"
               >
                 {idx === STEPS.length - 1
                   ? loading
                     ? "Slanje..."
-                    : "Pošalji"
+                    : "Kontaktirajte me"
                   : "Dalje"}
               </Button>
+              <div className="text-center text-xs text-muted-foreground">
+                {idx + 1} / {STEPS.length}
+              </div>
             </div>
           )}
         </div>

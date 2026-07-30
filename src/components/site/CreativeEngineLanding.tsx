@@ -1,19 +1,27 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
+import {
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
-  ArrowDownRight,
+  BookOpenCheck,
+  CalendarCheck,
+  Check,
+  Clapperboard,
+  CreditCard,
   Image as ImageIcon,
-  PenTool,
-  Layers,
-  FileText,
+  PenLine,
   Sparkles,
-  Frown,
-  EyeOff,
-  Wallet,
 } from "lucide-react";
 import { getPackage, formatPrice } from "@/lib/packages";
 import CreativeQuizPopup from "@/components/site/CreativeQuizPopup";
@@ -21,6 +29,9 @@ import YouTubePlayer from "@/components/site/YouTubePlayer";
 
 const GOLD = "#f0b656";
 const ORANGE = "#d87928";
+
+/** Case study video za poslednji korak - dodaje se kad snimak bude gotov. */
+const REZULTAT_VIDEO_ID: string | null = null;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
@@ -50,54 +61,343 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-const fomo = [
+/** Mesto za sliku koraka - zameni `image` putanjom kad vizuali budu spremni. */
+function StepMedia({ image, alt }: { image: string | null; alt: string }) {
+  if (image) {
+    return (
+      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-border card-glass">
+        <Image
+          src={image}
+          alt={alt}
+          fill
+          sizes="(min-width: 1024px) 45vw, 90vw"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      aria-hidden
+      className="flex aspect-[4/3] items-center justify-center rounded-3xl border border-dashed"
+      style={{
+        borderColor: `${GOLD}40`,
+        background: `linear-gradient(160deg, ${GOLD}0f, transparent)`,
+      }}
+    >
+      <ImageIcon className="size-8 opacity-30" style={{ color: GOLD }} />
+    </div>
+  );
+}
+
+/** Iznos sa centima, tačno kako piše na screenshotu iz naloga. */
+const money = (n: number, currency: string) =>
+  `${new Intl.NumberFormat("sr-RS", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n)} ${currency}`;
+
+/** Jedan red računice - iznos se broji od nule kad papir uđe u vidno polje. */
+function PaperRow({
+  label,
+  value,
+  currency,
+  prefix = "",
+  delay,
+  start,
+  strong = false,
+  highlight = false,
+}: {
+  label: string;
+  value: number;
+  currency: string;
+  prefix?: string;
+  delay: number;
+  start: boolean;
+  strong?: boolean;
+  highlight?: boolean;
+}) {
+  const count = useMotionValue(0);
+  const text = useTransform(count, (v) => `${prefix}${money(v, currency)}`);
+
+  useEffect(() => {
+    if (!start) return;
+    const controls = animate(count, value, {
+      duration: 1,
+      delay,
+      ease: [0.16, 1, 0.3, 1],
+    });
+    return () => controls.stop();
+  }, [start, value, delay, count]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -12 }}
+      animate={start ? { opacity: 1, x: 0 } : undefined}
+      transition={{ duration: 0.45, delay, ease: "easeOut" }}
+      className="flex h-9 items-center justify-between gap-4"
+    >
+      <span
+        className={
+          strong ? "text-lg font-extrabold sm:text-xl" : "text-base sm:text-lg"
+        }
+      >
+        {label}
+      </span>
+      <span className="relative">
+        {highlight && (
+          <motion.span
+            aria-hidden
+            initial={{ scaleX: 0 }}
+            animate={start ? { scaleX: 1 } : undefined}
+            transition={{ delay: delay + 0.2, duration: 0.5, ease: "easeOut" }}
+            className="absolute -inset-x-2 inset-y-1 origin-left rounded-[3px]"
+            style={{ background: `${GOLD}99` }}
+          />
+        )}
+        <motion.span
+          className={`relative font-display tabular-nums ${
+            strong
+              ? "text-2xl font-extrabold sm:text-3xl"
+              : "text-lg font-bold sm:text-xl"
+          }`}
+        >
+          {text}
+        </motion.span>
+      </span>
+    </motion.div>
+  );
+}
+
+/** Prosta računica na papiru: prihod - uloženo = profit. */
+function ProfitPaper({
+  prihod,
+  ulozeno,
+  currency,
+}: {
+  prihod: number;
+  ulozeno: number;
+  currency: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+
+  return (
+    <div ref={ref} className="mx-auto w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 26, rotate: -2.5 }}
+        animate={inView ? { opacity: 1, y: 0, rotate: -1.2 } : undefined}
+        transition={{ type: "spring", stiffness: 120, damping: 20 }}
+        className="relative overflow-hidden rounded-sm"
+        style={{
+          background: "#fbf7ec",
+          color: "#26303d",
+          boxShadow: "0 30px 60px -25px rgba(0,0,0,.75)",
+        }}
+      >
+        {/* linije sveske - počinju ispod naslova, korak 36px kao visina reda */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 top-14"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(to bottom, transparent 0 35px, #cdd9ea 35px 36px)",
+          }}
+        />
+        {/* crvena margina */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-8 w-px"
+          style={{ background: "#e59a94" }}
+        />
+
+        <div className="relative pb-7 pl-12 pr-6 pt-5 sm:pl-14 sm:pr-8">
+          <p
+            className="flex h-9 items-center text-[11px] font-bold uppercase tracking-[0.2em]"
+            style={{ color: "#8a96a6" }}
+          >
+            Računica
+          </p>
+
+          <PaperRow
+            label="Prihod"
+            value={prihod}
+            currency={currency}
+            delay={0.2}
+            start={inView}
+          />
+          <PaperRow
+            label="Uloženo"
+            value={ulozeno}
+            currency={currency}
+            prefix="− "
+            delay={0.95}
+            start={inView}
+          />
+
+          {/* crta ispod koje se podvlači rezultat */}
+          <div className="relative h-0">
+            <motion.div
+              aria-hidden
+              initial={{ scaleX: 0 }}
+              animate={inView ? { scaleX: 1 } : undefined}
+              transition={{ delay: 1.75, duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-x-0 -top-px h-[2px] origin-left rounded-full"
+              style={{ background: "#26303d" }}
+            />
+          </div>
+
+          <PaperRow
+            label="= Profit"
+            value={prihod - ulozeno}
+            currency={currency}
+            delay={2.15}
+            start={inView}
+            strong
+            highlight
+          />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/** Screenshotovi iz reklamnog naloga - stoje uz računicu kao dokaz brojki. */
+function ProofShots({ proofs }: { proofs: Proof[] }) {
+  return (
+    <div className="mx-auto w-full max-w-md">
+      <p
+        className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em]"
+        style={{ color: GOLD }}
+      >
+        Dokaz iz naloga
+      </p>
+      <div className="space-y-3">
+        {proofs.map((p, i) => (
+          <motion.figure
+            key={p.src}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{
+              delay: 0.15 + i * 0.12,
+              type: "spring",
+              stiffness: 130,
+              damping: 20,
+            }}
+            className="overflow-hidden rounded-lg bg-white shadow-[0_12px_30px_-14px_rgba(0,0,0,0.9)] ring-1 ring-white/12"
+          >
+            <Image
+              src={p.src}
+              alt={p.alt}
+              width={p.w}
+              height={p.h}
+              sizes="(min-width: 768px) 420px, 90vw"
+              className="h-auto w-full"
+            />
+          </motion.figure>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const steps = [
   {
-    icon: EyeOff,
-    title: "Oglasi koje niko ne primeti",
-    desc: "Amaterske kreative se gube u feed-u. Korisnik skroluje dalje za pola sekunde, a tvoj budžet i dalje curi.",
+    icon: CalendarCheck,
+    title: "Sastanak",
+    desc: "Sedneš sa nama na 30 minuta. Ispričaš nam ko su tvoji kupci i šta si do sada probao, a mi izlazimo na teren sa jasnom slikom brenda.",
+    image: null as string | null,
   },
   {
-    icon: Wallet,
-    title: "Budžet odlazi u prazno",
-    desc: "Ista publika, isti budžet - ali sa slabom kreativom plaćaš skuplji klik i dobijaš manje kupaca. Kreativa je 80% rezultata.",
+    icon: PenLine,
+    title: "Pisanje kreativa",
+    desc: "Mi pišemo hook-ove, poruke i uglove koji će raditi za tvoj brend. Ne nagađamo, već koristimo ono što je već prodavalo kod brendova sa istim tipom kupca kao tvoj.",
+    image: null as string | null,
   },
   {
-    icon: Frown,
-    title: "Brend izgleda jeftino",
-    desc: "Dok ti improvizuješ u Canvi, konkurencija sa premium vizuelima preuzima poverenje - i prodaju.",
+    icon: Clapperboard,
+    title: "Produkcija",
+    desc: "Dizajniramo i montiramo 10 kreativa u tvojim bojama, tipografiji i tonu. Dobijaš ih spremne za objavu - u formatima za instagram, tiktok i yt.",
+    image: null as string | null,
+  },
+  {
+    icon: BookOpenCheck,
+    title: "Implementacija vodiča",
+    desc: "Uz kreative dobijaš PDF vodič: Ti samo pratiš korake - i gledaš rezultat.",
+    image: null as string | null,
   },
 ];
 
-const agitation = [
-  "Paljaš kampanju, a CTR i prodaja su razočaravajući.",
-  "Trošiš sate u Canvi, a vizueli i dalje ne prodaju.",
-  "Nemaš ideju šta da objaviš ni kako da to iskoristiš.",
-  "Svaka objava izgleda drugačije - brend nema prepoznatljiv stil.",
-  "Plaćaš oglase, ali slaba kreativa diže cenu po rezultatu.",
+/** Screenshot iz reklamnog naloga koji stoji uz računicu. */
+type Proof = { src: string; w: number; h: number; alt: string };
+
+/**
+ * Studije slučaja - `prihod` je stvarno izgenerisan iznos, a `ulozeno`
+ * je za sada okvirna brojka koju treba zameniti stvarnim ulaganjem.
+ */
+const smallCases = [
+  {
+    client: "Infinity Laser Studio",
+    logo: "/logos/ils-logo.png",
+    /** Snimak kreative se dodaje kad bude spreman. */
+    videoId: null as string | null,
+    /** Prihod je iznos sa screenshota ispod računice. */
+    prihod: 6304.85,
+    ulozeno: 800,
+    currency: "$",
+    /** Kreativa desno, računica levo. */
+    mediaRight: true,
+    proofs: [
+      {
+        src: "/bento1/b8.webp",
+        w: 980,
+        h: 48,
+        alt: "Kampanja „Anin Odmor“ sa 6.304,85 $ vrednosti kupovina",
+      },
+    ] as Proof[],
+  },
+  {
+    client: "Ego Tike",
+    logo: "/logos/egotike.webp",
+    videoId: "iQEcAK09saQ" as string | null,
+    prihod: 30908.41,
+    ulozeno: 3500,
+    currency: "$",
+    mediaRight: false,
+    proofs: [
+      {
+        src: "/bento1/b3.webp",
+        w: 1076,
+        h: 160,
+        alt: "Kampanja „Zamena & Reklamacija“ sa 30.908,41 $ vrednosti kupovina",
+      },
+    ] as Proof[],
+  },
 ];
 
-const benefits = [
+const valueStack = [
   {
-    icon: ImageIcon,
+    title: "Strateški sastanak i analiza brenda",
+    value: 180,
+  },
+  {
     title: "10 premium kreativa",
-    desc: "Profesionalno dizajnirani vizueli prilagođeni tvom brendu - spremni za objavu.",
+    value: 700,
   },
   {
-    icon: PenTool,
-    title: "Brend-konzistentan stil",
-    desc: "Boje, tipografija i ton usklađeni - feed koji deluje kao da iza njega stoji ozbiljan tim.",
+    title: "Dizajn u stilu brenda",
+    value: 150,
   },
   {
-    icon: Layers,
-    title: "Spremno za testiranje",
-    desc: "Više varijanti za Meta kampanje - testiraj, skaliraj pobednike, spusti cenu po kupcu.",
-  },
-  {
-    icon: FileText,
     title: "Strateški PDF vodič",
-    desc: "Tačno znaš kako, gde i kada da objaviš kreative za maksimalan efekat.",
+    value: 200,
   },
 ];
+
+const stackTotal = valueStack.reduce((sum, v) => sum + v.value, 0);
+const BONUS_VALUE = 90;
 
 export default function CreativeEngineLanding() {
   const pkg = getPackage("creative-engine")!;
@@ -105,14 +405,18 @@ export default function CreativeEngineLanding() {
   return (
     <div className="relative pb-28 sm:pb-24">
       {/* ───────────── HERO ───────────── */}
-      <section className="relative isolate overflow-hidden grain pt-16 pb-12 sm:pt-20 md:pt-24 md:pb-20">
+      <section className="relative isolate overflow-hidden pt-16 pb-12 sm:pt-20 md:pt-24 md:pb-20">
+        {/* Ista atmosfera kao na glavnoj landing stranici: mreža → sjaj → fade. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full opacity-50 blur-[130px]"
-          style={{
-            background: `radial-gradient(circle, ${GOLD}55, transparent 60%)`,
-          }}
-        />
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+        >
+          <div className="hero-grid absolute inset-0" />
+          <div className="hero-radial absolute inset-0" />
+          <div className="hero-glow absolute left-1/2 top-0 h-[20rem] w-[130%] -translate-x-1/2 rounded-full bg-primary/20 blur-[90px] sm:h-[24rem] sm:w-[80%] md:h-[28rem]" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-background sm:h-48" />
+        </div>
+
         <div className="container-x relative">
           <Link
             href="/#paketi"
@@ -165,48 +469,38 @@ export default function CreativeEngineLanding() {
             >
               Skeylo kreative su izgenerisale preko{" "}
               <span className="font-bold text-foreground">113.000€</span>.
-              Dobijaš 10 premium kreativa prilagođenih tvom brendu i strateški
-              vodič kako da ih iskoristiš za maksimalan efekat.
+              Dobijaš 10 prodajnih kreativa prilagođenih tvom brendu i strateški
+              vodič kako da ih iskoristiš za maksimalan profit.
             </motion.p>
 
+            {/* ── Pokazivač na VSL ── */}
             <motion.div
               custom={3}
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row"
+              className="mt-10 flex flex-col items-center gap-2 sm:mt-12"
             >
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-2xl font-extrabold sm:text-3xl">
-                  {formatPrice(pkg.price)}€
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  / {pkg.priceNote}
-                </span>
-              </div>
-
-              <CreativeQuizPopup>
-                <button type="button" className={ctaCls}>
-                  Zatraži svojih 10 kreativa
-                  <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-                </button>
-              </CreativeQuizPopup>
+              <p className="text-base font-semibold sm:text-lg">
+                Pogledaj video u kom je sve objašnjeno
+              </p>
+              <motion.span
+                aria-hidden
+                animate={{ y: [0, 8, 0] }}
+                transition={{
+                  duration: 1.6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="inline-flex"
+              >
+                <ArrowDown className="size-7" style={{ color: GOLD }} />
+              </motion.span>
             </motion.div>
-
-            <motion.p
-              custom={4}
-              variants={fadeUp}
-              initial="hidden"
-              animate="show"
-              className="mt-4 text-sm text-muted-foreground"
-            >
-              5 kratkih pitanja o tvom brendu · javljamo se u roku od 48h ·
-              ništa ne plaćaš na sajtu
-            </motion.p>
           </div>
 
           {/* ── VSL ── */}
-          <div className="mx-auto mt-10 max-w-4xl sm:mt-14">
+          <div className="mx-auto mt-4 max-w-4xl sm:mt-6">
             <YouTubePlayer
               videoId="7gtOE3FhnEE"
               title="Creative Engine"
@@ -216,156 +510,253 @@ export default function CreativeEngineLanding() {
         </div>
       </section>
 
-      {/* ───────────── STORYTELLING / FOMO ───────────── */}
+      {/* ───────────── PROCES / STORYTELLING ───────────── */}
       <section className="py-12 md:py-20">
         <div className="container-x">
           <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>Zašto kampanja podbacuje</SectionLabel>
+            <SectionLabel>Kako to izgleda</SectionLabel>
             <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
-              Problem najčešće nije budžet -{" "}
-              <span className="text-gradient">nego kreativa</span>
+              Ti ne radiš ništa -{" "}
+              <span className="text-gradient">mi radimo sve</span>
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:mt-5 sm:text-lg">
-              Meta algoritam je pametan, ali ne može da proda slabim vizuelom.
-              Kreativa je ono što zaustavlja skrol, gradi poverenje i pretvara
-              klik u kupca.
-            </p>
           </div>
 
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {fomo.map((f, i) => (
+          <div className="mt-12 space-y-10 sm:mt-16 sm:space-y-14">
+            {steps.map((s, i) => (
               <motion.div
-                key={f.title}
-                custom={i}
+                key={s.title}
+                custom={0}
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: "-60px" }}
-                className="rounded-2xl border border-border bg-card/40 p-6 sm:p-7"
+                className="grid items-center gap-6 lg:grid-cols-2 lg:gap-12"
               >
-                <span className="inline-flex size-11 items-center justify-center rounded-xl bg-red-500/10">
-                  <f.icon className="size-5 text-red-400" />
-                </span>
-                <h3 className="mt-5 text-lg font-bold">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {f.desc}
-                </p>
+                <div className={i % 2 === 1 ? "lg:order-2" : undefined}>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="inline-flex size-11 items-center justify-center rounded-xl"
+                      style={{ background: `${GOLD}22` }}
+                    >
+                      <s.icon className="size-5" style={{ color: GOLD }} />
+                    </span>
+                    <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                      Korak {i + 1}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 text-xl font-extrabold sm:text-2xl">
+                    {s.title}
+                  </h3>
+                  <p className="mt-3 leading-relaxed text-muted-foreground">
+                    {s.desc}
+                  </p>
+                </div>
+
+                <div className={i % 2 === 1 ? "lg:order-1" : undefined}>
+                  <StepMedia
+                    image={s.image}
+                    alt={`${s.title} - Creative Engine`}
+                  />
+                </div>
               </motion.div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ───────────── CASE STUDY ───────────── */}
-      <section className="py-12 md:py-20">
-        <div className="container-x">
-          <div className="mx-auto max-w-3xl text-center">
-            <SectionLabel>Studija slučaja</SectionLabel>
-            <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
-              Brojke, ne obećanja
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-              Iste kampanje, ista publika - samo nove kreative. Premium vizueli
-              su zaustavili skrol, podigli CTR i spustili cenu po kupcu.
-              Rezultat: preko 113.000€ generisano kroz Skeylo kreative.
-            </p>
+          {/* ── Rezultat: case study video ── */}
+          <div className="mt-12 flex flex-col items-center sm:mt-16">
+            <motion.span
+              aria-hidden
+              animate={{ y: [0, 8, 0] }}
+              transition={{
+                duration: 1.6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="inline-flex"
+            >
+              <ArrowDown className="size-7" style={{ color: GOLD }} />
+            </motion.span>
+            <SectionLabel>Rezultat</SectionLabel>
+            <h3 className="mt-3 text-balance text-center text-xl font-extrabold sm:text-3xl">
+              I onda se desi ovo
+            </h3>
 
-            <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-4 border-t border-border pt-8">
-              {[
-                { value: "113.000€", label: "generisano kroz kreative" },
-                { value: "10", label: "premium kreativa po brendu" },
-                { value: "100%", label: "prilagođeno tvom brendu" },
-              ].map((r) => (
-                <div key={r.label}>
-                  <div className="font-display text-lg font-extrabold text-gradient sm:text-3xl">
-                    {r.value}
-                  </div>
-                  <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                    {r.label}
-                  </p>
+            <div className="mx-auto mt-8 w-full max-w-3xl">
+              {REZULTAT_VIDEO_ID ? (
+                <YouTubePlayer
+                  videoId={REZULTAT_VIDEO_ID}
+                  title="Rezultat - studija slučaja"
+                  caption="Studija slučaja"
+                />
+              ) : (
+                <div
+                  aria-hidden
+                  className="flex aspect-video items-center justify-center rounded-3xl border border-dashed"
+                  style={{
+                    borderColor: `${GOLD}40`,
+                    background: `linear-gradient(160deg, ${GOLD}0f, transparent)`,
+                  }}
+                >
+                  <Clapperboard
+                    className="size-8 opacity-30"
+                    style={{ color: GOLD }}
+                  />
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ───────────── PROBLEM → SOLUTION ───────────── */}
-      <section className="py-12 md:py-20">
-        <div className="container-x grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-border bg-card/40 p-6 sm:p-8 md:p-10">
-            <SectionLabel>Zvuči poznato?</SectionLabel>
-            <h3 className="mt-3 text-xl font-bold sm:text-2xl">
-              Ovako izgleda bez prave kreative
-            </h3>
-            <ul className="mt-6 space-y-4">
-              {agitation.map((a) => (
-                <li key={a} className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-red-500/10">
-                    <ArrowDownRight className="size-3.5 text-red-400" />
-                  </span>
-                  <span className="text-muted-foreground">{a}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div
-            className="rounded-3xl border p-6 sm:p-8 md:p-10"
-            style={{
-              borderColor: `${GOLD}55`,
-              background: `linear-gradient(160deg, ${GOLD}1f, transparent)`,
-            }}
-          >
-            <SectionLabel>Rešenje</SectionLabel>
-            <h3 className="mt-3 text-xl font-bold sm:text-2xl">
-              Kreative koje zaustavljaju skrol
-            </h3>
-            <p className="mt-6 text-base leading-relaxed text-foreground/90 sm:text-lg">
-              {pkg.promise}
-            </p>
-            <p className="mt-4 leading-relaxed text-muted-foreground">
-              Bez sati u Canvi i nagađanja šta da objaviš. Dobijaš gotovu
-              biblioteku premium kreativa i jasan plan kako da ih iskoristiš -
-              spremno za prvu objavu.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────── CORE BENEFITS ───────────── */}
+      {/* ───────────── MALE STUDIJE SLUČAJA ───────────── */}
       <section className="py-12 md:py-20">
         <div className="container-x">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <SectionLabel>Šta tačno dobijaš</SectionLabel>
-            <h2 className="mt-3 text-balance text-2xl font-extrabold sm:text-4xl md:text-5xl">
-              Creative Engine
+          <div className="mx-auto max-w-3xl text-center">
+            <SectionLabel>Brojke, ne obećanja</SectionLabel>
+            <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
+              Kreative koje su{" "}
+              <span className="text-gradient">veoma profitabilne</span>
             </h2>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {benefits.map((b, i) => (
+          {/* Studije slučaja idu jedna ispod druge: kreativa + računica */}
+          <div className="mx-auto mt-10 max-w-4xl space-y-8 sm:mt-12 sm:space-y-10">
+            {smallCases.map((c, i) => (
               <motion.div
-                key={b.title}
+                key={c.client}
                 custom={i}
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: "-60px" }}
-                className="rounded-2xl card-glass p-6 text-center sm:p-7"
+                className="rounded-3xl card-glass p-6 sm:p-8"
               >
-                <span
-                  className="mx-auto inline-flex size-12 items-center justify-center rounded-xl"
-                  style={{ background: `${GOLD}22` }}
+                <div className="flex items-center gap-3">
+                  <span className="relative inline-flex size-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-background/40 p-2">
+                    <Image
+                      src={c.logo}
+                      alt={`${c.client} logo`}
+                      width={48}
+                      height={48}
+                      sizes="48px"
+                      className="size-full object-contain"
+                    />
+                  </span>
+                  <h3 className="text-base font-bold sm:text-lg">{c.client}</h3>
+                </div>
+
+                {/* Naizmenično: Ego Tike kreativa levo, ILS kreativa desno */}
+                <div
+                  className={`mt-6 grid items-center gap-8 md:gap-10 ${
+                    c.mediaRight
+                      ? "md:grid-cols-[minmax(0,1fr)_220px]"
+                      : "md:grid-cols-[220px_minmax(0,1fr)]"
+                  }`}
                 >
-                  <b.icon className="size-6" style={{ color: GOLD }} />
-                </span>
-                <h3 className="mt-5 text-lg font-bold">{b.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {b.desc}
-                </p>
+                  {/* Primer kreative */}
+                  <div
+                    className={`mx-auto w-full max-w-[220px] ${
+                      c.mediaRight ? "md:order-2" : ""
+                    }`}
+                  >
+                    {c.videoId ? (
+                      <YouTubePlayer
+                        videoId={c.videoId}
+                        title={`${c.client} - primer kreative`}
+                        caption="Primer kreative"
+                        aspect="aspect-[9/16]"
+                      />
+                    ) : (
+                      <div
+                        className="flex aspect-[9/16] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed px-4 text-center"
+                        style={{
+                          borderColor: `${GOLD}40`,
+                          background: `linear-gradient(160deg, ${GOLD}0f, transparent)`,
+                        }}
+                      >
+                        <Clapperboard
+                          className="size-8 opacity-30"
+                          style={{ color: GOLD }}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          Primer kreative uskoro
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Računica: prihod - uloženo = profit + dokazi iz naloga */}
+                  <div
+                    className={`space-y-6 ${c.mediaRight ? "md:order-1" : ""}`}
+                  >
+                    <ProfitPaper
+                      prihod={c.prihod}
+                      ulozeno={c.ulozeno}
+                      currency={c.currency}
+                    />
+                    {c.proofs.length > 0 && <ProofShots proofs={c.proofs} />}
+                  </div>
+                </div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────── VALUE STACK ───────────── */}
+      <section className="py-12 md:py-20">
+        <div className="container-x">
+          <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-12">
+            <SectionLabel>Šta tačno dobijaš</SectionLabel>
+            <h2 className="mt-3 text-balance text-2xl font-extrabold sm:text-4xl md:text-5xl">
+              Vrednost od{" "}
+              <span className="text-gradient">{formatPrice(stackTotal)}€</span>{" "}
+              za {formatPrice(pkg.price)}€
+            </h2>
+          </div>
+
+          <div className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-border card-glass">
+            <ul className="divide-y divide-border">
+              {valueStack.map((v, i) => (
+                <motion.li
+                  key={v.title}
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, margin: "-60px" }}
+                  className="flex items-start gap-4 p-5 sm:p-6"
+                >
+                  <span
+                    className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: `${GOLD}22` }}
+                  >
+                    <Check className="size-4" style={{ color: GOLD }} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold">{v.title}</h3>
+                  </div>
+                  <span className="shrink-0 pl-2 text-sm font-semibold text-muted-foreground line-through sm:text-base">
+                    {formatPrice(v.value)}€
+                  </span>
+                </motion.li>
+              ))}
+            </ul>
+
+            <div
+              className="flex flex-col gap-1 border-t border-border p-5 text-center sm:flex-row sm:items-center sm:justify-between sm:p-6 sm:text-left"
+              style={{ background: `${GOLD}0f` }}
+            >
+              <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                Ukupna vrednost
+              </span>
+              <span className="font-display text-2xl font-extrabold sm:text-3xl">
+                <span className="text-muted-foreground line-through">
+                  {formatPrice(stackTotal)}€
+                </span>{" "}
+                <span className="text-gradient">{formatPrice(pkg.price)}€</span>
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -383,30 +774,60 @@ export default function CreativeEngineLanding() {
             <div className="relative mx-auto max-w-2xl text-center">
               <SectionLabel>Neodoljiva ponuda</SectionLabel>
               <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl">
-                10 kreativa + strateški vodič za{" "}
-                <span className="text-gradient">{formatPrice(pkg.price)}€</span>
+                Dobijaš sve ovo + <span className="text-gradient">BONUS</span>{" "}
+                dizajn vizit kartice
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-                Jednokratno ulaganje u kreative koje su deo sistema koji je
-                generisao preko 113.000€. Spremno za objavu, prilagođeno tvom
-                brendu.
+                Sastanak, 10 premium kreativa i strateški vodič - ukupno{" "}
+                {formatPrice(stackTotal)}€ vrednosti za {formatPrice(pkg.price)}
+                €. A vizit karticu dobijaš gratis.
               </p>
 
-              <div className="mt-8 flex flex-col items-center gap-4 border-t border-border pt-8 sm:mt-10 sm:pt-10">
+              {/* ── Bonus ── */}
+              <div
+                className="mx-auto mt-8 flex max-w-md items-start gap-4 rounded-2xl border p-5 text-left sm:mt-10"
+                style={{
+                  borderColor: `${GOLD}55`,
+                  background: `linear-gradient(160deg, ${GOLD}1f, transparent)`,
+                }}
+              >
+                <span
+                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: `${GOLD}22` }}
+                >
+                  <CreditCard className="size-5" style={{ color: GOLD }} />
+                </span>
+                <div className="min-w-0">
+                  <p
+                    className="text-xs font-semibold uppercase tracking-widest"
+                    style={{ color: GOLD }}
+                  >
+                    Bonus
+                  </p>
+                  <h3 className="mt-1 font-bold">Dizajn vizit kartice</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Vizit kartica u stilu tvog brenda - spremna za štampu.{" "}
+                    <span className="text-muted-foreground/80 line-through">
+                      {formatPrice(BONUS_VALUE)}€
+                    </span>{" "}
+                    <span className="font-semibold text-foreground">
+                      gratis
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col items-center gap-3 border-t border-border pt-8 sm:mt-10 sm:pt-10">
                 <div className="flex items-baseline gap-2">
                   <span className="font-display text-4xl font-extrabold sm:text-5xl">
                     {formatPrice(pkg.price)}€
                   </span>
-                  <span className="text-muted-foreground">
-                    / {pkg.priceNote}
-                  </span>
+                  {pkg.priceNote && (
+                    <span className="text-muted-foreground">
+                      / {pkg.priceNote}
+                    </span>
+                  )}
                 </div>
-                <CreativeQuizPopup>
-                  <button type="button" className={ctaCls}>
-                    Zatraži svojih 10 kreativa
-                    <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-                  </button>
-                </CreativeQuizPopup>
                 <p className="text-sm text-muted-foreground">
                   Odgovoriš na 5 pitanja, javljamo se za 48h i dogovaramo
                   detalje - plaćaš tek kad prihvatiš ponudu.
@@ -424,9 +845,11 @@ export default function CreativeEngineLanding() {
             <span className="font-display text-2xl font-extrabold">
               {formatPrice(pkg.price)}€
             </span>
-            <span className="text-sm text-muted-foreground">
-              / {pkg.priceNote}
-            </span>
+            {pkg.priceNote && (
+              <span className="text-sm text-muted-foreground">
+                / {pkg.priceNote}
+              </span>
+            )}
           </div>
 
           <div className="flex w-full flex-col items-center gap-1.5 sm:w-auto sm:items-end">
@@ -435,7 +858,7 @@ export default function CreativeEngineLanding() {
                 type="button"
                 className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
               >
-                Zatraži svojih 10 kreativa
+                Zakaži sastanak
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </button>
             </CreativeQuizPopup>
