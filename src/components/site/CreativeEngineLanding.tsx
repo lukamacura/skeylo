@@ -31,7 +31,7 @@ const GOLD = "#f0b656";
 const ORANGE = "#d87928";
 
 /** Case study video za poslednji korak - dodaje se kad snimak bude gotov. */
-const REZULTAT_VIDEO_ID: string | null = null;
+const REZULTAT_VIDEO_ID: string | null = "xqlJQ6uadoQ";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
@@ -345,7 +345,7 @@ const smallCases = [
     videoId: null as string | null,
     /** Prihod je iznos sa screenshota ispod računice. */
     prihod: 6304.85,
-    ulozeno: 800,
+    ulozeno: 476,
     currency: "$",
     /** Kreativa desno, računica levo. */
     mediaRight: true,
@@ -363,7 +363,7 @@ const smallCases = [
     logo: "/logos/egotike.webp",
     videoId: "iQEcAK09saQ" as string | null,
     prihod: 30908.41,
-    ulozeno: 3500,
+    ulozeno: 3171,
     currency: "$",
     mediaRight: false,
     proofs: [

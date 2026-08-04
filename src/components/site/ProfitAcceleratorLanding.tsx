@@ -286,6 +286,14 @@ export default function ProfitAcceleratorLanding() {
               ))}
             </div>
           </div>
+
+          <div className="mx-auto mt-10 max-w-3xl sm:mt-12">
+            <YouTubePlayer
+              videoId="35pNWhwSPoU"
+              title="Profit Accelerator - studija slučaja"
+              caption="Studija slučaja"
+            />
+          </div>
         </div>
       </section>
 
