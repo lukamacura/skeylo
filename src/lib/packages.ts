@@ -6,8 +6,10 @@ export type Package = {
   slug: string;
   name: string;
   tagline: string;
-  price: number; // u evrima
+  price: number; // u evrima (interno - koristi se za vrednost leada u CRM-u)
   priceNote: string;
+  // Paket sa cenom po meri - cena se nikad ne prikazuje na sajtu
+  customPrice?: boolean;
   badge: string;
   // CTA tekst na kartici (drugačiji za svaki paket)
   cta: string;
@@ -128,6 +130,7 @@ export const PACKAGES: Package[] = [
       "Dok se Vi fokusirate na upravljanje biznisom, Skeylo tim radi sve što je potrebno da Vaš brend dostigne svoj maksimalni potencijal.",
     price: 2550,
     priceNote: "",
+    customPrice: true,
     badge: "All-in-one",
     cta: "Pogledaj ponudu",
     premium: true,
@@ -184,3 +187,10 @@ export function getPackage(slug: string): Package | undefined {
 
 export const formatPrice = (n: number) =>
   new Intl.NumberFormat("sr-RS").format(n);
+
+// Tekst koji zamenjuje cenu za pakete sa ponudom po meri.
+export const CUSTOM_PRICE_LABEL = "Po dogovoru";
+
+// Jedini način na koji cena sme da se prikaže u UI-u.
+export const priceLabel = (p: Package) =>
+  p.customPrice ? CUSTOM_PRICE_LABEL : `${formatPrice(p.price)}€`;

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { getPackage, formatPrice } from "@/lib/packages";
+import { getPackage } from "@/lib/packages";
 import ProfitZaTebeLanding from "@/components/site/ProfitZaTebeLanding";
 
 const pkg = getPackage("profit-za-tebe")!;
 
 export const metadata: Metadata = {
-  title: `${pkg.name} - ${formatPrice(pkg.price)}€/${pkg.priceNote}`,
+  title: `${pkg.name} - cena po dogovoru`,
   description:
     "Naš tim radi sve umesto tebe - analiza tržišta, kreative, Meta reklame i sajt sa finansijskim izveštajima. Ceo biznis online, ključ u ruke.",
   openGraph: {

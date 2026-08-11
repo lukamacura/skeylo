@@ -7,7 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Menu, X } from "lucide-react";
 
-import { PACKAGES, formatPrice } from "@/lib/packages";
+import { PACKAGES, priceLabel } from "@/lib/packages";
 import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
@@ -210,7 +210,7 @@ export default function HeaderClient() {
                               {p.tagline}
                             </span>
                             <span className="text-xs font-semibold text-primary">
-                              {formatPrice(p.price)}€
+                              {priceLabel(p)}
                             </span>
                           </Link>
                         </NavigationMenuLink>
@@ -318,7 +318,7 @@ export default function HeaderClient() {
                     </span>
                   </span>
                   <span className="text-sm font-semibold text-primary">
-                    {formatPrice(p.price)}€
+                    {priceLabel(p)}
                   </span>
                 </Link>
               </li>

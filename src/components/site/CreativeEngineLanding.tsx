@@ -383,12 +383,16 @@ const valueStack = [
     value: 180,
   },
   {
-    title: "10 premium kreativa",
-    value: 700,
+    title: "Smišljanje 10 premium kreativa",
+    value: 200,
   },
   {
-    title: "Dizajn u stilu brenda",
-    value: 150,
+    title: "Snimanje",
+    value: 300,
+  },
+  {
+    title: "Montiranje",
+    value: 200,
   },
   {
     title: "Strateški PDF vodič",
@@ -858,7 +862,7 @@ export default function CreativeEngineLanding() {
                 type="button"
                 className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
               >
-                Zakaži sastanak
+                Zatraži besplatnu konsultaciju
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </button>
             </CreativeQuizPopup>

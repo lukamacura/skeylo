@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check, ArrowRight } from "lucide-react";
-import { PACKAGES, formatPrice } from "@/lib/packages";
+import { PACKAGES, priceLabel } from "@/lib/packages";
 
 export default function Packages() {
   return (
@@ -78,8 +78,14 @@ export default function Packages() {
                 </p>
 
                 <div className="mt-5 flex items-baseline gap-1.5 sm:mt-6">
-                  <span className="font-display text-4xl font-extrabold sm:text-5xl">
-                    {formatPrice(pkg.price)}€
+                  <span
+                    className={`font-display font-extrabold ${
+                      pkg.customPrice
+                        ? "text-3xl sm:text-4xl"
+                        : "text-4xl sm:text-5xl"
+                    }`}
+                  >
+                    {priceLabel(pkg)}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {pkg.priceNote}

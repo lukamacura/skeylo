@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowDownRight,
@@ -105,14 +106,17 @@ export default function ProfitAcceleratorLanding() {
   return (
     <div className="relative pb-28 sm:pb-24">
       {/* ───────────── HERO ───────────── */}
-      <section className="relative isolate overflow-hidden grain pt-16 pb-12 sm:pt-20 md:pt-24 md:pb-20">
+      <section className="relative isolate overflow-hidden pt-16 pb-12 sm:pt-20 md:pt-24 md:pb-20">
+        {/* Ista atmosfera kao na glavnoj landing stranici: mreža → sjaj → fade. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[60rem] -translate-x-1/2 rounded-full opacity-50 blur-[130px]"
-          style={{
-            background: `radial-gradient(circle, ${GOLD}55, transparent 60%)`,
-          }}
-        />
+          className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+        >
+          <div className="hero-grid absolute inset-0" />
+          <div className="hero-radial absolute inset-0" />
+          <div className="hero-glow absolute left-1/2 top-0 h-[20rem] w-[130%] -translate-x-1/2 rounded-full bg-primary/20 blur-[90px] sm:h-[24rem] sm:w-[80%] md:h-[28rem]" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-background sm:h-48" />
+        </div>
         <div className="container-x relative">
           <Link
             href="/#paketi"
@@ -183,29 +187,36 @@ export default function ProfitAcceleratorLanding() {
                   / {pkg.priceNote}
                 </span>
               </div>
-
-              <AcceleratorQuizPopup>
-                <button type="button" className={ctaCls}>
-                  Zatraži plan rasta
-                  <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-                </button>
-              </AcceleratorQuizPopup>
             </motion.div>
 
-            <motion.p
+            {/* ── Pokazivač na VSL ── */}
+            <motion.div
               custom={4}
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-4 text-sm text-muted-foreground"
+              className="mt-10 flex flex-col items-center gap-2 sm:mt-12"
             >
-              5 kratkih pitanja o biznisu · javljamo se u roku od 48h · razgovor
-              je besplatan, bez pritiska
-            </motion.p>
+              <p className="text-base font-semibold sm:text-lg">
+                Pogledaj video u kom je sve objašnjeno
+              </p>
+              <motion.span
+                aria-hidden
+                animate={{ y: [0, 8, 0] }}
+                transition={{
+                  duration: 1.6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="inline-flex"
+              >
+                <ArrowDown className="size-7" style={{ color: GOLD }} />
+              </motion.span>
+            </motion.div>
           </div>
 
           {/* ── VSL ── */}
-          <div className="mx-auto mt-10 max-w-4xl sm:mt-14">
+          <div className="mx-auto mt-4 max-w-4xl sm:mt-6">
             <YouTubePlayer
               videoId="N9XojZpNSQg"
               title="Profit Accelerator"
@@ -410,7 +421,7 @@ export default function ProfitAcceleratorLanding() {
                 </div>
                 <AcceleratorQuizPopup>
                   <button type="button" className={ctaCls}>
-                    Zatraži plan rasta
+                    Zatraži besplatnu konsultaciju
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
                   </button>
                 </AcceleratorQuizPopup>
@@ -442,7 +453,7 @@ export default function ProfitAcceleratorLanding() {
                 type="button"
                 className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
               >
-                Zatraži plan rasta
+                Zatraži besplatnu konsultaciju
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </button>
             </AcceleratorQuizPopup>
