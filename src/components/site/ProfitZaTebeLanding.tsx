@@ -41,7 +41,7 @@ const fadeUp = {
 };
 
 const ctaCls =
-  "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-6 py-3.5 text-base font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4";
+  "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-4 py-2.5 text-sm font-extrabold leading-tight text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4 sm:text-base";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -124,7 +124,7 @@ export default function ProfitZaTebeLanding() {
   const pkg = getPackage("profit-za-tebe")!;
 
   return (
-    <div className="relative pb-28 sm:pb-24">
+    <div className="relative pb-20 sm:pb-24">
       {/* ───────────── HERO ───────────── */}
       <section className="relative isolate overflow-hidden pt-16 pb-12 sm:pt-20 md:pt-24 md:pb-20">
         {/* Ista atmosfera kao na glavnoj landing stranici: mreža → sjaj → fade. */}
@@ -514,29 +514,28 @@ export default function ProfitZaTebeLanding() {
 
       {/* ───────────── FIXED BOTTOM CTA ───────────── */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur">
-        <div className="container-x flex flex-col items-center gap-2 py-3 sm:flex-row sm:justify-between sm:gap-4 sm:py-4">
+        <div className="container-x flex flex-col items-center gap-1.5 py-2 sm:flex-row sm:justify-between sm:gap-4 sm:py-4">
           <div className="hidden items-baseline gap-1.5 sm:flex">
             <span className="font-display text-xl font-extrabold">
               {priceLabel(pkg)}
             </span>
           </div>
 
-          <div className="flex w-full flex-col items-center gap-1.5 sm:w-auto sm:items-end">
+          <div className="flex w-full flex-col items-center gap-1 sm:w-auto sm:items-end sm:gap-1.5">
             <ProfitQuizPopup>
-              <button
-                type="button"
-                className={`${ctaCls} w-full px-8 py-3.5 sm:w-auto`}
-              >
+              <button type="button" className={`${ctaCls} w-full sm:w-auto`}>
                 Zatraži besplatnu konsultaciju
-                <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1 sm:size-5" />
               </button>
             </ProfitQuizPopup>
-            <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] text-muted-foreground sm:text-xs">
+            <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-center text-[10px] leading-tight text-muted-foreground sm:gap-x-3 sm:text-xs">
               <span>~1 minut pitanja</span>
               <span aria-hidden>·</span>
               <span>Biraš kako te kontaktiramo</span>
-              <span aria-hidden>·</span>
-              <span>Javljamo se za 48h</span>
+              <span aria-hidden className="hidden sm:inline">
+                ·
+              </span>
+              <span className="hidden sm:inline">Javljamo se za 48h</span>
             </p>
           </div>
         </div>
