@@ -88,6 +88,38 @@ const rowA: Shot[] = [
     rot: 1.2,
     alt: "8.206,85 $ potrošeno, 479 prodaja, 71.945,73 $ vrednosti",
   },
+  {
+    src: "/bento1/b14.webp",
+    w: 1520,
+    h: 158,
+    cls: "w-[340px] sm:w-[400px]",
+    rot: -1.6,
+    alt: "Skeylo Accelerator kampanja sa 75.681,78 $ vrednosti kupovina",
+  },
+  {
+    src: "/bento1/b19.webp",
+    w: 844,
+    h: 162,
+    cls: "w-[240px] sm:w-[280px]",
+    rot: 2.8,
+    alt: "Static kreativa za DE i GR tržište sa 5.916,10 $ vrednosti kupovina",
+  },
+  {
+    src: "/bento1/b17.webp",
+    w: 1090,
+    h: 164,
+    cls: "w-[290px] sm:w-[340px]",
+    rot: -1.5,
+    alt: "Kampanja „No Discount“: 956,38 $ potrošeno, 13.086,53 $ vrednosti, ROAS 13,68",
+  },
+  {
+    src: "/bento1/b16.webp",
+    w: 904,
+    h: 156,
+    cls: "w-[250px] sm:w-[295px]",
+    rot: 2.2,
+    alt: "Kreativa „Nisu Samo Skečevi“ sa 15.777,77 $ vrednosti kupovina",
+  },
 ];
 
 const rowB: Shot[] = [
@@ -133,11 +165,35 @@ const rowB: Shot[] = [
   },
   {
     src: "/bento1/b3.webp",
-    w: 1002,
-    h: 90,
+    w: 1076,
+    h: 160,
     cls: "w-[290px] sm:w-[340px]",
     rot: -1.8,
-    alt: "Kampanja sa 30.908,41 $ vrednosti kupovina",
+    alt: "Kampanja „Zamena & Reklamacija“ sa 30.908,41 $ vrednosti kupovina",
+  },
+  {
+    src: "/bento1/b15.webp",
+    w: 1540,
+    h: 158,
+    cls: "w-[340px] sm:w-[400px]",
+    rot: 1.6,
+    alt: "Skeylo Accelerator kampanja sa 43.582,35 $ vrednosti kupovina",
+  },
+  {
+    src: "/bento1/b20.webp",
+    w: 1630,
+    h: 218,
+    cls: "w-[320px] sm:w-[375px]",
+    rot: -2.4,
+    alt: "Kreativa „Avatar Callout“ sa 3.326,44 $ vrednosti kupovina",
+  },
+  {
+    src: "/bento1/b18.webp",
+    w: 1398,
+    h: 162,
+    cls: "w-[330px] sm:w-[385px]",
+    rot: 1.9,
+    alt: "Kreativa „Price Benefit — Ista, duplo jeftinije“ sa 7.056,98 $ vrednosti kupovina",
   },
 ];
 
@@ -315,13 +371,13 @@ export default function BentoGrid() {
               <div className="flex h-[126px] items-center overflow-hidden sm:h-[148px]">
                 <ProofRow
                   shots={rowA}
-                  anim="animate-[marquee_52s_linear_infinite]"
+                  anim="animate-[marquee_86s_linear_infinite]"
                 />
               </div>
               <div className="flex h-[126px] items-center overflow-hidden sm:h-[148px]">
                 <ProofRow
                   shots={rowB}
-                  anim="animate-[marquee_58s_linear_infinite_reverse]"
+                  anim="animate-[marquee_88s_linear_infinite_reverse]"
                 />
               </div>
             </div>
