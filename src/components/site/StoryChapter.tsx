@@ -2,7 +2,17 @@
 
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { Guitar, Sparkles, Swords, Tent, type LucideIcon } from "lucide-react";
+import {
+  Dumbbell,
+  Guitar,
+  ImageIcon,
+  NotebookPen,
+  Sparkles,
+  Swords,
+  Tent,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { Chapter, IconName, Shot } from "@/lib/people";
 
@@ -12,6 +22,9 @@ const ICONS: Record<IconName, LucideIcon> = {
   tent: Tent,
   guitar: Guitar,
   sparkles: Sparkles,
+  dumbbell: Dumbbell,
+  "notebook-pen": NotebookPen,
+  users: Users,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -256,6 +269,30 @@ function Media({ chapter }: { chapter: Chapter }) {
     );
   }
 
+  if (chapter.placeholder) {
+    return (
+      <div className="relative grid aspect-[5/4] place-items-center overflow-hidden rounded-2xl card-glass sm:aspect-[4/3]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 grid-lines opacity-30 [mask-image:radial-gradient(70%_70%_at_50%_40%,black,transparent)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-16 left-1/2 h-48 w-64 -translate-x-1/2 rounded-full opacity-60 blur-[70px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(216,121,40,0.4), transparent 70%)",
+          }}
+        />
+        <ImageIcon
+          aria-hidden
+          className="relative size-10 text-primary/50 sm:size-12"
+          strokeWidth={1.5}
+        />
+      </div>
+    );
+  }
+
   if (chapter.quote) {
     const Icon = chapter.icon ? ICONS[chapter.icon] : null;
     return (
@@ -312,7 +349,9 @@ export default function StoryChapter({
   const flip = index % 2 === 1;
   const Icon = chapter.icon ? ICONS[chapter.icon] : null;
   const media = <Media chapter={chapter} />;
-  const hasMedia = Boolean(chapter.shots?.length || chapter.quote);
+  const hasMedia = Boolean(
+    chapter.shots?.length || chapter.quote || chapter.placeholder,
+  );
 
   /** Samo po Y — bočni pomak bi na uskim ekranima virio izvan container-a. */
   const enter = (delay: number) =>

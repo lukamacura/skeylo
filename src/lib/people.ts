@@ -8,7 +8,14 @@
 // prosleđuju ga klijentskoj PersonBio. Zato ovde sme da stoji samo podatak
 // koji se može serijalizovati - ikonice se čuvaju kao ime, a u komponentu
 // se mapiraju u lucide-react element.
-export type IconName = "swords" | "tent" | "guitar" | "sparkles";
+export type IconName =
+  | "swords"
+  | "tent"
+  | "guitar"
+  | "sparkles"
+  | "dumbbell"
+  | "notebook-pen"
+  | "users";
 
 export type Shot = {
   src: string;
@@ -40,6 +47,8 @@ export type Chapter = {
   text: string[];
   /** Istaknuta rečenica - prikazuje se kao panel kad poglavlje nema fotografiju */
   quote?: string;
+  /** Prazan okvir sa ikonicom slike - drži mesto dok fotografija ne stigne */
+  placeholder?: true;
   /** Rečenica uz strelicu koja pokazuje na fotografiju */
   point?: string;
   /** Slike iz /public/people/[key]/ */
@@ -251,9 +260,94 @@ export const PEOPLE: Person[] = [
   },
   {
     key: "mihac",
+    slug: "mihajlo",
     name: "Mihajlo Obradović",
     role: "Video Production Director",
     img: "/people/mihac.webp",
+    heading: "Ćao, ja sam Mihajlo",
+    location: "Novi Sad, Srbija",
+    whatsapp: "381638135141",
+    chips: [
+      "Content Director & Co-founder",
+      "Video Producer",
+      "Studying at Faculty of Technical Science",
+    ],
+    // Medija kolona su za sada prazni okviri (`placeholder`). Kad stignu
+    // fotografije, `placeholder` se menja za `shots` (+ `point`), isti
+    // obrazac kao kod Luke.
+    chapters: [
+      {
+        year: "2016.",
+        title: "Prvi klikovi i YouTube počeci",
+        text: [
+          "Photoshop sam savladao iz priručnika koji mi je slučajno zapao za oko na polici. Odatle sam na YouTube-u otkrio **Sony Vegas i Camtasia Studio** - tutorijale sam gledao po ceo dan.",
+          "Programe sam ==savladao za mesec dana==. Onda sam počeo da snimam sebe samo da bih vežbao montažu, i te klipove potpuno spontano kačio na YouTube.",
+        ],
+        placeholder: true,
+      },
+      {
+        year: "2022.",
+        title: 'Prva "profi" kamera',
+        text: [
+          "Oduvek sam sanjao profesionalnu opremu. U srednjoj školi sam zbog proseka i vladanja dobio stipendiju - **uštedeo sam je celu** da bih priuštio prvu pravu kameru, Canon EOS M50.",
+          "Od tada sav novac ==reinvestiram u opremu==. Krenuo sam od muzičkih spotova, pa se prešaltao na marketing.",
+        ],
+        placeholder: true,
+      },
+      {
+        year: "Skeylo",
+        title: "Od skečeva do ozbiljnog marketinga",
+        text: [
+          "Sa Filipom sam počeo da radim godinu dana nakon što smo se upoznali. Trebao mu je još jedan čovek u timu koji je pravio skečeve za lokalne e-commerce brendove - mojim dolaskom smo sve digli na viši nivo i to su postali ==jedni od najviralnijih klipova na Balkanu==.",
+          "Vremenom su nam ambicije porasle. Nismo više hteli samo skečeve, hteli smo **kompletan marketing za ozbiljne firme**. Ubacio sam Luku, sa kojim sam išao u razred, i tako smo se okupili. Kakav utisak to ostavlja na klijente, svedoče naši rezultati.",
+        ],
+        placeholder: true,
+      },
+      {
+        year: "Danas",
+        title: "Fokus i usavršavanje",
+        text: [
+          "Trenutni fokus su mi **Skeylo klijenti** i izgradnja personalnog brenda na Instagramu, TikToku i YouTube-u.",
+          "Paralelno usavršavam ==3D editovanje i produkciju== - svaki sledeći projekat mora da izgleda bolje od prethodnog.",
+        ],
+        placeholder: true,
+      },
+      {
+        year: "Studije",
+        title: "Fakultet tehničkih nauka",
+        text: [
+          "Studiram programiranje, smer E2, na **FTN-u u Novom Sadu**. Programiranje nije direktno povezano sa produkcijom, ali mi je odličan životni izazov - tera me na maksimalnu produktivnost da bih stigao oba.",
+          "U budućnosti planiram da ==spojim ta dva sveta==: softverski sistemi za kamere i komunikaciju na setu, i produkcija na potpuno drugom nivou.",
+        ],
+        placeholder: true,
+      },
+    ],
+    offscreen: [
+      {
+        icon: "dumbbell",
+        title: "Teretana",
+        text: [
+          "Treninzi snage tri puta nedeljno su mi neophodni da ostanem u fokusu. Odličan način da se čovek isključi i održi radnu disciplinu.",
+        ],
+        placeholder: true,
+      },
+      {
+        icon: "notebook-pen",
+        title: "Filmski scenariji",
+        text: [
+          "Veliki deo vremena provodim pišući scenarije. Razvijam ideje za filmove koje bih u budućnosti voleo da pretvorim u realnost - to je moj kreativni izduvni ventil.",
+        ],
+        placeholder: true,
+      },
+      {
+        icon: "users",
+        title: "Prijatelji",
+        text: [
+          "Kada se kamere ugase i kodiranje završi, slobodno vreme najradije provodim sa prijateljima - trudim se da održim balans između posla i svakodnevice.",
+        ],
+        placeholder: true,
+      },
+    ],
   },
   {
     key: "nina",
