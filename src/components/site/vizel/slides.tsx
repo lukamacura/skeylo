@@ -599,9 +599,9 @@ function Benchmarks() {
           These are the two we borrow from.
         </span>
       </Sub>
-      <Visual className="grid items-start gap-4 md:grid-cols-[auto_1fr] md:gap-8">
+      <Visual className="grid items-start gap-4 md:grid-cols-[auto_minmax(0,1fr)] md:gap-8">
         {shots.length > 0 && (
-          <div className="w-full md:mx-auto md:w-[18.25rem]">
+          <div className="w-full min-w-0 md:mx-auto md:w-[18.25rem]">
             {/* A swipe strip at every size - stacking four full screenshots
               would push the argument itself off the slide. Phones get a
               shorter crop so the strip stays a band, not a wall. */}
@@ -635,7 +635,7 @@ function Benchmarks() {
           </div>
         )}
 
-        <div className="flex flex-col gap-1.5 md:gap-2">
+        <div className="flex min-w-0 flex-col gap-1.5 md:gap-2">
           {BENCHMARKS.map(([name, kicker, body], i) => (
             <div
               key={name}
@@ -739,7 +739,7 @@ const TEAM = [
   {
     name: "A second developer",
     role: "On call - infrastructure",
-    body: "Pulled in for the Supabase schema and the parts that must survive a bad gym connection.",
+    body: "Pulled in for the Supabase schema.",
   },
   {
     name: "A RAG specialist",
