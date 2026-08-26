@@ -597,15 +597,14 @@ function Benchmarks() {
       </Sub>
       <Visual className="grid items-start gap-5 md:grid-cols-[auto_1fr] md:gap-8">
         {shots.length > 0 && (
-          <div className="w-full md:mx-auto md:max-w-[16rem]">
-            {/* A thumb-swipe strip on a phone, a 2x2 contact sheet on desktop.
-              Stacking four full screenshots on a phone would push the argument
-              itself off the slide. */}
-            <div className="-mx-5 flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0">
+          <div className="w-full md:mx-auto md:w-[18.25rem]">
+            {/* A swipe strip at every size - stacking four full screenshots
+              would push the argument itself off the slide. */}
+            <div className="-mx-5 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain px-5 pb-1 md:mx-0 md:px-0">
               {shots.map((src, i) => (
                 <div
                   key={src}
-                  className="relative w-[8.75rem] shrink-0 snap-center overflow-hidden rounded-lg md:w-auto"
+                  className="relative w-[8.75rem] shrink-0 snap-center overflow-hidden rounded-lg"
                   style={{
                     aspectRatio: "9 / 19.5",
                     border: "1px solid rgba(236,232,212,0.14)",
@@ -615,7 +614,7 @@ function Benchmarks() {
                     src={src}
                     alt={`Fitify screenshot ${i + 1}`}
                     fill
-                    sizes="(max-width: 768px) 140px, 130px"
+                    sizes="140px"
                     className="object-cover object-top"
                   />
                 </div>
