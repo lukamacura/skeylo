@@ -592,52 +592,54 @@ function Benchmarks() {
     <Slide id="benchmarks">
       <Headline>Two apps already [[proved people pay]].</Headline>
       <Sub>
-        A proven category with an obvious hole in it. These are the two we
-        borrow from.
+        A proven category with an obvious hole in it.{" "}
+        {/* The cards below say which two on a phone; the line is only worth
+          its two rows on a wider screen. */}
+        <span className="hidden md:inline">
+          These are the two we borrow from.
+        </span>
       </Sub>
-      <Visual className="grid items-start gap-5 md:grid-cols-[auto_1fr] md:gap-8">
+      <Visual className="grid items-start gap-4 md:grid-cols-[auto_1fr] md:gap-8">
         {shots.length > 0 && (
           <div className="w-full md:mx-auto md:w-[18.25rem]">
             {/* A swipe strip at every size - stacking four full screenshots
-              would push the argument itself off the slide. */}
+              would push the argument itself off the slide. Phones get a
+              shorter crop so the strip stays a band, not a wall. */}
             <div className="-mx-5 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain px-5 pb-1 md:mx-0 md:px-0">
               {shots.map((src, i) => (
                 <div
                   key={src}
-                  className="relative w-[8.75rem] shrink-0 snap-center overflow-hidden rounded-lg"
-                  style={{
-                    aspectRatio: "9 / 19.5",
-                    border: "1px solid rgba(236,232,212,0.14)",
-                  }}
+                  className="relative aspect-[9/15] w-[6.5rem] shrink-0 snap-center overflow-hidden rounded-lg md:aspect-[9/19.5] md:w-[8.75rem]"
+                  style={{ border: "1px solid rgba(236,232,212,0.14)" }}
                 >
                   <Image
                     src={src}
                     alt={`Fitify screenshot ${i + 1}`}
                     fill
-                    sizes="140px"
+                    sizes="(max-width: 767px) 104px, 140px"
                     className="object-cover object-top"
                   />
                 </div>
               ))}
             </div>
             <p
-              className="mt-2 text-center text-[10px] uppercase"
+              className="mt-1.5 text-[9.5px] uppercase md:mt-2 md:text-center md:text-[10px]"
               style={{
                 fontFamily: MONO,
                 letterSpacing: "0.14em",
                 color: INK_MUTED,
               }}
             >
-              Fitify
+              Fitify - swipe
             </p>
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5 md:gap-2">
           {BENCHMARKS.map(([name, kicker, body], i) => (
             <div
               key={name}
-              className="rounded-xl px-4 py-3"
+              className="rounded-xl px-3.5 py-2.5 md:px-4 md:py-3"
               style={{
                 background:
                   i === 2 ? "rgba(240,182,86,0.07)" : "rgba(236,232,212,0.035)",
@@ -666,7 +668,7 @@ function Benchmarks() {
                 </span>
               </p>
               <p
-                className="mt-1.5 text-[12.5px] leading-relaxed md:text-[13.5px]"
+                className="mt-1 text-[12px] leading-[1.5] md:mt-1.5 md:text-[13.5px] md:leading-relaxed"
                 style={{ color: INK_MUTED }}
               >
                 {body}
