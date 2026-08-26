@@ -53,7 +53,9 @@ import { FlowMap, PlanPipeline, RagDiagram, Timeline } from "./diagrams";
 function Split({
   children,
   phone,
-  phoneClass = "max-w-[9rem] sm:max-w-[10.5rem] md:max-w-[13rem]",
+  /* Width, not max-width: on a phone the mock is a real object you can read,
+     not a thumbnail. It shrinks back down from `sm` where it sits beside text. */
+  phoneClass = "w-[64vw] max-w-[17rem] sm:w-[13rem] md:w-[13rem] lg:w-[15rem]",
 }: {
   children: React.ReactNode;
   phone: React.ReactNode;
@@ -65,9 +67,7 @@ function Split({
       className="mt-6 grid items-center gap-6 md:mt-8 md:grid-cols-[1fr_auto] md:gap-10"
     >
       <div className="order-2 md:order-1">{children}</div>
-      <div className={`order-1 mx-auto w-full md:order-2 ${phoneClass}`}>
-        {phone}
-      </div>
+      <div className={`order-1 mx-auto md:order-2 ${phoneClass}`}>{phone}</div>
     </motion.div>
   );
 }
@@ -468,9 +468,17 @@ function TheApp() {
         Today&apos;s session, logging, progress, and a coach he can ask.
         Everything else costs retention and earns nothing.
       </Sub>
-      <Visual className="mx-auto grid w-full max-w-[20rem] grid-cols-2 gap-3 sm:max-w-3xl sm:grid-cols-4 sm:gap-5">
+      {/* Four phones side by side on a phone screen would be four thumbnails
+        nobody can read. On mobile they become a swipe strip at a size worth
+        looking at; from `sm` they line up as the contact sheet. */}
+      <Visual className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-auto sm:grid sm:w-full sm:max-w-3xl sm:grid-cols-4 sm:gap-5 sm:overflow-visible sm:px-0">
         {SCREENS.map((s, i) => (
-          <motion.div key={s.label} variants={pop} custom={i % 2 ? 1.5 : -1.5}>
+          <motion.div
+            key={s.label}
+            variants={pop}
+            custom={i % 2 ? 1.5 : -1.5}
+            className="w-[58vw] max-w-[15rem] shrink-0 snap-center sm:w-auto sm:max-w-none"
+          >
             <PhoneFrame label={s.label}>{s.node}</PhoneFrame>
           </motion.div>
         ))}
@@ -602,7 +610,7 @@ function Benchmarks() {
               {shots.map((src, i) => (
                 <div
                   key={src}
-                  className="relative w-[6.75rem] shrink-0 snap-center overflow-hidden rounded-lg md:w-auto"
+                  className="relative w-[8.75rem] shrink-0 snap-center overflow-hidden rounded-lg md:w-auto"
                   style={{
                     aspectRatio: "9 / 19.5",
                     border: "1px solid rgba(236,232,212,0.14)",
@@ -612,7 +620,7 @@ function Benchmarks() {
                     src={src}
                     alt={`Fitify screenshot ${i + 1}`}
                     fill
-                    sizes="(max-width: 768px) 108px, 130px"
+                    sizes="(max-width: 768px) 140px, 130px"
                     className="object-cover object-top"
                   />
                 </div>
@@ -688,7 +696,7 @@ function Proof() {
         on the App Store.
       </Sub>
       <Split
-        phoneClass="max-w-[11rem] sm:max-w-[13rem] md:max-w-[15rem]"
+        phoneClass="w-[58vw] max-w-[16rem] sm:w-[13rem] md:w-[14rem] lg:w-[15rem]"
         phone={
           <div
             className="overflow-hidden rounded-xl"

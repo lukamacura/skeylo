@@ -1,13 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MotionConfig } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
 import Gate from "./Gate";
 import { AssetsContext, GOLD, INK, INK_MUTED, MONO } from "./primitives";
 import { CONTACT, SLIDES } from "./slides";
 
 const STORAGE_KEY = "vizel-deck-open";
+
+/* One slide is on screen at a time and nothing else is mounted. The slide owns
+   its own scrollbar, so a long slide scrolls inside the frame while Next always
+   means the next slide - never "a bit further down the same page". */
+const enter = {
+  hidden: (dir: number) => ({ opacity: 0, x: dir * 28 }),
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.28, ease: [0.2, 0.7, 0.3, 1] as const },
+  },
+  exit: (dir: number) => ({
+    opacity: 0,
+    x: dir * -20,
+    transition: { duration: 0.14, ease: "easeIn" as const },
+  }),
+};
 
 export default function VizelDeck({
   fitifyShots = [],
@@ -16,7 +33,8 @@ export default function VizelDeck({
 }) {
   const [open, setOpen] = useState<boolean | null>(null);
   const [index, setIndex] = useState(0);
-  const scroller = useRef<HTMLDivElement>(null);
+  const [dir, setDir] = useState(1);
+  const stage = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let stored = false;
@@ -37,49 +55,52 @@ export default function VizelDeck({
     setOpen(true);
   }, []);
 
-  /* Track which slide is on screen, for the rail and the counter. */
-  useEffect(() => {
-    if (!open) return;
-    const root = scroller.current;
-    if (!root) return;
-    const sections = Array.from(
-      root.querySelectorAll<HTMLElement>("[data-slide]"),
-    );
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        setIndex(sections.indexOf(visible.target as HTMLElement));
-      },
-      { root, threshold: [0.2, 0.5] },
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
-  }, [open]);
-
   const goTo = useCallback((i: number) => {
-    const root = scroller.current;
-    if (!root) return;
-    const target = root.querySelectorAll<HTMLElement>("[data-slide]")[i];
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setIndex((prev) => {
+      const next = Math.max(0, Math.min(i, SLIDES.length - 1));
+      if (next !== prev) setDir(next > prev ? 1 : -1);
+      return next;
+    });
   }, []);
 
-  /* Arrow keys, PageUp/Down and space move one slide at a time. */
+  /* Page up/down inside the current slide first, and only report back that we
+     couldn't - the caller then turns the page instead. */
+  const nudge = useCallback((delta: number) => {
+    const el = stage.current;
+    if (!el) return false;
+    const room = el.scrollHeight - el.clientHeight;
+    if (room < 8) return false;
+    const atEdge = delta > 0 ? el.scrollTop >= room - 8 : el.scrollTop <= 8;
+    if (atEdge) return false;
+    el.scrollBy({ top: delta, behavior: "smooth" });
+    return true;
+  }, []);
+
+  /* Left/right and PageUp/Down always turn the page. Up/down and space scroll
+     the slide when there is more of it, and turn the page when there isn't. */
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
-      const fwd = ["ArrowDown", "ArrowRight", "PageDown", " "];
-      const back = ["ArrowUp", "ArrowLeft", "PageUp"];
-      if (fwd.includes(e.key)) {
+
+      const page = () => {
+        const h = stage.current?.clientHeight ?? 600;
+        return Math.round(h * 0.85);
+      };
+
+      if (e.key === "ArrowRight" || e.key === "PageDown") {
         e.preventDefault();
-        goTo(Math.min(index + 1, SLIDES.length - 1));
-      } else if (back.includes(e.key)) {
+        goTo(index + 1);
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
-        goTo(Math.max(index - 1, 0));
+        goTo(index - 1);
+      } else if (e.key === "ArrowDown" || e.key === " ") {
+        e.preventDefault();
+        if (!nudge(page())) goTo(index + 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!nudge(-page())) goTo(index - 1);
       } else if (e.key === "Home") {
         e.preventDefault();
         goTo(0);
@@ -90,7 +111,7 @@ export default function VizelDeck({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, index, goTo]);
+  }, [open, index, goTo, nudge]);
 
   /* The overlay is painted before the passphrase check resolves, so the site
      underneath never flashes through on first paint. */
@@ -111,20 +132,19 @@ export default function VizelDeck({
 
   const last = index === SLIDES.length - 1;
   const current = SLIDES[index];
+  const Current = current.Component;
 
   return (
     <MotionConfig reducedMotion="user">
       <AssetsContext.Provider value={{ fitifyShots }}>
         <div
           lang="en"
-          ref={scroller}
-          className="fixed inset-0 z-[200] snap-y snap-proximity overscroll-contain overflow-y-auto overflow-x-hidden bg-background md:snap-mandatory"
-          style={{ WebkitOverflowScrolling: "touch" }}
+          className="fixed inset-0 z-[200] flex flex-col overflow-hidden bg-background"
         >
-          {/* Progress: a hairline on phones, a labelled rail on desktop. */}
+          {/* Progress: a hairline across the top, one step per slide. */}
           <div
             aria-hidden
-            className="fixed inset-x-0 top-0 z-30 h-[2px]"
+            className="absolute inset-x-0 top-0 z-30 h-[2px]"
             style={{ background: "rgba(236,232,212,0.08)" }}
           >
             <div
@@ -138,7 +158,7 @@ export default function VizelDeck({
 
           <nav
             aria-label="Slides"
-            className="fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end gap-1.5 lg:flex"
+            className="absolute right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end gap-1.5 lg:flex"
           >
             {SLIDES.map((s, i) => (
               <button
@@ -169,16 +189,30 @@ export default function VizelDeck({
             ))}
           </nav>
 
-          {SLIDES.map(({ id, Component }) => (
-            <Component key={id} />
-          ))}
+          {/* The stage. Exactly one slide lives in here, and it scrolls on its
+            own when it is taller than the space it was given. */}
+          <div className="relative min-h-0 flex-1">
+            <AnimatePresence mode="wait" initial={false} custom={dir}>
+              <motion.div
+                key={current.id}
+                ref={stage}
+                custom={dir}
+                variants={enter}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                className="absolute inset-0 overflow-y-auto overflow-x-hidden overscroll-contain lg:pr-10"
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
+                <Current />
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
           {/* The bar is always visible. It carries you to the offer, and on the
             offer it becomes the offer. */}
           <div
-            /* No backdrop-filter on phones: a blur that has to re-composite
-               every frame of a scroll is what makes a deck feel cheap. */
-            className="fixed inset-x-0 bottom-0 z-40 border-t bg-[rgba(7,7,7,0.96)] md:bg-[rgba(7,7,7,0.82)] md:backdrop-blur-md"
+            className="relative z-40 shrink-0 border-t bg-[rgba(7,7,7,0.96)]"
             style={{
               borderColor: "rgba(236,232,212,0.1)",
               paddingBottom: "env(safe-area-inset-bottom)",

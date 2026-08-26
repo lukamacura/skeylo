@@ -9,10 +9,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { motion, useInView, animate } from "framer-motion";
+import { motion, animate } from "framer-motion";
 
-/* Phones get a cheaper version of every animation in here. The deck is 25
-   full-height slides deep, so anything per-word or per-frame has to go. */
+/* Phones get a cheaper version of every animation in here. Every slide in the
+   deck runs its entrance on arrival, so anything per-word or per-frame has to
+   go on a phone. */
 export function useIsPhone() {
   const [phone, setPhone] = useState(false);
 
@@ -107,22 +108,22 @@ export function Slide({
   children: ReactNode;
   className?: string;
 }) {
-  const ref = useRef<HTMLElement>(null);
-  const active = useInView(ref, { once: true, amount: 0.35 });
+  /* One slide is mounted at a time, so "on screen" is just "mounted". The
+     frame of delay lets the hidden state paint before the entrance runs. */
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const r = requestAnimationFrame(() => setActive(true));
+    return () => cancelAnimationFrame(r);
+  }, []);
 
   return (
     <section
-      ref={ref}
       id={id}
       data-slide={id}
-      className={`relative flex min-h-[100svh] snap-start flex-col justify-center px-5 pb-24 pt-14 md:px-10 md:pb-28 md:pt-16 ${className}`}
-      /* Off-screen slides are skipped entirely by the renderer. `auto` on the
-         intrinsic size means the browser reuses each slide's real measured
-         height once it has seen it, so scroll position never jumps. */
-      style={{
-        contentVisibility: "auto",
-        containIntrinsicSize: "auto 100svh",
-      }}
+      /* `min-h-full` centres a short slide in the stage and lets a tall one
+         grow, so the deck's own scroller takes over instead of the page. */
+      className={`relative flex min-h-full flex-col justify-center px-5 py-8 md:px-10 md:py-12 ${className}`}
     >
       <ActiveContext.Provider value={active}>
         <motion.div

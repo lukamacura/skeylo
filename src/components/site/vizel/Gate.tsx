@@ -42,12 +42,12 @@ export default function Gate({ onUnlock }: { onUnlock: () => void }) {
           Private presentation
         </h1>
         <p className="mt-2 text-sm" style={{ color: INK_MUTED }}>
-          Prepared for Daniel Vizel. Enter the passphrase you were sent.
+          Prepared for Daniel Vizel. Enter the pass you were sent.
         </p>
 
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
           <label htmlFor="vizel-pass" className="sr-only">
-            Passphrase
+            Pass
           </label>
           <input
             id="vizel-pass"
