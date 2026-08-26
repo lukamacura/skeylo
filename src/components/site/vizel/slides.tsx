@@ -147,7 +147,7 @@ const ACT_4 = "Act IV · The terms";
 
 function Cover() {
   return (
-    <Slide id="cover" act="Prepared for Daniel Vizel" label="Dr.Brace × Skeylo">
+    <Slide id="cover" act="Prepared for Daniel Vizel" label="Dr.Brace">
       <Headline size="lg">Dr.Brace, [[on the App Store]].</Headline>
       <Sub>
         An AI training app for people training around an injury - and the funnel
@@ -583,8 +583,7 @@ const BENCHMARKS: [string, string, string][] = [
 ];
 
 function Benchmarks() {
-  const { fitifyShots } = useAssets();
-  const slots = fitifyShots.length ? fitifyShots : [null, null];
+  const shots = useAssets().fitifyShots;
 
   return (
     <Slide id="benchmarks" act={ACT_3} label="The benchmarks">
@@ -594,64 +593,43 @@ function Benchmarks() {
         borrow from.
       </Sub>
       <Visual className="grid items-start gap-5 md:grid-cols-[auto_1fr] md:gap-8">
-        <div
-          className="mx-auto grid w-full max-w-[16rem] gap-2"
-          style={{
-            gridTemplateColumns: `repeat(${Math.min(slots.length, 2)}, minmax(0, 1fr))`,
-          }}
-        >
-          {slots.map((src, i) =>
-            src ? (
-              <div
-                key={src}
-                className="relative overflow-hidden rounded-lg"
-                style={{
-                  aspectRatio: "9 / 19.5",
-                  border: "1px solid rgba(236,232,212,0.14)",
-                }}
-              >
-                <Image
-                  src={src}
-                  alt={`Fitify screenshot ${i + 1}`}
-                  fill
-                  sizes="(max-width: 768px) 40vw, 130px"
-                  className="object-cover object-top"
-                />
-              </div>
-            ) : (
-              <div
-                key={i}
-                className="flex items-center justify-center rounded-lg px-2 text-center"
-                style={{
-                  aspectRatio: "9 / 19.5",
-                  border: "1px dashed rgba(236,232,212,0.2)",
-                  background: "rgba(236,232,212,0.02)",
-                }}
-              >
-                <span
-                  className="text-[9px] leading-relaxed"
-                  style={{ fontFamily: MONO, color: INK_MUTED }}
+        {shots.length > 0 && (
+          <div className="w-full md:mx-auto md:max-w-[16rem]">
+            {/* A thumb-swipe strip on a phone, a 2x2 contact sheet on desktop.
+              Stacking four full screenshots on a phone would push the argument
+              itself off the slide. */}
+            <div className="-mx-5 flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0">
+              {shots.map((src, i) => (
+                <div
+                  key={src}
+                  className="relative w-[6.75rem] shrink-0 snap-center overflow-hidden rounded-lg md:w-auto"
+                  style={{
+                    aspectRatio: "9 / 19.5",
+                    border: "1px solid rgba(236,232,212,0.14)",
+                  }}
                 >
-                  drop into
-                  <br />
-                  /public/people/
-                  <br />
-                  luka/fitify/
-                </span>
-              </div>
-            ),
-          )}
-          <p
-            className="col-span-full text-center text-[10px] uppercase"
-            style={{
-              fontFamily: MONO,
-              letterSpacing: "0.14em",
-              color: INK_MUTED,
-            }}
-          >
-            Fitify
-          </p>
-        </div>
+                  <Image
+                    src={src}
+                    alt={`Fitify screenshot ${i + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 108px, 130px"
+                    className="object-cover object-top"
+                  />
+                </div>
+              ))}
+            </div>
+            <p
+              className="mt-2 text-center text-[10px] uppercase"
+              style={{
+                fontFamily: MONO,
+                letterSpacing: "0.14em",
+                color: INK_MUTED,
+              }}
+            >
+              Fitify
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           {BENCHMARKS.map(([name, kicker, body], i) => (
@@ -911,7 +889,7 @@ function Responsibilities() {
       <Visual className="grid gap-3 md:grid-cols-2">
         {[
           { title: "Daniel", rows: YOURS, gold: false },
-          { title: "Skeylo", rows: MINE, gold: true },
+          { title: "Luka", rows: MINE, gold: true },
         ].map((col) => (
           <div
             key={col.title}

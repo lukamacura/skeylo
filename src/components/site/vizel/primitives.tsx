@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -9,6 +10,22 @@ import {
   type ReactNode,
 } from "react";
 import { motion, useInView, animate } from "framer-motion";
+
+/* Phones get a cheaper version of every animation in here. The deck is 25
+   full-height slides deep, so anything per-word or per-frame has to go. */
+export function useIsPhone() {
+  const [phone, setPhone] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  return phone;
+}
 
 /* --- Palette -------------------------------------------------------------
    UI accents reuse the site tokens (gold / orange over the black canvas).
@@ -99,6 +116,13 @@ export function Slide({
       id={id}
       data-slide={id}
       className={`relative flex min-h-[100svh] snap-start flex-col justify-center px-5 pb-24 pt-14 md:px-10 md:pb-28 md:pt-16 ${className}`}
+      /* Off-screen slides are skipped entirely by the renderer. `auto` on the
+         intrinsic size means the browser reuses each slide's real measured
+         height once it has seen it, so scroll position never jumps. */
+      style={{
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 100svh",
+      }}
     >
       <ActiveContext.Provider value={active}>
         <motion.div
@@ -142,6 +166,7 @@ export function Headline({
   size?: "md" | "lg";
 }) {
   const active = useSlideActive();
+  const phone = useIsPhone();
   const parts = children.split(/(\[\[.*?\]\])/g).filter(Boolean);
 
   const cls =
@@ -150,6 +175,51 @@ export function Headline({
       : "text-[clamp(1.65rem,5vw,3.4rem)] leading-[1.04]";
 
   let wordIndex = 0;
+
+  /* Phone: the whole headline rises once with the rest of the slide, and each
+     gold phrase gets a single swipe painted as a background so it survives
+     wrapping. One animation instead of one per word. */
+  if (phone)
+    return (
+      <motion.h1
+        variants={item}
+        className={`max-w-4xl font-bold tracking-[-0.03em] ${cls}`}
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        {parts.map((part, p) => {
+          const hit = part.startsWith("[[");
+          if (!hit) return <span key={p}>{part}</span>;
+          return (
+            <motion.span
+              key={p}
+              className="rounded-[2px] px-[0.06em]"
+              style={{
+                color: GOLD,
+                backgroundImage:
+                  "linear-gradient(100deg, rgba(240,182,86,0.26), rgba(216,121,40,0.14))",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "left center",
+                WebkitBoxDecorationBreak: "clone",
+                boxDecorationBreak: "clone",
+              }}
+              initial={{ backgroundSize: "0% 86%" }}
+              animate={
+                active
+                  ? { backgroundSize: "100% 86%" }
+                  : { backgroundSize: "0% 86%" }
+              }
+              transition={{
+                delay: 0.3,
+                duration: 0.5,
+                ease: [0.2, 0.7, 0.3, 1],
+              }}
+            >
+              {part.slice(2, -2)}
+            </motion.span>
+          );
+        })}
+      </motion.h1>
+    );
 
   return (
     <motion.h1
@@ -297,28 +367,43 @@ export function Count({
   delay?: number;
 }) {
   const active = useSlideActive();
-  const [n, setN] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
 
+  const format = useCallback(
+    (v: number) =>
+      prefix +
+      v.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }) +
+      suffix,
+    [prefix, suffix, decimals],
+  );
+
+  /* Written straight to the DOM. Several of these run at once on a slide, and
+     a React render per frame per counter is the most expensive thing a phone
+     does in this deck. */
   useEffect(() => {
-    if (!active) return;
+    const node = ref.current;
+    if (!node) return;
+    if (!active) {
+      node.textContent = format(0);
+      return;
+    }
     const controls = animate(0, to, {
       duration,
       delay,
       ease: [0.16, 1, 0.3, 1],
-      onUpdate: (v) => setN(v),
+      onUpdate: (v) => {
+        node.textContent = format(v);
+      },
     });
     return () => controls.stop();
-  }, [active, to, duration, delay]);
+  }, [active, to, duration, delay, format]);
 
-  const shown = active ? n : 0;
   return (
-    <span style={{ fontVariantNumeric: "tabular-nums" }}>
-      {prefix}
-      {shown.toLocaleString("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })}
-      {suffix}
+    <span ref={ref} style={{ fontVariantNumeric: "tabular-nums" }}>
+      {format(0)}
     </span>
   );
 }

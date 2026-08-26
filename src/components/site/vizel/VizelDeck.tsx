@@ -118,7 +118,8 @@ export default function VizelDeck({
         <div
           lang="en"
           ref={scroller}
-          className="fixed inset-0 z-[200] snap-y snap-proximity overflow-y-auto overflow-x-hidden bg-background md:snap-mandatory"
+          className="fixed inset-0 z-[200] snap-y snap-proximity overscroll-contain overflow-y-auto overflow-x-hidden bg-background md:snap-mandatory"
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
           {/* Progress: a hairline on phones, a labelled rail on desktop. */}
           <div
@@ -175,10 +176,11 @@ export default function VizelDeck({
           {/* The bar is always visible. It carries you to the offer, and on the
             offer it becomes the offer. */}
           <div
-            className="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-md"
+            /* No backdrop-filter on phones: a blur that has to re-composite
+               every frame of a scroll is what makes a deck feel cheap. */
+            className="fixed inset-x-0 bottom-0 z-40 border-t bg-[rgba(7,7,7,0.96)] md:bg-[rgba(7,7,7,0.82)] md:backdrop-blur-md"
             style={{
               borderColor: "rgba(236,232,212,0.1)",
-              background: "rgba(7,7,7,0.82)",
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
           >

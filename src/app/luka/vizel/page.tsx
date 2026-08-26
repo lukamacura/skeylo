@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 /* Screenshots are read off disk rather than hardcoded, so dropping files into
-   public/people/luka/fitify/ is all it takes to put them on the slide. */
+   public/vizel/ is all it takes to put them on the benchmarks slide. */
 function readShots(dir: string): string[] {
   try {
     return fs
@@ -25,5 +25,5 @@ function readShots(dir: string): string[] {
 }
 
 export default function VizelOfferPage() {
-  return <VizelDeck fitifyShots={readShots("people/luka/fitify")} />;
+  return <VizelDeck fitifyShots={readShots("vizel")} />;
 }
