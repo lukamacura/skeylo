@@ -95,16 +95,20 @@ export const AssetsContext = createContext<{ fitifyShots: string[] }>({
 });
 export const useAssets = () => useContext(AssetsContext);
 
+/* The deck hands each slide its position and name, so "07 / 25 - The quiz"
+   is written once, in SLIDES, instead of on the slide as well. */
+export const SlidePositionContext = createContext<{
+  index: number;
+  total: number;
+  label: string;
+}>({ index: 0, total: 0, label: "" });
+
 export function Slide({
   id,
-  act,
-  label,
   children,
   className = "",
 }: {
   id: string;
-  act: string;
-  label: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -132,7 +136,7 @@ export function Slide({
           animate={active ? "show" : "hidden"}
           className="mx-auto flex w-full max-w-6xl flex-col"
         >
-          <Eyebrow act={act} label={label} />
+          <Eyebrow />
           {children}
         </motion.div>
       </ActiveContext.Provider>
@@ -140,18 +144,26 @@ export function Slide({
   );
 }
 
-/* The eyebrow carries the act and the slide's own name - the deck really is
-   four arguments in sequence, so the labelling encodes something true. */
-function Eyebrow({ act, label }: { act: string; label: string }) {
+/* The eyebrow carries the slide's position in the deck and its name. */
+function Eyebrow() {
+  const { index, total, label } = useContext(SlidePositionContext);
   return (
     <motion.p
       variants={item}
-      className="mb-4 flex items-center gap-2.5 text-[10px] uppercase md:mb-5 md:text-[11px]"
-      style={{ fontFamily: MONO, letterSpacing: "0.18em" }}
+      className="mb-4 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.1em] md:mb-5 md:gap-2.5 md:text-[11px] md:tracking-[0.18em]"
+      style={{ fontFamily: MONO }}
     >
-      <span style={{ color: ORANGE }}>{act}</span>
-      <span aria-hidden className="h-px w-6" style={{ background: GRID }} />
-      <span style={{ color: INK_MUTED }}>{label}</span>
+      <span className="shrink-0 whitespace-nowrap" style={{ color: ORANGE }}>
+        {String(index + 1).padStart(2, "0")} / {total}
+      </span>
+      <span
+        aria-hidden
+        className="h-px w-4 shrink-0 md:w-6"
+        style={{ background: GRID }}
+      />
+      <span className="min-w-0 truncate" style={{ color: INK_MUTED }}>
+        {label}
+      </span>
     </motion.p>
   );
 }
@@ -172,8 +184,8 @@ export function Headline({
 
   const cls =
     size === "lg"
-      ? "text-[clamp(2rem,7.5vw,4.75rem)] leading-[0.98]"
-      : "text-[clamp(1.65rem,5vw,3.4rem)] leading-[1.04]";
+      ? "text-[clamp(1.8rem,8.4vw,4.75rem)] leading-[1.08] md:leading-[0.98]"
+      : "text-[clamp(1.45rem,6.4vw,3.4rem)] leading-[1.16] md:leading-[1.04]";
 
   let wordIndex = 0;
 
@@ -199,15 +211,15 @@ export function Headline({
                 backgroundImage:
                   "linear-gradient(100deg, rgba(240,182,86,0.26), rgba(216,121,40,0.14))",
                 backgroundRepeat: "no-repeat",
-                backgroundPosition: "left center",
+                backgroundPosition: "left 88%",
                 WebkitBoxDecorationBreak: "clone",
                 boxDecorationBreak: "clone",
               }}
-              initial={{ backgroundSize: "0% 86%" }}
+              initial={{ backgroundSize: "0% 74%" }}
               animate={
                 active
-                  ? { backgroundSize: "100% 86%" }
-                  : { backgroundSize: "0% 86%" }
+                  ? { backgroundSize: "100% 74%" }
+                  : { backgroundSize: "0% 74%" }
               }
               transition={{
                 delay: 0.3,
@@ -282,7 +294,7 @@ export function Sub({ children }: { children: ReactNode }) {
   return (
     <motion.p
       variants={item}
-      className="mt-3.5 max-w-2xl text-[clamp(0.9rem,2.3vw,1.15rem)] leading-relaxed md:mt-5"
+      className="mt-3 max-w-2xl text-[clamp(0.85rem,3.6vw,1.15rem)] leading-relaxed md:mt-5"
       style={{ color: INK_MUTED }}
     >
       {children}

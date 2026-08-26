@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Lock } from "lucide-react";
 import { GOLD, INK, INK_MUTED, MONO } from "./primitives";
 
-export const PASSPHRASE = "danielvizel26";
+export const PASS = "danielvizel26";
 
 export default function Gate({ onUnlock }: { onUnlock: () => void }) {
   const [value, setValue] = useState("");
@@ -13,7 +13,7 @@ export default function Gate({ onUnlock }: { onUnlock: () => void }) {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (value.trim().toLowerCase() === PASSPHRASE) {
+    if (value.trim().toLowerCase() === PASS) {
       onUnlock();
       return;
     }
@@ -56,7 +56,7 @@ export default function Gate({ onUnlock }: { onUnlock: () => void }) {
             autoComplete="off"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="passphrase"
+            placeholder="pass"
             aria-invalid={wrong > 0}
             className="w-full rounded-md px-4 py-3 text-[15px] outline-none transition-colors focus:border-[rgba(240,182,86,0.6)]"
             style={{
@@ -83,7 +83,7 @@ export default function Gate({ onUnlock }: { onUnlock: () => void }) {
           style={{ fontFamily: MONO, color: wrong ? "#d87928" : "transparent" }}
           role={wrong ? "alert" : undefined}
         >
-          {wrong ? "That passphrase doesn't match. Try again." : "·"}
+          {wrong ? "That pass doesn't match. Try again." : "·"}
         </p>
       </motion.div>
     </div>

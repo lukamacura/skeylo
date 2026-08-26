@@ -4,7 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
 import Gate from "./Gate";
-import { AssetsContext, GOLD, INK, INK_MUTED, MONO } from "./primitives";
+import {
+  AssetsContext,
+  GOLD,
+  INK,
+  INK_MUTED,
+  MONO,
+  SlidePositionContext,
+} from "./primitives";
 import { CONTACT, SLIDES } from "./slides";
 
 const STORAGE_KEY = "vizel-deck-open";
@@ -113,7 +120,7 @@ export default function VizelDeck({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, index, goTo, nudge]);
 
-  /* The overlay is painted before the passphrase check resolves, so the site
+  /* The overlay is painted before the pass check resolves, so the site
      underneath never flashes through on first paint. */
   if (open === null)
     return <div className="fixed inset-0 z-[200] bg-background" />;
@@ -204,7 +211,15 @@ export default function VizelDeck({
                 className="absolute inset-0 overflow-y-auto overflow-x-hidden overscroll-contain lg:pr-10"
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
-                <Current />
+                <SlidePositionContext.Provider
+                  value={{
+                    index,
+                    total: SLIDES.length,
+                    label: current.label,
+                  }}
+                >
+                  <Current />
+                </SlidePositionContext.Provider>
               </motion.div>
             </AnimatePresence>
           </div>
@@ -219,25 +234,27 @@ export default function VizelDeck({
             }}
           >
             <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 py-3 md:px-10">
-              <div className="min-w-0 flex-1">
-                <p
-                  className="truncate text-[10px] uppercase md:text-[11px]"
-                  style={{
-                    fontFamily: MONO,
-                    letterSpacing: "0.14em",
-                    color: INK_MUTED,
-                  }}
-                >
-                  {String(index + 1).padStart(2, "0")} / {SLIDES.length} ·{" "}
-                  {current.act}
-                </p>
-                <p
-                  className="truncate text-[13px] font-semibold md:text-sm"
-                  style={{ color: INK }}
-                >
-                  {current.label}
-                </p>
-              </div>
+              {/* On the offer the counter steps aside so the CTA owns the bar. */}
+              {!last && (
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="truncate text-[10px] uppercase md:text-[11px]"
+                    style={{
+                      fontFamily: MONO,
+                      letterSpacing: "0.14em",
+                      color: INK_MUTED,
+                    }}
+                  >
+                    {String(index + 1).padStart(2, "0")} / {SLIDES.length}
+                  </p>
+                  <p
+                    className="truncate text-[13px] font-semibold md:text-sm"
+                    style={{ color: INK }}
+                  >
+                    {current.label}
+                  </p>
+                </div>
+              )}
 
               {/* Back is always mounted so the bar never reflows mid-deck; it
                 just goes inert on the first slide. */}
@@ -245,22 +262,24 @@ export default function VizelDeck({
                 onClick={() => goTo(index - 1)}
                 disabled={index === 0}
                 aria-label="Previous slide"
-                className="inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2.5 text-[13px] font-bold transition-colors hover:bg-[rgba(236,232,212,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b656] disabled:pointer-events-none disabled:opacity-25 md:px-4 md:py-3 md:text-[15px]"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-bold transition-colors hover:bg-[rgba(240,182,86,0.14)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b656] disabled:pointer-events-none disabled:opacity-25 md:px-3 md:py-2 md:text-[13px]"
                 style={{
-                  color: INK_MUTED,
-                  border: "1px solid rgba(236,232,212,0.16)",
+                  color: GOLD,
+                  border: "1px solid rgba(240,182,86,0.35)",
                 }}
               >
-                <ArrowLeft size={15} />
+                <ArrowLeft size={14} />
                 <span className="hidden sm:inline">Back</span>
               </button>
 
               {last ? (
                 <a
                   href={CONTACT}
-                  className="group inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-4 py-2.5 text-[13px] font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b656] md:px-6 md:py-3 md:text-[15px]"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-5 py-3.5 text-[15px] font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b656] md:px-8 md:py-4 md:text-[17px]"
                 >
-                  <Rocket size={15} />
+                  <Rocket size={18} />
                   Start the build
                 </a>
               ) : (

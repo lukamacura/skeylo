@@ -140,14 +140,9 @@ function Tile({
 
 /* ------------------------------------------------------------------------ */
 
-const ACT_1 = "Act I · The opportunity";
-const ACT_2 = "Act II · The machine";
-const ACT_3 = "Act III · The proof";
-const ACT_4 = "Act IV · The terms";
-
 function Cover() {
   return (
-    <Slide id="cover" act="Prepared for Daniel Vizel" label="Dr.Brace">
+    <Slide id="cover">
       <Headline size="lg">Dr.Brace, [[on the App Store]].</Headline>
       <Sub>
         An AI training app for people training around an injury - and the funnel
@@ -181,7 +176,7 @@ function Cover() {
    retrieval layer - only makes sense once this one has landed. */
 function Wedge() {
   return (
-    <Slide id="wedge" act={ACT_1} label="Who it's for">
+    <Slide id="wedge">
       <Headline>Every training app assumes [[nothing hurts]].</Headline>
       <Sub>
         Yours is for the people they quietly fail: the bad shoulder, the bad
@@ -211,7 +206,7 @@ const PRICES = [
 
 function TheNumber() {
   return (
-    <Slide id="mrr" act={ACT_1} label="What $10k actually is">
+    <Slide id="mrr">
       <Headline>
         $10,000 a month is [[a subscriber count]], not a wish.
       </Headline>
@@ -276,7 +271,7 @@ function TheNumber() {
 
 function Churn() {
   return (
-    <Slide id="churn" act={ACT_1} label="The tax nobody mentions">
+    <Slide id="churn">
       <Headline>Standing still [[costs 40 sales a month]].</Headline>
       <Sub>
         Holding 500 members at 8% monthly churn means replacing forty before you
@@ -291,7 +286,7 @@ function Churn() {
 
 function Compounding() {
   return (
-    <Slide id="compounding" act={ACT_1} label="Why an app, not a PDF">
+    <Slide id="compounding">
       <Headline>The same 100 customers, [[twice the money]].</Headline>
       <Sub>
         A $99 program earns $9,900, once. The same hundred people at $19.99 a
@@ -306,7 +301,7 @@ function Compounding() {
 
 function Flow() {
   return (
-    <Slide id="flow" act={ACT_2} label="The whole machine">
+    <Slide id="flow">
       <Headline>Nine steps. [[Three lanes]]. One screen.</Headline>
       <Sub>From a story link to a plan that rebuilds itself every week.</Sub>
       <Visual>
@@ -318,7 +313,7 @@ function Flow() {
 
 function Commission() {
   return (
-    <Slide id="commission" act={ACT_2} label="Web2app, in dollars">
+    <Slide id="commission">
       <Headline>Selling on the web [[keeps $2,560 a month]].</Headline>
       <Sub>
         Apple and Google charge for the checkout. Stripe charges far less. At
@@ -344,7 +339,7 @@ function Commission() {
 
 function Quiz() {
   return (
-    <Slide id="quiz" act={ACT_2} label="The quiz">
+    <Slide id="quiz">
       <Headline>The quiz [[does two jobs]] at once.</Headline>
       <Sub>
         Ninety seconds that make him commit before he pays - and produce the
@@ -383,7 +378,7 @@ function Quiz() {
 
 function Results() {
   return (
-    <Slide id="results" act={ACT_2} label="The results page">
+    <Slide id="results">
       <Headline>Show him [[his own plan]] before he pays.</Headline>
       <Sub>
         It names his injury, his recovery work, his strength split and his first
@@ -418,7 +413,7 @@ function Results() {
 
 function Checkout() {
   return (
-    <Slide id="checkout" act={ACT_2} label="Payment">
+    <Slide id="checkout">
       <Headline>Charged by [[Dr.Brace LLC]]. Not by Apple.</Headline>
       <Sub>
         Stripe subscriptions on the web, in your company&apos;s name - with your
@@ -462,7 +457,7 @@ const SCREENS = [
 
 function TheApp() {
   return (
-    <Slide id="app" act={ACT_2} label="The app">
+    <Slide id="app">
       <Headline>Four screens, [[done properly]].</Headline>
       <Sub>
         Today&apos;s session, logging, progress, and a coach he can ask.
@@ -489,7 +484,7 @@ function TheApp() {
 
 function Pipeline() {
   return (
-    <Slide id="pipeline" act={ACT_2} label="How the plan is built">
+    <Slide id="pipeline">
       <Headline>Not a chatbot. [[A constrained generator]].</Headline>
       <Sub>
         What sits between the model and the screen is what keeps a man with a
@@ -504,7 +499,7 @@ function Pipeline() {
 
 function Rag() {
   return (
-    <Slide id="rag" act={ACT_2} label="Why it sounds like you">
+    <Slide id="rag">
       <Headline>Anyone can wrap GPT. [[Nobody else has your method]].</Headline>
       <Sub>
         Retrieval over your own programming, substitutions and language - so the
@@ -542,7 +537,7 @@ const RETENTION = [
 
 function Retention() {
   return (
-    <Slide id="retention" act={ACT_2} label="Keeping them">
+    <Slide id="retention">
       <Headline>Retention is [[built]], not hoped for.</Headline>
       <Sub>
         8% churn instead of 5% costs about $12,900 a year on 500 members. These
@@ -559,7 +554,7 @@ function Retention() {
 
 function Economics() {
   return (
-    <Slide id="economics" act={ACT_2} label="What it costs to run">
+    <Slide id="economics">
       <Headline>Running it costs [[about $100 a month]].</Headline>
       <Sub>At 500 members. Every line is a real invoice at a real tier.</Sub>
       <Visual>
@@ -594,7 +589,7 @@ function Benchmarks() {
   const shots = useAssets().fitifyShots;
 
   return (
-    <Slide id="benchmarks" act={ACT_3} label="The benchmarks">
+    <Slide id="benchmarks">
       <Headline>Two apps already [[proved people pay]].</Headline>
       <Sub>
         A proven category with an obvious hole in it. These are the two we
@@ -687,7 +682,7 @@ function Benchmarks() {
 
 function Proof() {
   return (
-    <Slide id="proof" act={ACT_3} label="Already shipped">
+    <Slide id="proof">
       <Headline>
         This isn&apos;t a mockup. [[It&apos;s already in the store]].
       </Headline>
@@ -754,7 +749,7 @@ const TEAM = [
 
 function Team() {
   return (
-    <Slide id="team" act={ACT_3} label="Who builds it">
+    <Slide id="team">
       <Headline>[[One builder]], two specialists behind him.</Headline>
       <Sub>
         I build and ship it. Two people are on call for the parts worth a second
@@ -821,7 +816,7 @@ const STACK: [string, string][] = [
 
 function Stack() {
   return (
-    <Slide id="stack" act={ACT_3} label="The stack">
+    <Slide id="stack">
       <Headline>The stack, and [[why each piece is there]].</Headline>
       <Sub>Five choices, each with a reason you can push back on.</Sub>
       <Visual className="flex flex-col gap-2">
@@ -855,7 +850,7 @@ function Stack() {
 
 function Delivery() {
   return (
-    <Slide id="timeline" act={ACT_4} label="The schedule">
+    <Slide id="timeline">
       <Headline>[[Three to four weeks]] of building. Then review.</Headline>
       <Sub>
         Every week ends with something on your phone, never a status update.
@@ -888,7 +883,7 @@ const MINE = [
 
 function Responsibilities() {
   return (
-    <Slide id="split" act={ACT_4} label="Who does what">
+    <Slide id="split">
       <Headline>What you bring, [[what I ship]].</Headline>
       <Sub>
         You stay the coach. I stay the engineering department. Nothing on the
@@ -955,7 +950,7 @@ const ALTERNATIVES: [string, string][] = [
 
 function Value() {
   return (
-    <Slide id="value" act={ACT_4} label="What it's worth">
+    <Slide id="value">
       <Headline>
         What&apos;s in, what&apos;s out, and [[what it replaces]].
       </Headline>
@@ -1066,13 +1061,13 @@ function Value() {
   );
 }
 
-/* The one number the whole deck has been walking toward. */
 const CONTACT =
-  "mailto:office@skeylo.com?subject=The%20app%20-%20let%27s%20start";
+  "https://wa.me/381631012474?text=Hey%20Luka%2C%20I%27m%20ready%20for%20build";
 
+/* The one number the whole deck has been walking toward. */
 function Price() {
   return (
-    <Slide id="price" act={ACT_4} label="The offer">
+    <Slide id="price">
       <motion.div variants={item} className="flex flex-col items-start">
         <p
           className="text-[12px] uppercase"
@@ -1175,7 +1170,7 @@ const RETAINER = [
 
 function Retainer() {
   return (
-    <Slide id="retainer" act={ACT_4} label="Optional, after launch">
+    <Slide id="retainer">
       <Headline>After launch, [[if you want it]].</Headline>
       <Sub>
         The build is finished when it&apos;s live. Growing it afterwards is a
@@ -1232,7 +1227,7 @@ function Retainer() {
 /* --- The guarantee, and the button --------------------------------------- */
 function Guarantee() {
   return (
-    <Slide id="guarantee" act={ACT_4} label="The guarantee">
+    <Slide id="guarantee">
       <Headline>If it isn&apos;t good, [[you get your money back]].</Headline>
       <Sub>Exactly what it covers, and exactly what it doesn&apos;t.</Sub>
       <Visual className="grid gap-3 md:grid-cols-2">
@@ -1321,15 +1316,14 @@ function Guarantee() {
         </div>
       </Visual>
 
-      <motion.div
-        variants={item}
-        className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center"
-      >
+      <motion.div variants={item} className="mt-6 flex flex-col gap-3">
         <a
           href={CONTACT}
-          className="group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-6 py-3.5 text-[15px] font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b656]"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex w-full items-center justify-center gap-2.5 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-6 py-4 text-[17px] font-extrabold text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0b656] md:py-5 md:text-[19px]"
         >
-          <Rocket size={17} />
+          <Rocket size={20} />
           Start the build
         </a>
         <p
@@ -1347,50 +1341,46 @@ function Guarantee() {
 
 export const SLIDES: {
   id: string;
-  act: string;
   label: string;
   Component: () => React.JSX.Element;
 }[] = [
-  { id: "cover", act: "Intro", label: "Cover", Component: Cover },
-  { id: "wedge", act: ACT_1, label: "Who it's for", Component: Wedge },
-  { id: "mrr", act: ACT_1, label: "The number", Component: TheNumber },
-  { id: "churn", act: ACT_1, label: "Churn", Component: Churn },
+  { id: "cover", label: "Dr.Brace", Component: Cover },
+  { id: "wedge", label: "Who it's for", Component: Wedge },
+  { id: "mrr", label: "What $10k actually is", Component: TheNumber },
+  { id: "churn", label: "The tax nobody mentions", Component: Churn },
   {
     id: "compounding",
-    act: ACT_1,
-    label: "Compounding",
+    label: "Why an app, not a PDF",
     Component: Compounding,
   },
-  { id: "flow", act: ACT_2, label: "The machine", Component: Flow },
-  { id: "commission", act: ACT_2, label: "Commission", Component: Commission },
-  { id: "quiz", act: ACT_2, label: "Quiz", Component: Quiz },
-  { id: "results", act: ACT_2, label: "Results", Component: Results },
-  { id: "checkout", act: ACT_2, label: "Payment", Component: Checkout },
-  { id: "app", act: ACT_2, label: "The app", Component: TheApp },
-  { id: "pipeline", act: ACT_2, label: "Plan builder", Component: Pipeline },
-  { id: "rag", act: ACT_2, label: "Your method", Component: Rag },
-  { id: "retention", act: ACT_2, label: "Retention", Component: Retention },
-  { id: "economics", act: ACT_2, label: "Running costs", Component: Economics },
-  { id: "benchmarks", act: ACT_3, label: "Benchmarks", Component: Benchmarks },
-  { id: "proof", act: ACT_3, label: "Proof", Component: Proof },
-  { id: "team", act: ACT_3, label: "Team", Component: Team },
-  { id: "stack", act: ACT_3, label: "Stack", Component: Stack },
-  { id: "timeline", act: ACT_4, label: "Timeline", Component: Delivery },
+  { id: "flow", label: "The whole machine", Component: Flow },
+  { id: "commission", label: "Web2app, in dollars", Component: Commission },
+  { id: "quiz", label: "The quiz", Component: Quiz },
+  { id: "results", label: "The results page", Component: Results },
+  { id: "checkout", label: "Payment", Component: Checkout },
+  { id: "app", label: "The app", Component: TheApp },
+  { id: "pipeline", label: "How the plan is built", Component: Pipeline },
+  { id: "rag", label: "Why it sounds like you", Component: Rag },
+  { id: "retention", label: "Keeping them", Component: Retention },
+  { id: "economics", label: "What it costs to run", Component: Economics },
+  { id: "benchmarks", label: "The benchmarks", Component: Benchmarks },
+  { id: "proof", label: "Already shipped", Component: Proof },
+  { id: "team", label: "Who builds it", Component: Team },
+  { id: "stack", label: "The stack", Component: Stack },
+  { id: "timeline", label: "The schedule", Component: Delivery },
   {
     id: "split",
-    act: ACT_4,
     label: "Who does what",
     Component: Responsibilities,
   },
-  { id: "value", act: ACT_4, label: "What it replaces", Component: Value },
-  { id: "price", act: ACT_4, label: "The offer", Component: Price },
+  { id: "value", label: "What it's worth", Component: Value },
+  { id: "price", label: "The offer", Component: Price },
   {
     id: "retainer",
-    act: ACT_4,
-    label: "Optional retainer",
+    label: "Optional, after launch",
     Component: Retainer,
   },
-  { id: "guarantee", act: ACT_4, label: "The guarantee", Component: Guarantee },
+  { id: "guarantee", label: "The guarantee", Component: Guarantee },
 ];
 
 export const LAST_SLIDE = SLIDES[SLIDES.length - 1].id;

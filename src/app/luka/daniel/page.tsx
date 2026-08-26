@@ -5,7 +5,7 @@ import VizelDeck from "@/components/site/vizel/VizelDeck";
 
 export const metadata: Metadata = {
   title: "Private presentation",
-  description: "Passphrase required.",
+  description: "Pass required.",
   robots: { index: false, follow: false, nocache: true },
 };
 
