@@ -13,6 +13,7 @@ import {
   Share2,
 } from "lucide-react";
 import {
+  CONTACT,
   Count,
   GOLD,
   Headline,
@@ -156,7 +157,7 @@ function Cover() {
         }
       >
         <div className="grid grid-cols-3 gap-4">
-          <Metric value="3–4" label="Weeks to build" />
+          <Metric value="3-4" label="Weeks to build" />
           <Metric value="2" label="App stores" />
           <Metric value="0%" label="Store commission" color={GOLD} />
         </div>
@@ -941,7 +942,7 @@ const NOT_INCLUDED: [string, string][] = [
 ];
 
 const ALTERNATIVES: [string, string][] = [
-  ["An app agency", "$40k–$60k, six months, funnel quoted separately."],
+  ["An app agency", "$40k-$60k, six months, funnel quoted separately."],
   ["Hiring a developer", "$70k a year before you know if they can ship."],
   [
     "No-code builders",
@@ -1061,9 +1062,6 @@ function Value() {
     </Slide>
   );
 }
-
-const CONTACT =
-  "https://wa.me/381631012474?text=Hey%20Luka%2C%20I%27m%20ready%20for%20build";
 
 /* The one number the whole deck has been walking toward. */
 function Price() {

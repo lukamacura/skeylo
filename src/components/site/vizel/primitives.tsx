@@ -44,6 +44,10 @@ export const GRID = "rgba(236, 232, 212, 0.1)";
 export const MONO =
   "ui-monospace, SFMono-Regular, Menlo, 'Cascadia Mono', monospace";
 
+/* The one place the deck and the options page both send people. */
+export const CONTACT =
+  "https://wa.me/381631012474?text=Hey%20Luka%2C%20I%27m%20ready%20for%20build";
+
 /* --- Motion --------------------------------------------------------------
    One spring, reused everywhere, matching the easing already used across the
    site landings. MotionConfig at the deck root handles reduced motion. */
