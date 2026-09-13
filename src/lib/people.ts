@@ -395,7 +395,7 @@ export const PEOPLE: Person[] = [
         text: [
           "Veliki deo vremena provodim pišući scenarije. Razvijam ideje za filmove koje bih u budućnosti voleo da pretvorim u realnost - to je moj kreativni izduvni ventil.",
         ],
-        point: "Scenario otvoren i na odmoru",
+        point: "Rad i na odmoru",
         shots: [
           {
             src: "/people/mihac/7.webp",
