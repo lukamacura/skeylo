@@ -272,9 +272,6 @@ export const PEOPLE: Person[] = [
       "Video Producer",
       "Studying at Faculty of Technical Science",
     ],
-    // Medija kolona su za sada prazni okviri (`placeholder`). Kad stignu
-    // fotografije, `placeholder` se menja za `shots` (+ `point`), isti
-    // obrazac kao kod Luke.
     chapters: [
       {
         year: "2016.",
@@ -283,7 +280,19 @@ export const PEOPLE: Person[] = [
           "Photoshop sam savladao iz priručnika koji mi je slučajno zapao za oko na polici. Odatle sam na YouTube-u otkrio **Sony Vegas i Camtasia Studio** - tutorijale sam gledao po ceo dan.",
           "Programe sam ==savladao za mesec dana==. Onda sam počeo da snimam sebe samo da bih vežbao montažu, i te klipove potpuno spontano kačio na YouTube.",
         ],
-        placeholder: true,
+        point: "Jedan od prvih YouTube klipova",
+        shots: [
+          {
+            src: "/people/mihac/1.webp",
+            alt: "Montaža gaming klipa sa facecam-om u Adobe Premiere Pro",
+            // Snimak ekrana ima crne trake gore i dole. Okvir je zato niži od
+            // prirodnih 3022×1948, a `position` seče više sa vrha gde je
+            // traka deblja.
+            w: 3022,
+            h: 1600,
+            position: "object-[50%_62%]",
+          },
+        ],
       },
       {
         year: "2022.",
@@ -292,7 +301,17 @@ export const PEOPLE: Person[] = [
           "Oduvek sam sanjao profesionalnu opremu. U srednjoj školi sam zbog proseka i vladanja dobio stipendiju - **uštedeo sam je celu** da bih priuštio prvu pravu kameru, Canon EOS M50.",
           "Od tada sav novac ==reinvestiram u opremu==. Krenuo sam od muzičkih spotova, pa se prešaltao na marketing.",
         ],
-        placeholder: true,
+        point: "Canon EOS M50 - prva prava kamera",
+        shots: [
+          {
+            src: "/people/mihac/2.webp",
+            alt: "Canon EOS M50 u ruci ispred monitora sa montažom",
+            // Isto kao 1.webp - okvir sklanja crne trake iz snimka.
+            w: 3022,
+            h: 1680,
+            position: "object-[50%_64%]",
+          },
+        ],
       },
       {
         year: "Skeylo",
@@ -301,7 +320,18 @@ export const PEOPLE: Person[] = [
           "Sa Filipom sam počeo da radim godinu dana nakon što smo se upoznali. Trebao mu je još jedan čovek u timu koji je pravio skečeve za lokalne e-commerce brendove - mojim dolaskom smo sve digli na viši nivo i to su postali ==jedni od najviralnijih klipova na Balkanu==.",
           "Vremenom su nam ambicije porasle. Nismo više hteli samo skečeve, hteli smo **kompletan marketing za ozbiljne firme**. Ubacio sam Luku, sa kojim sam išao u razred, i tako smo se okupili. Kakav utisak to ostavlja na klijente, svedoče naši rezultati.",
         ],
-        placeholder: true,
+        point: "Priprema za snimanje",
+        shots: [
+          {
+            src: "/people/mihac/3.webp",
+            alt: "Podešavanje kamere na gimbalu pre snimanja u parku",
+            w: 948,
+            h: 1728,
+            // Uzan kadar 9:16 - težište na licima i kameri, a vrh se seče
+            // zajedno sa "Cinematic" oznakom iz telefona.
+            position: "object-[50%_30%]",
+          },
+        ],
       },
       {
         year: "Danas",
@@ -310,7 +340,17 @@ export const PEOPLE: Person[] = [
           "Trenutni fokus su mi **Skeylo klijenti** i izgradnja personalnog brenda na Instagramu, TikToku i YouTube-u.",
           "Paralelno usavršavam ==3D editovanje i produkciju== - svaki sledeći projekat mora da izgleda bolje od prethodnog.",
         ],
-        placeholder: true,
+        point: "Noćno snimanje sa gimbalom",
+        shots: [
+          {
+            src: "/people/mihac/4.webp",
+            alt: "Mihajlo snima nisko sa DJI Ronin gimbalom pod reflektorom",
+            w: 1034,
+            h: 1766,
+            // Seče "HDR" oznaku sa vrha, lice i ruke ostaju u kadru.
+            position: "object-[50%_40%]",
+          },
+        ],
       },
       {
         year: "Studije",
@@ -319,7 +359,17 @@ export const PEOPLE: Person[] = [
           "Studiram programiranje, smer E2, na **FTN-u u Novom Sadu**. Programiranje nije direktno povezano sa produkcijom, ali mi je odličan životni izazov - tera me na maksimalnu produktivnost da bih stigao oba.",
           "U budućnosti planiram da ==spojim ta dva sveta==: softverski sistemi za kamere i komunikaciju na setu, i produkcija na potpuno drugom nivou.",
         ],
-        placeholder: true,
+        point: "Na predavanju na FTN-u",
+        shots: [
+          {
+            src: "/people/mihac/5.webp",
+            alt: "Selfi sa kolegama u amfiteatru Fakulteta tehničkih nauka",
+            w: 2316,
+            h: 3088,
+            // Gornja trećina je plafon - težište na licima i indeksu.
+            position: "object-[50%_65%]",
+          },
+        ],
       },
     ],
     offscreen: [
@@ -329,7 +379,15 @@ export const PEOPLE: Person[] = [
         text: [
           "Treninzi snage tri puta nedeljno su mi neophodni da ostanem u fokusu. Odličan način da se čovek isključi i održi radnu disciplinu.",
         ],
-        placeholder: true,
+        point: "Tri puta nedeljno",
+        shots: [
+          {
+            src: "/people/mihac/6.webp",
+            alt: "Mihajlo u teretani, selfi u ogledalu",
+            w: 4284,
+            h: 5712,
+          },
+        ],
       },
       {
         icon: "notebook-pen",
@@ -337,7 +395,18 @@ export const PEOPLE: Person[] = [
         text: [
           "Veliki deo vremena provodim pišući scenarije. Razvijam ideje za filmove koje bih u budućnosti voleo da pretvorim u realnost - to je moj kreativni izduvni ventil.",
         ],
-        placeholder: true,
+        point: "Scenario otvoren i na odmoru",
+        shots: [
+          {
+            src: "/people/mihac/7.webp",
+            alt: "Laptop sa otvorenim filmskim scenarijom na stolu kafića pored luke",
+            w: 4284,
+            h: 5712,
+            // Donja trećina je pod i noge stola - težište na ekranu sa
+            // scenarijem.
+            position: "object-[50%_35%]",
+          },
+        ],
       },
       {
         icon: "users",
@@ -345,7 +414,15 @@ export const PEOPLE: Person[] = [
         text: [
           "Kada se kamere ugase i kodiranje završi, slobodno vreme najradije provodim sa prijateljima - trudim se da održim balans između posla i svakodnevice.",
         ],
-        placeholder: true,
+        point: "Sa društvom",
+        shots: [
+          {
+            src: "/people/mihac/8.webp",
+            alt: "Mihajlo sa prijateljima za stolom na proslavi",
+            w: 4032,
+            h: 3024,
+          },
+        ],
       },
     ],
   },

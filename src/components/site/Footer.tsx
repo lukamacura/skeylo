@@ -30,7 +30,7 @@ export default function Footer() {
                 office@skeylo.com
               </a>
               <a
-                href="tel:+381600000000"
+                href="tel:+381631012474"
                 className="flex items-center gap-2 text-foreground/80 transition-colors hover:text-primary"
               >
                 <Phone className="size-4" />
