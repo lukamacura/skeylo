@@ -1,6 +1,6 @@
-// Centralni izvor istine za sva tri paketa.
+// Centralni izvor istine za sve pakete.
 // Listinzi prate docs/packages.md.
-// Svaki paket ima svoju landing stranicu na /paketi/[slug].
+// Svaki paket ima svoju statičku landing stranicu u src/app/paketi/<slug>/page.tsx.
 
 export type Package = {
   slug: string;
@@ -8,6 +8,8 @@ export type Package = {
   tagline: string;
   price: number; // u evrima (interno - koristi se za vrednost leada u CRM-u)
   priceNote: string;
+  // Alternativna jednokratna cena - prikazuje se samo na landing stranici paketa
+  oneTimePrice?: number;
   // Paket sa cenom po meri - cena se nikad ne prikazuje na sajtu
   customPrice?: boolean;
   badge: string;
@@ -37,91 +39,55 @@ export type Package = {
 
 export const PACKAGES: Package[] = [
   {
-    slug: "creative-engine",
-    name: "Creative Engine",
+    slug: "podcast-simulation",
+    name: "Podcast Simulation",
     tagline:
-      "Poboljšaj performans tvoje Meta Kampanje kreativama koje su zaradile preko 100.000€",
-    price: 720,
-    priceNote: "",
-    badge: "Start",
+      "30 gotovih videa mesečno za Vaših 3 sata u studiju - daily upload bez razmišljanja šta objaviti.",
+    price: 750,
+    priceNote: "mesečno",
+    oneTimePrice: 950,
+    badge: "Daily upload",
     cta: "Pogledaj ponudu",
-    heroKicker: "Creative Engine",
-    heroTitle: "Kreativa koja",
-    heroHighlight: "privlači prve kupce",
+    heroKicker: "Podcast Simulation",
+    heroTitle: "30 videa za Vaših",
+    heroHighlight: "3 sata mesečno",
     heroSubtitle:
-      "10 profesionalnih kreativa prilagođenih tvom brendu, plus strateški PDF vodič koji ti pokazuje kako da ih iskoristiš za maksimalan efekat.",
+      "Za samo 3 sata mesečno osiguravate daily upload - 30 kratkih videa snimljenih u našem studiju, sa voditeljem, kamermanom i montažom.",
     forWho:
-      "Za brendove koji žele da osveže vizuelni identitet i privuku prve kupce - bez da troše sate na dizajn i nagađanje šta da objave.",
+      "Za vlasnike biznisa i stručnjake koji znaju svoju oblast, ali nemaju vreme da svaki dan smišljaju, snimaju i montiraju sadržaj.",
     pain: [
-      "Objave ti izgledaju amaterski i ne privlače pažnju.",
-      "Trošiš sate u Canvi, a rezultat i dalje ne prodaje.",
-      "Nemaš ideju šta da objaviš ni kako da to iskoristiš.",
+      "Znate da treba da objavljujete svaki dan, ali nemate ni vreme ni ekipu za to.",
+      "Snimanje na svoju ruku, bez pitanja i voditelja, ispadne usiljeno i nikad ne izađe.",
+      "Objavljujete kad stignete - jednom nedeljno, pa pauza od mesec dana.",
     ],
     promise:
-      "Dobijaš 10 gotovih, brend-konzistentnih kreativa i jasan vodič kako da ih objaviš za najbolji efekat - spremno za upotrebu od prvog dana.",
+      "Dolazite u studio jednom mesečno na 3 sata. Mi pripremamo pitanja, vodimo razgovor, snimamo i montiramo - Vi dobijate 30 klipova spremnih za objavu, jedan za svaki dan.",
     deliverables: [
       {
-        title: "10 kreativa",
-        desc: "Profesionalno dizajnirani vizueli prilagođeni tvom brendu.",
+        title: "30 pitanja iz Vaše industrije",
+        desc: "Istražujemo tržište i pripremamo pitanja na koja Vaši kupci traže odgovore.",
       },
       {
-        title: "PDF vodič kako da iskoristiš kreative",
-        desc: "Detaljna uputstva i strategije kako da maksimalno iskoristiš kreative za najbolji efekat.",
+        title: "3 sata snimanja u studiju sa voditeljem",
+        desc: "Moderan prostor, profesionalna oprema, kamerman i voditelj koji izvlači najbolje odgovore.",
+      },
+      {
+        title: "30 montiranih klipova",
+        desc: "Vertikalni format za Reels, TikTok i Shorts - jedan klip za svaki dan u mesecu.",
+      },
+      {
+        title: "ManyChat automacija i soft CTA",
+        desc: "Svaki video radi i kao lead magnet - komentare pretvara u poruke i upite.",
       },
     ],
     stats: [
-      { value: "10", label: "premium kreativa" },
-      { value: "100%", label: "prilagođeno tvom brendu" },
-      { value: "PDF", label: "strateški vodič uključen" },
+      { value: "3h", label: "snimanja mesečno" },
+      { value: "30", label: "gotovih videa" },
+      { value: "30", label: "dana objava" },
     ],
     outcome:
-      "Za par dana imaš biblioteku od 10 kreativa i vodič uz njih - feed koji izgleda kao da iza njega stoji ozbiljan brend.",
+      "Posle jednog termina u studiju imate mesec dana daily upload-a - bez smišljanja tema, bez montaže i bez praznina u objavama.",
     accent: "#d87928",
-  },
-  {
-    slug: "profit-accelerator",
-    name: "Profit Accelerator",
-    tagline: "Ozbiljan rast kroz Meta oglašavanje",
-    price: 1600,
-    priceNote: "",
-    badge: "Rast",
-    cta: "Pogledaj ponudu",
-    heroKicker: "Profit Accelerator",
-    heroTitle: "Pretvaramo budžet u",
-    heroHighlight: "predvidiv profit",
-    heroSubtitle:
-      "20 kreativa, kompletno vođene Meta kampanje i analiza tvog sajta - sistem koji optimizuje konverzije i pokreće ozbiljan rast.",
-    forWho:
-      "Za biznise koji žele da pokrenu ozbiljan rast, optimizuju konverzije i počnu da dominiraju na društvenim mrežama.",
-    pain: [
-      "Paljaš oglase, ali ne znaš koji zapravo donose novac.",
-      "Sajt ti ima posete, ali se posetioci ne pretvaraju u kupce.",
-      "Nemaš vremena ni znanje da vodiš i optimizuješ kampanje.",
-    ],
-    promise:
-      "Preuzimamo tvoje Meta oglašavanje od A do Š, dajemo ti 20 kreativa za testiranje i analiziramo sajt sa konkretnim predlozima koji podižu prodaju.",
-    deliverables: [
-      {
-        title: "20 kreativa",
-        desc: "Veća količina vizuelnog sadržaja za testiranje i skaliranje.",
-      },
-      {
-        title: "Vođenje Meta Ads kampanje",
-        desc: "Kompletno vođenje, optimizacija i praćenje oglasnih kampanja.",
-      },
-      {
-        title: "Analiza sajta uz instrukcije za unapređenje",
-        desc: "Detaljan pregled uz konkretne UX/UI predloge za povećanje prodaje.",
-      },
-    ],
-    stats: [
-      { value: "20", label: "kreativa za testiranje i skaliranje" },
-      { value: "FB+IG", label: "Meta kampanje pod našim vođenjem" },
-      { value: "UX/UI", label: "analiza sajta sa predlozima" },
-    ],
-    outcome:
-      "Dobijaš profesionalno vođene kampanje, sadržaj za skaliranje i sajt spreman da konvertuje - sve usmereno ka više prodaja.",
-    accent: "#e8a13a",
   },
   {
     slug: "profit-za-tebe",
@@ -194,3 +160,9 @@ export const CUSTOM_PRICE_LABEL = "Po dogovoru";
 // Jedini način na koji cena sme da se prikaže u UI-u.
 export const priceLabel = (p: Package) =>
   p.customPrice ? CUSTOM_PRICE_LABEL : `${formatPrice(p.price)}€`;
+
+// Cena + napomena ("750€ / mesečno"); bez napomene ostaje samo cena.
+export const priceLabelFull = (p: Package) =>
+  p.customPrice || !p.priceNote
+    ? priceLabel(p)
+    : `${priceLabel(p)} / ${p.priceNote}`;

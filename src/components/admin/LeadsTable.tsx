@@ -41,8 +41,7 @@ import {
 const GOLD = "#f0b656";
 
 const ADMIN_ACCENTS: Record<string, string> = {
-  "creative-engine": "#6366f1",
-  "profit-accelerator": "#10b981",
+  "podcast-simulation": "#6366f1",
   "profit-za-tebe": "#d87928",
 };
 

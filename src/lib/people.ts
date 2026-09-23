@@ -257,6 +257,7 @@ export const PEOPLE: Person[] = [
     name: "Filip Ruvčeski",
     role: "Media Buyer",
     img: "/people/filip.webp",
+    whatsapp: "381665210240",
   },
   {
     key: "mihac",

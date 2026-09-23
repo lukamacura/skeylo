@@ -254,3 +254,48 @@ html {
     linear-gradient(to bottom, var(--border) 1px, transparent 1px);
   background-size: 56px 56px;
 }
+
+/* --- Roof estimator (/calculator) -------------------------------------
+   White-label demo: boje dolaze iz URL-a kroz --rc* promenljive koje
+   postavlja RoofEstimator. Ovde je samo ono što Tailwind ne može inline. */
+.rc .rc-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--rc) 0%,
+    var(--rc) var(--pct, 50%),
+    #e2e8f0 var(--pct, 50%)
+  );
+  outline: none;
+}
+.rc .rc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--rc);
+  box-shadow: 0 4px 14px -4px var(--rc-glow);
+  cursor: grab;
+  transition: transform 0.15s;
+}
+.rc .rc-range::-webkit-slider-thumb:active {
+  transform: scale(1.12);
+  cursor: grabbing;
+}
+.rc .rc-range::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--rc);
+  box-shadow: 0 4px 14px -4px var(--rc-glow);
+  cursor: grab;
+}
+.rc input::selection {
+  background: var(--rc);
+  color: var(--rc-fg);
+}

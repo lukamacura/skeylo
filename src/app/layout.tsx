@@ -25,11 +25,11 @@ export const metadata: Metadata = {
     template: "%s | Skeylo",
   },
   description:
-    "Full-stack marketing agencija. Kreativa, performance kampanje i sistemi rasta u jednom timu. Tri paketa, jedan cilj - više prodaja.",
+    "Full-stack marketing agencija. Kreativa, performance kampanje i sistemi rasta u jednom timu. Dva paketa, jedan cilj - više prodaja.",
   openGraph: {
     title: "Skeylo - Marketing koji donosi profit",
     description:
-      "Kreativa, performance i sistemi rasta u jednom timu. Tri paketa, jedan cilj - više prodaja.",
+      "Kreativa, performance i sistemi rasta u jednom timu. Dva paketa, jedan cilj - više prodaja.",
     images: [{ url: "/og.png" }],
   },
   twitter: { card: "summary_large_image" },
@@ -42,8 +42,11 @@ export default async function RootLayout({
 }) {
   const h = await headers();
   const construction = h.get("x-construction") === "1";
-  const isAdmin = (h.get("x-pathname") ?? "").startsWith("/admin");
-  const hideChrome = construction || isAdmin;
+  const pathname = h.get("x-pathname") ?? "";
+  const isAdmin = pathname.startsWith("/admin");
+  // /calculator je white-label demo za klijente — bez Skeylo headera/footera.
+  const isCalculator = pathname.startsWith("/calculator");
+  const hideChrome = construction || isAdmin || isCalculator;
 
   return (
     <html lang="sr" className={`${display.variable} ${sans.variable}`}>

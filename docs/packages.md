@@ -6,26 +6,30 @@ Izaberite paket koji najbolje odgovara trenutnoj fazi vašeg biznisa i ciljevima
 
 ## 📦 Paketi Usluga
 
-### 1. Creative Engine
+### 1. Podcast Simulation
 
-_Savršen start za osvežavanje vašeg vizuelnog identiteta i privlačenje prvih kupaca._
+_30 gotovih videa mesečno za Vaših 3 sata u studiju - daily upload bez razmišljanja šta objaviti._
 
-- **10 Kreativa:** Profesionalno dizajnirani vizueli prilagođeni vašem brendu.
-- **PDF Vodič:** Detaljna uputstva i strategije kako da maksimalno iskoristite dobijene kreative za najbolji efekat.
+| #   | Šta dobijate                                            |   Vrednost |
+| --- | ------------------------------------------------------- | ---------: |
+| 1   | Istraživanje industrije i sastavljanje 30 pitanja       |       100€ |
+| 2   | Moderan prostor spreman za snimanje                     |        50€ |
+| 3   | Voditelj koji vodi razgovor i izvlači najbolje odgovore |       150€ |
+| 4   | Profesionalna oprema i kamerman koji kontroliše set     |       450€ |
+| 5   | Montaža i dostava svih 30 klipova                       |       450€ |
+| 6   | Podešavanje ManyChat automacije i soft CTA-a            |        50€ |
+|     | **Ukupna vrednost**                                     | ~~1.250€~~ |
+
+**Cena:**
+
+- **750€ / mesečno** - mesečna saradnja (svakog meseca novih 30 videa)
+- **950€ / jednokratno** - jedan termin od 3 sata, 30 montiranih klipova
+
+VSL: https://www.youtube.com/watch?v=pfTMNetaMbw
 
 ---
 
-### 2. Profit Accelerator
-
-_Za biznise koji žele da pokrenu ozbiljan rast, optimizuju konverzije i dominiraju na mrežama._
-
-- **20 Kreativa:** Veća količina vizuelnog sadržaja za testiranje i skaliranje.
-- **Meta Reklame:** Kompletno vođenje, optimizacija i praćenje oglasnih kampanja (Facebook & Instagram).
-- **Analiza Sajta:** Detaljan pregled vašeg trenutnog web sajta uz konkretne predloge i UX/UI izmene za povećanje prodaje.
-
----
-
-### 3. Profit Za Tebe
+### 2. Profit Za Tebe
 
 _Premium "all-in-one" rešenje ključ u ruke. Kompletna digitalna transformacija vašeg poslovanja._
 
@@ -36,16 +40,19 @@ _Premium "all-in-one" rešenje ključ u ruke. Kompletna digitalna transformacija
   - 📅 **Sistem za Zakazivanje:** Automatizovano bukiranje termina i usluga.
   - 📊 **Finansijski Admin Panel:** Napredna kontrolna tabla za praćenje prihoda, troškova i analitike u realnom vremenu.
 
+Cena: po dogovoru.
+
 ---
 
 ## 📊 Uporedni Pregled Paketa
 
-| Karakteristika               | Creative Engine | Profit Accelerator | Profit Za Tebe |
-| :--------------------------- | :-------------: | :----------------: | :------------: |
-| **Broj kreativa**            |       10        |         20         |       20       |
-| **PDF Vodič**                |       ✅        |         —          |       —        |
-| **Meta Oglašavanje**         |        —        |         ✅         |       ✅       |
-| **Analiza i predlozi sajta** |        —        |         ✅         |       —        |
-| **Izrada Webshop-a**         |        —        |         —          |       ✅       |
-| **Sistem za zakazivanje**    |        —        |         —          |       ✅       |
-| **Finansijski Admin Panel**  |        —        |         —          |       ✅       |
+| Karakteristika              |     Podcast Simulation      | Profit Za Tebe |
+| :-------------------------- | :-------------------------: | :------------: |
+| **Snimanje u studiju**      |         3h mesečno          |       —        |
+| **Broj videa / kreativa**   |         30 klipova          |  20 kreativa   |
+| **ManyChat automacija**     |             ✅              |       —        |
+| **Meta Oglašavanje**        |              —              |       ✅       |
+| **Izrada Webshop-a**        |              —              |       ✅       |
+| **Sistem za zakazivanje**   |              —              |       ✅       |
+| **Finansijski Admin Panel** |              —              |       ✅       |
+| **Cena**                    | 750€/mes · 950€ jednokratno |  Po dogovoru   |

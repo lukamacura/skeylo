@@ -31,7 +31,7 @@ export default function FinalCta() {
           </h2>
           <p className="relative mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:mt-5 sm:text-lg">
             Izaberi paket koji odgovara fazi tvog biznisa i kreni odmah. Nisi
-            siguran koji? Pogledaj sva tri i lako uporedi.
+            siguran koji? Pogledaj oba i lako uporedi.
           </p>
           <div className="relative mt-8 flex justify-center sm:mt-9">
             <Link

@@ -7,7 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Menu, X } from "lucide-react";
 
-import { PACKAGES, priceLabel } from "@/lib/packages";
+import { PACKAGES, priceLabelFull } from "@/lib/packages";
 import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
@@ -165,7 +165,7 @@ export default function HeaderClient() {
         <nav className="ml-auto hidden md:block" aria-label="Glavna navigacija">
           <NavigationMenu viewport={false}>
             <NavigationMenuList>
-              {/* Paketi - dropdown sa sva tri paketa */}
+              {/* Paketi - dropdown sa svim paketima */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger
                   className={cn(packagesActive && "text-foreground")}
@@ -210,7 +210,7 @@ export default function HeaderClient() {
                               {p.tagline}
                             </span>
                             <span className="text-xs font-semibold text-primary">
-                              {priceLabel(p)}
+                              {priceLabelFull(p)}
                             </span>
                           </Link>
                         </NavigationMenuLink>
@@ -318,7 +318,7 @@ export default function HeaderClient() {
                     </span>
                   </span>
                   <span className="text-sm font-semibold text-primary">
-                    {priceLabel(p)}
+                    {priceLabelFull(p)}
                   </span>
                 </Link>
               </li>

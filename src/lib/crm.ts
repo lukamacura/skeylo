@@ -36,7 +36,7 @@ export function isLeadStatus(v: unknown): v is LeadStatus {
   return typeof v === "string" && STATUS_IDS.includes(v as LeadStatus);
 }
 
-// type "creative-engine-quiz" -> paket -> cena (EUR)
+// type "podcast-simulation-quiz" -> paket -> cena (EUR)
 export function packageForType(type: string) {
   const slug = type.replace(/-quiz$/, "");
   return PACKAGES.find((p) => p.slug === slug);

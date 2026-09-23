@@ -25,12 +25,12 @@ export default function Packages() {
             Izaberi paket shodno cilju
           </h2>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            Tri paketa, jedan cilj - više prodaja. Svaki ima svoju stranicu sa
+            Dva paketa, jedan cilj - više prodaja. Svaki ima svoju stranicu sa
             detaljima.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
           {PACKAGES.map((pkg, idx) => {
             const premium = pkg.premium === true;
             return (
@@ -87,9 +87,11 @@ export default function Packages() {
                   >
                     {priceLabel(pkg)}
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    {pkg.priceNote}
-                  </span>
+                  {pkg.priceNote && (
+                    <span className="text-sm text-muted-foreground">
+                      / {pkg.priceNote}
+                    </span>
+                  )}
                 </div>
 
                 <ul className="mt-6 flex-1 space-y-3 sm:mt-7">
