@@ -42,7 +42,7 @@ export const PACKAGES: Package[] = [
     slug: "podcast-simulation",
     name: "Podcast Simulation",
     tagline:
-      "30 gotovih videa mesečno za Vaših 3 sata u studiju - daily upload bez razmišljanja šta objaviti.",
+      "30 videa mesečno koji dokazuju Vašu stručnost i grade autoritet u niši - za samo 3 sata u studiju.",
     price: 750,
     priceNote: "mesečno",
     oneTimePrice: 950,
@@ -52,9 +52,9 @@ export const PACKAGES: Package[] = [
     heroTitle: "30 videa za Vaših",
     heroHighlight: "3 sata mesečno",
     heroSubtitle:
-      "Za samo 3 sata mesečno osiguravate daily upload - 30 kratkih videa snimljenih u našem studiju, sa voditeljem, kamermanom i montažom.",
+      "Za samo 3 sata mesečno proizvodimo 30 videa koji dokazuju Vašu stručnost i kredibilitet u niši - gradeći u očima publike neupitan autoritet.",
     forWho:
-      "Za vlasnike biznisa i stručnjake koji znaju svoju oblast, ali nemaju vreme da svaki dan smišljaju, snimaju i montiraju sadržaj.",
+      "Za ljude koji nemaju vremena da kreiraju sadržaj, ali imaju ozbiljne ambicije za svoj lični brend.",
     pain: [
       "Znate da treba da objavljujete svaki dan, ali nemate ni vreme ni ekipu za to.",
       "Snimanje na svoju ruku, bez pitanja i voditelja, ispadne usiljeno i nikad ne izađe.",

@@ -12,11 +12,16 @@ import {
   Film,
   Image as ImageIcon,
   ListChecks,
+  Camera,
   MicVocal,
+  Palette,
+  Quote,
   Repeat,
   Scissors,
+  ShieldCheck,
   Sparkles,
   Timer,
+  Users,
   X,
 } from "lucide-react";
 import { formatPrice, getPackage, priceLabelFull } from "@/lib/packages";
@@ -129,7 +134,7 @@ const pillars = [
   },
   {
     icon: CalendarDays,
-    desc: "Jedan klip dnevno. Ceo mesec pokriven.",
+    desc: "Daily upload - frekvencija na kojoj algoritam počinje ozbiljno da radi za Vas.",
   },
 ];
 
@@ -147,12 +152,12 @@ const steps = [
   {
     icon: MicVocal,
     title: "Voditelj vodi razgovor",
-    desc: "Tri sata opuštenog razgovora. Voditelj postavlja pitanja i izvlači najbolje odgovore - pričate ono što već znate.",
+    desc: "Tri sata opuštenog razgovora. Voditelj postavlja pitanja tako da odgovarate s lakoćom, prekida Vas ako skrenete s teme i izvlači ono što publika želi da čuje.",
   },
   {
     icon: Scissors,
     title: "Montiramo i dostavljamo 30 klipova",
-    desc: "Sečemo razgovor na 30 kratkih videa u vertikalnom formatu za Reels, TikTok i Shorts, i podešavamo ManyChat automaciju sa soft CTA-om.",
+    desc: "Sečemo razgovor na 30 kratkih videa u vertikalnom formatu za Reels, TikTok i Shorts, šaljemo Google Drive link sa gotovim videima i podešavamo ManyChat automaciju sa soft CTA-om.",
   },
 ];
 
@@ -166,7 +171,7 @@ const weDo = [
   "Istražujemo Vašu industriju i pišemo 30 pitanja",
   "Obezbeđujemo moderan studio spreman za snimanje",
   "Voditelj vodi razgovor i izvlači najbolje odgovore",
-  "Kamerman i profesionalna oprema kontrolišu set",
+  "Dve kamere, studijski mikrofoni, rasveta i kamerman na setu",
   "Montiramo svih 30 klipova u vertikalnom formatu",
   "Podešavamo ManyChat automaciju i soft CTA",
 ];
@@ -180,34 +185,84 @@ const noMore = [
 
 const valueStack = [
   {
-    title: "Istraživanje industrije i sastavljanje 30 pitanja",
+    title:
+      "Detaljno istraživanje Vaše industrije i 30 pitanja sa najvećim viralnim potencijalom",
     value: 100,
   },
   { title: "Moderan prostor spreman za snimanje", value: 50 },
   {
-    title: "Voditelj koji vodi razgovor i izvlači najbolje odgovore",
+    title:
+      "Voditelj koji vodi razgovor i izvlači tačno ono što publika želi da čuje",
     value: 150,
   },
   {
-    title: "Profesionalna oprema i kamerman koji kontroliše set",
+    title:
+      "Dve kamere iz više uglova, dva studijska mikrofona, profesionalna rasveta i kamerman puna 3 sata",
     value: 450,
   },
-  { title: "Montaža i dostava svih 30 klipova", value: 450 },
-  { title: "Podešavanje ManyChat automacije i soft CTA-a", value: 50 },
+  {
+    title:
+      "Kompletna montaža svih 30 klipova i Google Drive link sa gotovim videima",
+    value: 400,
+  },
+  {
+    title:
+      "ManyChat comment-to-DM automacija i soft CTA koji publiku vodi u Vaš prodajni funnel",
+    value: 100,
+  },
 ];
 
 const stackTotal = valueStack.reduce((sum, v) => sum + v.value, 0);
 
 const monthlyPerks = [
   "Svakog meseca novih 30 videa",
+  "3 meseca daily upload-a bez prekida",
   "Prioritet pri zakazivanju termina",
-  "Daily upload bez prekida",
 ];
 
 const oneTimePerks = [
   "Jedan termin od 3 sata",
   "30 montiranih klipova",
-  "Idealno za probu pre mesečne saradnje",
+  "Idealno za probu pre tromesečnog paketa",
+];
+
+/** Na setu i u montaži menjamo izgled, da 30 klipova ne bi dosadilo publici. */
+const variety = [
+  {
+    icon: Camera,
+    title: "Na setu",
+    items: ["Uglovi kamera", "Odevne kombinacije", "Pozadine", "Osvetljenje"],
+  },
+  {
+    icon: Palette,
+    title: "U montaži",
+    items: ["Stil animacija", "Stil teksta", "Ritam rezova"],
+  },
+];
+
+const alternatives = [
+  {
+    title: "Sami kreirate sadržaj",
+    desc: "Na svojim leđima nosite posao celog kontent tima - teme, snimanje, montažu i objave.",
+  },
+  {
+    title: "Studio koji iznajmljuje samo prostor",
+    desc: "Fensi prostor ne vredi ništa ako na setu nemate nekoga ko tačno zna kako da Vas vodi.",
+  },
+  {
+    title: 'Izrežirani "fejk" podkasti',
+    desc: 'Vidi se da je namešteno. Publika pomisli "evo još jednog fejk podkasta" i skroluje dalje.',
+  },
+  {
+    title: "Skupa marketing agencija",
+    desc: "Nerealan deo mesečne zarade - a bez proizvoda koji već donosi keš, agencijski fee se ne isplati.",
+  },
+];
+
+const realConversation = [
+  "Voditelj je u kadru - set izgleda kao da ste stvarno došli kao gost",
+  "Spontani prekidi, osmesi, reakcije i pravi ton u glasu",
+  "Publika se fokusira na Vašu poruku, jer oseća da je razgovor stvaran",
 ];
 
 export default function PodcastSimulationLanding() {
@@ -284,11 +339,11 @@ export default function PodcastSimulationLanding() {
                 <strong className="font-semibold text-foreground">
                   3 sata mesečno
                 </strong>{" "}
-                osiguravate{" "}
+                proizvodimo 30 videa koji dokazuju Vašu stručnost i grade{" "}
                 <strong className="font-semibold text-foreground">
-                  daily upload
-                </strong>
-                .
+                  neupitan autoritet
+                </strong>{" "}
+                u Vašoj niši.
               </motion.p>
 
               {/* ── Pokazivač na VSL ── */}
@@ -299,8 +354,12 @@ export default function PodcastSimulationLanding() {
                 animate="show"
                 className="mt-10 flex flex-col items-center gap-2 sm:mt-12"
               >
+                <p className="max-w-xl text-balance text-sm text-muted-foreground sm:text-base">
+                  Ako gradite lični brend i želite da budete prva opcija kada
+                  kupci pomisle na Vaš proizvod
+                </p>
                 <p className="text-base font-semibold sm:text-lg">
-                  Pogledajte video u kom je sve objašnjeno
+                  Pogledajte video do kraja
                 </p>
                 <motion.span
                   aria-hidden
@@ -338,8 +397,9 @@ export default function PodcastSimulationLanding() {
                 <span className="text-gradient">objavljujte svaki dan</span>
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-                Jedan termin u studiju od 3 sata pokriva ceo mesec sadržaja. Bez
-                ponovnog snimanja, bez razmišljanja šta objaviti sutra.
+                Jedan termin u studiju od 3 sata pokriva ceo mesec sadržaja. A
+                30 klipova mesečno znači daily upload - pa se vreme potrebno da
+                izgradite autoritet i prepoznatljivost svodi na minimum.
               </p>
             </div>
 
@@ -475,6 +535,64 @@ export default function PodcastSimulationLanding() {
           </div>
         </section>
 
+        {/* ───────────── RAZNOVRSNOST ───────────── */}
+        <section className="py-12 md:py-20">
+          <div className="container-x">
+            <div className="mx-auto max-w-3xl text-center">
+              <SectionLabel>30 klipova, nula dosade</SectionLabel>
+              <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
+                Publici <span className="text-gradient">neće dosaditi</span>
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+                Mislite da je 30 klipova u podcast formatu previše? Svaki klip
+                izgleda drugačije - iako je sve snimljeno u istom terminu.
+              </p>
+            </div>
+
+            <div className="mx-auto mt-10 grid max-w-3xl gap-5 sm:grid-cols-2">
+              {variety.map((v, i) => (
+                <motion.div
+                  key={v.title}
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, margin: "-60px" }}
+                  className="rounded-3xl border border-border card-glass p-6 sm:p-8"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="inline-flex size-11 items-center justify-center rounded-xl"
+                      style={{ background: `${GOLD}22` }}
+                    >
+                      <v.icon className="size-5" style={{ color: GOLD }} />
+                    </span>
+                    <h3 className="text-lg font-bold sm:text-xl">
+                      {v.title} menjamo
+                    </h3>
+                  </div>
+                  <ul className="mt-6 space-y-3">
+                    {v.items.map((item) => (
+                      <li key={item} className="flex items-start gap-3">
+                        <Check
+                          className="mt-0.5 size-4 shrink-0"
+                          style={{ color: GOLD }}
+                        />
+                        <span className="text-foreground/90">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ))}
+            </div>
+
+            <p className="mx-auto mt-8 max-w-2xl text-balance text-center text-base font-semibold sm:text-lg">
+              Vaša priča i vrednost drže publiku zalepljenu za ekran - a ne
+              mesto na kom sedite.
+            </p>
+          </div>
+        </section>
+
         {/* ───────────── JEDNOSTAVNOST ───────────── */}
         <section className="py-12 md:py-20">
           <div className="container-x">
@@ -594,6 +712,89 @@ export default function PodcastSimulationLanding() {
           </div>
         </section>
 
+        {/* ───────────── ALTERNATIVE ───────────── */}
+        <section className="py-12 md:py-20">
+          <div className="container-x">
+            <div className="mx-auto max-w-3xl text-center">
+              <SectionLabel>Zašto baš ovako</SectionLabel>
+              <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
+                Šta ne radi - <span className="text-gradient">i šta radi</span>
+              </h2>
+            </div>
+
+            <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
+              {alternatives.map((a, i) => (
+                <motion.div
+                  key={a.title}
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, margin: "-60px" }}
+                  className="rounded-2xl border border-border card-glass p-5 sm:p-6"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <X
+                      className="size-5 shrink-0 text-red-400/80"
+                      aria-hidden
+                    />
+                    <h3 className="font-bold">{a.title}</h3>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {a.desc}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-60px" }}
+              className="mx-auto mt-5 max-w-4xl rounded-3xl gold-frame border border-transparent bg-gradient-to-b from-[#f0b656]/[0.12] via-card to-card p-6 sm:p-8"
+            >
+              <div className="flex items-center gap-2.5">
+                <Check className="size-5 shrink-0" style={{ color: GOLD }} />
+                <h3 className="text-lg font-bold sm:text-xl">
+                  Podcast Simulation: pravi razgovor, ne režija
+                </h3>
+              </div>
+              <ul className="mt-5 space-y-3">
+                {realConversation.map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span
+                      className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full"
+                      style={{ background: `${GOLD}22` }}
+                    >
+                      <Check className="size-3.5" style={{ color: GOLD }} />
+                    </span>
+                    <span className="text-foreground/90">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            <div className="mx-auto mt-12 max-w-3xl text-center sm:mt-16">
+              <Quote
+                className="mx-auto size-8 opacity-60"
+                style={{ color: GOLD }}
+                aria-hidden
+              />
+              <p className="mt-4 text-balance text-2xl font-extrabold leading-tight sm:text-3xl">
+                Ljudi kupuju od ljudi koje znaju, koji im se dopadaju i kojima
+                veruju.
+              </p>
+              <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+                Podcast Simulation gradi upravo to poverenje. Zato smo uvek
+                imali drastično bolje rezultate na plaćenim oglasima čim bismo u
+                strategiju ubacili ove klipove - čak i kad već imate proizvod i
+                agenciju koja ga gura.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* ───────────── VALUE STACK ───────────── */}
         <section className="py-12 md:py-20">
           <div className="container-x">
@@ -655,6 +856,10 @@ export default function PodcastSimulationLanding() {
                   </span>
                 </span>
               </div>
+              <p className="border-t border-border px-5 py-3 text-center text-xs text-muted-foreground sm:px-6 sm:text-sm">
+                Kroz tromesečni paket. Samo jedan mesec:{" "}
+                {formatPrice(pkg.oneTimePrice ?? 0)}€.
+              </p>
             </div>
           </div>
         </section>
@@ -676,13 +881,13 @@ export default function PodcastSimulationLanding() {
                   <span className="text-gradient">sarađujemo</span>
                 </h2>
                 <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-                  Ista usluga, dva načina plaćanja. U oba slučaja dobijate 3
+                  Ista usluga, dva načina plaćanja. Svakog meseca dobijate 3
                   sata u studiju i 30 gotovih klipova.
                 </p>
               </div>
 
               <div className="relative mx-auto mt-8 grid max-w-3xl gap-4 text-left sm:mt-10 sm:grid-cols-2 sm:gap-5">
-                {/* Mesečno */}
+                {/* Tromesečni paket */}
                 <motion.div
                   custom={0}
                   variants={fadeUp}
@@ -697,7 +902,7 @@ export default function PodcastSimulationLanding() {
                     </span>
                     <Repeat className="size-5" style={{ color: GOLD }} />
                   </div>
-                  <h3 className="mt-5 text-xl font-bold">Mesečna saradnja</h3>
+                  <h3 className="mt-5 text-xl font-bold">Tromesečni paket</h3>
                   <div className="mt-3 flex items-baseline gap-1.5">
                     <span className="font-display text-4xl font-extrabold sm:text-5xl">
                       {formatPrice(pkg.price)}€
@@ -716,7 +921,7 @@ export default function PodcastSimulationLanding() {
                   </ul>
                 </motion.div>
 
-                {/* Jednokratno */}
+                {/* Jedan mesec */}
                 <motion.div
                   custom={1}
                   variants={fadeUp}
@@ -731,14 +936,12 @@ export default function PodcastSimulationLanding() {
                     </span>
                     <CalendarCheck className="size-5 text-muted-foreground" />
                   </div>
-                  <h3 className="mt-5 text-xl font-bold">
-                    Jednokratno snimanje
-                  </h3>
+                  <h3 className="mt-5 text-xl font-bold">Samo jedan mesec</h3>
                   <div className="mt-3 flex items-baseline gap-1.5">
                     <span className="font-display text-4xl font-extrabold sm:text-5xl">
                       {formatPrice(pkg.oneTimePrice ?? 0)}€
                     </span>
-                    <span className="text-muted-foreground">/ jednokratno</span>
+                    <span className="text-muted-foreground">/ jedan mesec</span>
                   </div>
                   <ul className="mt-6 flex-1 space-y-3">
                     {oneTimePerks.map((item) => (
@@ -751,6 +954,36 @@ export default function PodcastSimulationLanding() {
                 </motion.div>
               </div>
 
+              {/* Garancija + jedan klijent po industriji */}
+              <div className="relative mx-auto mt-5 grid max-w-3xl gap-4 text-left sm:grid-cols-2 sm:gap-5">
+                <div className="flex gap-4 rounded-2xl border border-border card-glass p-5 sm:p-6">
+                  <ShieldCheck
+                    className="mt-0.5 size-6 shrink-0"
+                    style={{ color: GOLD }}
+                  />
+                  <div>
+                    <h3 className="font-bold">Garancija povraćaja novca</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      Ako makar jedan video zakasni ijedan jedini minut -
+                      vraćamo Vam apsolutno svaki dinar.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-4 rounded-2xl border border-border card-glass p-5 sm:p-6">
+                  <Users
+                    className="mt-0.5 size-6 shrink-0"
+                    style={{ color: GOLD }}
+                  />
+                  <div>
+                    <h3 className="font-bold">Jedan klijent po industriji</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      Ako Vaš konkurent zakaže poziv pre Vas, ne možemo da
+                      radimo zajedno dok traje ugovor sa njim.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* CTA */}
               <div className="relative mt-10 flex flex-col items-center gap-4 border-t border-border pt-8 text-center sm:mt-12 sm:pt-10">
                 <PodcastQuizPopup>
@@ -761,9 +994,9 @@ export default function PodcastSimulationLanding() {
                 </PodcastQuizPopup>
 
                 <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-                  Sledeći korak: izaberite dan i vreme poziva (~30 sekundi), a
-                  termin stiže Filipu na WhatsApp. Na pozivu biramo opciju i
-                  zakazujemo prvi termin snimanja.
+                  Na kratkom sastanku vidimo da li ima smisla da ovo primenimo
+                  na Vaš brend. Ako nema, reći ćemo Vam to otvoreno - a ako ima,
+                  zakazujemo termin za prvo snimanje.
                 </p>
               </div>
             </div>
@@ -777,6 +1010,9 @@ export default function PodcastSimulationLanding() {
               <span className="font-display text-xl font-extrabold">
                 {priceLabelFull(pkg)}
               </span>
+              <span className="text-sm text-muted-foreground">
+                kroz tromesečni paket
+              </span>
             </div>
 
             <div className="flex w-full flex-col items-center gap-1 sm:w-auto sm:items-end sm:gap-1.5">
@@ -787,7 +1023,7 @@ export default function PodcastSimulationLanding() {
                 </button>
               </PodcastQuizPopup>
               <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-center text-[10px] leading-tight text-muted-foreground sm:gap-x-3 sm:text-xs">
-                <span>Izaberite termin</span>
+                <span>1 klijent po industriji</span>
                 <span aria-hidden>·</span>
                 <span>Potvrda na WhatsApp</span>
                 <span aria-hidden className="hidden sm:inline">

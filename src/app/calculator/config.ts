@@ -4,11 +4,14 @@
 
 export interface ContractorConfig {
   companyName: string;
-  phone: string;
+  /** null kada je ?phone=none — sakriva sve "Call" linkove (firma bez telefona). */
+  phone: string | null;
   city: string;
   primaryColor: string;
   /** Opciono: URL transparentnog PNG logoa (?logo=https://...). */
   logoUrl: string | null;
+  /** ?logobg=1 — logo je beo/svetao pa ga stavljamo na plocicu u brend boji. */
+  logoBg: boolean;
   /** ?embed=1 — kompaktniji layout za <iframe> na sajtu klijenta. */
   embed: boolean;
   /** ?notify=owner@firma.com — ko dobija lead notifikaciju (fallback: env CALCULATOR_NOTIFY_EMAIL). */
@@ -59,10 +62,16 @@ export function getContractorConfig(
   return {
     companyName:
       first(searchParams.company)?.trim() || "Premier Roofing Services",
-    phone: first(searchParams.phone)?.trim() || "(555) 019-2831",
+    phone: (() => {
+      const p = first(searchParams.phone)?.trim();
+      if (p && ["none", "no", "0", "hide"].includes(p.toLowerCase()))
+        return null;
+      return p || "(555) 019-2831";
+    })(),
     city: first(searchParams.city)?.trim() || "your area",
     primaryColor: safeColor(first(searchParams.color), "#2563eb"),
     logoUrl: safeLogo(first(searchParams.logo)),
+    logoBg: first(searchParams.logobg) === "1",
     embed: first(searchParams.embed) === "1",
     notifyEmail: safeEmail(first(searchParams.notify)),
     notifySms: safePhone(first(searchParams.sms)),

@@ -99,10 +99,10 @@ export default function Hero() {
           <motion.div
             whileHover={reduce ? undefined : { rotate: -0.4, scale: 1.01 }}
             transition={{ type: "spring", stiffness: 160, damping: 18 }}
-            className="relative aspect-[4/3]"
+            className="relative aspect-[3/2]"
           >
             <Image
-              src="/hero.png"
+              src="/skeylo_team.png"
               alt="Skeylo tim"
               fill
               priority

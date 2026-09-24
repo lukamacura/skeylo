@@ -315,8 +315,13 @@ export default function RoofEstimator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, canContinue, lead, sqft, goal, material]);
 
-  const phonePretty = formatPhone(config.phone);
-  const tel = telHref(config.phone);
+  const hasPhone = !!config.phone;
+  const phonePretty = config.phone ? formatPhone(config.phone) : "";
+  const tel = config.phone ? telHref(config.phone) : "#";
+  const scrollToBooking = () =>
+    document
+      .getElementById("rc-book")
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
 
   return (
     <div
@@ -344,7 +349,11 @@ export default function RoofEstimator({
                 alt={config.companyName}
                 decoding="async"
                 onError={() => setLogoFailed(true)}
-                className="h-10 w-auto max-w-[168px] shrink-0 object-contain object-left"
+                className={
+                  config.logoBg
+                    ? "h-14 w-auto max-w-[200px] shrink-0 rounded-xl bg-[var(--rc)] px-3 py-2 object-contain object-left shadow-[0_8px_24px_-8px_var(--rc-glow)]"
+                    : "h-10 w-auto max-w-[168px] shrink-0 object-contain object-left"
+                }
               />
             </div>
           ) : (
@@ -360,12 +369,14 @@ export default function RoofEstimator({
             </div>
           )}
           <div className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
-            <a
-              href={tel}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e8f0] bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:border-[var(--rc)] hover:text-[var(--rc)]"
-            >
-              <Phone className="size-3.5" /> {phonePretty}
-            </a>
+            {hasPhone && (
+              <a
+                href={tel}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e8f0] bg-white px-3 py-1.5 text-xs font-semibold text-[#0f172a] shadow-sm transition hover:border-[var(--rc)] hover:text-[var(--rc)]"
+              >
+                <Phone className="size-3.5" /> {phonePretty}
+              </a>
+            )}
             <span className="flex max-w-[180px] items-center gap-1 text-[11px] font-medium text-[#64748b]">
               <MapPin className="size-3 shrink-0" />
               <span className="truncate">Serving {config.city}</span>
@@ -898,6 +909,7 @@ export default function RoofEstimator({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
+                id="rc-book"
                 className="mt-4 rounded-2xl border border-[#e2e8f0] bg-white p-4"
               >
                 {booking === "done" ? (
@@ -1094,7 +1106,7 @@ export default function RoofEstimator({
                     <ShieldCheck className="size-3 text-emerald-600" /> No spam
                     · No obligation
                   </>
-                ) : (
+                ) : hasPhone ? (
                   <>
                     Prefer to talk?{" "}
                     <a
@@ -1104,18 +1116,37 @@ export default function RoofEstimator({
                       Call {phonePretty}
                     </a>
                   </>
+                ) : (
+                  <>
+                    <ShieldCheck className="size-3 text-emerald-600" /> Free ·
+                    No obligation
+                  </>
                 )}
               </div>
             </div>
           ) : (
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <motion.a
-                href={tel}
-                whileTap={{ scale: 0.98 }}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--rc)] text-[15px] font-semibold text-[var(--rc-fg)] shadow-[0_12px_30px_-12px_var(--rc-glow)]"
-              >
-                <Phone className="size-4" /> Call {phonePretty}
-              </motion.a>
+              {hasPhone ? (
+                <motion.a
+                  href={tel}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--rc)] text-[15px] font-semibold text-[var(--rc-fg)] shadow-[0_12px_30px_-12px_var(--rc-glow)]"
+                >
+                  <Phone className="size-4" /> Call {phonePretty}
+                </motion.a>
+              ) : (
+                <motion.button
+                  type="button"
+                  onClick={scrollToBooking}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--rc)] text-[15px] font-semibold text-[var(--rc-fg)] shadow-[0_12px_30px_-12px_var(--rc-glow)]"
+                >
+                  <CalendarCheck className="size-4" />{" "}
+                  {booking === "done"
+                    ? "Inspection requested"
+                    : "Book free inspection"}
+                </motion.button>
+              )}
               <div className="text-center text-[11px] text-[#64748b]">
                 Lock in this range with a free inspection from{" "}
                 {config.companyName}
