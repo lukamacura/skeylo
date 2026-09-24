@@ -315,7 +315,7 @@ export default function ProfitZaTebeLanding() {
           >
             <span className="relative inline-flex size-14 shrink-0 items-center justify-center rounded-2xl border border-border card-glass p-2 sm:size-16 md:size-20">
               <Image
-                src="/logos/ils-logo.png"
+                src="/logos/ils-logo.webp"
                 alt="Infinity Laser Studio logo"
                 width={80}
                 height={80}

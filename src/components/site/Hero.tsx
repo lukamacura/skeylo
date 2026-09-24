@@ -102,7 +102,7 @@ export default function Hero() {
             className="relative aspect-[3/2]"
           >
             <Image
-              src="/skeylo_team.png"
+              src="/skeylo_team.webp"
               alt="Skeylo tim"
               fill
               priority

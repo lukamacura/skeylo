@@ -7,7 +7,7 @@ import { Star, Quote } from "lucide-react";
 
 const logos = [
   { name: "Kinged" },
-  { name: "Infinity Laser Studio", img: "/logos/ils-logo.png" },
+  { name: "Infinity Laser Studio", img: "/logos/ils-logo.webp" },
   { name: "Ego tike", img: "/logos/egotike.webp" },
   { name: "Novak Invest", img: "/logos/novak.webp" },
   { name: "Bulevar company", img: "/logos/bulevar.webp" },

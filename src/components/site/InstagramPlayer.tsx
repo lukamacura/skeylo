@@ -12,7 +12,7 @@ const GOLD = "#f0b656";
  * play (keeps the landing page fast and avoids Instagram's scripts on load).
  *
  * Instagram has no public thumbnail URL, so `thumbnail` must point to a
- * local image (e.g. `/podcast/case-study-instagram.jpg`).
+ * local image (e.g. `/podcast/case-study-instagram.webp`).
  *
  * Some accounts disable embedding ("Allow people to embed your posts" off);
  * Instagram then renders "post may have been removed" inside the iframe. For

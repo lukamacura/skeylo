@@ -8,7 +8,6 @@ import {
   ArrowRight,
   CalendarCheck,
   CalendarDays,
-  Check,
   Film,
   Image as ImageIcon,
   ListChecks,
@@ -45,13 +44,13 @@ const VSL_VIDEO_ID = "pfTMNetaMbw";
 const CASE_STUDY_CLIPS = [
   {
     postId: "DdTazNytouO",
-    thumbnail: "/podcast/case-study-instagram.jpg",
+    thumbnail: "/podcast/case-study-instagram.webp",
     title: "Podcast Simulation - primer gotovog klipa (1)",
     href: "https://www.instagram.com/reel/DdTazNytouO/",
   },
   {
     postId: "DbawIsoM9_I",
-    thumbnail: "/podcast/case-study-instagram-2.jpg",
+    thumbnail: "/podcast/case-study-instagram-2.webp",
     title: "Podcast Simulation - primer gotovog klipa (2)",
     href: "https://www.instagram.com/reel/DbawIsoM9_I/",
   },
@@ -94,6 +93,21 @@ const HERO_TITLE_START = HERO_TEXT_START + 0.08;
 
 const ctaCls =
   "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-4 py-2.5 text-sm font-extrabold leading-tight text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4 sm:text-base";
+
+/** Brand "S" mark used as the list bullet in place of a plain checkmark. */
+function LogoCheck({ className = "" }: { className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo-mark.webp"
+      alt=""
+      aria-hidden
+      width={62}
+      height={96}
+      className={`object-contain ${className}`}
+    />
+  );
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -231,7 +245,7 @@ const variety = [
   {
     icon: Camera,
     title: "Na setu",
-    items: ["Uglovi kamera", "Odevne kombinacije", "Pozadine", "Osvetljenje"],
+    items: ["Uglove kamera", "Odevne kombinacije", "Pozadine", "Osvetljenje"],
   },
   {
     icon: Palette,
@@ -574,10 +588,7 @@ export default function PodcastSimulationLanding() {
                   <ul className="mt-6 space-y-3">
                     {v.items.map((item) => (
                       <li key={item} className="flex items-start gap-3">
-                        <Check
-                          className="mt-0.5 size-4 shrink-0"
-                          style={{ color: GOLD }}
-                        />
+                        <LogoCheck className="mt-0.5 size-4 shrink-0" />
                         <span className="text-foreground/90">{item}</span>
                       </li>
                     ))}
@@ -638,9 +649,7 @@ export default function PodcastSimulationLanding() {
                 <ul className="mt-6 space-y-3">
                   {youDo.map((item) => (
                     <li key={item} className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06]">
-                        <Check className="size-3.5 text-foreground/80" />
-                      </span>
+                      <LogoCheck className="mt-0.5 size-5 shrink-0" />
                       <span className="text-foreground/90">{item}</span>
                     </li>
                   ))}
@@ -683,12 +692,7 @@ export default function PodcastSimulationLanding() {
                 <ul className="mt-6 space-y-3">
                   {weDo.map((item) => (
                     <li key={item} className="flex items-start gap-3">
-                      <span
-                        className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full"
-                        style={{ background: `${GOLD}22` }}
-                      >
-                        <Check className="size-3.5" style={{ color: GOLD }} />
-                      </span>
+                      <LogoCheck className="mt-0.5 size-5 shrink-0" />
                       <span className="text-foreground/90">{item}</span>
                     </li>
                   ))}
@@ -755,7 +759,7 @@ export default function PodcastSimulationLanding() {
               className="mx-auto mt-5 max-w-4xl rounded-3xl gold-frame border border-transparent bg-gradient-to-b from-[#f0b656]/[0.12] via-card to-card p-6 sm:p-8"
             >
               <div className="flex items-center gap-2.5">
-                <Check className="size-5 shrink-0" style={{ color: GOLD }} />
+                <LogoCheck className="size-5 shrink-0" />
                 <h3 className="text-lg font-bold sm:text-xl">
                   Podcast Simulation: pravi razgovor, ne režija
                 </h3>
@@ -763,12 +767,7 @@ export default function PodcastSimulationLanding() {
               <ul className="mt-5 space-y-3">
                 {realConversation.map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <span
-                      className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full"
-                      style={{ background: `${GOLD}22` }}
-                    >
-                      <Check className="size-3.5" style={{ color: GOLD }} />
-                    </span>
+                    <LogoCheck className="mt-0.5 size-5 shrink-0" />
                     <span className="text-foreground/90">{item}</span>
                   </li>
                 ))}
@@ -821,12 +820,7 @@ export default function PodcastSimulationLanding() {
                     viewport={{ once: true, margin: "-60px" }}
                     className="flex items-start gap-4 p-5 sm:p-6"
                   >
-                    <span
-                      className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full"
-                      style={{ background: `${GOLD}22` }}
-                    >
-                      <Check className="size-4" style={{ color: GOLD }} />
-                    </span>
+                    <LogoCheck className="mt-0.5 size-6 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-bold">{v.title}</h3>
                     </div>
@@ -914,7 +908,7 @@ export default function PodcastSimulationLanding() {
                   <ul className="mt-6 flex-1 space-y-3">
                     {monthlyPerks.map((item) => (
                       <li key={item} className="flex items-start gap-3 text-sm">
-                        <Check className="mt-0.5 size-4 shrink-0 text-[#f0b656]" />
+                        <LogoCheck className="mt-0.5 size-4 shrink-0" />
                         <span className="text-foreground/90">{item}</span>
                       </li>
                     ))}
@@ -946,7 +940,7 @@ export default function PodcastSimulationLanding() {
                   <ul className="mt-6 flex-1 space-y-3">
                     {oneTimePerks.map((item) => (
                       <li key={item} className="flex items-start gap-3 text-sm">
-                        <Check className="mt-0.5 size-4 shrink-0 text-accent" />
+                        <LogoCheck className="mt-0.5 size-4 shrink-0" />
                         <span className="text-foreground/90">{item}</span>
                       </li>
                     ))}

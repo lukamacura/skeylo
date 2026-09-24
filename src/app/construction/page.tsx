@@ -26,7 +26,7 @@ export default function Construction() {
 
       <div className="relative z-10 mx-auto max-w-xl text-center">
         <Image
-          src="/logo.png"
+          src="/logo.webp"
           alt="Skeylo"
           width={80}
           height={80}
