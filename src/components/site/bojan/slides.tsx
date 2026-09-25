@@ -546,7 +546,7 @@ const PILLARS: {
   {
     icon: Smartphone,
     title: "Neto aplikacija za telefon",
-    one: "App Store i Google Play",
+    one: "Potencijal za kasnije, nije deo ove ponude",
     points: [
       "Lični nalozi, sa ličnim kodom za popust za svakog kupca.",
       "Notifikacije kad izađe nova akcija, bez plaćanja oglasa.",
@@ -555,7 +555,7 @@ const PILLARS: {
     ],
     measureLabel: "Kada:",
     measure:
-      "posle pilota, kad Interaktivni Katalog pokaže koliko ljudi se redovno vraća. Radi se kao poseban projekat. Primer je dva slajda dalje.",
+      "tek posle pilota, ako Interaktivni Katalog pokaže da se ljudi redovno vraćaju. Radi se kao poseban projekat, sa posebnom ponudom. Primer kako bi mogla da izgleda je dva slajda dalje.",
     potential: true,
   },
 ];
@@ -763,7 +763,7 @@ function Steps({
    normal column beside the phone. */
 function Demo() {
   return (
-    <Slide id="demo" theme="light">
+    <Slide id="demo" theme="light" className="!py-5 md:!py-7">
       <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-14">
         <div className="contents lg:block">
           <div className="order-1">
@@ -813,22 +813,24 @@ function Demo() {
 
 function TheApp() {
   return (
-    <Slide id="app" theme="dark">
+    <Slide id="app" theme="dark" className="!py-5 md:!py-7">
       <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-14">
         <div className="contents lg:block">
           <div className="order-1">
             <Headline>
-              Neto aplikacija. [[Na telefonu svakog kupca. ]]Posle pilota.
+              Neto aplikacija. [[Potencijal za kasnije.]] Nije deo ove ponude.
             </Headline>
             <Sub>
-              Telefon ispod radi kao pravi. Dodirnite obaveštenje ili Neto
-              ikonicu: lični nalog, lični kod, kartica lojalnosti i akcije.
+              Ovo je primer kuda može da ide posle pilota, kao poseban projekat.
+              Telefon ispod radi kao pravi: dodirnite obaveštenje ili Neto
+              ikonicu i vidite lični nalog, lični kod, karticu lojalnosti i
+              akcije.
             </Sub>
           </div>
           <div className="order-3">
             <Steps
               dark
-              caption="Šta kupac dobija"
+              caption="Šta bi kupac dobio"
               rows={[
                 [
                   "Obaveštenje bez oglasa",
@@ -1154,7 +1156,7 @@ export const SLIDES: {
   },
   {
     id: "app",
-    label: "Neto aplikacija",
+    label: "Aplikacija (kasnije)",
     theme: "dark",
     Component: TheApp,
     demo: true,

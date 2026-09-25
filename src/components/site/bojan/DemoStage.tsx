@@ -1,14 +1,32 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { animate, motion } from "framer-motion";
 import { Check, Pointer } from "lucide-react";
 import { MONO, RED, useDemo, useTheme } from "./primitives";
 
+/* The badge overhangs the frame by this much, and on a narrow screen a strip
+   of the next section stays visible under the phone as a hint to scroll. */
+const BADGE = 16;
+const PEEK = 40;
+const MIN_SCALE = 0.6;
+
 /* The frame every clickable phone sits in. Above it a badge says this is a
    live demo and what to do; around it a red ring breathes until the phone
    has been touched once. "Probaj demo" in the deck's bar bumps `focusTick`
-   and the frame scrolls into view and pulses. */
+   and the frame scrolls into view and pulses.
+
+   The phone is drawn at a fixed size, which is taller than the stage on most
+   laptops. Rather than ask a slide to scroll, the frame measures the stage
+   and shrinks the phone just enough for the whole thing to be on screen: on
+   a wide layout with the eyebrow, padding and the bar all accounted for, on
+   a narrow one so it fits the viewport with a peek of what follows. */
 export function DemoStage({
   children,
   radius = 46,
@@ -21,6 +39,61 @@ export function DemoStage({
   const { tried, focusTick } = useDemo();
   const t = useTheme();
   const box = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<{ w: number; h: number; s: number } | null>(
+    null,
+  );
+
+  useLayoutEffect(() => {
+    const el = inner.current;
+    const phone = el?.firstElementChild as HTMLElement | null;
+    if (!el || !phone) return;
+    const stage = el.closest<HTMLElement>("[data-stage]");
+    const section = el.closest<HTMLElement>("[data-slide]");
+    const content = section?.firstElementChild as HTMLElement | null;
+    /* The slide's row that holds the phone: the ancestor sitting directly
+       inside the slide's content column. Everything above and below it
+       (eyebrow, padding) is what the phone has to leave room for. */
+    let row: HTMLElement | null = el;
+    while (row && row.parentElement !== content) row = row.parentElement;
+    const wide = window.matchMedia("(min-width: 1024px)");
+    let last = { w: 0, h: 0, s: 1 };
+
+    const measure = () => {
+      const w = phone.offsetWidth;
+      const h = phone.offsetHeight;
+      if (!w || !h) return;
+      const stageH = stage?.clientHeight ?? window.innerHeight;
+      let avail: number;
+      if (wide.matches && section && content && row) {
+        const cs = getComputedStyle(section);
+        const around =
+          content.offsetHeight -
+          row.offsetHeight +
+          parseFloat(cs.paddingTop) +
+          parseFloat(cs.paddingBottom);
+        avail = stageH - around - BADGE;
+      } else {
+        avail = stageH - BADGE - PEEK;
+      }
+      const s = Math.max(MIN_SCALE, Math.min(1, avail / h));
+      if (w === last.w && h === last.h && Math.abs(s - last.s) < 0.004) return;
+      last = { w, h, s };
+      setFit(last);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(phone);
+    if (stage) ro.observe(stage);
+    wide.addEventListener("change", measure);
+    return () => {
+      ro.disconnect();
+      wide.removeEventListener("change", measure);
+    };
+  }, []);
+
+  const scale = fit?.s ?? 1;
 
   useEffect(() => {
     if (!focusTick) return;
@@ -40,7 +113,11 @@ export function DemoStage({
       <div
         ref={box}
         className="relative mx-auto w-fit"
-        style={{ scrollMarginTop: 12 }}
+        style={{
+          scrollMarginTop: BADGE + 8,
+          width: fit ? fit.w * fit.s : undefined,
+          height: fit ? fit.h * fit.s : undefined,
+        }}
       >
         {/* The badge, pinned to the top edge of the frame. */}
         <div className="absolute inset-x-0 -top-4 z-[6] flex justify-center">
@@ -85,7 +162,10 @@ export function DemoStage({
           <motion.div
             aria-hidden
             className="pointer-events-none absolute -inset-1.5 z-[1]"
-            style={{ borderRadius: radius + 6, border: `2px solid ${RED}` }}
+            style={{
+              borderRadius: radius * scale + 6,
+              border: `2px solid ${RED}`,
+            }}
             animate={{ opacity: [0.75, 0], scale: [1, 1.05] }}
             transition={{
               duration: 1.8,
@@ -96,7 +176,17 @@ export function DemoStage({
           />
         )}
 
-        <div className="relative z-[2]">{children}</div>
+        <div
+          ref={inner}
+          className="relative z-[2]"
+          style={{
+            width: fit?.w,
+            transform: fit ? `scale(${fit.s})` : undefined,
+            transformOrigin: "top left",
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

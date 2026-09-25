@@ -132,9 +132,13 @@ export default function AppDemo() {
     (which: App, el?: HTMLElement | null) => {
       const r = el?.getBoundingClientRect();
       const sr = screen.current?.getBoundingClientRect();
-      if (r && sr)
+      /* The stage may draw the phone scaled down; the origin is in the
+         phone's own pixels, so undo that scale. */
+      const k =
+        sr && screen.current ? sr.width / screen.current.offsetWidth : 1;
+      if (r && sr && k)
         setOrigin(
-          `${r.left - sr.left + r.width / 2}px ${r.top - sr.top + r.height / 2}px`,
+          `${(r.left - sr.left + r.width / 2) / k}px ${(r.top - sr.top + r.height / 2) / k}px`,
         );
       else setOrigin("50% 50%");
       setNotif(false);
@@ -211,6 +215,7 @@ export default function AppDemo() {
   return (
     <div className="mx-auto w-full max-w-[350px] select-none">
       <div
+        data-demo
         className="relative rounded-[60px] p-[11px]"
         style={{
           background: "#1b1b1d",
@@ -376,7 +381,13 @@ export default function AppDemo() {
             </motion.div>
 
             {/* the pager */}
-            <div ref={pager} className="-mx-[18px] flex-1 overflow-hidden">
+            <div
+              ref={pager}
+              className="-mx-[18px] flex-1 overflow-hidden"
+              onPointerDownCapture={() => {
+                delete pager.current?.dataset.swiped;
+              }}
+            >
               <motion.div
                 className="flex h-full"
                 style={{ x: px }}
@@ -384,6 +395,12 @@ export default function AppDemo() {
                 dragConstraints={{ left: -pageW() * (PAGES - 1), right: 0 }}
                 dragElastic={0.12}
                 dragMomentum={false}
+                onDrag={(_, info) => {
+                  /* Flag a real swipe so the icon under the finger does
+                     not open on release; IconBtn reads it. */
+                  if (Math.abs(info.offset.x) > 10 && pager.current)
+                    pager.current.dataset.swiped = "1";
+                }}
                 onDragEnd={onPagerEnd}
               >
                 {/* page 1 */}
@@ -935,7 +952,15 @@ function Cell({
   );
 }
 
-/* An icon you can press. A tap opens, a drag on the pager does not. */
+/* An icon you can press. A tap opens, a drag on the pager does not.
+
+   The tap is tracked by hand rather than with framer's `onTap`: the pager
+   around the icons starts a drag after 3px of movement, and framer then
+   cancels the press, so a real finger (or a slightly moving mouse) would
+   land on nothing. Here a press counts as a tap as long as it stays within
+   a thumb's wobble and the pager did not actually swipe. */
+const TAP_SLOP = 14;
+
 function IconBtn({
   children,
   onOpen,
@@ -949,12 +974,27 @@ function IconBtn({
   className?: string;
   style?: React.CSSProperties;
 }) {
+  const down = useRef<{ id: number; x: number; y: number } | null>(null);
   return (
     <motion.button
       type="button"
       aria-label={label}
       whileTap={{ scale: 0.88 }}
-      onTap={(e) => onOpen(e.currentTarget as HTMLElement)}
+      onPointerDown={(e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        down.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      }}
+      onPointerUp={(e) => {
+        const d = down.current;
+        down.current = null;
+        if (!d || d.id !== e.pointerId) return;
+        if (e.currentTarget.closest("[data-swiped]")) return;
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > TAP_SLOP) return;
+        onOpen(e.currentTarget as HTMLElement);
+      }}
+      onPointerCancel={() => {
+        down.current = null;
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

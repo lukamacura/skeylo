@@ -68,6 +68,7 @@ export default function CatalogDemo() {
   return (
     <div className="mx-auto w-full max-w-[340px]">
       <div
+        data-demo
         className="relative rounded-[46px] border-[10px] border-black bg-black"
         style={{ boxShadow: "0 30px 60px -24px rgba(226,35,26,0.55)" }}
       >
