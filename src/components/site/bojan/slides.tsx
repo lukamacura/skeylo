@@ -1118,8 +1118,9 @@ function Price() {
             className="mt-[18px] text-[14px]"
             style={{ color: "#8A8A8A" }}
           >
-            Troškovi modela i ad budžet se dogovaraju pre svakog meseca. Posle
-            pilota zajedno odlučujemo o nastavku.
+            Plaćanje je na početku svakog meseca saradnje. Troškovi modela i ad
+            budžet se dogovaraju pre svakog meseca. Posle pilota zajedno
+            odlučujemo o nastavku.
           </motion.p>
           <motion.div
             variants={item}
