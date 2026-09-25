@@ -350,9 +350,11 @@ export default function RoofEstimator({
                 decoding="async"
                 onError={() => setLogoFailed(true)}
                 className={
-                  config.logoBg
-                    ? "h-14 w-auto max-w-[200px] shrink-0 rounded-xl bg-[var(--rc)] px-3 py-2 object-contain object-left shadow-[0_8px_24px_-8px_var(--rc-glow)]"
-                    : "h-10 w-auto max-w-[168px] shrink-0 object-contain object-left"
+                  config.logoBg === "dark"
+                    ? "h-14 w-auto max-w-[200px] shrink-0 rounded-xl bg-[#0f172a] px-3 py-2 object-contain object-left shadow-[0_8px_24px_-8px_rgba(15,23,42,0.45)]"
+                    : config.logoBg === "brand"
+                      ? "h-14 w-auto max-w-[200px] shrink-0 rounded-xl bg-[var(--rc)] px-3 py-2 object-contain object-left shadow-[0_8px_24px_-8px_var(--rc-glow)]"
+                      : "h-10 w-auto max-w-[168px] shrink-0 object-contain object-left"
                 }
               />
             </div>

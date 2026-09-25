@@ -10,8 +10,9 @@ export interface ContractorConfig {
   primaryColor: string;
   /** Opciono: URL transparentnog PNG logoa (?logo=https://...). */
   logoUrl: string | null;
-  /** ?logobg=1 — logo je beo/svetao pa ga stavljamo na plocicu u brend boji. */
-  logoBg: boolean;
+  /** ?logobg=1 — logo je beo/svetao pa ga stavljamo na plocicu u brend boji.
+   *  ?logobg=dark — isto, ali tamna plocica (kada je brend boja svetla, npr. zuta). */
+  logoBg: "brand" | "dark" | null;
   /** ?embed=1 — kompaktniji layout za <iframe> na sajtu klijenta. */
   embed: boolean;
   /** ?notify=owner@firma.com — ko dobija lead notifikaciju (fallback: env CALCULATOR_NOTIFY_EMAIL). */
@@ -71,7 +72,11 @@ export function getContractorConfig(
     city: first(searchParams.city)?.trim() || "your area",
     primaryColor: safeColor(first(searchParams.color), "#2563eb"),
     logoUrl: safeLogo(first(searchParams.logo)),
-    logoBg: first(searchParams.logobg) === "1",
+    logoBg: (() => {
+      const v = first(searchParams.logobg)?.trim().toLowerCase();
+      if (v === "dark") return "dark";
+      return v === "1" || v === "brand" ? "brand" : null;
+    })(),
     embed: first(searchParams.embed) === "1",
     notifyEmail: safeEmail(first(searchParams.notify)),
     notifySms: safePhone(first(searchParams.sms)),

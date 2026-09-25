@@ -1,26 +1,47 @@
 "use client";
 
 import Link from "next/link";
+import Image, { type StaticImageData } from "next/image";
 import { motion, MotionConfig } from "framer-motion";
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
+  AudioWaveform,
+  Bot,
+  Building2,
   CalendarCheck,
   CalendarDays,
-  Film,
-  Image as ImageIcon,
-  ListChecks,
   Camera,
+  Clock,
+  DoorOpen,
+  Eye,
+  Film,
+  FlaskConical,
+  Handshake,
+  Lightbulb,
+  ListChecks,
+  type LucideIcon,
+  MessageCircleQuestion,
   MicVocal,
   Palette,
   Quote,
   Repeat,
   Scissors,
+  Search,
+  Send,
+  Shirt,
   ShieldCheck,
+  Smile,
   Sparkles,
+  Star,
   Timer,
+  Type,
+  UserRound,
   Users,
+  Video,
+  Wallpaper,
+  Wand2,
   X,
 } from "lucide-react";
 import { formatPrice, getPackage, priceLabelFull } from "@/lib/packages";
@@ -31,6 +52,10 @@ import PodcastMic, { MIC_INTRO_DURATION } from "@/components/site/PodcastMic";
 import AnimatedLetters, {
   lettersDuration,
 } from "@/components/site/AnimatedLetters";
+import korak1 from "../../../public/podcast/korak1.webp";
+import korak2 from "../../../public/podcast/korak2.webp";
+import korak3 from "../../../public/podcast/korak3.webp";
+import korak4 from "../../../public/podcast/korak4.webp";
 
 const GOLD = "#f0b656";
 const ORANGE = "#d87928";
@@ -90,21 +115,31 @@ const heroFadeUp = {
 };
 const HERO_TEXT_START = MIC_INTRO_DURATION - 0.25;
 const HERO_TITLE_START = HERO_TEXT_START + 0.08;
+/**
+ * VSL ostaje sakriven dok mikrofon ne nestane. Poslednjih ~50ms zoom-outa
+ * mikrofon je već praktično nevidljiv (ease-out kriva), pa krećemo malo pre
+ * kraja da prelaz deluje brzo, bez preklapanja.
+ */
+const VSL_REVEAL_DELAY = MIC_INTRO_DURATION - 0.05;
 
 const ctaCls =
   "group inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#f0b656] to-[#d87928] px-4 py-2.5 text-sm font-extrabold leading-tight text-[#0a0a0a] shadow-lg shadow-[#f0b656]/20 transition-transform hover:-translate-y-0.5 sm:px-7 sm:py-4 sm:text-base";
 
-/** Brand "S" mark used as the list bullet in place of a plain checkmark. */
-function LogoCheck({ className = "" }: { className?: string }) {
+type IconItem = { icon: LucideIcon; text: string };
+
+/** Kontekstualna lucide ikonica kao bullet u listama (umesto čekiranja). */
+function IconBullet({
+  icon: Icon,
+  className = "",
+}: {
+  icon: LucideIcon;
+  className?: string;
+}) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/logo-mark.webp"
-      alt=""
+    <Icon
       aria-hidden
-      width={62}
-      height={96}
-      className={`object-contain ${className}`}
+      className={`shrink-0 ${className}`}
+      style={{ color: GOLD }}
     />
   );
 }
@@ -120,19 +155,21 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Mesto za sliku - zameni `image` putanjom kad fotografije iz studija budu spremne. */
-function StepMedia({ alt }: { alt: string }) {
+/** Fotografija iz studija za korak u sekciji "Dan snimanja". */
+function StepMedia({ image, alt }: { image: StaticImageData; alt: string }) {
   return (
     <div
-      role="img"
-      aria-label={alt}
-      className="flex aspect-[16/10] items-center justify-center rounded-3xl border border-dashed lg:aspect-[4/3]"
-      style={{
-        borderColor: `${GOLD}40`,
-        background: `linear-gradient(160deg, ${GOLD}0f, transparent)`,
-      }}
+      className="relative aspect-[16/10] overflow-hidden rounded-3xl border lg:aspect-[4/3]"
+      style={{ borderColor: `${GOLD}40` }}
     >
-      <ImageIcon className="size-8 opacity-30" style={{ color: GOLD }} />
+      <Image
+        src={image}
+        alt={alt}
+        fill
+        placeholder="blur"
+        sizes="(min-width: 1024px) 50vw, 100vw"
+        className="object-cover"
+      />
     </div>
   );
 }
@@ -155,39 +192,55 @@ const pillars = [
 const steps = [
   {
     icon: ListChecks,
+    image: korak1,
     title: "Pripremamo 30 pitanja",
     desc: "Pre termina istražujemo Vašu industriju i sastavljamo 30 pitanja na koja Vaši kupci zaista traže odgovore. Vi ne učite nikakav scenario.",
   },
   {
     icon: CalendarCheck,
+    image: korak2,
     title: "Dolazite u studio",
     desc: "Moderan prostor je spreman, oprema podešena, kamerman kontroliše set. Vi samo sednete.",
   },
   {
     icon: MicVocal,
+    image: korak3,
     title: "Voditelj vodi razgovor",
     desc: "Tri sata opuštenog razgovora. Voditelj postavlja pitanja tako da odgovarate s lakoćom, prekida Vas ako skrenete s teme i izvlači ono što publika želi da čuje.",
   },
   {
     icon: Scissors,
+    image: korak4,
     title: "Montiramo i dostavljamo 30 klipova",
     desc: "Sečemo razgovor na 30 kratkih videa u vertikalnom formatu za Reels, TikTok i Shorts, šaljemo Google Drive link sa gotovim videima i podešavamo ManyChat automaciju sa soft CTA-om.",
   },
 ];
 
-const youDo = [
-  "Dođete u studio jednom mesečno na 3 sata.",
-  "Odgovarate na pitanja koja smo pripremili.",
-  "Objavite gotov klip - jedan dnevno.",
+const youDo: IconItem[] = [
+  { icon: DoorOpen, text: "Dođete u studio jednom mesečno na 3 sata." },
+  {
+    icon: MessageCircleQuestion,
+    text: "Odgovarate na pitanja koja smo pripremili.",
+  },
+  { icon: Send, text: "Objavite gotov klip - jedan dnevno." },
 ];
 
-const weDo = [
-  "Istražujemo Vašu industriju i pišemo 30 pitanja",
-  "Obezbeđujemo moderan studio spreman za snimanje",
-  "Voditelj vodi razgovor i izvlači najbolje odgovore",
-  "Dve kamere, studijski mikrofoni, rasveta i kamerman na setu",
-  "Montiramo svih 30 klipova u vertikalnom formatu",
-  "Podešavamo ManyChat automaciju i soft CTA",
+const weDo: IconItem[] = [
+  { icon: Search, text: "Istražujemo Vašu industriju i pišemo 30 pitanja" },
+  {
+    icon: Building2,
+    text: "Obezbeđujemo moderan studio spreman za snimanje",
+  },
+  {
+    icon: MicVocal,
+    text: "Voditelj vodi razgovor i izvlači najbolje odgovore",
+  },
+  {
+    icon: Video,
+    text: "Dve kamere, studijski mikrofoni, rasveta i kamerman na setu",
+  },
+  { icon: Scissors, text: "Montiramo svih 30 klipova u vertikalnom formatu" },
+  { icon: Bot, text: "Podešavamo ManyChat automaciju i soft CTA" },
 ];
 
 const noMore = [
@@ -199,27 +252,32 @@ const noMore = [
 
 const valueStack = [
   {
+    icon: Search,
     title:
       "Detaljno istraživanje Vaše industrije i 30 pitanja sa najvećim viralnim potencijalom",
     value: 100,
   },
-  { title: "Moderan prostor spreman za snimanje", value: 50 },
+  { icon: Building2, title: "Moderan prostor spreman za snimanje", value: 50 },
   {
+    icon: MicVocal,
     title:
       "Voditelj koji vodi razgovor i izvlači tačno ono što publika želi da čuje",
     value: 150,
   },
   {
+    icon: Video,
     title:
       "Dve kamere iz više uglova, dva studijska mikrofona, profesionalna rasveta i kamerman puna 3 sata",
     value: 450,
   },
   {
+    icon: Scissors,
     title:
       "Kompletna montaža svih 30 klipova i Google Drive link sa gotovim videima",
     value: 400,
   },
   {
+    icon: Bot,
     title:
       "ManyChat comment-to-DM automacija i soft CTA koji publiku vodi u Vaš prodajni funnel",
     value: 100,
@@ -228,29 +286,38 @@ const valueStack = [
 
 const stackTotal = valueStack.reduce((sum, v) => sum + v.value, 0);
 
-const monthlyPerks = [
-  "Svakog meseca novih 30 videa",
-  "3 meseca daily upload-a bez prekida",
-  "Prioritet pri zakazivanju termina",
+const monthlyPerks: IconItem[] = [
+  { icon: Film, text: "Svakog meseca novih 30 videa" },
+  { icon: CalendarDays, text: "3 meseca daily upload-a bez prekida" },
+  { icon: Star, text: "Prioritet pri zakazivanju termina" },
 ];
 
-const oneTimePerks = [
-  "Jedan termin od 3 sata",
-  "30 montiranih klipova",
-  "Idealno za probu pre tromesečnog paketa",
+const oneTimePerks: IconItem[] = [
+  { icon: Clock, text: "Jedan termin od 3 sata" },
+  { icon: Film, text: "30 montiranih klipova" },
+  { icon: FlaskConical, text: "Idealno za probu pre tromesečnog paketa" },
 ];
 
 /** Na setu i u montaži menjamo izgled, da 30 klipova ne bi dosadilo publici. */
-const variety = [
+const variety: { icon: LucideIcon; title: string; items: IconItem[] }[] = [
   {
     icon: Camera,
     title: "Na setu",
-    items: ["Uglove kamera", "Odevne kombinacije", "Pozadine", "Osvetljenje"],
+    items: [
+      { icon: Video, text: "Uglove kamera" },
+      { icon: Shirt, text: "Odevne kombinacije" },
+      { icon: Wallpaper, text: "Pozadine" },
+      { icon: Lightbulb, text: "Osvetljenje" },
+    ],
   },
   {
     icon: Palette,
     title: "U montaži",
-    items: ["Stil animacija", "Stil teksta", "Ritam rezova"],
+    items: [
+      { icon: Wand2, text: "Stil animacija" },
+      { icon: Type, text: "Stil teksta" },
+      { icon: AudioWaveform, text: "Ritam rezova" },
+    ],
   },
 ];
 
@@ -273,10 +340,19 @@ const alternatives = [
   },
 ];
 
-const realConversation = [
-  "Voditelj je u kadru - set izgleda kao da ste stvarno došli kao gost",
-  "Spontani prekidi, osmesi, reakcije i pravi ton u glasu",
-  "Publika se fokusira na Vašu poruku, jer oseća da je razgovor stvaran",
+const realConversation: IconItem[] = [
+  {
+    icon: UserRound,
+    text: "Voditelj je u kadru - set izgleda kao da ste stvarno došli kao gost",
+  },
+  {
+    icon: Smile,
+    text: "Spontani prekidi, osmesi, reakcije i pravi ton u glasu",
+  },
+  {
+    icon: Eye,
+    text: "Publika se fokusira na Vašu poruku, jer oseća da je razgovor stvaran",
+  },
 ];
 
 export default function PodcastSimulationLanding() {
@@ -368,10 +444,6 @@ export default function PodcastSimulationLanding() {
                 animate="show"
                 className="mt-10 flex flex-col items-center gap-2 sm:mt-12"
               >
-                <p className="max-w-xl text-balance text-sm text-muted-foreground sm:text-base">
-                  Ako gradite lični brend i želite da budete prva opcija kada
-                  kupci pomisle na Vaš proizvod
-                </p>
                 <p className="text-base font-semibold sm:text-lg">
                   Pogledajte video do kraja
                 </p>
@@ -396,6 +468,7 @@ export default function PodcastSimulationLanding() {
                 videoId={VSL_VIDEO_ID}
                 title="Podcast Simulation"
                 caption="Podcast Simulation"
+                revealDelay={VSL_REVEAL_DELAY}
               />
             </div>
           </div>
@@ -472,10 +545,10 @@ export default function PodcastSimulationLanding() {
         <section className="py-12 md:py-20">
           <div className="container-x">
             <div className="mx-auto max-w-3xl text-center">
-              <SectionLabel>Dan snimanja</SectionLabel>
+              <SectionLabel>saradnja</SectionLabel>
               <h2 className="mt-3 text-balance text-2xl font-extrabold leading-tight sm:text-4xl md:text-5xl">
-                Ovako izgleda Vaših{" "}
-                <span className="text-gradient">3 sata</span>
+                Ovako izgleda{" "}
+                <span className="text-gradient uppercase">ceo proces</span>
               </h2>
             </div>
 
@@ -511,7 +584,10 @@ export default function PodcastSimulationLanding() {
                   </div>
 
                   <div className={i % 2 === 1 ? "lg:order-1" : undefined}>
-                    <StepMedia alt={`${s.title} - Podcast Simulation`} />
+                    <StepMedia
+                      image={s.image}
+                      alt={`${s.title} - Podcast Simulation`}
+                    />
                   </div>
                 </motion.div>
               ))}
@@ -587,9 +663,12 @@ export default function PodcastSimulationLanding() {
                   </div>
                   <ul className="mt-6 space-y-3">
                     {v.items.map((item) => (
-                      <li key={item} className="flex items-start gap-3">
-                        <LogoCheck className="mt-0.5 size-4 shrink-0" />
-                        <span className="text-foreground/90">{item}</span>
+                      <li key={item.text} className="flex items-start gap-3">
+                        <IconBullet
+                          icon={item.icon}
+                          className="mt-0.5 size-5"
+                        />
+                        <span className="text-foreground/90">{item.text}</span>
                       </li>
                     ))}
                   </ul>
@@ -648,9 +727,9 @@ export default function PodcastSimulationLanding() {
                 </div>
                 <ul className="mt-6 space-y-3">
                   {youDo.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <LogoCheck className="mt-0.5 size-5 shrink-0" />
-                      <span className="text-foreground/90">{item}</span>
+                    <li key={item.text} className="flex items-start gap-3">
+                      <IconBullet icon={item.icon} className="mt-0.5 size-5" />
+                      <span className="text-foreground/90">{item.text}</span>
                     </li>
                   ))}
                 </ul>
@@ -691,9 +770,9 @@ export default function PodcastSimulationLanding() {
                 </div>
                 <ul className="mt-6 space-y-3">
                   {weDo.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <LogoCheck className="mt-0.5 size-5 shrink-0" />
-                      <span className="text-foreground/90">{item}</span>
+                    <li key={item.text} className="flex items-start gap-3">
+                      <IconBullet icon={item.icon} className="mt-0.5 size-5" />
+                      <span className="text-foreground/90">{item.text}</span>
                     </li>
                   ))}
                 </ul>
@@ -759,16 +838,16 @@ export default function PodcastSimulationLanding() {
               className="mx-auto mt-5 max-w-4xl rounded-3xl gold-frame border border-transparent bg-gradient-to-b from-[#f0b656]/[0.12] via-card to-card p-6 sm:p-8"
             >
               <div className="flex items-center gap-2.5">
-                <LogoCheck className="size-5 shrink-0" />
+                <IconBullet icon={Handshake} className="size-5" />
                 <h3 className="text-lg font-bold sm:text-xl">
                   Podcast Simulation: pravi razgovor, ne režija
                 </h3>
               </div>
               <ul className="mt-5 space-y-3">
                 {realConversation.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <LogoCheck className="mt-0.5 size-5 shrink-0" />
-                    <span className="text-foreground/90">{item}</span>
+                  <li key={item.text} className="flex items-start gap-3">
+                    <IconBullet icon={item.icon} className="mt-0.5 size-5" />
+                    <span className="text-foreground/90">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -820,7 +899,7 @@ export default function PodcastSimulationLanding() {
                     viewport={{ once: true, margin: "-60px" }}
                     className="flex items-start gap-4 p-5 sm:p-6"
                   >
-                    <LogoCheck className="mt-0.5 size-6 shrink-0" />
+                    <IconBullet icon={v.icon} className="mt-0.5 size-6" />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-bold">{v.title}</h3>
                     </div>
@@ -907,9 +986,15 @@ export default function PodcastSimulationLanding() {
                   </div>
                   <ul className="mt-6 flex-1 space-y-3">
                     {monthlyPerks.map((item) => (
-                      <li key={item} className="flex items-start gap-3 text-sm">
-                        <LogoCheck className="mt-0.5 size-4 shrink-0" />
-                        <span className="text-foreground/90">{item}</span>
+                      <li
+                        key={item.text}
+                        className="flex items-start gap-3 text-sm"
+                      >
+                        <IconBullet
+                          icon={item.icon}
+                          className="mt-0.5 size-4"
+                        />
+                        <span className="text-foreground/90">{item.text}</span>
                       </li>
                     ))}
                   </ul>
@@ -939,9 +1024,15 @@ export default function PodcastSimulationLanding() {
                   </div>
                   <ul className="mt-6 flex-1 space-y-3">
                     {oneTimePerks.map((item) => (
-                      <li key={item} className="flex items-start gap-3 text-sm">
-                        <LogoCheck className="mt-0.5 size-4 shrink-0" />
-                        <span className="text-foreground/90">{item}</span>
+                      <li
+                        key={item.text}
+                        className="flex items-start gap-3 text-sm"
+                      >
+                        <IconBullet
+                          icon={item.icon}
+                          className="mt-0.5 size-4"
+                        />
+                        <span className="text-foreground/90">{item.text}</span>
                       </li>
                     ))}
                   </ul>

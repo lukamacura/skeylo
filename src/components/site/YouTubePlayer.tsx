@@ -1,35 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
 import { Play } from "lucide-react";
 
 const GOLD = "#f0b656";
 
+const hidden = { opacity: 0, y: 24 };
+const shown = { opacity: 1, y: 0 };
+
 /**
  * Lightweight YouTube embed - renders a thumbnail facade and only loads
  * the iframe after the user clicks play (keeps the landing page fast).
+ *
+ * `revealDelay` (seconds) keeps the player invisible after mount, e.g. while
+ * a hero intro animation is still running. The reveal fires once the delay
+ * has passed AND the player is in view, so scrolling to it later never waits.
  */
 export default function YouTubePlayer({
   videoId,
   title,
   caption,
   aspect = "aspect-video",
+  revealDelay = 0,
 }: {
   videoId: string;
   title: string;
   caption?: string;
   aspect?: string;
+  /** Seconds after mount before the player may appear. */
+  revealDelay?: number;
 }) {
   const [playing, setPlaying] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const [ready, setReady] = useState(revealDelay <= 0);
+
+  useEffect(() => {
+    if (revealDelay <= 0) return;
+    const t = window.setTimeout(() => setReady(true), revealDelay * 1000);
+    return () => window.clearTimeout(t);
+  }, [revealDelay]);
+
+  const visible = ready && inView;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
+      ref={ref}
+      initial={hidden}
+      animate={visible ? shown : hidden}
       transition={{ type: "spring", stiffness: 140, damping: 22 }}
-      className={`group relative ${aspect} w-full overflow-hidden rounded-3xl border border-border card-glass`}
+      className={`group relative ${aspect} w-full overflow-hidden rounded-3xl border border-border card-glass ${
+        visible ? "" : "pointer-events-none"
+      }`}
     >
       {playing ? (
         <iframe
