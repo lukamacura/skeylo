@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { animate, motion } from "framer-motion";
-import { Check, Pointer } from "lucide-react";
+import { Pointer } from "lucide-react";
 import { MONO, RED, useDemo, useTheme } from "./primitives";
 
 /* The badge overhangs the frame by this much, and on a narrow screen a strip
@@ -119,43 +119,36 @@ export function DemoStage({
           height: fit ? fit.h * fit.s : undefined,
         }}
       >
-        {/* The badge, pinned to the top edge of the frame. */}
-        <div className="absolute inset-x-0 -top-4 z-[6] flex justify-center">
-          <span
-            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white md:text-[11px]"
-            style={{
-              fontFamily: MONO,
-              background: tried ? "#111" : RED,
-              boxShadow: "0 8px 20px -8px rgba(0,0,0,0.5)",
-              border: "2px solid " + t.bg,
-              transition: "background-color .3s",
-            }}
-          >
-            {tried ? (
-              <>
-                <Check size={13} strokeWidth={3} />
-                Isprobano · klikajte dalje
-              </>
-            ) : (
-              <>
-                <span className="relative grid h-2 w-2 place-items-center">
-                  <motion.span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-white"
-                    animate={{ scale: [1, 2.6], opacity: [0.8, 0] }}
-                    transition={{
-                      duration: 1.4,
-                      repeat: Infinity,
-                      ease: "easeOut",
-                    }}
-                  />
-                  <span className="h-2 w-2 rounded-full bg-white" />
-                </span>
-                Live demo · dodirnite ekran
-              </>
-            )}
-          </span>
-        </div>
+        {/* The badge, pinned to the top edge of the frame. Gone once the
+            phone has been touched, so nothing sits over the frame. */}
+        {!tried && (
+          <div className="absolute inset-x-0 -top-4 z-[6] flex justify-center">
+            <span
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white md:text-[11px]"
+              style={{
+                fontFamily: MONO,
+                background: RED,
+                boxShadow: "0 8px 20px -8px rgba(0,0,0,0.5)",
+                border: "2px solid " + t.bg,
+              }}
+            >
+              <span className="relative grid h-2 w-2 place-items-center">
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full bg-white"
+                  animate={{ scale: [1, 2.6], opacity: [0.8, 0] }}
+                  transition={{
+                    duration: 1.4,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
+                />
+                <span className="h-2 w-2 rounded-full bg-white" />
+              </span>
+              Live demo · dodirnite ekran
+            </span>
+          </div>
+        )}
 
         {/* The breathing ring. Sits just outside the frame, same corner. */}
         {!tried && (

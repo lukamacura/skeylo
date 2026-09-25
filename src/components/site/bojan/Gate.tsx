@@ -56,7 +56,7 @@ export default function Gate({ onUnlock }: { onUnlock: () => void }) {
           Ponuda za Neto diskonte.
         </h1>
         <p className="mt-2 text-[15px]" style={{ color: "#B5B5B5" }}>
-          Pripremljeno za Bojana. Unesite lozinku koju ste dobili.
+          Pripremljeno za Bojana i Jovanu. Unesite lozinku koju ste dobili.
         </p>
 
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3">

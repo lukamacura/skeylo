@@ -50,7 +50,12 @@ import { DemoStage } from "./DemoStage";
 
 function Cover() {
   return (
-    <Slide id="cover" theme="dark" eyebrow={false} className="!px-0 !py-0">
+    <Slide
+      id="cover"
+      theme="dark"
+      eyebrow={false}
+      className="!px-0 !py-0 [&>div]:flex-1"
+    >
       <CoverBody />
     </Slide>
   );
@@ -66,9 +71,9 @@ function CoverBody() {
   });
   return (
     <>
-      <div className="flex min-h-full flex-1 flex-col justify-center px-5 pb-8 pt-14 md:px-10 md:pt-16">
+      <div className="flex flex-1 flex-col justify-center px-5 pb-6 pt-9 md:px-10 md:pb-8 md:pt-16">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
-          <NetoLogo className="w-[min(70vw,340px)]" delay={0.15} />
+          <NetoLogo className="w-[min(58vw,240px)] md:w-[340px]" delay={0.15} />
           <motion.div
             aria-hidden
             className="mt-1.5 text-[clamp(20px,6vw,28px)] font-medium tracking-[0.16em]"
@@ -77,7 +82,7 @@ function CoverBody() {
             DISKONTI
           </motion.div>
           <motion.div
-            className="mt-7 flex items-center gap-3.5 text-[18px] font-bold"
+            className="mt-5 flex items-center gap-3.5 text-[18px] font-bold md:mt-7"
             {...fade(0.95)}
           >
             <span className="text-[22px]" style={{ color: RED }}>
@@ -86,7 +91,7 @@ function CoverBody() {
             Skeylo
           </motion.div>
           <motion.h1
-            className="mt-9 text-center text-[clamp(2.2rem,10vw,4.2rem)] font-extrabold italic leading-[1.02] tracking-[-0.01em]"
+            className="mt-6 text-center text-[clamp(2.2rem,10vw,4.2rem)] font-extrabold italic leading-[1.02] tracking-[-0.01em] md:mt-9"
             initial={{ opacity: 0, y: 18 }}
             animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
             transition={{ duration: 0.7, delay: 1.1, ease: EASE_OUT }}
@@ -94,15 +99,15 @@ function CoverBody() {
             Ceo marketing tim.
           </motion.h1>
           <motion.p
-            className="mt-4 max-w-[32ch] text-center text-[17px] md:text-[19px]"
+            className="mt-3 max-w-[32ch] text-center text-[17px] md:mt-4 md:text-[19px]"
             style={{ color: "#CFCFCF" }}
             {...fade(1.4)}
           >
             Šest ljudi i kompletna oprema rade za Neto u celom Novom Sadu,
-            svakog meseca. Za 3.500 € + PDV mesečno.
+            svakog meseca.
           </motion.p>
           <motion.p
-            className="mt-7 text-center text-[13px]"
+            className="mt-5 text-center text-[13px] md:mt-7"
             style={{ color: "#8A8A8A", fontFamily: MONO }}
             {...fade(1.6)}
           >
