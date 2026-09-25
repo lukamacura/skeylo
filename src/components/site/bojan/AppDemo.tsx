@@ -49,7 +49,16 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { DISPLAY, MONO, MUTED, RED, fmt, useSlideActive } from "./primitives";
+import {
+  DISPLAY,
+  MONO,
+  MUTED,
+  RED,
+  fmt,
+  useDemo,
+  useSlideActive,
+} from "./primitives";
+import { TapHint } from "./DemoStage";
 import { MiniLogo, PRODUCTS, Pin, ProductCard, off } from "./visuals";
 
 /* The Neto app, on an iPhone that behaves like one. The home screen pages
@@ -95,16 +104,20 @@ export default function AppDemo() {
   const pager = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inApp = app !== null;
+  const { tried, markTried } = useDemo();
+  const triedRef = useRef(tried);
+  triedRef.current = tried;
 
-  /* The notification arrives a beat after the slide does and leaves on its
-     own if nobody touches it. */
+  /* The notification arrives a beat after the slide does. Once the phone
+     has been tried it leaves on its own; before that it waits to be
+     tapped, because it is the first thing we want touched. */
   useEffect(() => {
     if (!active) return;
     const a = setTimeout(() => setNotif(true), 1200);
-    const b = setTimeout(() => setNotif(false), 9000);
+    const b = triedRef.current ? setTimeout(() => setNotif(false), 9000) : null;
     return () => {
       clearTimeout(a);
-      clearTimeout(b);
+      if (b) clearTimeout(b);
     };
   }, [active]);
 
@@ -115,19 +128,23 @@ export default function AppDemo() {
   }, []);
 
   /* Apps open from where their icon sits, like iOS. */
-  const open = useCallback((which: App, el?: HTMLElement | null) => {
-    const r = el?.getBoundingClientRect();
-    const sr = screen.current?.getBoundingClientRect();
-    if (r && sr)
-      setOrigin(
-        `${r.left - sr.left + r.width / 2}px ${r.top - sr.top + r.height / 2}px`,
-      );
-    else setOrigin("50% 50%");
-    setNotif(false);
-    if (which === "neto") setBadge(false);
-    setSheet(null);
-    setApp(which);
-  }, []);
+  const open = useCallback(
+    (which: App, el?: HTMLElement | null) => {
+      const r = el?.getBoundingClientRect();
+      const sr = screen.current?.getBoundingClientRect();
+      if (r && sr)
+        setOrigin(
+          `${r.left - sr.left + r.width / 2}px ${r.top - sr.top + r.height / 2}px`,
+        );
+      else setOrigin("50% 50%");
+      setNotif(false);
+      if (which === "neto") setBadge(false);
+      setSheet(null);
+      setApp(which);
+      markTried();
+    },
+    [markTried],
+  );
 
   const close = useCallback(() => {
     setSheet(null);
@@ -310,8 +327,10 @@ export default function AppDemo() {
               dragElastic={{ top: 0.7, bottom: 0.15 }}
               dragSnapToOrigin
               onDragEnd={(_, info) => {
-                if (info.offset.y < -22 || info.velocity.y < -250)
+                if (info.offset.y < -22 || info.velocity.y < -250) {
                   setNotif(false);
+                  markTried();
+                }
               }}
               className="absolute left-2.5 right-2.5 top-14 z-20 grid cursor-pointer grid-cols-[40px_1fr] items-start gap-2.5 rounded-[22px] p-3 text-[#111]"
               style={{
@@ -349,6 +368,11 @@ export default function AppDemo() {
                   Mleko 129 din, kafa 339 din. Tvoj lični kod te čeka.
                 </span>
               </div>
+              <TapHint
+                label="Dodirni obaveštenje"
+                show={notif}
+                style={{ left: "50%", top: "97%" }}
+              />
             </motion.div>
 
             {/* the pager */}
@@ -471,6 +495,11 @@ export default function AppDemo() {
                         boxShadow: "0 4px 10px rgba(0,0,0,.25)",
                       }}
                     >
+                      <TapHint
+                        label="Dodirni Neto"
+                        show={!notif && !inApp}
+                        style={{ left: "50%", top: "50%" }}
+                      />
                       <motion.span
                         aria-hidden
                         className="absolute -inset-1.5 rounded-[20px]"

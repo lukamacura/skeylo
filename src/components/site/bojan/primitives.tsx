@@ -418,3 +418,15 @@ export function Count({
 }
 
 export const fmt = (n: number) => Math.round(n).toLocaleString("de-DE");
+
+/* --- Demo progress -------------------------------------------------------
+   The deck tells a demo slide whether its phone has been touched yet, and
+   the phone reports back the first time it is. `focusTick` bumps when the
+   bar's "Probaj demo" is pressed so the frame can scroll into view and
+   pulse. Outside the deck the default says "already tried": no hints. */
+export const DemoContext = createContext<{
+  tried: boolean;
+  markTried: () => void;
+  focusTick: number;
+}>({ tried: true, markTried: () => {}, focusTick: 0 });
+export const useDemo = () => useContext(DemoContext);

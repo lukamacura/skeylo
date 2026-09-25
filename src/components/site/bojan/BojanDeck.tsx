@@ -2,11 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CalendarCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarCheck,
+  Check,
+  Pointer,
+} from "lucide-react";
 import Gate from "./Gate";
 import {
   CONTACT,
   DISPLAY,
+  DemoContext,
   MONO,
   RED,
   SlidePositionContext,
@@ -38,6 +45,15 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
   const stage = useRef<HTMLDivElement>(null);
+
+  /* Which demo phones have been touched, by slide id, and a counter the
+     bar bumps to send the current phone into view. */
+  const [tried, setTried] = useState<Record<string, boolean>>({});
+  const [focusTick, setFocusTick] = useState(0);
+  const markTried = useCallback(() => {
+    const id = SLIDES[index].id;
+    setTried((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+  }, [index]);
 
   useEffect(() => {
     let stored = false;
@@ -132,6 +148,8 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
   const Current = current.Component;
   const t = THEMES[current.theme];
   const lightStage = current.theme === "light" || current.theme === "paper";
+  const demoDone = !!tried[current.id];
+  const askDemo = !!current.demo && !demoDone;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -218,7 +236,15 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
               <SlidePositionContext.Provider
                 value={{ index, total: SLIDES.length, label: current.label }}
               >
-                <Current />
+                <DemoContext.Provider
+                  value={{
+                    tried: !current.demo || demoDone,
+                    markTried,
+                    focusTick,
+                  }}
+                >
+                  <Current />
+                </DemoContext.Provider>
               </SlidePositionContext.Provider>
             </motion.div>
           </AnimatePresence>
@@ -235,7 +261,9 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
         >
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 py-3 md:px-10">
             {!last && (
-              <div className="min-w-0 flex-1">
+              <div
+                className={`min-w-0 flex-1 ${askDemo ? "hidden sm:block" : ""}`}
+              >
                 <p
                   className="truncate text-[10px] uppercase md:text-[11px]"
                   style={{
@@ -246,9 +274,16 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
                 >
                   {String(index + 1).padStart(2, "0")} / {SLIDES.length}
                 </p>
-                <p className="truncate text-[13px] font-bold text-white md:text-sm">
-                  {current.label}
-                </p>
+                {current.demo && demoDone ? (
+                  <p className="flex items-center gap-1.5 truncate text-[13px] font-bold text-white md:text-sm">
+                    <Check size={14} strokeWidth={3} style={{ color: RED }} />
+                    Demo isproban
+                  </p>
+                ) : (
+                  <p className="truncate text-[13px] font-bold text-white md:text-sm">
+                    {askDemo ? "Prvo probajte demo" : current.label}
+                  </p>
+                )}
               </div>
             )}
 
@@ -263,6 +298,17 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
               <span className="hidden sm:inline">Nazad</span>
             </button>
 
+            {askDemo && (
+              <button
+                onClick={() => setFocusTick((n) => n + 1)}
+                className="group inline-flex shrink-0 items-center gap-2 px-4 py-2.5 text-[13px] font-extrabold text-white transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:scale-[0.98] md:px-5 md:py-3 md:text-[15px]"
+                style={{ background: RED, borderRadius: "6px 18px 6px 6px" }}
+              >
+                <Pointer size={16} />
+                Probaj demo
+              </button>
+            )}
+
             {last ? (
               <a
                 href={CONTACT}
@@ -274,6 +320,15 @@ export default function BojanDeck({ fontClass = "" }: { fontClass?: string }) {
                 <CalendarCheck size={18} />
                 Zakažite sastanak
               </a>
+            ) : askDemo ? (
+              <button
+                onClick={() => goTo(index + 1)}
+                className="group inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[rgba(226,35,26,0.18)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E2231A] md:px-3 md:py-2 md:text-[13px]"
+                style={{ border: "1px solid rgba(255,255,255,0.22)" }}
+              >
+                Dalje
+                <ArrowRight size={14} />
+              </button>
             ) : (
               <button
                 onClick={() => goTo(index + 1)}

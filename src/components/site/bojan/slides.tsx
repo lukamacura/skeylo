@@ -42,6 +42,7 @@ import {
 } from "./visuals";
 import CatalogDemo from "./CatalogDemo";
 import AppDemo from "./AppDemo";
+import { DemoStage } from "./DemoStage";
 
 /* ------------------------------------------------------------------------ */
 /* 01  Cover                                                                  */
@@ -713,12 +714,24 @@ function Pillars() {
 function Steps({
   rows,
   dark = false,
+  caption,
 }: {
   rows: [string, string][];
   dark?: boolean;
+  caption?: string;
 }) {
   return (
     <ol className="mt-6 flex flex-col gap-4 md:mt-8">
+      {caption && (
+        <motion.li
+          variants={item}
+          aria-hidden
+          className="text-[10px] uppercase tracking-[0.14em] lg:hidden"
+          style={{ fontFamily: MONO, color: "#8A8A8A" }}
+        >
+          {caption}
+        </motion.li>
+      )}
       {rows.map(([k, v], i) => (
         <motion.li key={k} variants={item} className="flex gap-3.5">
           <span
@@ -744,35 +757,50 @@ function Steps({
   );
 }
 
+/* On a phone the order is headline, phone, steps: the thing to touch comes
+   before the reading. The text wrapper is `contents` there, so headline and
+   steps are grid items that straddle the phone; on a wide screen it is a
+   normal column beside the phone. */
 function Demo() {
   return (
     <Slide id="demo" theme="light">
-      <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-14">
-        <div>
-          <Headline>
-            Interaktivni Katalog. [[Probajte kako izgleda za kupca.]]
-          </Headline>
-          <Sub>
-            Od oglasa do koda za kasu za manje od minut. Kliknite kroz primer na
-            telefonu.
-          </Sub>
-          <Steps
-            rows={[
-              [
-                "Oglas na Instagramu i Facebooku",
-                "Jedan klik vodi u katalog, bez instaliranja.",
-              ],
-              ["Najbliža radnja", "Uz lokaciju, ili izborom mesta."],
-              ["Korpa koja računa", "Kupac vidi cenu i uštedu dok bira."],
-              [
-                "Kod za kasu",
-                "NETOTAJNA12 za još 5%. Svaki iskorišćen kod je merljiv.",
-              ],
-            ]}
-          />
+      <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-14">
+        <div className="contents lg:block">
+          <div className="order-1">
+            <Headline>
+              Interaktivni Katalog. [[Probajte ga kao kupac.]]
+            </Headline>
+            <Sub>
+              Telefon ispod je pravi, klikabilan primer. Od oglasa do koda za
+              kasu za manje od minut.
+            </Sub>
+          </div>
+          <div className="order-3">
+            <Steps
+              caption="Šta kupac prolazi"
+              rows={[
+                [
+                  "Oglas na Instagramu i Facebooku",
+                  "Jedan klik vodi u katalog, bez instaliranja.",
+                ],
+                ["Najbliža radnja", "Uz lokaciju, ili izborom mesta."],
+                ["Korpa koja računa", "Kupac vidi cenu i uštedu dok bira."],
+                [
+                  "Kod za kasu",
+                  "NETOTAJNA12 za još 5%. Svaki iskorišćen kod je merljiv.",
+                ],
+              ]}
+            />
+          </div>
         </div>
-        <motion.div variants={pop} custom={2} className="w-full lg:w-[340px]">
-          <CatalogDemo />
+        <motion.div
+          variants={pop}
+          custom={2}
+          className="order-2 w-full lg:order-none lg:w-[340px]"
+        >
+          <DemoStage radius={46}>
+            <CatalogDemo />
+          </DemoStage>
         </motion.div>
       </div>
     </Slide>
@@ -786,32 +814,43 @@ function Demo() {
 function TheApp() {
   return (
     <Slide id="app" theme="dark">
-      <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-14">
-        <div>
-          <Headline>
-            Neto aplikacija. [[Na telefonu svakog kupca. ]]Posle pilota.
-          </Headline>
-          <Sub>
-            Lični nalog, lični kod, kartica lojalnosti i obaveštenja o akcijama.
-            Dodirnite Neto ikonicu i uđite u aplikaciju.
-          </Sub>
-          <Steps
-            dark
-            rows={[
-              [
-                "Obaveštenje bez oglasa",
-                "Nova akcija stiže na telefon, besplatno, svake nedelje.",
-              ],
-              ["Lični kod i Neto Klub", "Poeni, vaučeri, kartica na kasi."],
-              [
-                "Katalog uvek pri ruci",
-                "Lista za kupovinu pre nego što uđe u radnju.",
-              ],
-            ]}
-          />
+      <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-14">
+        <div className="contents lg:block">
+          <div className="order-1">
+            <Headline>
+              Neto aplikacija. [[Na telefonu svakog kupca. ]]Posle pilota.
+            </Headline>
+            <Sub>
+              Telefon ispod radi kao pravi. Dodirnite obaveštenje ili Neto
+              ikonicu: lični nalog, lični kod, kartica lojalnosti i akcije.
+            </Sub>
+          </div>
+          <div className="order-3">
+            <Steps
+              dark
+              caption="Šta kupac dobija"
+              rows={[
+                [
+                  "Obaveštenje bez oglasa",
+                  "Nova akcija stiže na telefon, besplatno, svake nedelje.",
+                ],
+                ["Lični kod i Neto Klub", "Poeni, vaučeri, kartica na kasi."],
+                [
+                  "Katalog uvek pri ruci",
+                  "Lista za kupovinu pre nego što uđe u radnju.",
+                ],
+              ]}
+            />
+          </div>
         </div>
-        <motion.div variants={pop} custom={-2} className="w-full lg:w-[350px]">
-          <AppDemo />
+        <motion.div
+          variants={pop}
+          custom={-2}
+          className="order-2 w-full lg:order-none lg:w-[350px]"
+        >
+          <DemoStage radius={60}>
+            <AppDemo />
+          </DemoStage>
         </motion.div>
       </div>
     </Slide>
@@ -1098,6 +1137,8 @@ export const SLIDES: {
   label: string;
   theme: Theme;
   Component: () => React.JSX.Element;
+  /* A slide with a clickable phone: the bar asks for it to be tried first. */
+  demo?: boolean;
 }[] = [
   { id: "cover", label: "Neto × Skeylo", theme: "dark", Component: Cover },
   { id: "facts", label: "Gde ste sada", theme: "light", Component: Facts },
@@ -1109,8 +1150,15 @@ export const SLIDES: {
     label: "Interaktivni Katalog",
     theme: "light",
     Component: Demo,
+    demo: true,
   },
-  { id: "app", label: "Neto aplikacija", theme: "dark", Component: TheApp },
+  {
+    id: "app",
+    label: "Neto aplikacija",
+    theme: "dark",
+    Component: TheApp,
+    demo: true,
+  },
   { id: "pilot", label: "Prvih 90 dana", theme: "red", Component: Pilot },
   { id: "kpi", label: "Šta pratimo", theme: "light", Component: Kpi },
   { id: "proof", label: "Šta smo uradili", theme: "paper", Component: Proof },
