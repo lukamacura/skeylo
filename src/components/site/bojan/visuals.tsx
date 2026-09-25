@@ -120,19 +120,17 @@ export function Ticker({ className = "" }: { className?: string }) {
         borderBottom: "3px solid #000",
       }}
     >
-      <motion.div
-        className="inline-flex items-center gap-7 text-[18px] font-extrabold italic md:text-[20px]"
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 38, ease: "linear", repeat: Infinity }}
-        style={{ willChange: "transform" }}
-      >
+      {/* A CSS keyframe, not a framer animation: it runs on the compositor
+          and keeps rolling even when the OS asks for reduced motion, which
+          MotionConfig would otherwise honour by freezing every transform. */}
+      <div className="neto-ticker inline-flex items-center gap-7 text-[18px] font-extrabold italic md:text-[20px]">
         {track.map((n, i) => (
           <span key={i} className="inline-flex items-center gap-7">
             <b>{n}</b>
             <i className="not-italic opacity-55">●</i>
           </span>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }

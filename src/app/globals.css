@@ -228,6 +228,18 @@ html {
   }
 }
 
+/* Neto deck: the towns ticker on the cover. Two copies of the list sit side
+   by side, so sliding by half the track loops without a seam. */
+.neto-ticker {
+  animation: neto-tick 32s linear infinite;
+  will-change: transform;
+}
+@keyframes neto-tick {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
 @keyframes hero-breathe {
   from {
     transform: translate3d(-50%, 0, 0) scale(1);

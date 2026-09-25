@@ -788,14 +788,9 @@ function TheApp() {
     <Slide id="app" theme="dark">
       <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-14">
         <div>
-          <motion.p
-            variants={item}
-            className="mb-4 inline-block rounded-[20px] px-3 py-1 text-[13px] font-bold"
-            style={{ border: `2px dashed ${RED}`, color: "#FF8A84" }}
-          >
-            Potencijal, posle pilota
-          </motion.p>
-          <Headline>Neto aplikacija. [[Na telefonu svakog kupca.]]</Headline>
+          <Headline>
+            Neto aplikacija. [[Na telefonu svakog kupca. ]]Posle pilota.
+          </Headline>
           <Sub>
             Lični nalog, lični kod, kartica lojalnosti i obaveštenja o akcijama.
             Dodirnite Neto ikonicu i uđite u aplikaciju.
