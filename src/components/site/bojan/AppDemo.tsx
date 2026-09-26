@@ -58,7 +58,6 @@ import {
   useDemo,
   useSlideActive,
 } from "./primitives";
-import { TapHint } from "./DemoStage";
 import { MiniLogo, PRODUCTS, Pin, ProductCard, off } from "./visuals";
 
 /* The Neto app, on an iPhone that behaves like one. The home screen pages
@@ -220,7 +219,7 @@ export default function AppDemo() {
         style={{
           background: "#1b1b1d",
           boxShadow:
-            "0 0 0 2px #8d8d92, 0 0 0 4px #3a3a3c, 0 40px 80px -30px rgba(226,35,26,0.6)",
+            "0 0 0 2px #8d8d92, 0 0 0 4px #3a3a3c, 0 30px 60px -30px rgba(0,0,0,0.5)",
         }}
       >
         <div
@@ -373,11 +372,6 @@ export default function AppDemo() {
                   Mleko 129 din, kafa 339 din. Tvoj lični kod te čeka.
                 </span>
               </div>
-              <TapHint
-                label="Dodirni obaveštenje"
-                show={notif}
-                style={{ left: "50%", top: "97%" }}
-              />
             </motion.div>
 
             {/* the pager */}
@@ -512,28 +506,6 @@ export default function AppDemo() {
                         boxShadow: "0 4px 10px rgba(0,0,0,.25)",
                       }}
                     >
-                      <TapHint
-                        label="Dodirni Neto"
-                        show={!notif && !inApp}
-                        style={{ left: "50%", top: "50%" }}
-                      />
-                      <motion.span
-                        aria-hidden
-                        className="absolute -inset-1.5 rounded-[20px]"
-                        style={{ border: "2.5px solid #fff" }}
-                        initial={{ scale: 0.9, opacity: 0.9 }}
-                        animate={
-                          inApp
-                            ? { opacity: 0 }
-                            : { scale: [0.9, 1.25], opacity: [0.9, 0] }
-                        }
-                        transition={{
-                          duration: 2,
-                          delay: 1,
-                          ease: "easeOut",
-                          repeat: Infinity,
-                        }}
-                      />
                       <span className="block -rotate-[4deg] text-[18px] font-black italic tracking-[-0.02em] text-white">
                         Neto
                       </span>
@@ -847,7 +819,7 @@ export default function AppDemo() {
                             onPick={(i) => {
                               setFav(i);
                               setSheet(null);
-                              say("Omiljena radnja sačuvana");
+                              say("Omiljeni maloprodajni objekat sačuvan");
                             }}
                           />
                         )}
@@ -1236,7 +1208,7 @@ function sheetTitle(s: Exclude<SheetKind, null>) {
     club: "Neto Klub",
     store: "Tvoj Neto",
     list: "Lista za kupovinu",
-    favStore: "Omiljena radnja",
+    favStore: "Omiljeni maloprodajni objekat",
     wallet: "Apple Wallet",
   }[s];
 }
@@ -1550,7 +1522,8 @@ function CardTab({
           >
             <div className="-mx-[18px] mt-1 h-9 bg-black" />
             <div className="rounded-[8px] bg-white/10 p-2.5 text-[12px] leading-[1.35]">
-              Kartica važi u svim Neto radnjama. Poeni se obračunavaju na kasi.
+              Kartica važi u svim Neto maloprodajnim objektima. Poeni se
+              obračunavaju na kasi.
             </div>
             <span
               className="text-[11px]"
@@ -1678,9 +1651,13 @@ function MeTab({
       <div className="rounded-[16px] bg-white px-3.5 py-0.5">
         <Toggle label="Akcija nedelje" initial say={say} />
         <Toggle label="Novi proizvodi" initial say={say} />
-        <Toggle label="Nove radnje u blizini" initial={false} say={say} />
+        <Toggle
+          label="Novi maloprodajni objekti u blizini"
+          initial={false}
+          say={say}
+        />
       </div>
-      <H>Omiljena radnja</H>
+      <H>Omiljeni maloprodajni objekat</H>
       <motion.button
         type="button"
         whileTap={{ scale: 0.98 }}
@@ -1853,7 +1830,7 @@ function StoreSheet({
         <motion.button
           type="button"
           whileTap={{ scale: 0.96 }}
-          onClick={() => say("Pozivam radnju")}
+          onClick={() => say("Pozivam maloprodajni objekat")}
           className="flex cursor-pointer items-center justify-center gap-2 rounded-[12px] py-3 text-[14px] font-bold"
           style={{ background: "#F2F2F7", fontFamily: DISPLAY }}
         >

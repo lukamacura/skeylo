@@ -48,7 +48,7 @@ export default function CatalogDemo() {
       t += PRODUCTS[i].now;
       sv += PRODUCTS[i].was - PRODUCTS[i].now;
     });
-    return { t, sv, n: sel.size, extra: t * 0.05 };
+    return { t, sv, n: sel.size, extra: t * 0.02 };
   }, [sel]);
 
   const toggle = (i: number) =>
@@ -70,7 +70,7 @@ export default function CatalogDemo() {
       <div
         data-demo
         className="relative rounded-[46px] border-[10px] border-black bg-black"
-        style={{ boxShadow: "0 30px 60px -24px rgba(226,35,26,0.55)" }}
+        style={{ boxShadow: "0 30px 60px -30px rgba(0,0,0,0.45)" }}
       >
         <div
           aria-hidden
@@ -564,11 +564,11 @@ function TicketScreen({
           className="pb-3.5 text-[14px]"
           style={{ borderBottom: "2px dashed #E4E2DC" }}
         >
-          Pokaži ga na kasi i dobijaš još 5% popusta.
+          Pokaži ga na kasi i dobijaš još 2% popusta.
         </p>
         <div className="mt-1.5 text-left text-[14px]">
           <Row l="Ušteda na akcijama" v={`${fmt(totals.sv)} din`} />
-          <Row l="Dodatnih 5% sa kodom" v={`${fmt(totals.extra)} din`} />
+          <Row l="Dodatnih 2% sa kodom" v={`${fmt(totals.extra)} din`} />
           <div className="flex justify-between py-2 font-extrabold">
             <span>Ukupno štediš</span>
             <b className="text-[19px]" style={{ color: RED }}>

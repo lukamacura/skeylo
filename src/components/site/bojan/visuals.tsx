@@ -457,7 +457,7 @@ export function StoreDots({
   return (
     <div
       role="img"
-      aria-label={`${total} radnji: ${test} u Novom Sadu i okolini sa kampanjom, ${total - test} van tog područja za poređenje`}
+      aria-label={`${total} maloprodajnih objekata: ${test} u Novom Sadu i okolini sa kampanjom, ${total - test} van tog područja za poređenje`}
       className="grid max-w-[380px] grid-cols-10 gap-[9px]"
     >
       {Array.from({ length: total }, (_, i) => (

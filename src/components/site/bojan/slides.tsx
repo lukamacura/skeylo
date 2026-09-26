@@ -12,7 +12,6 @@ import {
   Minus,
   Plus,
   Smartphone,
-  UserPlus,
   Video,
 } from "lucide-react";
 import {
@@ -32,14 +31,7 @@ import {
   useTheme,
   type Theme,
 } from "./primitives";
-import {
-  Bar,
-  NetoLogo,
-  PriceTag,
-  StoreDots,
-  Ticker,
-  Timeline,
-} from "./visuals";
+import { Bar, NetoLogo, PriceTag, Ticker, Timeline } from "./visuals";
 import CatalogDemo from "./CatalogDemo";
 import AppDemo from "./AppDemo";
 import { DemoStage } from "./DemoStage";
@@ -103,7 +95,7 @@ function CoverBody() {
             style={{ color: "#CFCFCF" }}
             {...fade(1.4)}
           >
-            Šest ljudi i kompletna oprema rade za Neto u celom Novom Sadu,
+            Šest ljudi i kompletna oprema rade za Neto u Novom Sadu i okolini,
             svakog meseca.
           </motion.p>
           <motion.p
@@ -137,8 +129,11 @@ function Facts() {
 function FactsBody() {
   const t = useTheme();
   const facts: [ReactNode, string][] = [
-    [<Count key="a" to={24} />, "radnje u Novom Sadu i okolini"],
-    [<Count key="b" to={37} delay={0.1} />, "radnji u celom lancu"],
+    [<Count key="a" to={24} />, "maloprodajna objekta u Novom Sadu i okolini"],
+    [
+      <Count key="b" to={37} delay={0.1} />,
+      "maloprodajnih objekata u celom lancu",
+    ],
     [
       <Count key="c" to={14} suffix="h" delay={0.2} />,
       "otvoreno svaki dan, 7 do 21",
@@ -150,10 +145,12 @@ function FactsBody() {
   ];
   return (
     <>
-      <Headline>Novi Sad je pun Neto radnji. [[Grad to još ne zna.]]</Headline>
+      <Headline>
+        Novi Sad je pun Neto maloprodajnih objekata. [[Grad to još ne zna.]]
+      </Headline>
       <Sub>
-        Mreža je već tu. Jedna kampanja za ceo grad može da pokrene sve radnje
-        odjednom.
+        Mreža je već tu. Jedna kampanja za Novi Sad i okolinu može da pokrene
+        sve maloprodajne objekte odjednom.
       </Sub>
       <Visual>
         <div
@@ -189,7 +186,8 @@ function FactsBody() {
         style={{ color: t.muted }}
       >
         Slogan „Svaki dinar je bitan“ je jak. Danas ga čuju samo oni koji već
-        uđu u radnju. Mi hoćemo da ga čuje ceo Novi Sad.
+        uđu u maloprodajni objekat. Mi hoćemo da ga čuju svi u Novom Sadu i
+        okolini.
       </motion.p>
     </>
   );
@@ -204,21 +202,20 @@ const CREW: {
   role: string;
   img?: string;
   does: string[];
-  costLabel: string;
-  cost: string;
+  costLabel?: string;
+  cost?: string;
   gear?: boolean;
 }[] = [
   {
     name: "Luka Macura",
-    role: "Web developer i CRO",
+    role: "Informacione tehnologije",
     img: "/people/luka.webp",
     does: [
-      "Pravi ceo novi Neto sajt",
-      "Na sajtu gradi Interaktivni Katalog: lokacija, proizvodi i kalkulator uštede",
-      "Prati gde ljudi odustaju na sajtu i to popravlja",
+      "Pravi kompletan novi Neto websajt",
+      "Istražuje i dogovara se sa vašim softverskim timom oko sistema",
+      "Dogovara se sa timom oko povezanosti i usklađenosti reklama i kampanje sa sajtom",
+      "Mobilne aplikacije",
     ],
-    costLabel: "Na minimalcu, sa doprinosima",
-    cost: "~870 €",
   },
   {
     name: "Mihajlo Obradović",
@@ -226,11 +223,9 @@ const CREW: {
     img: "/people/mihac.webp",
     does: [
       "Na terenu realizuje skripte koje Filip napiše",
-      "Snima u radnjama i po Novom Sadu, sa modelima i voditeljem",
+      "Snima u maloprodajnim objektima i po Novom Sadu, sa modelima i voditeljem",
       "Nadgleda sve što montažeri rade, do finalne verzije",
     ],
-    costLabel: "Na minimalcu, sa doprinosima",
-    cost: "~870 €",
   },
   {
     name: "Filip Ruvčeski",
@@ -239,38 +234,30 @@ const CREW: {
     does: [
       "Piše skripte i osmišljava sve oglase i sadržaj",
       "Pravi mesečni plan akcija zajedno sa vama",
-      "Vodi Meta kampanju za ceo Novi Sad i okolinu",
+      "Vodi Meta kampanju za Novi Sad i okolinu",
       "Svake nedelje šalje izveštaj i objašnjava brojke",
     ],
-    costLabel: "Na minimalcu, sa doprinosima",
-    cost: "~870 €",
   },
   {
     name: "Nina Kostić",
     role: "Organizacija snimanja",
     img: "/people/nina.webp",
     does: [
-      "Dogovara termine snimanja sa poslovođama radnji",
+      "Dogovara termine snimanja sa poslovođama maloprodajnih objekata",
       "Organizuje modele, rekvizite i lokacije",
     ],
-    costLabel: "Na minimalcu, sa doprinosima",
-    cost: "~870 €",
   },
   {
     name: "Stefan Stojanović",
     role: "Video editor",
     img: "/people/stefan.webp",
     does: ["Montira video sadržaj", "Kreira dizajne i grafike"],
-    costLabel: "Na minimalcu, sa doprinosima",
-    cost: "~870 €",
   },
   {
     name: "Luka Kuzmanović",
     role: "Video editor",
     img: "/people/kuzma.webp",
     does: ["Montira video sadržaj", "Kreira dizajne i grafike"],
-    costLabel: "Na minimalcu, sa doprinosima",
-    cost: "~870 €",
   },
   {
     name: "Oprema i alati",
@@ -372,22 +359,26 @@ function Crew() {
                 </Bullet>
               ))}
             </ul>
-            <div
-              className="-mx-[18px] mt-4 flex justify-between gap-3 px-[18px] py-3 text-[14px]"
-              style={{
-                background: m.gear ? "#1C1C1C" : "#F7F6F2",
-                borderTop: `1px solid ${m.gear ? "#333" : "#E4E2DC"}`,
-                color: m.gear ? "#9A9A9A" : "#6B6B6B",
-              }}
-            >
-              <span>{m.costLabel}</span>
-              <b
-                className="whitespace-nowrap"
-                style={{ color: m.gear ? "#fff" : "#1A1A1A" }}
+            {m.cost ? (
+              <div
+                className="-mx-[18px] mt-4 flex justify-between gap-3 px-[18px] py-3 text-[14px]"
+                style={{
+                  background: m.gear ? "#1C1C1C" : "#F7F6F2",
+                  borderTop: `1px solid ${m.gear ? "#333" : "#E4E2DC"}`,
+                  color: m.gear ? "#9A9A9A" : "#6B6B6B",
+                }}
               >
-                {m.cost}
-              </b>
-            </div>
+                <span>{m.costLabel}</span>
+                <b
+                  className="whitespace-nowrap"
+                  style={{ color: m.gear ? "#fff" : "#1A1A1A" }}
+                >
+                  {m.cost}
+                </b>
+              </div>
+            ) : (
+              <div className="pb-5" />
+            )}
           </motion.article>
         ))}
       </Visual>
@@ -488,25 +479,27 @@ const PILLARS: {
   {
     icon: MapPin,
     title: "Interaktivni Katalog",
-    one: "Jedna kampanja za ceo Novi Sad, od oglasa do kase",
+    one: "Jedna kampanja za Novi Sad i okolinu, od oglasa do kase",
     points: [
       "Oglas poziva: „Klikni dole i pogledaj gde je tvoj najbliži Neto market“.",
-      "Uz dozvolu za lokaciju, Interaktivni Katalog odmah prikazuje najbližu radnju i akcije.",
+      "Uz dozvolu za lokaciju, Interaktivni Katalog odmah prikazuje najbliži maloprodajni objekat i akcije.",
       "Kupac bira šta mu treba, a katalog uživo računa cenu i koliko štedi.",
-      "Na kraju dobija kod NETOTAJNA12 za dodatnih 5% popusta na kasi.",
+      "Na kraju dobija kod NETOTAJNA12 za dodatnih 2% popusta na kasi.",
+      "Admin panel: vaši administratori na jednom mestu dodaju, menjaju i brišu artikle i prikazuju popuste. Katalog se odmah ažurira.",
+      "Neophodno je da odmah stupimo u kontakt sa vašim softverskim timom i sa njima razjasnimo mogućnosti za implementaciju promo koda, kako bi ceo sistem bio najoptimalniji mogući.",
     ],
     measureLabel: "Merimo:",
     measure:
-      "koliko kodova je iskorišćeno na kasama. Tačno vidimo koliko ljudi je kampanja dovela u Neto.",
+      "posete katalogu, izabrane proizvode i klikove na najbliži objekat. Kako se kod prati na kasi dogovaramo sa vašim softverskim timom.",
   },
   {
     icon: Video,
     title: "Sadržaj koji prodaje „Svaki dinar je bitan“",
-    one: "Profesionalna produkcija, snimanje po celom Novom Sadu",
+    one: "Profesionalna produkcija, snimanje po Novom Sadu i okolini",
     points: [
       "„Korpa od 2.000 dinara“: koliko toga stane u korpu kod vas.",
       "Ulične ankete po Novom Sadu, sa pravim Novosađanima.",
-      "Serijal sa vašim zaposlenima. Poznata lica grade poverenje i osećaj „naše radnje“.",
+      "Serijal sa vašim zaposlenima. Poznata lica grade poverenje i osećaj „naš Neto“.",
     ],
     measureLabel: "Merimo:",
     measure: "doseg u Novom Sadu, pregleda do kraja i rast pratilaca.",
@@ -522,18 +515,6 @@ const PILLARS: {
     ],
     measureLabel: "Merimo:",
     measure: "broj članova i koliko njih otvori Interaktivni Katalog.",
-  },
-  {
-    icon: UserPlus,
-    title: "Zapošljavanje",
-    one: "Kasiri i magacioneri, bez čekanja na oglase",
-    points: [
-      "Kampanje za posao sa prijavom u dva klika, direktno na telefonu.",
-      "Ciljamo ljude iz Novog Sada i okoline koji traže posao.",
-      "Kratki video iz radnje, da kandidat zna gde dolazi.",
-    ],
-    measureLabel: "Merimo:",
-    measure: "cenu po prijavi i cenu po zaposlenom.",
   },
   {
     icon: Handshake,
@@ -553,14 +534,14 @@ const PILLARS: {
     title: "Neto aplikacija za telefon",
     one: "Potencijal za kasnije, nije deo ove ponude",
     points: [
-      "Lični nalozi, sa ličnim kodom za popust za svakog kupca.",
+      "Aplikacija nalik MojMaxi: kupac pokaže kod na kasi u Neto Marketu i dobije popust, na primer 200 din za račun preko 2.000 din.",
       "Notifikacije kad izađe nova akcija, bez plaćanja oglasa.",
       "Digitalna kartica lojalnosti i istorija kupovine.",
-      "Interaktivni Katalog uvek pri ruci, na početnom ekranu.",
+      "Prvi korak je sastanak sa timom koji vodi artikle i softver, da razumemo kako sistem i baza rade i povežemo ih sa aplikacijom.",
     ],
     measureLabel: "Kada:",
     measure:
-      "tek posle pilota, ako Interaktivni Katalog pokaže da se ljudi redovno vraćaju. Radi se kao poseban projekat, sa posebnom ponudom. Primer kako bi mogla da izgleda je dva slajda dalje.",
+      "tek posle pilota, kao poseban projekat sa posebnom ponudom. Pre toga zajedno prolazimo vaš postojeći sistem i logiku baze podataka. Primer kako bi mogla da izgleda je nekoliko slajdova dalje.",
     potential: true,
   },
 ];
@@ -695,7 +676,7 @@ function Pillars() {
     <Slide id="pillars" theme="paper">
       <Headline>Šta radimo, [[svakog meseca.]]</Headline>
       <Sub>
-        Četiri stuba koja rade zajedno, i dva za kasnije. Otvorite svaki za
+        Tri stuba koja rade zajedno, i dva za kasnije. Otvorite svaki za
         detalje.
       </Sub>
       <Visual className="grid gap-4 lg:grid-cols-2 lg:items-start">
@@ -762,52 +743,48 @@ function Steps({
   );
 }
 
-/* On a phone the order is headline, phone, steps: the thing to touch comes
-   before the reading. The text wrapper is `contents` there, so headline and
-   steps are grid items that straddle the phone; on a wide screen it is a
-   normal column beside the phone. */
+/* Each demo takes two slides: first the story, then the phone alone, drawn
+   as large as the stage allows, so it reads as a phone to be touched. */
 function Demo() {
   return (
-    <Slide id="demo" theme="light" className="!py-5 md:!py-7">
-      <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-14">
-        <div className="contents lg:block">
-          <div className="order-1">
-            <Headline>
-              Interaktivni Katalog. [[Probajte ga kao kupac.]]
-            </Headline>
-            <Sub>
-              Telefon ispod je pravi, klikabilan primer. Od oglasa do koda za
-              kasu za manje od minut.
-            </Sub>
-          </div>
-          <div className="order-3">
-            <Steps
-              caption="Šta kupac prolazi"
-              rows={[
-                [
-                  "Oglas na Instagramu i Facebooku",
-                  "Jedan klik vodi u katalog, bez instaliranja.",
-                ],
-                ["Najbliža radnja", "Uz lokaciju, ili izborom mesta."],
-                ["Korpa koja računa", "Kupac vidi cenu i uštedu dok bira."],
-                [
-                  "Kod za kasu",
-                  "NETOTAJNA12 za još 5%. Svaki iskorišćen kod je merljiv.",
-                ],
-              ]}
-            />
-          </div>
-        </div>
-        <motion.div
-          variants={pop}
-          custom={2}
-          className="order-2 w-full lg:order-none lg:w-[340px]"
-        >
-          <DemoStage radius={46}>
-            <CatalogDemo />
-          </DemoStage>
-        </motion.div>
+    <Slide id="demo" theme="light">
+      <Headline>Interaktivni Katalog. [[Probajte ga kao kupac.]]</Headline>
+      <Sub>
+        Na sledećem slajdu je pravi, klikabilan telefon. Od oglasa do koda za
+        kasu za manje od minut.
+      </Sub>
+      <div className="max-w-2xl">
+        <Steps
+          caption="Šta kupac prolazi"
+          rows={[
+            [
+              "Oglas na Instagramu i Facebooku",
+              "Jedan klik vodi u katalog, bez instaliranja.",
+            ],
+            [
+              "Najbliži maloprodajni objekat",
+              "Uz lokaciju, ili izborom mesta.",
+            ],
+            ["Korpa koja računa", "Kupac vidi cenu i uštedu dok bira."],
+            [
+              "Kod za kasu i Viber",
+              "NETOTAJNA12 za još 2%, pa jedan klik do Viber zajednice. Način primene koda usklađujemo sa vašim softverskim timom.",
+            ],
+          ]}
+        />
       </div>
+    </Slide>
+  );
+}
+
+function DemoPhone() {
+  return (
+    <Slide id="demo-phone" theme="light" eyebrow={false} className="!py-4">
+      <motion.div variants={pop} custom={2} className="w-full">
+        <DemoStage>
+          <CatalogDemo />
+        </DemoStage>
+      </motion.div>
     </Slide>
   );
 }
@@ -818,48 +795,50 @@ function Demo() {
 
 function TheApp() {
   return (
-    <Slide id="app" theme="dark" className="!py-5 md:!py-7">
-      <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-14">
-        <div className="contents lg:block">
-          <div className="order-1">
-            <Headline>
-              Neto aplikacija. [[Potencijal za kasnije.]] Nije deo ove ponude.
-            </Headline>
-            <Sub>
-              Ovo je primer kuda može da ide posle pilota, kao poseban projekat.
-              Telefon ispod radi kao pravi: dodirnite obaveštenje ili Neto
-              ikonicu i vidite lični nalog, lični kod, karticu lojalnosti i
-              akcije.
-            </Sub>
-          </div>
-          <div className="order-3">
-            <Steps
-              dark
-              caption="Šta bi kupac dobio"
-              rows={[
-                [
-                  "Obaveštenje bez oglasa",
-                  "Nova akcija stiže na telefon, besplatno, svake nedelje.",
-                ],
-                ["Lični kod i Neto Klub", "Poeni, vaučeri, kartica na kasi."],
-                [
-                  "Katalog uvek pri ruci",
-                  "Lista za kupovinu pre nego što uđe u radnju.",
-                ],
-              ]}
-            />
-          </div>
-        </div>
-        <motion.div
-          variants={pop}
-          custom={-2}
-          className="order-2 w-full lg:order-none lg:w-[350px]"
-        >
-          <DemoStage radius={60}>
-            <AppDemo />
-          </DemoStage>
-        </motion.div>
+    <Slide id="app" theme="dark">
+      <Headline>
+        Neto aplikacija. [[Potencijal za kasnije.]] Nije deo ove ponude.
+      </Headline>
+      <Sub>
+        Aplikacija nalik MojMaxi, kao poseban projekat posle pilota: kupac
+        pokaže kod na kasi i dobije popust, na primer 200 din za račun preko
+        2.000 din. Pre toga je potreban sastanak sa timom koji vodi artikle i
+        softver, da razumemo postojeći sistem i bazu i povežemo ih sa
+        aplikacijom. Telefon na sledećem slajdu radi kao pravi: dodirnite
+        obaveštenje ili Neto ikonicu.
+      </Sub>
+      <div className="max-w-2xl">
+        <Steps
+          dark
+          caption="Šta bi kupac dobio"
+          rows={[
+            [
+              "Obaveštenje bez oglasa",
+              "Nova akcija stiže na telefon, besplatno, svake nedelje.",
+            ],
+            [
+              "Kod na kasi",
+              "Kupac pokaže kod i dobije popust, npr. 200 din za račun preko 2.000.",
+            ],
+            [
+              "Katalog uvek pri ruci",
+              "Lista za kupovinu pre nego što uđe u maloprodajni objekat.",
+            ],
+          ]}
+        />
       </div>
+    </Slide>
+  );
+}
+
+function AppPhone() {
+  return (
+    <Slide id="app-phone" theme="dark" eyebrow={false} className="!py-4">
+      <motion.div variants={pop} custom={-2} className="w-full">
+        <DemoStage>
+          <AppDemo />
+        </DemoStage>
+      </motion.div>
     </Slide>
   );
 }
@@ -871,47 +850,22 @@ function TheApp() {
 function Pilot() {
   return (
     <Slide id="pilot" theme="red">
-      <Headline>Prvih 90 dana je test, a ne obećanje.</Headline>
-      <Sub>
-        Kampanja ide za Novi Sad i okolinu. Radnje van tog područja služe za
-        poređenje. Razliku vidite na svojim kasama i kroz iskorišćene kodove.
-      </Sub>
-      <Visual className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div>
-          <StoreDots />
-          <div className="mt-5 flex flex-wrap gap-x-[22px] gap-y-2.5 text-[15px]">
-            <span className="inline-flex items-center gap-2">
-              <i
-                className="inline-block h-3.5 w-3.5 bg-white"
-                style={{ borderRadius: "50% 50% 50% 20%" }}
-              />
-              Novi Sad i okolina, sa kampanjom
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <i
-                className="inline-block h-3.5 w-3.5"
-                style={{
-                  borderRadius: "50% 50% 50% 20%",
-                  boxShadow: "inset 0 0 0 2px #fff",
-                }}
-              />
-              Ostala mesta, za poređenje
-            </span>
-          </div>
-        </div>
+      <Headline>Ovako će izgledati saradnja.</Headline>
+      <Sub>Tri koraka, redom. Svaki sledeći se oslanja na prethodni.</Sub>
+      <Visual className="max-w-3xl">
         <Timeline
           steps={[
             {
-              title: "Mesec 1: postavka",
-              body: "Pravimo novi sajt sa Interaktivnim Katalogom, obučavamo kasire za kod, snimamo prvi sadržaj i pokrećemo kampanju za ceo Novi Sad.",
+              title: "Prvo",
+              body: "Sastanak sa vašim softverskim timom: razjašnjavamo mogućnosti za promo kod i kako se sistem povezuje sa sajtom. Pravimo novi sajt sa Interaktivnim Katalogom i admin panelom za artikle i popuste.",
             },
             {
-              title: "Mesec 2: optimizacija",
-              body: "Nedeljne akcije rade punim tempom. Gasimo ono što ne prodaje, pojačavamo ono što prodaje.",
+              title: "Drugo",
+              body: "Snimamo prvi sadržaj, pokrećemo Meta kampanju za Novi Sad i okolinu i otvaramo Viber zajednicu. Svake nedelje šaljemo izveštaj i plan akcija za sledeću nedelju.",
             },
             {
-              title: "Mesec 3: rezultat",
-              body: "Poredimo promet u Novom Sadu sa ostalim mestima i brojimo iskorišćene kodove. Zajedno odlučujemo o širenju na ceo lanac.",
+              title: "Treće",
+              body: "Gasimo ono što ne prodaje, pojačavamo ono što prodaje. Kad imamo brojke, zajedno odlučujemo o širenju na ceo lanac i o aplikaciji.",
             },
           ]}
         />
@@ -926,11 +880,10 @@ function Pilot() {
 
 function Kpi() {
   const rows: [string, string][] = [
-    ["Iskorišćeni kodovi", "na kasama"],
     ["Posete Interaktivnom Katalogu", "i izabrani proizvodi"],
-    ["Prodaja artikala sa akcije", "u Novom Sadu"],
+    ["Klikovi na najbliži objekat", "iz kataloga i oglasa"],
+    ["Prodaja artikala sa akcije", "u Novom Sadu i okolini, iz vaših podataka"],
     ["Članovi Viber zajednice", "rast nedeljno"],
-    ["Cena po zaposlenom", "kampanje za posao"],
   ];
   return (
     <Slide id="kpi" theme="light">
@@ -1084,9 +1037,10 @@ function Price() {
               "Strateg i media buyer",
               "Video producent i direktor postprodukcije",
               "Dva video editora",
-              "Web developer",
+              "Informacione tehnologije",
               "Organizatorka snimanja",
               "Novi sajt sa Interaktivnim Katalogom",
+              "Admin panel za artikle i popuste",
               "Sva oprema i alati",
               "Nedeljni izveštaj i poziv",
             ]}
@@ -1145,30 +1099,38 @@ export const SLIDES: {
   label: string;
   theme: Theme;
   Component: () => React.JSX.Element;
-  /* A slide with a clickable phone: the bar asks for it to be tried first. */
-  demo?: boolean;
 }[] = [
   { id: "cover", label: "Neto × Skeylo", theme: "dark", Component: Cover },
   { id: "facts", label: "Gde ste sada", theme: "light", Component: Facts },
   { id: "crew", label: "Vaš tim", theme: "paper", Component: Crew },
-  { id: "versus", label: "Koliko to košta", theme: "dark", Component: Versus },
   { id: "pillars", label: "Šta radimo", theme: "paper", Component: Pillars },
   {
     id: "demo",
     label: "Interaktivni Katalog",
     theme: "light",
     Component: Demo,
-    demo: true,
+  },
+  {
+    id: "demo-phone",
+    label: "Interaktivni Katalog: demo",
+    theme: "light",
+    Component: DemoPhone,
   },
   {
     id: "app",
     label: "Aplikacija (kasnije)",
     theme: "dark",
     Component: TheApp,
-    demo: true,
   },
-  { id: "pilot", label: "Prvih 90 dana", theme: "red", Component: Pilot },
+  {
+    id: "app-phone",
+    label: "Aplikacija: demo",
+    theme: "dark",
+    Component: AppPhone,
+  },
+  { id: "pilot", label: "Tok saradnje", theme: "red", Component: Pilot },
   { id: "kpi", label: "Šta pratimo", theme: "light", Component: Kpi },
   { id: "proof", label: "Šta smo uradili", theme: "paper", Component: Proof },
+  { id: "versus", label: "Koliko to košta", theme: "dark", Component: Versus },
   { id: "price", label: "Ponuda", theme: "dark", Component: Price },
 ];
