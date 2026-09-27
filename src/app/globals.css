@@ -311,3 +311,41 @@ html {
   background: var(--rc);
   color: var(--rc-fg);
 }
+
+/* --- Solar kalkulator: scena ------------------------------------------
+   Ambijentalno kretanje neba ide samo preko transform/opacity, pa ga
+   pomera kompozitor i ne troši glavnu nit dok korisnik popunjava kviz. */
+.hs-spin {
+  animation: hs-spin 90s linear infinite;
+  will-change: transform;
+}
+.hs-drift {
+  animation: hs-drift 50s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.hs-twinkle {
+  animation: hs-twinkle 3s ease-in-out infinite alternate;
+  will-change: opacity;
+}
+@keyframes hs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes hs-drift {
+  to {
+    transform: translate3d(var(--hs-drift, 24px), 0, 0);
+  }
+}
+@keyframes hs-twinkle {
+  to {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-spin,
+  .hs-drift,
+  .hs-twinkle {
+    animation: none;
+  }
+}

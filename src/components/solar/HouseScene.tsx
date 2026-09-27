@@ -1,42 +1,58 @@
 "use client";
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useSpring,
-} from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { CustomerType, ExtraId, RoofType, UsageId } from "@/lib/solar";
+import {
+  clamp01,
+  CX,
+  G,
+  LAND,
+  layoutPanels,
+  lerp,
+  pathOf,
+  roofShape,
+  rowsFor,
+  slotQuad,
+  smooth,
+  targetDims,
+} from "./scene/geometry";
+import {
+  ambient,
+  css,
+  mixRgb,
+  rgb,
+  SKY_SPRING,
+  SPRING,
+  tri3,
+  useSprung,
+  type Frame,
+} from "./scene/light";
+import type { Ctx } from "./scene/ctx";
+import { CompanyFacade, HouseFacade } from "./scene/Facades";
+import Flow from "./scene/Flow";
+import Panels, { panelsPath, type PanelCell } from "./scene/Panels";
+import { roofQuad } from "./scene/Roof";
+import Sky from "./scene/Sky";
 
 /* ------------------------------------------------------------------ */
 /*  Scena: jedan objekat koji se menja sa svakim odgovorom              */
-/*  Koordinate su u jedinicama crteža (720 široko), tlo je na y = G.    */
+/*  Koordinate su u jedinicama crteža, tlo je na y = G.                 */
 /*                                                                      */
-/*  Dve stvari vode ceo crtež:                                          */
-/*   - mere objekta (širina, visina zida, visina krova), na oprugama    */
+/*  Tri stvari vode ceo crtež:                                          */
+/*   - mere objekta (širina, visina, dubina, sleme), na oprugama        */
 /*   - doba dana t: 0 = dan, 0,5 = zalazak, 1 = noć, takođe na opruzi   */
-/*  Sve boje se računaju iz t, pa prelaz dan/noć nema nijedan "skok".   */
+/*   - kamera, koja sama kadrira objekat: mala kuća ispuni kadar, a     */
+/*     kad dobije sprat ili auto u dvorištu, kadar se meko odmakne      */
+/*  Geometrija krova i panela je u scene/geometry.ts.                   */
 /* ------------------------------------------------------------------ */
 
-const VB_W = 720;
-const VB_H = 440;
-/** Visina koju zauzima najviši objekat sa krovom, u jedinicama crteža. */
-const CONTENT_H = 330;
-const G = 372;
-const CX = 352;
-const POLE_X = 668;
-/** Sokl (podnožje zida). */
-const PLINTH = 8;
-/** Dubina zemljišta iza objekta: horizont je iznad temelja jer kadar gleda blago odozgo. */
-const LAND = 42;
-
-/* Kritično prigušene opruge: bez odskakanja, samo meko usporavanje. */
-const SPRING = { stiffness: 90, damping: 20, mass: 1 };
-const SKY_SPRING = { stiffness: 26, damping: 13, mass: 1 };
 /** Najviše panela koje crtamo; ostatak nosi brojka u čipu ispod scene. */
 const MAX_DRAWN = 64;
+/** Nebo iznad slemena i tlo ispod temelja koje kadar uvek ostavlja. */
+const SKY_ROOM = 46;
+const GROUND_ROOM = 20;
+const MAX_ZOOM = 2;
 
 export interface HouseSceneProps {
   type: CustomerType;
@@ -59,1408 +75,84 @@ export interface HouseSceneProps {
   bottomPad?: number;
 }
 
-function useSprung(
-  target: number,
-  still: boolean,
-  config: { stiffness: number; damping: number; mass: number } = SPRING,
-  /** Korak zaokruživanja: komponenta se ponovo crta tek kad vrednost pređe korak. */
-  quantum = 0,
-) {
-  const mv = useSpring(target, config);
-  const [value, setValue] = useState(target);
-  useEffect(() => {
-    if (still) mv.jump(target);
-    else mv.set(target);
-  }, [mv, target, still]);
-  useMotionValueEvent(mv, "change", (v) =>
-    setValue(quantum ? Math.round(v / quantum) * quantum : v),
-  );
-  return value;
-}
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
-const smooth = (a: number, b: number, t: number) => {
-  const x = clamp01((t - a) / (b - a));
-  return x * x * (3 - 2 * x);
-};
-/** Tri ključne vrednosti: dan, zalazak, noć. */
-const tri = (day: number, dusk: number, night: number, t: number) =>
-  t < 0.5 ? lerp(day, dusk, t * 2) : lerp(dusk, night, (t - 0.5) * 2);
-
-/* ------------------------------ Boje ------------------------------ */
-
-type RGB = [number, number, number];
-const parsed = new Map<string, RGB>();
-function rgb(hex: string): RGB {
-  let v = parsed.get(hex);
-  if (!v) {
-    const n = parseInt(hex.slice(1), 16);
-    v = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-    parsed.set(hex, v);
-  }
-  return v;
-}
-const mixRgb = (a: RGB, b: RGB, t: number): RGB => [
-  lerp(a[0], b[0], t),
-  lerp(a[1], b[1], t),
-  lerp(a[2], b[2], t),
-];
-const css = (c: RGB) =>
-  `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`;
-/** Boja koja sama prelazi dan → zalazak → noć. */
-const tri3 = (day: string, dusk: string, night: string, t: number) =>
-  css(
-    t < 0.5
-      ? mixRgb(rgb(day), rgb(dusk), t * 2)
-      : mixRgb(rgb(dusk), rgb(night), (t - 0.5) * 2),
-  );
-
-/** Koliko svetla pada na površine: pun dan, topao zalazak, plava noć. */
-function ambient(t: number): RGB {
-  return [tri(1, 0.88, 0.25, t), tri(1, 0.68, 0.3, t), tri(1, 0.62, 0.45, t)];
-}
-
-interface Dims {
-  w: number;
-  wallH: number;
-  rise: number;
-}
-
-function targetDims(
-  type: CustomerType,
-  area: number,
-  floors: number,
-  roof: RoofType,
-): Dims {
-  const footprint = area / floors;
-  if (type === "fizicko") {
-    const t = clamp01((Math.sqrt(footprint) - 4.5) / (20 - 4.5));
-    return {
-      w: lerp(172, 330, t),
-      wallH: 70 + (floors - 1) * 58,
-      rise: roof === "kos" ? lerp(70, 86, t) : 50,
-    };
-  }
-  const t = clamp01((Math.sqrt(footprint) - 7) / (71 - 7));
-  return {
-    w: lerp(244, 400, t),
-    wallH: 92 + (floors - 1) * 50,
-    rise: roof === "kos" ? 60 : 56,
-  };
-}
-
-/* ------------------------------ Paneli ----------------------------- */
-/*  Paneli žive u fiksnoj mreži vezanoj za sredinu krova. Ćelija ima    */
-/*  stalno mesto, pa se pri svakoj promeni paneli samo pale i gase,     */
-/*  nikad ne preskaču. Položaj se računa iz istih mera kao i krov, pa   */
-/*  su uvek "zalepljeni" za njega.                                      */
-
-type Pt = [number, number];
-
-interface Cell {
-  key: string;
-  /** Gore levo, gore desno, dole desno, dole levo. */
-  pts: [Pt, Pt, Pt, Pt];
-  dim: number;
-  row: number;
-  order: number;
-  /** Ravan krov: panel stoji na nosaču, pa baca senku pod sobom. */
-  raised: boolean;
-}
-
-interface RoofShape {
-  w: number;
-  wallTop: number;
-  rise: number;
-  /** Polovina širine krova na strehi i na slemenu (ili zadnjoj ivici). */
-  bottomHalf: number;
-  topHalf: number;
-}
-
-function roofShape(w: number, wallTop: number, rise: number, pitch: number) {
-  const bottomHalf = w / 2 + 12 * pitch;
-  return {
-    w,
-    wallTop,
-    rise,
-    bottomHalf,
-    topHalf: Math.max(20, bottomHalf - rise * lerp(0.5, 0.62, pitch)),
-  };
-}
-
-/** Polovina širine krova na visini y. */
-const halfAt = (r: RoofShape, y: number) =>
-  lerp(r.bottomHalf, r.topHalf, clamp01((r.wallTop - y) / r.rise));
-
-/** Kolone od sredine ka ivicama: -1, 0, -2, 1, -3, 2 ... */
-function centerOut(perSide: number) {
-  const out: number[] = [];
-  for (let i = 0; i < perSide; i++) out.push(-1 - i, i);
-  return out;
-}
-
-const P_W = 18;
-const P_H = 19;
-const P_GAP = 1.6;
-
-/** Kos krov: uspravni paneli u ravni krova, redovi se pune od strehe. */
-function pitchedCells(n: number, r: RoofShape): Cell[] {
-  const stepX = P_W + P_GAP;
-  const stepY = P_H + P_GAP;
-  const rows = Math.max(0, Math.floor((r.rise - 13 + P_GAP) / stepY));
-  const cells: Cell[] = [];
-  for (let row = 0; row < rows && cells.length < n; row++) {
-    const yb = r.wallTop - 7 - row * stepY;
-    const yt = yb - P_H;
-    const perSide = Math.max(
-      0,
-      Math.floor((halfAt(r, yt) - 9 + P_GAP / 2) / stepX),
-    );
-    for (const k of centerOut(perSide)) {
-      if (cells.length >= n) break;
-      const x = CX + k * stepX + P_GAP / 2;
-      cells.push({
-        key: `p${row}:${k}`,
-        pts: [
-          [x, yt],
-          [x + P_W, yt],
-          [x + P_W, yb],
-          [x, yb],
-        ],
-        dim: 1,
-        row,
-        order: cells.length,
-        raised: false,
-      });
-    }
-  }
-  return cells;
-}
-
-const F_W = 20;
-const F_TILT = 9;
-
-/** Ravan krov gledan odozgo: redovi nagnutih panela koji se sužavaju u dubinu. */
-function flatCells(n: number, r: RoofShape, rows: number): Cell[] {
-  const yFront = r.wallTop - 7;
-  const depth = yFront - (r.wallTop - r.rise) - 3;
-  // dalji redovi zauzimaju manje ekrana od bližih
-  const y = (d: number) => yFront - depth * ((d * 1.5) / (1 + 0.5 * d));
-  const front = halfAt(r, yFront);
-  const scale = (yy: number) => halfAt(r, yy) / front;
-  const slot = 0.96 / rows;
-  const stepX = F_W + P_GAP;
-  const perSide = Math.max(0, Math.floor((front - 10) / stepX));
-  const cells: Cell[] = [];
-  for (let row = 0; row < rows && cells.length < n; row++) {
-    const dB = 0.04 + row * slot;
-    const dT = dB + slot * 0.6;
-    const sB = scale(y(dB));
-    const sT = scale(y(dT));
-    const yb = y(dB) - 1.5 * sB;
-    const yt = y(dT) - F_TILT * sT;
-    for (const k of centerOut(perSide)) {
-      if (cells.length >= n) break;
-      cells.push({
-        key: `f${row}:${k}`,
-        pts: [
-          [CX + (k * stepX + P_GAP / 2) * sT, yt],
-          [CX + (k * stepX + P_GAP / 2 + F_W) * sT, yt],
-          [CX + (k * stepX + P_GAP / 2 + F_W) * sB, yb],
-          [CX + (k * stepX + P_GAP / 2) * sB, yb],
-        ],
-        dim: 1 - row * 0.07,
-        row,
-        order: cells.length,
-        raised: true,
-      });
-    }
-  }
-  // zadnji redovi se crtaju prvi, da ih prednji preklope
-  return cells.sort((a, b) => b.row - a.row || a.order - b.order);
-}
-
-const poly = (pts: Pt[]) =>
-  pts.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(" ");
-
-const Panel = memo(function Panel({
-  cell,
-  still,
-  frame,
-}: {
-  cell: Cell;
-  still: boolean;
-  frame: string;
-}) {
-  const [, , br, bl] = cell.pts;
-  const points = poly(cell.pts);
-  const delay = still ? 0 : (cell.order % 14) * 0.022;
-  return (
-    <motion.g
-      initial={{ opacity: 0, y: -14 }}
-      animate={{ opacity: cell.dim, y: 0 }}
-      exit={{ opacity: 0, y: -8, transition: { duration: 0.22 } }}
-      transition={
-        still
-          ? { duration: 0 }
-          : {
-              y: { type: "spring", stiffness: 110, damping: 19, delay },
-              opacity: { duration: 0.32, delay },
-            }
-      }
-    >
-      {cell.raised && (
-        <polygon
-          points={poly([
-            bl,
-            br,
-            [br[0] + 1, br[1] + 3],
-            [bl[0] - 1, bl[1] + 3],
-          ])}
-          fill="#000"
-          opacity={0.3}
-        />
-      )}
-      <polygon
-        points={points}
-        fill="url(#hs-panel)"
-        stroke={frame}
-        strokeWidth={0.9}
-        strokeLinejoin="round"
-      />
-      <polygon points={points} fill="url(#hs-array)" />
-    </motion.g>
-  );
-}, samePanel);
-
-function samePanel(
-  a: { cell: Cell; still: boolean; frame: string },
-  b: { cell: Cell; still: boolean; frame: string },
-) {
-  if (a.frame !== b.frame || a.still !== b.still) return false;
-  if (a.cell.dim !== b.cell.dim) return false;
-  for (let i = 0; i < 4; i++) {
-    if (
-      a.cell.pts[i][0] !== b.cell.pts[i][0] ||
-      a.cell.pts[i][1] !== b.cell.pts[i][1]
-    )
-      return false;
-  }
-  return true;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Zajednički kontekst crtanja                                         */
-/* ------------------------------------------------------------------ */
-
-interface Ctx {
-  x0: number;
-  x1: number;
-  w: number;
-  wallTop: number;
-  wallH: number;
-  floors: number;
-  floorH: number;
-  rise: number;
-  roofTop: number;
-  pitch: number;
-  roofPath: string;
-  bottomHalf: number;
-  topHalf: number;
-  slots: number;
-  slotW: number;
-  doorSlot: number;
-  /** 0–1 koliko je mračno; pali svetla. */
-  n: number;
-  /** Boja površine pod trenutnim svetlom. */
-  c: (hex: string) => string;
-  /** Površina koja noću sama svetli. */
-  glow: (hex: string, lit: string, amount?: number) => string;
-  litAt: (floor: number, slot: number) => boolean;
-  /** Sitni detalji se crtaju samo kad su dovoljno veliki da se vide. */
-  detail: boolean;
-}
-
-/** Staklo: noću svetli ili je mračno, danju ogleda nebo. */
-function Glass({
-  k,
-  x,
-  y,
-  w,
-  h,
-  lit,
-  rx = 1,
-}: {
-  k: Ctx;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  lit: boolean;
-  rx?: number;
-}) {
-  if (w <= 0 || h <= 0) return null;
-  return (
-    <>
-      <rect
-        x={x}
-        y={y}
-        width={w}
-        height={h}
-        rx={rx}
-        fill={lit ? "#ffd67d" : "#0c1421"}
-      />
-      {lit && (
-        <rect
-          x={x}
-          y={y + h * 0.55}
-          width={w}
-          height={h * 0.45}
-          rx={rx}
-          fill="#ffb74a"
-          opacity={0.35}
-        />
-      )}
-      <rect
-        x={x}
-        y={y}
-        width={w}
-        height={h}
-        rx={rx}
-        fill="url(#hs-glass)"
-        opacity={1 - k.n * (lit ? 0.95 : 0.8)}
-      />
-      <path
-        d={`M${x + w * 0.12} ${y + h} L${x + w * 0.5} ${y} H${x + w * 0.72} L${x + w * 0.34} ${y + h} Z`}
-        fill="#fff"
-        opacity={0.2 * (1 - k.n)}
-      />
-    </>
-  );
-}
-
-/** Ravan krov viđen blago odozgo: hidroizolacija, atika i šavovi u dubinu. */
-function FlatTop({ k }: { k: Ctx }) {
-  const o = 1 - k.pitch;
-  if (o < 0.01) return null;
-  const { wallTop, roofTop, bottomHalf: bh, topHalf: th, c } = k;
-  return (
-    <g opacity={o}>
-      <path d={k.roofPath} fill={c("#8b9198")} />
-      <path d={k.roofPath} fill="url(#hs-flatshade)" />
-      {k.detail &&
-        [-0.5, 0, 0.5].map((u) => (
-          <path
-            key={u}
-            d={`M${CX + u * bh} ${wallTop}L${CX + u * th} ${roofTop}`}
-            stroke={c("#7b8188")}
-            strokeWidth={1}
-          />
-        ))}
-      <path
-        d={`M${CX - bh} ${wallTop}L${CX - th} ${roofTop}H${CX + th}L${CX + bh} ${wallTop}`}
-        fill="none"
-        stroke={c("#dfe3e8")}
-        strokeWidth={3.5}
-        strokeLinejoin="round"
-      />
-      <path
-        d={`M${CX - bh + 4} ${wallTop}L${CX - th + 3} ${roofTop + 2.5}H${CX + th - 3}L${CX + bh - 4} ${wallTop}`}
-        fill="none"
-        stroke="#000"
-        strokeOpacity={0.18}
-        strokeWidth={2}
-      />
-      <rect
-        x={CX - bh - 1.5}
-        y={wallTop - 7}
-        width={bh * 2 + 3}
-        height={8}
-        rx={1}
-        fill={c("#e6e9ee")}
-      />
-      <rect
-        x={CX - bh - 1.5}
-        y={wallTop - 0.5}
-        width={bh * 2 + 3}
-        height={1.5}
-        fill="#000"
-        opacity={0.2}
-      />
-    </g>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Kuća                                                                */
-/* ------------------------------------------------------------------ */
-
-function HouseFacade({ k }: { k: Ctx }) {
-  const { x0, x1, w, wallTop, wallH, floors, floorH, c, n, slotW } = k;
-  const frame = c("#f4f0e6");
-  const trim = c("#d8d1c0");
-
-  const ww = Math.max(14, Math.min(34, slotW - 34));
-  const wh = Math.min(42, floorH * 0.56);
-  const shutters = slotW - ww >= 38;
-
-  const doorW = Math.min(32, slotW - 24);
-  const doorH = Math.min(58, floorH * 0.8);
-  const doorX = x0 + k.doorSlot * slotW + (slotW - doorW) / 2;
-  const doorTop = G - PLINTH - doorH;
-
-  const windows: React.ReactNode[] = [];
-  for (let f = 0; f < floors; f++) {
-    for (let s = 0; s < k.slots; s++) {
-      if (f === 0 && s === k.doorSlot) continue;
-      const lit = k.litAt(f, s);
-      const balcony = f === 1 && s === k.doorSlot;
-      const h = balcony ? floorH * 0.72 : wh;
-      const x = x0 + s * slotW + (slotW - ww) / 2;
-      const y = balcony
-        ? G - f * floorH - h - 3
-        : G - f * floorH - floorH * 0.54 - h / 2;
-      windows.push(
-        <g key={`${f}-${s}`}>
-          {lit && (
-            <ellipse
-              cx={x + ww / 2}
-              cy={y + h / 2}
-              rx={ww * 1.25}
-              ry={h * 1.05}
-              fill="url(#hs-warm)"
-              opacity={n * 0.85}
-            />
-          )}
-          {shutters && !balcony && (
-            <>
-              <rect
-                x={x - 12}
-                y={y - 2}
-                width={9}
-                height={h + 4}
-                rx={1}
-                fill={c("#4d6e66")}
-              />
-              <rect
-                x={x + ww + 3}
-                y={y - 2}
-                width={9}
-                height={h + 4}
-                rx={1}
-                fill={c("#456259")}
-              />
-              {k.detail &&
-                [0.2, 0.4, 0.6, 0.8].map((q) => (
-                  <path
-                    key={q}
-                    d={`M${x - 11} ${y + h * q}h7M${x + ww + 4} ${y + h * q}h7`}
-                    stroke={c("#34504a")}
-                    strokeWidth={1}
-                  />
-                ))}
-            </>
-          )}
-          <rect
-            x={x - 3}
-            y={y - 3}
-            width={ww + 6}
-            height={h + 6}
-            rx={2}
-            fill={frame}
-          />
-          <Glass k={k} x={x} y={y} w={ww} h={h} lit={lit} />
-          {lit && (
-            <path
-              d={`M${x} ${y}h${ww * 0.34}q0 ${h * 0.5} -${ww * 0.34} ${h * 0.78}ZM${x + ww} ${y}h-${ww * 0.34}q0 ${h * 0.5} ${ww * 0.34} ${h * 0.78}Z`}
-              fill="#fff1c9"
-              opacity={n * 0.55}
-            />
-          )}
-          <path
-            d={`M${x + ww / 2} ${y}V${y + h}M${x} ${y + h * (balcony ? 0.36 : 0.5)}H${x + ww}`}
-            stroke={frame}
-            strokeWidth={2}
-          />
-          {!balcony && (
-            <>
-              <rect
-                x={x - 6}
-                y={y + h + 3}
-                width={ww + 12}
-                height={3.5}
-                rx={1}
-                fill={trim}
-              />
-              <rect
-                x={x - 4}
-                y={y + h + 6.5}
-                width={ww + 8}
-                height={2}
-                fill="#000"
-                opacity={0.18}
-              />
-            </>
-          )}
-        </g>,
-      );
-    }
-  }
-
-  const railX = x0 + k.doorSlot * slotW + 5;
-  const railW = slotW - 10;
-  const railY = G - floorH - 24;
-
-  return (
-    <g>
-      {/* Drvo iza kuće */}
-      <g transform={`translate(${x1 + 84} ${G - 20}) scale(0.92)`}>
-        <rect x={-4} y={-52} width={8} height={52} rx={2} fill={c("#6a4a33")} />
-        <circle cx={-18} cy={-62} r={24} fill={c("#3c7a46")} />
-        <circle cx={16} cy={-58} r={26} fill={c("#357040")} />
-        <circle cx={0} cy={-88} r={30} fill={c("#47894f")} />
-        <circle cx={-8} cy={-96} r={14} fill={c("#5a9c5c")} opacity={0.7} />
-      </g>
-
-      {/* Dimnjak */}
-      <g opacity={k.pitch}>
-        <rect
-          x={x1 - k.rise * 0.62 - 40}
-          y={k.roofTop - 20 * k.pitch}
-          width={18}
-          height={44 * k.pitch}
-          fill={c("#a1604a")}
-        />
-        <rect
-          x={x1 - k.rise * 0.62 - 43}
-          y={k.roofTop - 24 * k.pitch}
-          width={24}
-          height={5}
-          rx={1}
-          fill={c("#6f6a66")}
-        />
-      </g>
-
-      {/* Zid */}
-      <rect x={x0} y={wallTop} width={w} height={wallH} fill={c("#ece5d6")} />
-      <rect x={x0} y={wallTop} width={w} height={wallH} fill="url(#hs-side)" />
-      <rect x={x0} y={wallTop} width={w} height={20} fill="url(#hs-eave)" />
-      {Array.from({ length: floors - 1 }, (_, i) => (
-        <g key={i}>
-          <rect
-            x={x0}
-            y={G - (i + 1) * floorH - 2}
-            width={w}
-            height={4}
-            fill={trim}
-          />
-          <rect
-            x={x0}
-            y={G - (i + 1) * floorH + 2}
-            width={w}
-            height={3}
-            fill="#000"
-            opacity={0.12}
-          />
-        </g>
-      ))}
-      {/* Sokl */}
-      <rect
-        x={x0 - 3}
-        y={G - PLINTH}
-        width={w + 6}
-        height={PLINTH}
-        fill={c("#8d8a84")}
-      />
-      <rect
-        x={x0 - 3}
-        y={G - PLINTH}
-        width={w + 6}
-        height={1.5}
-        fill={c("#a9a6a0")}
-      />
-
-      {/* Oluk */}
-      <rect
-        x={x1 - 9}
-        y={wallTop}
-        width={4.5}
-        height={wallH - PLINTH}
-        fill={c("#6b727c")}
-      />
-
-      {windows}
-
-      {/* Balkon */}
-      {floors >= 2 && (
-        <g>
-          <rect
-            x={railX - 3}
-            y={G - floorH - 4}
-            width={railW + 6}
-            height={5}
-            fill={c("#c9c2b2")}
-          />
-          <rect
-            x={railX}
-            y={railY}
-            width={railW}
-            height={2.5}
-            rx={1}
-            fill={c("#2d323a")}
-          />
-          {k.detail &&
-            Array.from(
-              { length: Math.max(2, Math.floor(railW / 6)) },
-              (_, i) => (
-                <rect
-                  key={i}
-                  x={
-                    railX +
-                    1 +
-                    (i * (railW - 3)) / (Math.max(2, Math.floor(railW / 6)) - 1)
-                  }
-                  y={railY + 2}
-                  width={1.2}
-                  height={18}
-                  fill={c("#2d323a")}
-                />
-              ),
-            )}
-          {!k.detail && (
-            <rect
-              x={railX}
-              y={railY + 2}
-              width={railW}
-              height={18}
-              fill={c("#2d323a")}
-              opacity={0.35}
-            />
-          )}
-        </g>
-      )}
-
-      {/* Ulaz */}
-      <circle
-        cx={doorX + doorW + 12}
-        cy={doorTop + 14}
-        r={30}
-        fill="url(#hs-warm)"
-        opacity={n * 0.9}
-      />
-      <rect
-        x={doorX - 3}
-        y={doorTop - 3}
-        width={doorW + 6}
-        height={doorH + 3}
-        rx={2}
-        fill={frame}
-      />
-      <rect
-        x={doorX}
-        y={doorTop}
-        width={doorW}
-        height={doorH}
-        rx={1}
-        fill={c("#7b4a2c")}
-      />
-      <rect
-        x={doorX + 4}
-        y={doorTop + 5}
-        width={doorW - 8}
-        height={doorH * 0.3}
-        rx={1}
-        fill={k.glow("#9fc4e4", "#ffd67d", 0.9)}
-        opacity={0.9}
-      />
-      <rect
-        x={doorX + 4}
-        y={doorTop + doorH * 0.46}
-        width={doorW - 8}
-        height={doorH * 0.44}
-        rx={1}
-        fill="none"
-        stroke={c("#5f371f")}
-        strokeWidth={1.5}
-      />
-      <circle
-        cx={doorX + doorW - 5}
-        cy={doorTop + doorH * 0.56}
-        r={1.8}
-        fill={c("#e2b64c")}
-      />
-      {/* Nadstrešnica */}
-      <path
-        d={`M${doorX - 14} ${doorTop - 6}L${doorX - 6} ${doorTop - 14}H${doorX + doorW + 6}L${doorX + doorW + 14} ${doorTop - 6}Z`}
-        fill={c("#9c452d")}
-      />
-      <rect
-        x={doorX - 14}
-        y={doorTop - 6}
-        width={doorW + 28}
-        height={2.5}
-        fill={c("#f4f0e6")}
-      />
-      <rect
-        x={doorX - 10}
-        y={doorTop - 3.5}
-        width={doorW + 20}
-        height={5}
-        fill="#000"
-        opacity={0.16}
-      />
-      {/* Lampa */}
-      <rect
-        x={doorX + doorW + 10}
-        y={doorTop + 9}
-        width={4}
-        height={8}
-        rx={1}
-        fill={k.glow("#3a3f47", "#fff0b8")}
-      />
-      {/* Stepenice */}
-      <rect
-        x={doorX - 9}
-        y={G - PLINTH}
-        width={doorW + 18}
-        height={4}
-        fill={c("#bdb8ae")}
-      />
-      <rect
-        x={doorX - 15}
-        y={G - 4}
-        width={doorW + 30}
-        height={4}
-        fill={c("#aaa59b")}
-      />
-
-      {/* Žbunje */}
-      <g>
-        <circle cx={x0 + 10} cy={G - 6} r={9} fill={c("#3c7a46")} />
-        <circle cx={x0 + 22} cy={G - 4} r={7} fill={c("#47894f")} />
-        <circle cx={x1 - 24} cy={G - 5} r={8} fill={c("#357040")} />
-      </g>
-
-      {/* Krov */}
-      <path d={k.roofPath} fill={c("#8b9198")} />
-      <FlatTop k={k} />
-      <g opacity={k.pitch}>
-        <path d={k.roofPath} fill="url(#hs-tiles)" />
-        <path d={k.roofPath} fill="url(#hs-roofshade)" />
-        <rect
-          x={CX - k.topHalf}
-          y={k.roofTop - 2}
-          width={k.topHalf * 2}
-          height={4.5}
-          rx={2}
-          fill={c("#7e3421")}
-        />
-        <rect
-          x={x0 - 14}
-          y={wallTop - 3}
-          width={w + 28}
-          height={4.5}
-          rx={1}
-          fill={frame}
-        />
-        <rect
-          x={x0 - 15}
-          y={wallTop + 1.5}
-          width={w + 30}
-          height={3}
-          rx={1.5}
-          fill={c("#6b727c")}
-        />
-      </g>
-    </g>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Firma                                                               */
-/* ------------------------------------------------------------------ */
-
-function CompanyFacade({ k }: { k: Ctx }) {
-  const { x0, w, wallTop, wallH, floors, floorH, c, n, slotW } = k;
-  const BAND = 20;
-  const steel = c("#2f3640");
-  const bays: React.ReactNode[] = [];
-
-  for (let f = 0; f < floors; f++) {
-    const base = G - f * floorH - (f === 0 ? PLINTH : 0);
-    const top = G - (f + 1) * floorH + (f === floors - 1 ? BAND + 8 : 8);
-    const y = top + 4;
-    const h = base - (f === 0 ? 0 : 13) - y;
-    for (let s = 0; s < k.slots; s++) {
-      const x = x0 + s * slotW + 6;
-      const bw = slotW - 12;
-      const lit = k.litAt(f, s);
-      const door = f === 0 && s === k.doorSlot;
-      const dock = f === 0 && k.slots >= 4 && s === k.slots - 1;
-      if (dock) {
-        bays.push(
-          <g key={`${f}-${s}`}>
-            <rect
-              x={x - 2}
-              y={y - 2}
-              width={bw + 4}
-              height={h + 2}
-              fill={steel}
-            />
-            <rect x={x} y={y} width={bw} height={h} fill={c("#aab2bc")} />
-            {Array.from({ length: Math.floor(h / 7) }, (_, i) => (
-              <rect
-                key={i}
-                x={x}
-                y={y + 6 + i * 7}
-                width={bw}
-                height={1.2}
-                fill={c("#8a929d")}
-              />
-            ))}
-            <rect x={x} y={y} width={bw} height={5} fill="#000" opacity={0.2} />
-          </g>,
-        );
-        continue;
-      }
-      bays.push(
-        <g key={`${f}-${s}`}>
-          {lit && (
-            <rect
-              x={x - 8}
-              y={y - 8}
-              width={bw + 16}
-              height={h + 16}
-              rx={10}
-              fill="url(#hs-warm)"
-              opacity={n * 0.6}
-            />
-          )}
-          <rect
-            x={x - 2}
-            y={y - 2}
-            width={bw + 4}
-            height={h + (f === 0 ? 2 : 4)}
-            fill={steel}
-          />
-          <Glass k={k} x={x} y={y} w={bw} h={h} lit={lit} rx={0} />
-          <path
-            d={
-              door
-                ? `M${x + bw / 2} ${y}V${y + h}M${x} ${y + h * 0.22}H${x + bw}`
-                : `M${x + bw / 2} ${y}V${y + h}`
-            }
-            stroke={steel}
-            strokeWidth={door ? 2.5 : 1.5}
-          />
-          {door && (
-            <>
-              <path
-                d={`M${x + bw / 2 - 4} ${y + h * 0.5}v${h * 0.22}M${x + bw / 2 + 4} ${y + h * 0.5}v${h * 0.22}`}
-                stroke={c("#dfe4ea")}
-                strokeWidth={1.6}
-                strokeLinecap="round"
-              />
-              <rect
-                x={x - 10}
-                y={y - 8}
-                width={bw + 20}
-                height={5}
-                rx={1}
-                fill={steel}
-              />
-              <rect
-                x={x - 6}
-                y={y - 3}
-                width={bw + 12}
-                height={5}
-                fill="#000"
-                opacity={0.2}
-              />
-            </>
-          )}
-        </g>,
-      );
-    }
-  }
-
-  return (
-    <g>
-      {/* Fasadni paneli */}
-      <rect x={x0} y={wallTop} width={w} height={wallH} fill={c("#d3dae2")} />
-      <rect x={x0} y={wallTop} width={w} height={wallH} fill="url(#hs-clad)" />
-      <rect x={x0} y={wallTop} width={w} height={wallH} fill="url(#hs-side)" />
-      {Array.from({ length: floors - 1 }, (_, i) => (
-        <rect
-          key={i}
-          x={x0}
-          y={G - (i + 1) * floorH - 1}
-          width={w}
-          height={2}
-          fill={c("#aab3be")}
-        />
-      ))}
-      {/* Atika sa natpisom */}
-      <rect x={x0} y={wallTop} width={w} height={BAND} fill={steel} />
-      <rect
-        x={x0}
-        y={wallTop + BAND}
-        width={w}
-        height={2.5}
-        fill={k.glow("#ffc53d", "#ffd977", 0.6)}
-      />
-      <rect
-        x={x0}
-        y={wallTop + BAND + 2.5}
-        width={w}
-        height={8}
-        fill="url(#hs-eave)"
-      />
-      <ellipse
-        cx={CX}
-        cy={wallTop + BAND / 2}
-        rx={70}
-        ry={20}
-        fill="url(#hs-warm)"
-        opacity={n * 0.5}
-      />
-      <text
-        x={CX}
-        y={wallTop + BAND / 2 + 3.6}
-        textAnchor="middle"
-        fontSize={10}
-        fontWeight={700}
-        letterSpacing={2.4}
-        fill={k.glow("#eef2f6", "#fff3c9")}
-        style={{ fontFamily: "var(--font-display), sans-serif" }}
-      >
-        VAŠA FIRMA
-      </text>
-      {/* Sokl */}
-      <rect
-        x={x0 - 2}
-        y={G - PLINTH}
-        width={w + 4}
-        height={PLINTH}
-        fill={c("#4a5059")}
-      />
-
-      {bays}
-
-      {/* Krov: ravan sa atikom ili limeni na falc */}
-      <path d={k.roofPath} fill={c("#8b9198")} />
-      <FlatTop k={k} />
-      <g opacity={k.pitch}>
-        <path d={k.roofPath} fill={c("#77828f")} />
-        <path d={k.roofPath} fill="url(#hs-seam)" />
-        <path d={k.roofPath} fill="url(#hs-roofshade)" />
-        <rect
-          x={x0 - 13}
-          y={wallTop - 3}
-          width={w + 26}
-          height={4}
-          rx={1}
-          fill={c("#e3e7ec")}
-        />
-      </g>
-    </g>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Nebo                                                                */
-/* ------------------------------------------------------------------ */
-
-const Sky = memo(function Sky({
-  t,
-  vbX,
-  vbY,
-  vbW,
-  skyHigh,
-  sunLevel,
-  still,
-}: {
-  t: number;
-  vbX: number;
-  vbY: number;
-  vbW: number;
-  skyHigh: number;
-  sunLevel: number;
-  still: boolean;
-}) {
-  const sunX = tri(596, 606, 606, t);
-  const sunY = tri(lerp(skyHigh, G, 0.1), G - 112 - LAND, G + 110, t);
-  const sunScale = lerp(0.85, 1.18, sunLevel) * tri(1, 1.25, 1.25, t);
-  const moonUp = smooth(0.55, 1, t);
-  const moonY = lerp(G + 60, lerp(skyHigh, G, 0.16), moonUp);
-  const stars = smooth(0.45, 0.95, t);
-  const clouds = tri(0.92, 0.7, 0.16, t) * lerp(1, 0.55, sunLevel);
-  const cloudFill = tri3("#ffffff", "#ffc2a3", "#23304a", t);
-
-  return (
-    <g>
-      <defs>
-        <linearGradient
-          id="hs-sky"
-          gradientUnits="userSpaceOnUse"
-          x1={0}
-          y1={vbY}
-          x2={0}
-          y2={G}
-        >
-          <stop
-            offset="0"
-            stopColor={tri3("#1f5fb4", "#1d2352", "#05080f", t)}
-          />
-          <stop
-            offset="0.55"
-            stopColor={tri3("#4f97dc", "#6f3f74", "#0a1222", t)}
-          />
-          <stop
-            offset="0.85"
-            stopColor={tri3("#8fc4ee", "#e2745c", "#11203a", t)}
-          />
-          <stop
-            offset="1"
-            stopColor={tri3("#bfe0f7", "#ffb066", "#182a47", t)}
-          />
-        </linearGradient>
-        <radialGradient id="hs-sunglow">
-          <stop
-            offset="0"
-            stopColor={tri3("#fff2b0", "#ff9d4d", "#ff7a3a", t)}
-            stopOpacity={0.6}
-          />
-          <stop
-            offset="0.5"
-            stopColor={tri3("#ffe28a", "#ff8a3a", "#ff7a3a", t)}
-            stopOpacity={0.14}
-          />
-          <stop offset="1" stopColor="#ffb040" stopOpacity={0} />
-        </radialGradient>
-        <radialGradient id="hs-sun">
-          <stop
-            offset="0"
-            stopColor={tri3("#fffbe6", "#ffe0a0", "#ffb070", t)}
-          />
-          <stop
-            offset="0.6"
-            stopColor={tri3("#ffd84d", "#ff9a3c", "#ff6a30", t)}
-          />
-          <stop
-            offset="1"
-            stopColor={tri3("#ffb31a", "#ff6f2e", "#e04a28", t)}
-          />
-        </radialGradient>
-        <radialGradient id="hs-moonglow">
-          <stop offset="0" stopColor="#cfe0ff" stopOpacity={0.35} />
-          <stop offset="1" stopColor="#cfe0ff" stopOpacity={0} />
-        </radialGradient>
-      </defs>
-
-      <rect
-        x={vbX}
-        y={vbY - 2}
-        width={vbW}
-        height={G - vbY + 4}
-        fill="url(#hs-sky)"
-      />
-
-      {stars > 0.01 && (
-        <g opacity={stars}>
-          {STARS.map(([fx, fy, r], i) =>
-            i % 3 === 0 && !still ? (
-              <motion.circle
-                key={i}
-                cx={vbX + fx * vbW}
-                cy={lerp(vbY, G - 90, fy)}
-                r={r}
-                fill="#dbe7ff"
-                animate={{ opacity: [1, 0.25, 1] }}
-                transition={{
-                  duration: 2.4 + (i % 5) * 0.7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            ) : (
-              <circle
-                key={i}
-                cx={vbX + fx * vbW}
-                cy={lerp(vbY, G - 90, fy)}
-                r={r}
-                fill="#dbe7ff"
-              />
-            ),
-          )}
-        </g>
-      )}
-
-      {/* Mesec */}
-      {moonUp > 0.01 && (
-        <g
-          transform={`translate(${vbX + vbW * 0.2} ${moonY})`}
-          opacity={moonUp}
-        >
-          <circle r={70} fill="url(#hs-moonglow)" />
-          <circle r={20} fill="#eef3ff" />
-          <circle cx={-6} cy={-5} r={4.5} fill="#cfd9ee" />
-          <circle cx={7} cy={4} r={3} fill="#cfd9ee" />
-          <circle cx={-2} cy={9} r={2} fill="#d6dff0" />
-        </g>
-      )}
-
-      {/* Sunce */}
-      <g transform={`translate(${sunX} ${sunY}) scale(${sunScale})`}>
-        <circle r={tri(96, 150, 150, t)} fill="url(#hs-sunglow)" />
-        <motion.g
-          opacity={clamp01(1 - t * 2.4)}
-          animate={still ? undefined : { rotate: 360 }}
-          transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
-        >
-          {Array.from({ length: 12 }, (_, i) => (
-            <rect
-              key={i}
-              x={-1.5}
-              y={-54}
-              width={3}
-              height={i % 2 ? 9 : 15}
-              rx={1.5}
-              fill="#ffe27a"
-              transform={`rotate(${i * 30})`}
-            />
-          ))}
-        </motion.g>
-        <circle r={30} fill="url(#hs-sun)" />
-      </g>
-
-      {/* Oblaci */}
-      <g opacity={clouds}>
-        {CLOUDS.map(([fx, fy, sc, dur], i) => (
-          <motion.g
-            key={i}
-            animate={still ? undefined : { x: [0, 26 * sc, 0] }}
-            transition={{ duration: dur, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <g
-              transform={`translate(${vbX + fx * vbW} ${lerp(skyHigh, G - 120, fy)}) scale(${sc})`}
-              fill={cloudFill}
-            >
-              <ellipse cx={0} cy={0} rx={34} ry={11} />
-              <ellipse cx={-14} cy={-8} rx={16} ry={11} />
-              <ellipse cx={8} cy={-12} rx={20} ry={14} />
-              <ellipse cx={26} cy={-4} rx={14} ry={9} />
-            </g>
-          </motion.g>
-        ))}
-      </g>
-    </g>
-  );
-});
-
-/** Nebo u sopstvenom sloju, sa sopstvenom oprugom za doba dana. */
-const SkyLayer = memo(function SkyLayer({
-  timeTarget,
-  viewBox,
-  ...rest
-}: {
-  timeTarget: number;
-  viewBox: string;
-  vbX: number;
-  vbY: number;
-  vbW: number;
-  skyHigh: number;
-  sunLevel: number;
-  still: boolean;
-}) {
-  const t = clamp01(useSprung(timeTarget, rest.still, SKY_SPRING));
-  return (
-    <svg
-      viewBox={viewBox}
-      className="absolute inset-0 block h-full w-full [transform:translateZ(0)]"
-      aria-hidden
-    >
-      <Sky t={t} {...rest} />
-    </svg>
-  );
-});
-
-/** Tok energije: tačkice po žici i zraci ka krovu, iznad svega ostalog. */
-const FlowLayer = memo(function FlowLayer({
-  timeTarget,
-  viewBox,
-  skyHigh,
-  wire,
-  solved,
-  rays,
-  flowSpeed,
-  roofX,
-  roofY,
-  spread,
-  treeX,
-  still,
-}: {
-  /** Gde stoji drvo; tok po žici prolazi iza njegove krošnje. null = nema drveta. */
-  treeX: number | null;
-  timeTarget: number;
-  viewBox: string;
-  skyHigh: number;
-  wire: string;
-  solved: boolean;
-  rays: boolean;
-  flowSpeed: number;
-  roofX: number;
-  roofY: number;
-  spread: number;
-  still: boolean;
-}) {
-  const t = clamp01(useSprung(timeTarget, still, SKY_SPRING));
-  const sunX = tri(596, 606, 606, t);
-  const sunY = tri(lerp(skyHigh, G, 0.1), G - 112 - LAND, G + 110, t);
-  return (
-    <svg
-      viewBox={viewBox}
-      className="pointer-events-none absolute inset-0 block h-full w-full [transform:translateZ(0)]"
-      aria-hidden
-    >
-      {treeX !== null && (
-        <mask
-          id="hs-behind-tree"
-          maskUnits="userSpaceOnUse"
-          x={-2000}
-          y={-2000}
-          width={5000}
-          height={5000}
-        >
-          <rect x={-2000} y={-2000} width={5000} height={5000} fill="#fff" />
-          <g
-            transform={`translate(${treeX} ${G - 20}) scale(0.92)`}
-            fill="#000"
-          >
-            <rect x={-4} y={-52} width={8} height={52} />
-            <circle cx={-18} cy={-62} r={24} />
-            <circle cx={16} cy={-58} r={26} />
-            <circle cx={0} cy={-88} r={30} />
-          </g>
-        </mask>
-      )}
-      <g mask={treeX !== null ? "url(#hs-behind-tree)" : undefined}>
-        <motion.path
-          key={solved ? "out" : "in"}
-          d={wire}
-          fill="none"
-          stroke={solved ? "#3ddc97" : "#ff9f1a"}
-          strokeWidth={4}
-          strokeLinecap="round"
-          strokeDasharray="1 17"
-          initial={{ opacity: 0 }}
-          animate={
-            still
-              ? { opacity: 0.95 }
-              : {
-                  opacity: 0.95,
-                  // iz mreže ka kući dok se troši, sa krova ka mreži na rezultatu
-                  strokeDashoffset: solved ? [0, 36] : [0, -36],
-                }
-          }
-          transition={{
-            opacity: { duration: 0.6 },
-            strokeDashoffset: {
-              duration: solved ? 1.6 : flowSpeed,
-              repeat: Infinity,
-              ease: "linear",
-            },
-          }}
-        />
-      </g>
-      {/* Zraci ka krovu — kad ima panela i kad je obračun gotov */}
-      <AnimatePresence>
-        {rays && (
-          <motion.g
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.9, delay: 0.5 }}
-          >
-            {[-0.32, 0, 0.32].map((q) => (
-              <motion.line
-                key={q}
-                x1={sunX - 34}
-                y1={sunY + 22}
-                x2={roofX + q * spread}
-                y2={roofY}
-                stroke="#fff0a8"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeDasharray="2 14"
-                opacity={0.9}
-                animate={still ? undefined : { strokeDashoffset: [0, -32] }}
-                transition={{
-                  duration: 1.2,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              />
-            ))}
-          </motion.g>
-        )}
-      </AnimatePresence>
-    </svg>
-  );
-});
-
-/* ------------------------------------------------------------------ */
-/*  Scena                                                               */
-/* ------------------------------------------------------------------ */
+/** Korak opruga za mere: ispod desetine piksela, oko ga ne vidi. */
+const Q = 0.2;
 
 function HouseScene(props: HouseSceneProps) {
   const { type, area, floors, roof, usage, extras, panels, solved } = props;
   const still = useReducedMotion() ?? false;
+  const business = type === "pravno";
+  const flat = roof === "ravan";
 
   const target = useMemo(
     () => targetDims(type, area, floors, roof),
     [type, area, floors, roof],
   );
-  const w = useSprung(target.w, still);
-  const wallH = useSprung(target.wallH, still);
-  const rise = useSprung(target.rise, still);
+  const w = useSprung(target.w, still, SPRING, Q);
+  const wallH = useSprung(target.wallH, still, SPRING, Q);
+  const depth = useSprung(target.depth, still, SPRING, Q);
+  const ridge = useSprung(target.ridge, still, SPRING, Q);
+  const hip = useSprung(target.hip, still, SPRING, Q);
 
   // Doba dana prati odgovor o navikama; na rezultatu sviće.
   const timeTarget =
     solved || props.scanning
       ? 0
       : { danju: 0, ravnomerno: 0.5, uvece: 1 }[usage];
-  // Nebo u svom sloju prati svaki kadar (sunce se kreće), a boje objekta se
-  // osvežavaju u sitnim koracima: oko ne vidi razliku, a crta se mnogo ređe.
-  const t = clamp01(useSprung(timeTarget, still, SKY_SPRING, 1 / 48));
+  const t = clamp01(useSprung(timeTarget, still, SKY_SPRING, 1 / 96));
   const n = smooth(0.15, 0.78, t);
 
   const x0 = CX - w / 2;
   const x1 = CX + w / 2;
   const wallTop = G - wallH;
-  const roofTop = wallTop - rise;
-  /** 1 = kos krov, 0 = ravan; vodi pretapanje crepa u ravnu ploču. */
-  const pitch = clamp01(useSprung(roof === "kos" ? 1 : 0, still));
-  const shape = roofShape(w, wallTop, rise, pitch);
-  const roofPath = `M${CX - shape.bottomHalf} ${wallTop} L${CX - shape.topHalf} ${roofTop} H${
-    CX + shape.topHalf
-  } L${CX + shape.bottomHalf} ${wallTop} Z`;
+  const shape = roofShape({ w, wallH, depth, ridge, hip }, wallTop);
 
-  const business = type === "pravno";
-  // Raspored ide iz trenutnih (opružnih) mera, pa paneli prate krov u stopu.
-  const drawn = Math.min(panels, MAX_DRAWN);
-  const cells =
-    roof === "kos"
-      ? pitchedCells(drawn, shape)
-      : flatCells(drawn, shape, business ? 4 : 3);
+  // Raspored ide iz ciljnih mera (ne menja se tokom animacije), a položaj
+  // iz trenutnih, pa paneli klize zajedno sa krovom umesto da preskaču.
+  const rows = rowsFor(flat, business);
+  const slots = useMemo(
+    () =>
+      layoutPanels(
+        Math.min(panels, MAX_DRAWN),
+        roofShape(target, G - target.wallH),
+        flat,
+        rows,
+      ),
+    [panels, target, flat, rows],
+  );
+  const cells: PanelCell[] = slots
+    .map((s) => ({
+      key: s.key,
+      flat: s.flat,
+      order: s.order,
+      row: s.row,
+      q: slotQuad(shape, s, rows),
+    }))
+    // zadnji redovi se crtaju prvi, da ih prednji preklope
+    .sort((a, b) => b.row - a.row || a.order - b.order);
 
-  /* Kadar prati oblik kontejnera: širina crteža je stalna, a nebo i tlo se
-     produžavaju, pa scena ispuni i uspravnu karticu i nisku traku na telefonu. */
-  const frame = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState({ w: VB_W, h: VB_H });
+  /* Kadar: kamera obuhvata objekat, dvorište i stub, pa zumira koliko
+     kartica dozvoljava. Sve ulazne mere su na oprugama, pa je i zum mek. */
+  const leftRoom = useSprung(
+    extras.includes("auto") ? 166 : 30,
+    still,
+    SPRING,
+    Q,
+  );
+  // pumpa stoji uz zid; kad stigne baterija, pomeri se da joj napravi mesto
+  const pumpShift = useSprung(
+    extras.includes("baterija") ? 46 : 12,
+    still,
+    SPRING,
+    Q,
+  );
+  const poleGap = useSprung(business ? 118 : 172, still, SPRING, Q);
+  const poleX = x1 + poleGap;
+
+  const holder = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 720, h: 440 });
   useEffect(() => {
-    const el = frame.current;
+    const el = holder.current;
     if (!el) return;
     const ro = new ResizeObserver(([e]) =>
       setBox({ w: e.contentRect.width, h: e.contentRect.height }),
@@ -1470,16 +162,35 @@ function HouseScene(props: HouseSceneProps) {
   }, []);
   const topPad = props.topPad ?? 0;
   const bottomPad = props.bottomPad ?? 0;
+  const left = x0 - leftRoom - 14;
+  const right = poleX + 36;
   const zoom = Math.max(
     0.2,
-    Math.min(box.w / VB_W, (box.h - topPad - bottomPad) / CONTENT_H),
+    Math.min(
+      MAX_ZOOM,
+      box.w / (right - left),
+      (box.h - topPad - bottomPad) /
+        (wallH + shape.rise + GROUND_ROOM + SKY_ROOM),
+    ),
   );
   const vbW = box.w / zoom;
   const vbH = box.h / zoom;
-  const vbX = VB_W / 2 - vbW / 2;
-  const vbY = G + 20 + bottomPad / zoom - vbH;
-  const skyHigh = vbY + topPad / zoom + 56;
-  const viewBox = `${vbX} ${vbY} ${vbW} ${vbH}`;
+  const vbX = (left + right) / 2 - vbW / 2;
+  const vbY = G + GROUND_ROOM + bottomPad / zoom - vbH;
+  const viewBox = `${vbX.toFixed(2)} ${vbY.toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}`;
+  const ks = Math.max(0.6, Math.min(1.25, box.w / 640, box.h / 420));
+  const frame: Frame = useMemo(
+    () => ({
+      w: box.w,
+      h: box.h,
+      zoom,
+      ks,
+      top: topPad,
+      ground: (G - vbY) * zoom,
+      land: (G - LAND - vbY) * zoom,
+    }),
+    [box.w, box.h, zoom, ks, topPad, vbY],
+  );
 
   const amb = ambient(t);
   const c = (hex: string) => {
@@ -1497,7 +208,7 @@ function HouseScene(props: HouseSceneProps) {
     );
   };
 
-  const slots = Math.max(2, Math.round(target.w / (business ? 84 : 80)));
+  const openings = Math.max(2, Math.round(target.w / (business ? 84 : 80)));
   const k: Ctx = {
     x0,
     x1,
@@ -1506,15 +217,10 @@ function HouseScene(props: HouseSceneProps) {
     wallH,
     floors,
     floorH: wallH / floors,
-    rise,
-    roofTop,
-    pitch,
-    roofPath,
-    bottomHalf: shape.bottomHalf,
-    topHalf: shape.topHalf,
-    slots,
-    slotW: w / slots,
-    doorSlot: Math.floor(slots / 2),
+    roof: shape,
+    slots: openings,
+    slotW: w / openings,
+    doorSlot: Math.floor(openings / 2),
     n,
     c,
     glow,
@@ -1528,32 +234,37 @@ function HouseScene(props: HouseSceneProps) {
 
   // Žica: od vrha stuba do ugla fasade, blago ulegnuta.
   const wireEnd = { x: x1 - 2, y: wallTop + 12 };
-  const wire = `M ${POLE_X} ${G - 150} Q ${(POLE_X + wireEnd.x) / 2} ${
-    (G - 150 + wireEnd.y) / 2 + 26
-  } ${wireEnd.x} ${wireEnd.y}`;
-  const panelFrame = c("#cdd5de");
+  const wire = `M ${poleX.toFixed(1)} ${G - 150} Q ${((poleX + wireEnd.x) / 2).toFixed(1)} ${(
+    (G - 150 + wireEnd.y) / 2 +
+    26
+  ).toFixed(1)} ${wireEnd.x.toFixed(1)} ${wireEnd.y.toFixed(1)}`;
   const panelSpring = still
     ? { duration: 0 }
     : { type: "spring" as const, ...SPRING };
 
+  const roofPath = pathOf(roofQuad(shape));
+  const bandTop = shape.top - 6;
+  const bandH = shape.rise + 12;
+  /** Kosa svetlosna traka; pomera se samo preko transform-a. */
+  const band = (width: number) =>
+    `M0 ${wallTop + 6}L${bandH * 0.4} ${bandTop}h${width}L${width} ${wallTop + 6}Z`;
+  const sweepFrom = CX - shape.half - 90;
+  const sweepTo = CX + shape.half + 10;
+
   return (
-    <div ref={frame} className="relative h-full w-full">
+    <div ref={holder} className="relative h-full w-full">
       {/* Tri sloja: nebo i tok energije se stalno kreću, pa imaju svoje
           platno i ne teraju objekat da se iznova iscrtava. */}
-      <SkyLayer
+      <Sky
         timeTarget={timeTarget}
-        viewBox={viewBox}
-        vbX={vbX}
-        vbY={vbY}
-        vbW={vbW}
-        skyHigh={skyHigh}
+        frame={frame}
         sunLevel={props.sunLevel}
         still={still}
       />
 
       <svg
         viewBox={viewBox}
-        className="absolute inset-0 block h-full w-full [transform:translateZ(0)]"
+        className="absolute inset-0 block h-full w-full"
         role="img"
         aria-label={`Ilustracija objekta sa ${panels} solarnih panela`}
       >
@@ -1576,8 +287,8 @@ function HouseScene(props: HouseSceneProps) {
             <stop offset="1" stopColor="#000" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="hs-roofshade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff" stopOpacity={0.1} />
-            <stop offset="1" stopColor="#000" stopOpacity={0.22} />
+            <stop offset="0" stopColor="#fff" stopOpacity={0.12} />
+            <stop offset="1" stopColor="#000" stopOpacity={0.2} />
           </linearGradient>
           <linearGradient
             id="hs-land"
@@ -1607,30 +318,6 @@ function HouseScene(props: HouseSceneProps) {
             />
           </linearGradient>
           <pattern
-            id="hs-tiles"
-            patternUnits="userSpaceOnUse"
-            width={16}
-            height={20}
-          >
-            <rect width={16} height={20} fill={c("#b8573b")} />
-            <rect y={8} width={16} height={2} fill={c("#8c3d28")} />
-            <rect y={18} width={16} height={2} fill={c("#8c3d28")} />
-            <rect width={16} height={1.2} fill={c("#cf7253")} />
-            <rect y={10} width={16} height={1.2} fill={c("#cf7253")} />
-            <rect x={0} y={0} width={1} height={8} fill={c("#9a4730")} />
-            <rect x={8} y={10} width={1} height={8} fill={c("#9a4730")} />
-          </pattern>
-          <pattern
-            id="hs-seam"
-            patternUnits="userSpaceOnUse"
-            width={14}
-            height={10}
-            x={CX}
-          >
-            <rect width={1.4} height={10} fill={c("#56606c")} />
-            <rect x={1.4} width={1} height={10} fill={c("#94a0ad")} />
-          </pattern>
-          <pattern
             id="hs-clad"
             patternUnits="userSpaceOnUse"
             width={28}
@@ -1640,37 +327,31 @@ function HouseScene(props: HouseSceneProps) {
             <rect width={1.2} height={10} fill={c("#aab3be")} />
             <rect x={1.2} width={1} height={10} fill={c("#eef1f5")} />
           </pattern>
-          <pattern
-            id="hs-panel"
-            width="1"
-            height="1"
-            patternContentUnits="objectBoundingBox"
+          {/* Staklo panela: dalji redovi hvataju više neba, pa su svetliji */}
+          <linearGradient
+            id="hs-pglass"
+            gradientUnits="userSpaceOnUse"
+            x1={0}
+            y1={shape.top}
+            x2={0}
+            y2={wallTop}
           >
-            <rect
-              width="1"
-              height="1"
-              fill={tri3("#173f86", "#26366f", "#0a142b", t)}
+            <stop
+              offset="0"
+              stopColor={tri3("#3470c4", "#46558f", "#111f40", t)}
             />
-            <rect
-              width="1"
-              height="0.5"
-              fill={tri3("#2a5fb8", "#3a4d8f", "#101d3c", t)}
-              opacity={0.55}
+            <stop
+              offset="1"
+              stopColor={tri3("#133a80", "#202c60", "#0a142b", t)}
             />
-            <path
-              d="M0.333 0V1M0.667 0V1M0 0.2H1M0 0.4H1M0 0.6H1M0 0.8H1"
-              stroke={tri3("#9cc4f5", "#8a98c8", "#2a3c66", t)}
-              strokeOpacity={0.5}
-              strokeWidth="0.022"
-            />
-          </pattern>
+          </linearGradient>
           <linearGradient
             id="hs-array"
             gradientUnits="userSpaceOnUse"
-            x1={x0}
-            y1={roofTop}
-            x2={x1}
-            y2={wallTop + rise * 0.6}
+            x1={CX - shape.half}
+            y1={shape.top}
+            x2={CX + shape.half}
+            y2={wallTop + shape.rise * 0.6}
           >
             <stop offset="0.3" stopColor="#fff" stopOpacity={0} />
             <stop offset="0.47" stopColor="#fff" stopOpacity={0.3 * (1 - n)} />
@@ -1678,7 +359,7 @@ function HouseScene(props: HouseSceneProps) {
             <stop offset="0.7" stopColor="#fff" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="hs-flatshade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#000" stopOpacity={0.22} />
+            <stop offset="0" stopColor="#000" stopOpacity={0.2} />
             <stop offset="1" stopColor="#fff" stopOpacity={0.08} />
           </linearGradient>
           <linearGradient id="hs-scan" x1="0" y1="0" x2="1" y2="0">
@@ -1686,13 +367,16 @@ function HouseScene(props: HouseSceneProps) {
             <stop offset="0.5" stopColor="#fff3c4" stopOpacity={0.75} />
             <stop offset="1" stopColor="#ffe08a" stopOpacity={0} />
           </linearGradient>
+          <linearGradient id="hs-sheen" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#fff" stopOpacity={0} />
+            <stop offset="0.5" stopColor="#fff" stopOpacity={0.5} />
+            <stop offset="1" stopColor="#fff" stopOpacity={0} />
+          </linearGradient>
           <clipPath id="hs-roof-clip">
-            <rect
-              x={x0 - 12}
-              y={roofTop - 50}
-              width={w + 24}
-              height={rise + 50}
-            />
+            <path d={roofPath} />
+          </clipPath>
+          <clipPath id="hs-panels-clip">
+            <path d={panelsPath(cells)} />
           </clipPath>
         </defs>
 
@@ -1736,14 +420,14 @@ function HouseScene(props: HouseSceneProps) {
         {/* Stub i žica ka mreži */}
         <g>
           <rect
-            x={POLE_X - 3}
+            x={poleX - 3}
             y={G - 160}
             width={6}
             height={160}
             fill={c("#5b5148")}
           />
           <rect
-            x={POLE_X - 22}
+            x={poleX - 22}
             y={G - 152}
             width={44}
             height={4}
@@ -1751,7 +435,7 @@ function HouseScene(props: HouseSceneProps) {
             fill={c("#5b5148")}
           />
           <rect
-            x={POLE_X - 16}
+            x={poleX - 16}
             y={G - 136}
             width={32}
             height={4}
@@ -1789,13 +473,6 @@ function HouseScene(props: HouseSceneProps) {
               exit={{ x: -170, opacity: 0 }}
               transition={{ type: "spring", stiffness: 50, damping: 15 }}
             >
-              <path
-                d={`M${x0} ${G - 40} C ${x0 - 22} ${G - 40}, ${x0 - 30} ${G - 8}, ${x0 - 50} ${G - 22}`}
-                fill="none"
-                stroke="#3ddc97"
-                strokeWidth={2}
-                strokeLinecap="round"
-              />
               <g transform={`translate(${x0 - 152} ${G - 46})`}>
                 <ellipse
                   cx={55}
@@ -1842,106 +519,142 @@ function HouseScene(props: HouseSceneProps) {
           )}
         </AnimatePresence>
 
-        {/* Toplotna pumpa */}
+        {/* Punjač za auto: stub između kuće i auta, kabl ide do priključka */}
         <AnimatePresence>
-          {extras.includes("pumpa") && (
+          {extras.includes("auto") && (
             <motion.g
-              key="pumpa"
+              key="punjac"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 16 }}
               transition={panelSpring}
             >
-              <g transform={`translate(${x0 - 46} ${G - 38})`}>
-                <rect width={40} height={34} rx={4} fill={c("#e3e8ee")} />
-                <rect y={26} width={40} height={8} rx={4} fill={c("#c5ccd6")} />
-                <circle cx={20} cy={16} r={12} fill={c("#232b38")} />
-                <g transform="translate(20 16)">
-                  <motion.g
-                    animate={still ? undefined : { rotate: 360 }}
-                    transition={{
-                      duration: 1.8,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  >
-                    <path
-                      d="M0 -9 V9 M-9 0 H9"
-                      stroke={c("#9fb0c8")}
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                    />
-                  </motion.g>
-                </g>
-                <rect x={4} y={34} width={5} height={4} fill={c("#4b5668")} />
-                <rect x={31} y={34} width={5} height={4} fill={c("#4b5668")} />
+              <g transform={`translate(${x0 - 40} ${G - 48})`}>
+                <ellipse
+                  cx={7}
+                  cy={48}
+                  rx={12}
+                  ry={2.5}
+                  fill="#000"
+                  opacity={0.28}
+                />
+                <rect x={4} y={30} width={6} height={18} fill={c("#4b5668")} />
+                <rect width={14} height={34} rx={4} fill={c("#eef1f5")} />
+                <rect x={10} width={4} height={34} rx={2} fill={c("#cfd6de")} />
+                <rect
+                  x={2.5}
+                  y={4}
+                  width={7}
+                  height={9}
+                  rx={1.5}
+                  fill={c("#232b38")}
+                />
+                <motion.circle
+                  cx={6}
+                  cy={20}
+                  r={2.4}
+                  fill="#3ddc97"
+                  animate={still ? undefined : { opacity: [1, 0.35, 1] }}
+                  transition={{
+                    duration: 1.8,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
               </g>
+              <motion.path
+                d={`M${x0 - 38} ${G - 22} C ${x0 - 42} ${G - 4}, ${x0 - 52} ${G - 6}, ${x0 - 51} ${G - 22}`}
+                fill="none"
+                stroke="#3ddc97"
+                strokeWidth={2}
+                strokeLinecap="round"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: still ? 0 : 0.7 }}
+              />
             </motion.g>
           )}
         </AnimatePresence>
 
-        {/* Objekat: kuća i firma se pretapaju dok se mere menjaju */}
+        {/* Objekat: pri promeni tipa, spratnosti ili broja otvora stara
+            fasada se pretopi u novu, umesto da prozori preskoče */}
         <AnimatePresence initial={false}>
           <motion.g
-            key={type}
+            key={`${type}-${floors}-${openings}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: still ? 0 : 0.7, ease: "easeInOut" }}
+            // stara fasada ostaje puna dok je nova ne prekrije; tako se kroz
+            // kuću nikad ne providi nebo
+            exit={{
+              opacity: 0,
+              transition: still
+                ? { duration: 0 }
+                : { duration: 0.3, delay: 0.3, ease: "easeOut" },
+            }}
+            transition={{ duration: still ? 0 : 0.45, ease: "easeOut" }}
           >
             {business ? <CompanyFacade k={k} /> : <HouseFacade k={k} />}
           </motion.g>
         </AnimatePresence>
 
-        {/* Paneli */}
-        <AnimatePresence>
-          {cells.map((cell) => (
-            <Panel
-              key={cell.key}
-              cell={cell}
-              still={still}
-              frame={panelFrame}
-            />
-          ))}
-        </AnimatePresence>
+        <Panels
+          cells={cells}
+          still={still}
+          frame={c("#d5dce5")}
+          line={tri3("#a9cdf7", "#8a98c8", "#2a3c66", t)}
+          detail={k.detail}
+        />
 
         {/* Zrak koji "meri" krov dok traje obračun */}
         <AnimatePresence>
           {props.scanning && !still && (
-            <motion.rect
+            <motion.g
               key="scan"
-              y={roofTop - 50}
-              width={26}
-              height={rise + 70}
-              fill="url(#hs-scan)"
-              initial={{ attrX: x0 - 40, opacity: 0 }}
-              animate={{ attrX: [x0 - 40, x1 + 14, x0 - 40], opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{
-                attrX: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
-                opacity: { duration: 0.4 },
-              }}
               clipPath="url(#hs-roof-clip)"
-            />
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <motion.path
+                d={band(26)}
+                fill="url(#hs-scan)"
+                initial={{ x: sweepFrom }}
+                animate={{ x: [sweepFrom, sweepTo, sweepFrom] }}
+                transition={{
+                  duration: 2.6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.g>
           )}
         </AnimatePresence>
 
         {/* Odsjaj koji pređe preko panela kad svane */}
         <AnimatePresence>
           {solved && panels > 0 && !still && (
-            <motion.rect
+            <motion.g
               key="sheen"
-              y={roofTop - 50}
-              width={54}
-              height={rise + 70}
-              fill="#fff"
-              opacity={0.2}
-              initial={{ attrX: x0 - 70 }}
-              animate={{ attrX: x1 + 20 }}
+              clipPath="url(#hs-panels-clip)"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.8, delay: 1.1, ease: "easeInOut" }}
-              clipPath="url(#hs-roof-clip)"
-            />
+            >
+              <motion.path
+                d={band(46)}
+                fill="url(#hs-sheen)"
+                initial={{ x: sweepFrom }}
+                animate={{ x: sweepTo }}
+                transition={{
+                  duration: 1.6,
+                  delay: 1.1,
+                  ease: [0.4, 0, 0.2, 1],
+                  repeat: Infinity,
+                  repeatDelay: 5.5,
+                }}
+              />
+            </motion.g>
           )}
         </AnimatePresence>
 
@@ -1990,19 +703,60 @@ function HouseScene(props: HouseSceneProps) {
             </motion.g>
           )}
         </AnimatePresence>
+
+        {/* Toplotna pumpa: uz desni zid, pored baterije ako je ima */}
+        <AnimatePresence>
+          {extras.includes("pumpa") && (
+            <motion.g
+              key="pumpa"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={panelSpring}
+            >
+              <g transform={`translate(${x1 + pumpShift} ${G - 38})`}>
+                <rect width={40} height={34} rx={4} fill={c("#e3e8ee")} />
+                <rect y={26} width={40} height={8} rx={4} fill={c("#c5ccd6")} />
+                <circle cx={20} cy={16} r={12} fill={c("#232b38")} />
+                <g transform="translate(20 16)">
+                  <motion.g
+                    animate={still ? undefined : { rotate: 360 }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <path
+                      d="M0 -9 V9 M-9 0 H9"
+                      stroke={c("#9fb0c8")}
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                    />
+                  </motion.g>
+                </g>
+                <rect x={4} y={34} width={5} height={4} fill={c("#4b5668")} />
+                <rect x={31} y={34} width={5} height={4} fill={c("#4b5668")} />
+              </g>
+            </motion.g>
+          )}
+        </AnimatePresence>
       </svg>
 
-      <FlowLayer
+      <Flow
         timeTarget={timeTarget}
         viewBox={viewBox}
-        skyHigh={skyHigh}
+        vbX={vbX}
+        vbY={vbY}
+        frame={frame}
+        sunLevel={props.sunLevel}
         wire={wire}
         solved={solved}
         rays={solved && panels > 0}
         flowSpeed={flowSpeed}
         roofX={CX}
-        roofY={roofTop + rise * 0.5 - 8}
-        spread={w * 0.7}
+        roofY={shape.top + shape.rise * 0.5}
+        spread={shape.half * 1.1}
         treeX={business ? null : x1 + 84}
         still={still}
       />
@@ -2022,33 +776,4 @@ const FAR_TREES: [number, number][] = [
   [642, 10],
   [700, 7],
   [790, 9],
-];
-
-/** Zvezde u udelima kadra (x, y, poluprečnik), da prate svaki oblik scene. */
-const STARS: [number, number, number][] = [
-  [0.06, 0.12, 1.3],
-  [0.16, 0.3, 1],
-  [0.24, 0.06, 1.5],
-  [0.34, 0.22, 0.9],
-  [0.45, 0.08, 1.2],
-  [0.56, 0.18, 1],
-  [0.65, 0.05, 1.4],
-  [0.12, 0.56, 0.9],
-  [0.3, 0.46, 1.1],
-  [0.7, 0.42, 0.9],
-  [0.95, 0.1, 1.2],
-  [0.04, 0.78, 1],
-  [0.5, 0.62, 0.9],
-  [0.86, 0.66, 1],
-  [0.4, 0.36, 1.2],
-  [0.78, 0.22, 1.1],
-  [0.9, 0.4, 0.9],
-  [0.2, 0.7, 1],
-];
-
-/** Oblaci: x i y u udelima neba, veličina, trajanje jednog prolaza (s). */
-const CLOUDS: [number, number, number, number][] = [
-  [0.14, 0.18, 1.1, 46],
-  [0.46, 0.05, 0.8, 58],
-  [0.3, 0.62, 0.7, 52],
 ];
