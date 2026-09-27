@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Rubik } from "next/font/google";
+import { Grand_Hotel, IBM_Plex_Mono, Rubik } from "next/font/google";
 import BojanDeck from "@/components/site/bojan/BojanDeck";
 
 /* Neto's type, scoped to this deck only: the rest of the site keeps its own
@@ -19,6 +19,15 @@ const plex = IBM_Plex_Mono({
   display: "swap",
 });
 
+/* The script face the Instagram wordmark is set in, for the catalog demo's
+   opening screen. Read as --font-ig. */
+const grandHotel = Grand_Hotel({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-ig",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Privatna prezentacija",
   description: "Potrebna je lozinka.",
@@ -26,5 +35,9 @@ export const metadata: Metadata = {
 };
 
 export default function BojanOfferPage() {
-  return <BojanDeck fontClass={`${rubik.variable} ${plex.variable}`} />;
+  return (
+    <BojanDeck
+      fontClass={`${rubik.variable} ${plex.variable} ${grandHotel.variable}`}
+    />
+  );
 }

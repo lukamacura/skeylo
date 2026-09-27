@@ -2,7 +2,19 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShoppingCart } from "lucide-react";
+import {
+  Bookmark,
+  ChevronRight,
+  Clapperboard,
+  Heart,
+  Home,
+  MessageCircle,
+  MoreHorizontal,
+  Search,
+  Send,
+  ShoppingCart,
+  SquarePlus,
+} from "lucide-react";
 import {
   DISPLAY,
   EASE_OUT,
@@ -11,7 +23,9 @@ import {
   POP_SPRING,
   RED,
   fmt,
+  useSlideActive,
 } from "./primitives";
+import { PhoneFrame } from "./DemoStage";
 import {
   Bread,
   Coffee,
@@ -25,7 +39,15 @@ import {
 
 /* The Interaktivni Katalog, from ad to till code, as a clickable phone.
    Five screens live in the same frame; the active one slides in from the
-   right and the one it replaces slips out to the left. */
+   right and the one it replaces slips out to the left. The phone is the
+   same iPhone the app demo sits in. */
+
+/* Instagram's own colours and its wordmark face. */
+const IG_BLUE = "#0095F6";
+const IG_LINE = "#DBDBDB";
+const IG_MUTED = "#737373";
+const IG_SCRIPT =
+  "var(--font-ig), 'Grand Hotel', 'Snell Roundhand', 'Brush Script MT', cursive";
 
 const STORES: [string, string][] = [
   ["Bulevar oslobođenja 2", "650 m od tebe"],
@@ -66,75 +88,69 @@ export default function CatalogDemo() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[340px]">
+    <PhoneFrame
+      homeBar="dark"
+      captionColor={MUTED}
+      caption="Dodirnite oglas i prođite put kupca. Cene su izmišljene; pravi katalog se puni vašim akcijama svake nedelje."
+    >
       <div
-        data-demo
-        className="relative rounded-[46px] border-[10px] border-black bg-black"
-        style={{ boxShadow: "0 30px 60px -30px rgba(0,0,0,0.45)" }}
+        className="absolute inset-0 text-[15px] text-[#1A1A1A]"
+        style={{ background: "#F3F2EE" }}
+        aria-live="polite"
       >
-        <div
-          aria-hidden
-          className="absolute left-1/2 top-0 z-[5] h-[22px] w-[110px] -translate-x-1/2 rounded-b-[14px] bg-black"
-        />
-        <div
-          className="relative h-[620px] overflow-hidden rounded-[36px] text-[15px] text-[#1A1A1A]"
-          style={{ background: "#F3F2EE", fontFamily: DISPLAY }}
-          aria-live="polite"
-        >
-          <Scr on={screen === 0} dir={screen > 0 ? -1 : 1}>
-            <AdScreen onGo={() => setScreen(1)} />
-          </Scr>
-          <Scr on={screen === 1} dir={screen > 1 ? -1 : 1}>
-            <PermScreen
-              onAllow={() => {
-                setStore(0);
-                setScreen(3);
-              }}
-              onDeny={() => setScreen(2)}
-            />
-          </Scr>
-          <Scr on={screen === 2} dir={screen > 2 ? -1 : 1}>
-            <TownScreen
-              onPick={(i) => {
-                setStore(i);
-                setScreen(3);
-              }}
-            />
-          </Scr>
-          <Scr on={screen === 3} dir={screen > 3 ? -1 : 1}>
-            <CatalogScreen
-              store={store}
-              sel={sel}
-              totals={totals}
-              onToggle={toggle}
-              onCode={() => setScreen(4)}
-            />
-          </Scr>
-          <Scr on={screen === 4} dir={1}>
-            <TicketScreen store={store} totals={totals} onRestart={restart} />
-          </Scr>
-        </div>
+        <Scr on={screen === 0} dir={screen > 0 ? -1 : 1} flush>
+          <AdScreen onGo={() => setScreen(1)} />
+        </Scr>
+        <Scr on={screen === 1} dir={screen > 1 ? -1 : 1}>
+          <PermScreen
+            onAllow={() => {
+              setStore(0);
+              setScreen(3);
+            }}
+            onDeny={() => setScreen(2)}
+          />
+        </Scr>
+        <Scr on={screen === 2} dir={screen > 2 ? -1 : 1}>
+          <TownScreen
+            onPick={(i) => {
+              setStore(i);
+              setScreen(3);
+            }}
+          />
+        </Scr>
+        <Scr on={screen === 3} dir={screen > 3 ? -1 : 1}>
+          <CatalogScreen
+            store={store}
+            sel={sel}
+            totals={totals}
+            onToggle={toggle}
+            onCode={() => setScreen(4)}
+          />
+        </Scr>
+        <Scr on={screen === 4} dir={1}>
+          <TicketScreen store={store} totals={totals} onRestart={restart} />
+        </Scr>
       </div>
-      <p className="mt-4 text-center text-[13px]" style={{ color: MUTED }}>
-        Primer sa izmišljenim cenama. Pravi Interaktivni Katalog se puni vašim
-        akcijama svake nedelje.
-      </p>
-    </div>
+    </PhoneFrame>
   );
 }
 
+/* Screens clear the status bar at the top and the home indicator at the
+   bottom. A flush screen draws edge to edge and handles both itself. */
 function Scr({
   on,
   dir,
+  flush = false,
   children,
 }: {
   on: boolean;
   dir: number;
+  flush?: boolean;
   children: ReactNode;
 }) {
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col px-[14px] pb-[14px] pt-[34px]"
+      className={`absolute inset-0 flex flex-col ${flush ? "" : "px-[14px] pb-[34px] pt-[58px]"}`}
       initial={false}
       animate={{ opacity: on ? 1 : 0, x: on ? 0 : dir * 34 }}
       transition={{
@@ -201,7 +217,11 @@ function AppHead() {
   );
 }
 
-/* Screen 0: the Meta ad. */
+/* Screen 0: the Instagram feed, with the Neto ad as the post on screen.
+   The creative floats its products the way the old ad did; around it sits
+   everything Instagram puts around a sponsored post, down to the call to
+   action strip that turns blue a moment after the post is on screen, which
+   is what Instagram does. */
 const FLOATS: {
   Icon: () => React.JSX.Element;
   cls: string;
@@ -210,59 +230,120 @@ const FLOATS: {
 }[] = [
   {
     Icon: Milk,
-    cls: "right-4 top-[150px] h-[74px] w-[74px]",
+    cls: "right-4 top-[132px] h-[72px] w-[72px]",
     dur: 4,
     delay: 0,
   },
   {
     Icon: Bread,
-    cls: "bottom-[22px] left-[18px] h-[74px] w-[74px]",
+    cls: "bottom-[20px] left-[16px] h-[72px] w-[72px]",
     dur: 4.6,
     delay: 0.4,
   },
   {
     Icon: Coffee,
-    cls: "bottom-[78px] right-[96px] h-[74px] w-[74px]",
+    cls: "bottom-[66px] right-[92px] h-[72px] w-[72px]",
     dur: 3.8,
     delay: 0.8,
   },
   {
     Icon: Eggs,
-    cls: "left-[26px] top-[168px] h-[62px] w-[62px]",
+    cls: "left-[24px] top-[136px] h-[60px] w-[60px]",
     dur: 4.2,
     delay: 1.2,
   },
 ];
 
-function AdScreen({ onGo }: { onGo: () => void }) {
+function Avatar({ size = 32 }: { size?: number }) {
   return (
-    <>
-      <div className="mt-1.5 flex items-center gap-2.5">
+    <span
+      className="grid flex-none place-items-center rounded-full font-black italic text-white"
+      style={{
+        width: size,
+        height: size,
+        fontSize: size * 0.5,
+        background: RED,
+        boxShadow: "0 0 0 1px rgba(0,0,0,0.08)",
+      }}
+    >
+      N
+    </span>
+  );
+}
+
+/* Messenger's paper plane, the icon Instagram keeps top right. */
+function Messenger({ size = 24 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 2.5C6.6 2.5 2.5 6.4 2.5 11.4c0 2.8 1.3 5.3 3.4 7v3.4l3.2-1.8c.9.3 1.9.4 2.9.4 5.4 0 9.5-3.9 9.5-8.9S17.4 2.5 12 2.5z" />
+      <path d="m6.5 13.8 3.3-3.5 2.6 2.2 3.2-3.5" />
+    </svg>
+  );
+}
+
+function AdScreen({ onGo }: { onGo: () => void }) {
+  const active = useSlideActive();
+  return (
+    <div className="flex h-full flex-col bg-white text-[#000]">
+      {/* Instagram's header */}
+      <div className="flex items-center justify-between px-4 pb-1 pt-[50px]">
         <span
-          className="grid h-9 w-9 place-items-center rounded-full font-black italic text-white"
-          style={{ background: RED }}
+          className="text-[29px] leading-none"
+          style={{ fontFamily: IG_SCRIPT, letterSpacing: "0.01em" }}
         >
-          N
+          Instagram
         </span>
-        <div>
-          <b className="block text-[14px]">Neto diskonti</b>
-          <small className="text-[12px]" style={{ color: MUTED }}>
+        <span className="flex items-center gap-[18px]">
+          <Heart size={24} strokeWidth={1.9} />
+          <Messenger />
+        </span>
+      </div>
+
+      {/* the post */}
+      <div className="flex items-center gap-2.5 px-3 py-2">
+        <Avatar />
+        <div className="leading-[1.2]">
+          <b className="block text-[13px] font-semibold">netodiskonti</b>
+          <small className="block text-[11.5px]" style={{ color: IG_MUTED }}>
             Sponzorisano
           </small>
         </div>
+        <MoreHorizontal size={20} className="ml-auto" />
       </div>
-      <div
-        className="relative mt-3 min-h-0 flex-1 overflow-hidden px-[18px] py-[22px] text-white"
-        style={{ background: RED, borderRadius: "6px 26px 6px 6px" }}
+
+      <button
+        type="button"
+        onClick={onGo}
+        aria-label="Otvori oglas"
+        className="relative block min-h-0 flex-1 cursor-pointer overflow-hidden text-left text-white"
+        style={{ background: RED, fontFamily: DISPLAY }}
       >
-        <p className="relative z-[2] max-w-[9ch] text-[34px] font-black italic leading-[1.02]">
+        <span
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(90% 60% at 100% 100%, rgba(0,0,0,0.22), transparent 60%)",
+          }}
+        />
+        <span className="absolute left-5 top-5 z-[2] block max-w-[9ch] text-[34px] font-black italic leading-[1.02]">
           Gde je tvoj najbliži Neto?
-        </p>
+        </span>
         {FLOATS.map(({ Icon, cls, dur, delay }, i) => (
-          <motion.div
+          <motion.span
             key={i}
             aria-hidden
-            className={`absolute bg-white p-[9px] ${cls}`}
+            className={`absolute block bg-white p-[9px] ${cls}`}
             style={{
               borderRadius: "18px 18px 18px 6px",
               boxShadow: "0 8px 18px rgba(0,0,0,0.2)",
@@ -276,21 +357,71 @@ function AdScreen({ onGo }: { onGo: () => void }) {
             }}
           >
             <Icon />
-          </motion.div>
+          </motion.span>
         ))}
         <span
-          className="absolute bottom-3.5 right-3 z-[2] bg-black px-3 py-1.5 text-[18px] font-black italic text-white"
+          className="absolute bottom-4 right-4 z-[2] bg-black px-3 py-1.5 text-[18px] font-black italic text-white"
           style={{ borderRadius: "4px 14px 4px 4px" }}
         >
           do −17%
         </span>
+      </button>
+
+      {/* the call to action strip */}
+      <motion.button
+        type="button"
+        onClick={onGo}
+        whileTap={{ scale: 0.99 }}
+        className="flex cursor-pointer items-center justify-between px-3 py-[11px] text-[14px] font-semibold"
+        initial={false}
+        animate={{
+          background: active ? IG_BLUE : "#FFFFFF",
+          color: active ? "#FFFFFF" : "#000000",
+        }}
+        transition={{ delay: active ? 1.8 : 0, duration: 0.35 }}
+        style={{ borderBottom: `1px solid ${IG_LINE}` }}
+      >
+        Pogledaj katalog
+        <ChevronRight size={18} strokeWidth={2.2} />
+      </motion.button>
+
+      <div className="flex items-center gap-[15px] px-3 pt-2.5">
+        <Heart size={24} strokeWidth={1.9} />
+        <MessageCircle size={24} strokeWidth={1.9} className="-scale-x-100" />
+        <Send size={23} strokeWidth={1.9} className="-mt-0.5" />
+        <Bookmark size={24} strokeWidth={1.9} className="ml-auto" />
       </div>
-      <p className="my-3 text-[14px] leading-[1.4]">
-        Klikni dole i pogledaj gde je tvoj najbliži Neto market. Svaki dinar je
-        bitan.
-      </p>
-      <DBtn onClick={onGo}>Pogledaj Interaktivni Katalog</DBtn>
-    </>
+      <div className="px-3 pt-1.5 text-[13px] leading-[1.35]">
+        <b className="block font-semibold">1.248 sviđanja</b>
+        <p className="mt-px">
+          <b className="font-semibold">netodiskonti</b> Klikni i pogledaj gde je
+          tvoj najbliži Neto market. Svaki dinar je bitan.
+        </p>
+        <p className="mt-px" style={{ color: IG_MUTED }}>
+          Pogledaj sva 34 komentara
+        </p>
+      </div>
+
+      {/* Instagram's tab bar, above the home indicator */}
+      <div
+        className="mt-auto flex items-center justify-between px-6 pb-[24px] pt-2.5"
+        style={{ borderTop: `1px solid ${IG_LINE}` }}
+      >
+        <Home size={25} strokeWidth={2.2} fill="#000" />
+        <Search size={25} strokeWidth={2.4} />
+        <SquarePlus size={25} strokeWidth={1.9} />
+        <Clapperboard size={25} strokeWidth={1.9} />
+        <span
+          className="grid h-[26px] w-[26px] place-items-center rounded-full"
+          style={{ boxShadow: "0 0 0 1.5px #000", background: "#F3F2EE" }}
+        >
+          <span
+            className="h-[18px] w-[18px] rounded-full"
+            style={{ background: "#C9C7C1" }}
+          />
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -453,7 +584,7 @@ function CatalogScreen({
         ))}
       </div>
       <div
-        className="-mx-[14px] -mb-[14px] mt-1.5 grid grid-cols-[auto_1fr_1fr_auto] items-center gap-2.5 bg-white px-3 pb-3.5 pt-2.5"
+        className="-mx-[14px] -mb-[34px] mt-1.5 grid grid-cols-[auto_1fr_1fr_auto] items-center gap-2.5 bg-white px-3 pb-[38px] pt-2.5"
         style={{ borderTop: "2px solid #000" }}
       >
         <div
