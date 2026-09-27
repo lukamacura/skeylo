@@ -62,6 +62,9 @@ export default function CatalogDemo() {
   const [screen, setScreen] = useState(0);
   const [store, setStore] = useState(0);
   const [sel, setSel] = useState<Set<number>>(() => new Set());
+  /* A distance is only known when the location was shared. */
+  const [located, setLocated] = useState(false);
+  const [joined, setJoined] = useState(false);
 
   const totals = useMemo(() => {
     let t = 0;
@@ -84,6 +87,8 @@ export default function CatalogDemo() {
   const restart = () => {
     setSel(new Set());
     setStore(0);
+    setLocated(false);
+    setJoined(false);
     setScreen(0);
   };
 
@@ -105,6 +110,7 @@ export default function CatalogDemo() {
           <PermScreen
             onAllow={() => {
               setStore(0);
+              setLocated(true);
               setScreen(3);
             }}
             onDeny={() => setScreen(2)}
@@ -114,6 +120,7 @@ export default function CatalogDemo() {
           <TownScreen
             onPick={(i) => {
               setStore(i);
+              setLocated(false);
               setScreen(3);
             }}
           />
@@ -121,6 +128,7 @@ export default function CatalogDemo() {
         <Scr on={screen === 3} dir={screen > 3 ? -1 : 1}>
           <CatalogScreen
             store={store}
+            near={located ? STORES[store][1] : "u tvom kraju"}
             sel={sel}
             totals={totals}
             onToggle={toggle}
@@ -128,7 +136,13 @@ export default function CatalogDemo() {
           />
         </Scr>
         <Scr on={screen === 4} dir={1}>
-          <TicketScreen store={store} totals={totals} onRestart={restart} />
+          <TicketScreen
+            store={store}
+            totals={totals}
+            joined={joined}
+            onJoin={() => setJoined(true)}
+            onRestart={restart}
+          />
         </Scr>
       </div>
     </PhoneFrame>
@@ -363,7 +377,7 @@ function AdScreen({ onGo }: { onGo: () => void }) {
           className="absolute bottom-4 right-4 z-[2] bg-black px-3 py-1.5 text-[18px] font-black italic text-white"
           style={{ borderRadius: "4px 14px 4px 4px" }}
         >
-          do −17%
+          do −20%
         </span>
       </button>
 
@@ -395,7 +409,7 @@ function AdScreen({ onGo }: { onGo: () => void }) {
         <b className="block font-semibold">1.248 sviđanja</b>
         <p className="mt-px">
           <b className="font-semibold">netodiskonti</b> Klikni i pogledaj gde je
-          tvoj najbliži Neto market. Svaki dinar je bitan.
+          tvoj najbliži Neto. Svaki dinar je bitan.
         </p>
         <p className="mt-px" style={{ color: IG_MUTED }}>
           Pogledaj sva 34 komentara
@@ -539,12 +553,14 @@ function Bump({
 
 function CatalogScreen({
   store,
+  near,
   sel,
   totals,
   onToggle,
   onCode,
 }: {
   store: number;
+  near: string;
   sel: Set<number>;
   totals: { t: number; sv: number; n: number };
   onToggle: (i: number) => void;
@@ -566,7 +582,7 @@ function CatalogScreen({
         <div>
           <b className="block text-[14px] leading-[1.2]">{STORES[store][0]}</b>
           <small className="text-[11px]" style={{ color: "#BDBDBD" }}>
-            {STORES[store][1]} · otvoreno do 21h
+            {near} · otvoreno do 21h
           </small>
         </div>
       </div>
@@ -633,10 +649,14 @@ const CONFETTI = Array.from({ length: 34 }, (_, k) => ({
 function TicketScreen({
   store,
   totals,
+  joined,
+  onJoin,
   onRestart,
 }: {
   store: number;
   totals: { t: number; sv: number; n: number; extra: number };
+  joined: boolean;
+  onJoin: () => void;
   onRestart: () => void;
 }) {
   return (
@@ -712,7 +732,9 @@ function TicketScreen({
         </p>
       </div>
       <DBtn
-        style={{ background: "#7360F2" }}
+        onClick={onJoin}
+        disabled={joined}
+        style={{ background: "#7360F2", opacity: joined ? 1 : undefined }}
         className="flex items-center justify-center gap-2 text-[15px]"
       >
         <svg
@@ -729,7 +751,9 @@ function TicketScreen({
           <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20.5l1.4-4.4A8.5 8.5 0 1 1 21 11.5z" />
           <path d="M9.5 8.5c.3 2.6 2.4 4.8 5 5.2" />
         </svg>
-        Pridruži se Viber zajednici
+        {joined
+          ? "U zajednici si. Vidimo se na Viberu!"
+          : "Pridruži se Viber zajednici"}
       </DBtn>
       <button
         type="button"

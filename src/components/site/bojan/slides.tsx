@@ -73,14 +73,15 @@ function CoverBody() {
           >
             DISKONTI
           </motion.div>
-          <motion.div
-            className="mt-5 flex items-center gap-3.5 text-[18px] font-bold md:mt-7"
-            {...fade(0.95)}
-          >
-            <span className="text-[22px]" style={{ color: RED }}>
-              ×
-            </span>
-            Skeylo
+          <motion.div className="mt-5 md:mt-7" {...fade(0.95)}>
+            <Image
+              src="/logo.webp"
+              alt="Skeylo"
+              width={2000}
+              height={717}
+              priority
+              className="h-auto w-[112px] md:w-[136px]"
+            />
           </motion.div>
           <motion.h1
             className="mt-6 text-center text-[clamp(2.2rem,10vw,4.2rem)] font-extrabold italic leading-[1.02] tracking-[-0.01em] md:mt-9"
@@ -214,7 +215,6 @@ const CREW: {
       "Pravi kompletan novi Neto websajt",
       "Istražuje i dogovara se sa vašim softverskim timom oko sistema",
       "Dogovara se sa timom oko povezanosti i usklađenosti reklama i kampanje sa sajtom",
-      "Mobilne aplikacije",
     ],
   },
   {
@@ -233,7 +233,7 @@ const CREW: {
     img: "/people/filip.webp",
     does: [
       "Piše skripte i osmišljava sve oglase i sadržaj",
-      "Pravi mesečni plan akcija zajedno sa vama",
+      "Pravi nedeljni plan akcija, koji vi odobravate",
       "Vodi Meta kampanju za Novi Sad i okolinu",
       "Svake nedelje šalje izveštaj i objašnjava brojke",
     ],
@@ -299,8 +299,8 @@ function Crew() {
     <Slide id="crew" theme="paper">
       <Headline>Vaš marketing tim. [[Svi rade za Neto.]]</Headline>
       <Sub>
-        Ne dobijate agenciju koja se javi jednom mesečno. Dobijate šest ljudi
-        kojima je Neto posao svakog dana.
+        Ne dobijate nekoga ko se javi jednom mesečno. Dobijate uigran tim od
+        šest ljudi, sa planom, izveštajem i pozivom svake nedelje.
       </Sub>
       <Visual className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {CREW.map((m, i) => (
@@ -443,6 +443,10 @@ function Versus() {
           >
             Bez zapošljavanja, bolovanja, godišnjih odmora i kupovine opreme.
           </p>
+          <p className="mt-2.5 text-[14px]" style={{ color: "#8A8A8A" }}>
+            Poređenje je cena tima, bez PDV-a. Modeli i ad budžet se plaćaju
+            posebno, i kad je tim vaš i kad je naš.
+          </p>
         </div>
         <motion.div
           variants={item}
@@ -451,11 +455,12 @@ function Versus() {
         >
           <Handshake size={26} style={{ color: RED }} />
           <b className="mt-3 block text-[21px] font-extrabold italic leading-[1.2] text-black md:text-[24px]">
-            Vaš posao: odobrite plan jednom nedeljno.
+            Vaš deo: odobrite plan jednom nedeljno.
           </b>
           <p className="mt-2 text-[16px]">
-            Sve ostalo radimo mi: ideje, snimanje, montažu, oglase, sajt, Viber
-            i izveštaje.
+            Vaši administratori unose akcije u admin panel, a poslovođe nam
+            otvaraju vrata za snimanje. Ideje, snimanje, montažu, oglase, sajt,
+            Viber i izveštaje radimo mi.
           </p>
         </motion.div>
       </Visual>
@@ -481,16 +486,16 @@ const PILLARS: {
     title: "Interaktivni Katalog",
     one: "Jedna kampanja za Novi Sad i okolinu, od oglasa do kase",
     points: [
-      "Oglas poziva: „Klikni dole i pogledaj gde je tvoj najbliži Neto market“.",
+      "Oglas poziva: „Klikni i pogledaj gde je tvoj najbliži Neto“.",
       "Uz dozvolu za lokaciju, Interaktivni Katalog odmah prikazuje najbliži maloprodajni objekat i akcije.",
       "Kupac bira šta mu treba, a katalog uživo računa cenu i koliko štedi.",
-      "Na kraju dobija kod NETOTAJNA12 za dodatnih 2% popusta na kasi.",
+      "Na kraju dobija kod za dodatni popust na kasi. U primeru je to NETOTAJNA12 za još 2%.",
+      "Kod i visina popusta su predlog. Zato odmah stupamo u kontakt sa vašim softverskim timom i potvrđujemo kako kod radi na kasi, pre pokretanja kampanje.",
       "Admin panel: vaši administratori na jednom mestu dodaju, menjaju i brišu artikle i prikazuju popuste. Katalog se odmah ažurira.",
-      "Neophodno je da odmah stupimo u kontakt sa vašim softverskim timom i sa njima razjasnimo mogućnosti za implementaciju promo koda, kako bi ceo sistem bio najoptimalniji mogući.",
     ],
     measureLabel: "Merimo:",
     measure:
-      "posete katalogu, izabrane proizvode i klikove na najbliži objekat. Kako se kod prati na kasi dogovaramo sa vašim softverskim timom.",
+      "posete katalogu, izabrane proizvode, izabrane objekte i iskorišćene kodove. Kako se kod prati na kasi dogovaramo sa vašim softverskim timom.",
   },
   {
     icon: Video,
@@ -506,12 +511,12 @@ const PILLARS: {
   },
   {
     icon: MessageCircle,
-    title: "Viber zajednica i sajt",
+    title: "Viber zajednica",
     one: "Sopstvena publika koja ne zavisi od oglasa",
     points: [
       "Viber zajednica koja svake nedelje dobija novi Interaktivni Katalog.",
       "Posle koda za popust, kupac jednim klikom ulazi u Viber zajednicu.",
-      "Svaki oglas i svaki video vodi ljude u zajednicu, pa svaka kampanja ostavlja trajnu vrednost.",
+      "Svaki oglas i svaki video vodi u katalog, a katalog u zajednicu, pa svaka kampanja ostavlja trajnu vrednost.",
     ],
     measureLabel: "Merimo:",
     measure: "broj članova i koliko njih otvori Interaktivni Katalog.",
@@ -534,7 +539,7 @@ const PILLARS: {
     title: "Neto aplikacija za telefon",
     one: "Potencijal za kasnije, nije deo ove ponude",
     points: [
-      "Aplikacija nalik MojMaxi: kupac pokaže kod na kasi u Neto Marketu i dobije popust, na primer 200 din za račun preko 2.000 din.",
+      "Aplikacija nalik MojMaxi: kupac pokaže kod na kasi i dobije popust, na primer 200 din za račun preko 2.000 din.",
       "Notifikacije kad izađe nova akcija, bez plaćanja oglasa.",
       "Digitalna kartica lojalnosti i istorija kupovine.",
       "Prvi korak je sastanak sa timom koji vodi artikle i softver, da razumemo kako sistem i baza rade i povežemo ih sa aplikacijom.",
@@ -674,10 +679,10 @@ function Pillars() {
   const [open, setOpen] = useState<number | null>(0);
   return (
     <Slide id="pillars" theme="paper">
-      <Headline>Šta radimo, [[svakog meseca.]]</Headline>
+      <Headline>Šta radimo [[u pilotu.]]</Headline>
       <Sub>
-        Tri stuba koja rade zajedno, i dva za kasnije. Otvorite svaki za
-        detalje.
+        Tri stuba koja rade zajedno u pilotu, i dva za kasnije. Otvorite svaki
+        za detalje.
       </Sub>
       <Visual className="grid gap-4 lg:grid-cols-2 lg:items-start">
         {PILLARS.map((p, i) => (
@@ -768,7 +773,7 @@ function Demo() {
             ["Korpa koja računa", "Kupac vidi cenu i uštedu dok bira."],
             [
               "Kod za kasu i Viber",
-              "NETOTAJNA12 za još 2%, pa jedan klik do Viber zajednice. Način primene koda usklađujemo sa vašim softverskim timom.",
+              "Na primer NETOTAJNA12 za još 2%, pa jedan klik do Viber zajednice. Kod i popust su predlog, potvrđujemo ih sa vašim softverskim timom.",
             ],
           ]}
         />
@@ -857,7 +862,7 @@ function Pilot() {
           steps={[
             {
               title: "Prvo",
-              body: "Sastanak sa vašim softverskim timom: razjašnjavamo mogućnosti za promo kod i kako se sistem povezuje sa sajtom. Pravimo novi sajt sa Interaktivnim Katalogom i admin panelom za artikle i popuste.",
+              body: "Sastanak sa vašim softverskim timom: potvrđujemo kako promo kod radi na kasi i da li artikli mogu da stižu u katalog direktno iz vašeg sistema. Pravimo novi sajt sa Interaktivnim Katalogom i admin panelom, kroz koji vaši administratori unose artikle i popuste.",
             },
             {
               title: "Drugo",
@@ -881,9 +886,11 @@ function Pilot() {
 function Kpi() {
   const rows: [string, string][] = [
     ["Posete Interaktivnom Katalogu", "i izabrani proizvodi"],
-    ["Klikovi na najbliži objekat", "iz kataloga i oglasa"],
+    ["Izabrani najbliži objekti", "koji objekti privlače kupce"],
+    ["Iskorišćeni kodovi na kasi", "praćenje dogovaramo sa vašim timom"],
     ["Prodaja artikala sa akcije", "u Novom Sadu i okolini, iz vaših podataka"],
-    ["Članovi Viber zajednice", "rast nedeljno"],
+    ["Doseg i pregledi do kraja", "u Novom Sadu, uz rast pratilaca"],
+    ["Članovi Viber zajednice", "rast nedeljno i otvaranja kataloga"],
   ];
   return (
     <Slide id="kpi" theme="light">
@@ -949,14 +956,14 @@ function Proof() {
       where: "online prodaja patika",
       stat: "~11x",
       statLabel: "povrat na ad budžet za 17 dana",
-      body: "Više ciklusa kampanja i kreativa.",
+      body: "Testirali smo više kreativa i pojačali one koji prodaju.",
     },
   ];
   return (
     <Slide id="proof" theme="paper">
       <Headline>Šta je ovaj tim [[već uradio.]]</Headline>
       <Sub>
-        Skeylo je agencija iz Novog Sada. Radimo dugoročno, sa malim brojem
+        Skeylo je tim iz Novog Sada. Radimo dugoročno, sa malim brojem
         klijenata, da bi svaki dobio pun tim.
       </Sub>
       <Visual className="grid gap-4 md:grid-cols-2">
@@ -1025,7 +1032,7 @@ function Proof() {
 function Price() {
   return (
     <Slide id="price" theme="dark">
-      <Headline center>Ceo tim. [[Jedna cena.]]</Headline>
+      <Headline center>Ceo tim. [[Jedna cena za tim.]]</Headline>
       <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-14">
         <motion.div variants={item}>
           <PriceTag
@@ -1047,13 +1054,16 @@ function Price() {
           />
         </motion.div>
         <div>
-          <motion.div
+          <motion.p
             variants={item}
-            className="mt-4 lg:mt-0"
-            style={{ borderTop: "1px solid #333" }}
+            className="mt-4 pb-3 text-[11px] uppercase tracking-[0.14em] lg:mt-0"
+            style={{ color: "#8A8A8A", fontFamily: MONO }}
           >
+            Van cene tima
+          </motion.p>
+          <motion.div variants={item} style={{ borderTop: "1px solid #333" }}>
             {[
-              ["Troškovi modela", "okvirno 800 €"],
+              ["Troškovi modela i voditelja", "okvirno 800 €"],
               ["Ad budžet, plaća se direktno Meti", "od 1.500 €"],
               ["Trajanje pilota", "90 dana"],
             ].map(([k, v]) => (
@@ -1072,9 +1082,9 @@ function Price() {
             className="mt-[18px] text-[14px]"
             style={{ color: "#8A8A8A" }}
           >
-            Plaćanje je na početku svakog meseca saradnje. Troškovi modela i ad
-            budžet se dogovaraju pre svakog meseca. Posle pilota zajedno
-            odlučujemo o nastavku.
+            Plaćanje je na početku svakog meseca saradnje. Troškovi modela i
+            voditelja i ad budžet se dogovaraju pre svakog meseca. Posle pilota
+            zajedno odlučujemo o nastavku.
           </motion.p>
           <motion.div
             variants={item}
