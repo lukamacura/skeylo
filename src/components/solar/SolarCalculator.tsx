@@ -518,7 +518,7 @@ export default function SolarCalculator() {
               </div>
             )}
 
-            <div className="flex-1 overflow-hidden px-5 pb-6 pt-6 lg:px-9 lg:pt-8">
+            <div className="shrink-0 grow overflow-x-clip px-5 pb-6 pt-6 lg:px-9 lg:pt-8">
               <AnimatePresence mode="wait" custom={dir} initial={false}>
                 <motion.div
                   key={calculating ? "calc" : step}

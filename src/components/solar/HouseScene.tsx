@@ -29,12 +29,14 @@ const CX = 352;
 const POLE_X = 668;
 /** Sokl (podnožje zida). */
 const PLINTH = 8;
+/** Dubina zemljišta iza objekta: horizont je iznad temelja jer kadar gleda blago odozgo. */
+const LAND = 42;
 
 /* Kritično prigušene opruge: bez odskakanja, samo meko usporavanje. */
 const SPRING = { stiffness: 90, damping: 20, mass: 1 };
 const SKY_SPRING = { stiffness: 26, damping: 13, mass: 1 };
 /** Najviše panela koje crtamo; ostatak nosi brojka u čipu ispod scene. */
-const MAX_DRAWN = 48;
+const MAX_DRAWN = 64;
 
 export interface HouseSceneProps {
   type: CustomerType;
@@ -61,6 +63,8 @@ function useSprung(
   target: number,
   still: boolean,
   config: { stiffness: number; damping: number; mass: number } = SPRING,
+  /** Korak zaokruživanja: komponenta se ponovo crta tek kad vrednost pređe korak. */
+  quantum = 0,
 ) {
   const mv = useSpring(target, config);
   const [value, setValue] = useState(target);
@@ -68,7 +72,9 @@ function useSprung(
     if (still) mv.jump(target);
     else mv.set(target);
   }, [mv, target, still]);
-  useMotionValueEvent(mv, "change", setValue);
+  useMotionValueEvent(mv, "change", (v) =>
+    setValue(quantum ? Math.round(v / quantum) * quantum : v),
+  );
   return value;
 }
 
@@ -133,100 +139,215 @@ function targetDims(
     return {
       w: lerp(172, 330, t),
       wallH: 70 + (floors - 1) * 58,
-      rise: roof === "kos" ? lerp(70, 86, t) : 10,
+      rise: roof === "kos" ? lerp(70, 86, t) : 50,
     };
   }
   const t = clamp01((Math.sqrt(footprint) - 7) / (71 - 7));
   return {
     w: lerp(244, 400, t),
     wallH: 92 + (floors - 1) * 50,
-    rise: roof === "kos" ? 60 : 10,
+    rise: roof === "kos" ? 60 : 56,
   };
 }
 
-interface PanelBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+/* ------------------------------ Paneli ----------------------------- */
+/*  Paneli žive u fiksnoj mreži vezanoj za sredinu krova. Ćelija ima    */
+/*  stalno mesto, pa se pri svakoj promeni paneli samo pale i gase,     */
+/*  nikad ne preskaču. Položaj se računa iz istih mera kao i krov, pa   */
+/*  su uvek "zalepljeni" za njega.                                      */
+
+type Pt = [number, number];
+
+interface Cell {
+  key: string;
+  /** Gore levo, gore desno, dole desno, dole levo. */
+  pts: [Pt, Pt, Pt, Pt];
   dim: number;
+  row: number;
+  order: number;
+  /** Ravan krov: panel stoji na nosaču, pa baca senku pod sobom. */
+  raised: boolean;
 }
 
-/** Raspored panela na kosom krovu: redovi se pune odozdo, gde je krov najširi. */
-function pitchedLayout(n: number, d: Dims): PanelBox[] {
-  const top = G - d.wallH - d.rise;
-  const inset = d.rise * 0.62;
-  const gap = 3;
-  const padY = 9;
-  for (let rows = 1; rows <= 4; rows++) {
-    const ph = (d.rise - padY * 2 - gap * (rows - 1)) / rows;
-    const pw = Math.min(30, ph * 0.66);
-    const caps: number[] = [];
-    for (let r = 0; r < rows; r++) {
-      // r = 0 je donji red; širina krova na gornjoj ivici tog reda
-      const yTop = top + d.rise - padY - (r + 1) * ph - r * gap;
-      const t = (yTop - top) / d.rise;
-      const half = lerp(d.w / 2 - inset, d.w / 2 + 12, t) - 12;
-      caps.push(Math.max(0, Math.floor((half * 2 + gap) / (pw + gap))));
-    }
-    const total = caps.reduce((s, c) => s + c, 0);
-    if (total < n && rows < 4) continue;
-    const boxes: PanelBox[] = [];
-    let left = Math.min(n, total);
-    for (let r = 0; r < rows && left > 0; r++) {
-      // ravnomerno po redovima, ali nikad preko kapaciteta reda
-      const want = Math.ceil(left / (rows - r));
-      const count = Math.min(caps[r], Math.max(want, left - sum(caps, r + 1)));
-      const rowW = count * pw + (count - 1) * gap;
-      const y = top + d.rise - padY - (r + 1) * ph - r * gap;
-      for (let c = 0; c < count; c++) {
-        boxes.push({
-          x: CX - rowW / 2 + c * (pw + gap),
-          y,
-          w: pw,
-          h: ph,
-          dim: 1,
-        });
-      }
-      left -= count;
-    }
-    return boxes;
-  }
-  return [];
+interface RoofShape {
+  w: number;
+  wallTop: number;
+  rise: number;
+  /** Polovina širine krova na strehi i na slemenu (ili zadnjoj ivici). */
+  bottomHalf: number;
+  topHalf: number;
 }
 
-function sum(a: number[], from: number) {
-  let s = 0;
-  for (let i = from; i < a.length; i++) s += a[i];
-  return s;
+function roofShape(w: number, wallTop: number, rise: number, pitch: number) {
+  const bottomHalf = w / 2 + 12 * pitch;
+  return {
+    w,
+    wallTop,
+    rise,
+    bottomHalf,
+    topHalf: Math.max(20, bottomHalf - rise * lerp(0.5, 0.62, pitch)),
+  };
 }
 
-/** Ravan krov: nagnuti redovi okrenuti ka posmatraču, zadnji redovi tamniji. */
-function flatLayout(n: number, d: Dims): PanelBox[] {
-  const roofTop = G - d.wallH - d.rise;
-  const pw = 22;
-  const ph = 15;
-  const gap = 5;
-  const perRow = Math.max(1, Math.floor((d.w - 28 + gap) / (pw + gap)));
-  const rows = Math.min(3, Math.ceil(n / perRow));
-  const boxes: PanelBox[] = [];
-  let left = Math.min(n, perRow * rows);
-  for (let r = 0; r < rows; r++) {
-    const count = Math.min(perRow, Math.ceil(left / (rows - r)));
-    const rowW = count * pw + (count - 1) * gap;
-    for (let c = 0; c < count; c++) {
-      boxes.push({
-        x: CX - rowW / 2 + c * (pw + gap),
-        y: roofTop - ph - 3 - r * 13,
-        w: pw,
-        h: ph,
-        dim: 1 - r * 0.22,
+/** Polovina širine krova na visini y. */
+const halfAt = (r: RoofShape, y: number) =>
+  lerp(r.bottomHalf, r.topHalf, clamp01((r.wallTop - y) / r.rise));
+
+/** Kolone od sredine ka ivicama: -1, 0, -2, 1, -3, 2 ... */
+function centerOut(perSide: number) {
+  const out: number[] = [];
+  for (let i = 0; i < perSide; i++) out.push(-1 - i, i);
+  return out;
+}
+
+const P_W = 18;
+const P_H = 19;
+const P_GAP = 1.6;
+
+/** Kos krov: uspravni paneli u ravni krova, redovi se pune od strehe. */
+function pitchedCells(n: number, r: RoofShape): Cell[] {
+  const stepX = P_W + P_GAP;
+  const stepY = P_H + P_GAP;
+  const rows = Math.max(0, Math.floor((r.rise - 13 + P_GAP) / stepY));
+  const cells: Cell[] = [];
+  for (let row = 0; row < rows && cells.length < n; row++) {
+    const yb = r.wallTop - 7 - row * stepY;
+    const yt = yb - P_H;
+    const perSide = Math.max(
+      0,
+      Math.floor((halfAt(r, yt) - 9 + P_GAP / 2) / stepX),
+    );
+    for (const k of centerOut(perSide)) {
+      if (cells.length >= n) break;
+      const x = CX + k * stepX + P_GAP / 2;
+      cells.push({
+        key: `p${row}:${k}`,
+        pts: [
+          [x, yt],
+          [x + P_W, yt],
+          [x + P_W, yb],
+          [x, yb],
+        ],
+        dim: 1,
+        row,
+        order: cells.length,
+        raised: false,
       });
     }
-    left -= count;
+  }
+  return cells;
+}
+
+const F_W = 20;
+const F_TILT = 9;
+
+/** Ravan krov gledan odozgo: redovi nagnutih panela koji se sužavaju u dubinu. */
+function flatCells(n: number, r: RoofShape, rows: number): Cell[] {
+  const yFront = r.wallTop - 7;
+  const depth = yFront - (r.wallTop - r.rise) - 3;
+  // dalji redovi zauzimaju manje ekrana od bližih
+  const y = (d: number) => yFront - depth * ((d * 1.5) / (1 + 0.5 * d));
+  const front = halfAt(r, yFront);
+  const scale = (yy: number) => halfAt(r, yy) / front;
+  const slot = 0.96 / rows;
+  const stepX = F_W + P_GAP;
+  const perSide = Math.max(0, Math.floor((front - 10) / stepX));
+  const cells: Cell[] = [];
+  for (let row = 0; row < rows && cells.length < n; row++) {
+    const dB = 0.04 + row * slot;
+    const dT = dB + slot * 0.6;
+    const sB = scale(y(dB));
+    const sT = scale(y(dT));
+    const yb = y(dB) - 1.5 * sB;
+    const yt = y(dT) - F_TILT * sT;
+    for (const k of centerOut(perSide)) {
+      if (cells.length >= n) break;
+      cells.push({
+        key: `f${row}:${k}`,
+        pts: [
+          [CX + (k * stepX + P_GAP / 2) * sT, yt],
+          [CX + (k * stepX + P_GAP / 2 + F_W) * sT, yt],
+          [CX + (k * stepX + P_GAP / 2 + F_W) * sB, yb],
+          [CX + (k * stepX + P_GAP / 2) * sB, yb],
+        ],
+        dim: 1 - row * 0.07,
+        row,
+        order: cells.length,
+        raised: true,
+      });
+    }
   }
   // zadnji redovi se crtaju prvi, da ih prednji preklope
-  return boxes.reverse();
+  return cells.sort((a, b) => b.row - a.row || a.order - b.order);
+}
+
+const poly = (pts: Pt[]) =>
+  pts.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(" ");
+
+const Panel = memo(function Panel({
+  cell,
+  still,
+  frame,
+}: {
+  cell: Cell;
+  still: boolean;
+  frame: string;
+}) {
+  const [, , br, bl] = cell.pts;
+  const points = poly(cell.pts);
+  const delay = still ? 0 : (cell.order % 14) * 0.022;
+  return (
+    <motion.g
+      initial={{ opacity: 0, y: -14 }}
+      animate={{ opacity: cell.dim, y: 0 }}
+      exit={{ opacity: 0, y: -8, transition: { duration: 0.22 } }}
+      transition={
+        still
+          ? { duration: 0 }
+          : {
+              y: { type: "spring", stiffness: 110, damping: 19, delay },
+              opacity: { duration: 0.32, delay },
+            }
+      }
+    >
+      {cell.raised && (
+        <polygon
+          points={poly([
+            bl,
+            br,
+            [br[0] + 1, br[1] + 3],
+            [bl[0] - 1, bl[1] + 3],
+          ])}
+          fill="#000"
+          opacity={0.3}
+        />
+      )}
+      <polygon
+        points={points}
+        fill="url(#hs-panel)"
+        stroke={frame}
+        strokeWidth={0.9}
+        strokeLinejoin="round"
+      />
+      <polygon points={points} fill="url(#hs-array)" />
+    </motion.g>
+  );
+}, samePanel);
+
+function samePanel(
+  a: { cell: Cell; still: boolean; frame: string },
+  b: { cell: Cell; still: boolean; frame: string },
+) {
+  if (a.frame !== b.frame || a.still !== b.still) return false;
+  if (a.cell.dim !== b.cell.dim) return false;
+  for (let i = 0; i < 4; i++) {
+    if (
+      a.cell.pts[i][0] !== b.cell.pts[i][0] ||
+      a.cell.pts[i][1] !== b.cell.pts[i][1]
+    )
+      return false;
+  }
+  return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -245,6 +366,8 @@ interface Ctx {
   roofTop: number;
   pitch: number;
   roofPath: string;
+  bottomHalf: number;
+  topHalf: number;
   slots: number;
   slotW: number;
   doorSlot: number;
@@ -314,6 +437,58 @@ function Glass({
         opacity={0.2 * (1 - k.n)}
       />
     </>
+  );
+}
+
+/** Ravan krov viđen blago odozgo: hidroizolacija, atika i šavovi u dubinu. */
+function FlatTop({ k }: { k: Ctx }) {
+  const o = 1 - k.pitch;
+  if (o < 0.01) return null;
+  const { wallTop, roofTop, bottomHalf: bh, topHalf: th, c } = k;
+  return (
+    <g opacity={o}>
+      <path d={k.roofPath} fill={c("#8b9198")} />
+      <path d={k.roofPath} fill="url(#hs-flatshade)" />
+      {k.detail &&
+        [-0.5, 0, 0.5].map((u) => (
+          <path
+            key={u}
+            d={`M${CX + u * bh} ${wallTop}L${CX + u * th} ${roofTop}`}
+            stroke={c("#7b8188")}
+            strokeWidth={1}
+          />
+        ))}
+      <path
+        d={`M${CX - bh} ${wallTop}L${CX - th} ${roofTop}H${CX + th}L${CX + bh} ${wallTop}`}
+        fill="none"
+        stroke={c("#dfe3e8")}
+        strokeWidth={3.5}
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M${CX - bh + 4} ${wallTop}L${CX - th + 3} ${roofTop + 2.5}H${CX + th - 3}L${CX + bh - 4} ${wallTop}`}
+        fill="none"
+        stroke="#000"
+        strokeOpacity={0.18}
+        strokeWidth={2}
+      />
+      <rect
+        x={CX - bh - 1.5}
+        y={wallTop - 7}
+        width={bh * 2 + 3}
+        height={8}
+        rx={1}
+        fill={c("#e6e9ee")}
+      />
+      <rect
+        x={CX - bh - 1.5}
+        y={wallTop - 0.5}
+        width={bh * 2 + 3}
+        height={1.5}
+        fill="#000"
+        opacity={0.2}
+      />
+    </g>
   );
 }
 
@@ -440,7 +615,7 @@ function HouseFacade({ k }: { k: Ctx }) {
   return (
     <g>
       {/* Drvo iza kuće */}
-      <g transform={`translate(${x1 + 84} ${G})`}>
+      <g transform={`translate(${x1 + 84} ${G - 20}) scale(0.92)`}>
         <rect x={-4} y={-52} width={8} height={52} rx={2} fill={c("#6a4a33")} />
         <circle cx={-18} cy={-62} r={24} fill={c("#3c7a46")} />
         <circle cx={16} cy={-58} r={26} fill={c("#357040")} />
@@ -668,35 +843,36 @@ function HouseFacade({ k }: { k: Ctx }) {
       </g>
 
       {/* Krov */}
-      <path d={k.roofPath} fill={c("#8f969e")} />
+      <path d={k.roofPath} fill={c("#8b9198")} />
+      <FlatTop k={k} />
       <g opacity={k.pitch}>
         <path d={k.roofPath} fill="url(#hs-tiles)" />
         <path d={k.roofPath} fill="url(#hs-roofshade)" />
         <rect
-          x={x0 - 12 + k.rise * 0.62}
+          x={CX - k.topHalf}
           y={k.roofTop - 2}
-          width={Math.max(0, w + 24 - k.rise * 1.24)}
+          width={k.topHalf * 2}
           height={4.5}
           rx={2}
           fill={c("#7e3421")}
         />
+        <rect
+          x={x0 - 14}
+          y={wallTop - 3}
+          width={w + 28}
+          height={4.5}
+          rx={1}
+          fill={frame}
+        />
+        <rect
+          x={x0 - 15}
+          y={wallTop + 1.5}
+          width={w + 30}
+          height={3}
+          rx={1.5}
+          fill={c("#6b727c")}
+        />
       </g>
-      <rect
-        x={x0 - 14}
-        y={wallTop - 3}
-        width={w + 28}
-        height={4.5}
-        rx={1}
-        fill={frame}
-      />
-      <rect
-        x={x0 - 15}
-        y={wallTop + 1.5}
-        width={w + 30}
-        height={3}
-        rx={1.5}
-        fill={c("#6b727c")}
-      />
     </g>
   );
 }
@@ -873,20 +1049,21 @@ function CompanyFacade({ k }: { k: Ctx }) {
       {bays}
 
       {/* Krov: ravan sa atikom ili limeni na falc */}
-      <path d={k.roofPath} fill={c("#9aa1a9")} />
+      <path d={k.roofPath} fill={c("#8b9198")} />
+      <FlatTop k={k} />
       <g opacity={k.pitch}>
         <path d={k.roofPath} fill={c("#77828f")} />
         <path d={k.roofPath} fill="url(#hs-seam)" />
         <path d={k.roofPath} fill="url(#hs-roofshade)" />
+        <rect
+          x={x0 - 13}
+          y={wallTop - 3}
+          width={w + 26}
+          height={4}
+          rx={1}
+          fill={c("#e3e7ec")}
+        />
       </g>
-      <rect
-        x={x0 - 13}
-        y={wallTop - 3}
-        width={w + 26}
-        height={4}
-        rx={1}
-        fill={c("#e3e7ec")}
-      />
     </g>
   );
 }
@@ -913,7 +1090,7 @@ const Sky = memo(function Sky({
   still: boolean;
 }) {
   const sunX = tri(596, 606, 606, t);
-  const sunY = tri(lerp(skyHigh, G, 0.1), G - 112, G + 110, t);
+  const sunY = tri(lerp(skyHigh, G, 0.1), G - 112 - LAND, G + 110, t);
   const sunScale = lerp(0.85, 1.18, sunLevel) * tri(1, 1.25, 1.25, t);
   const moonUp = smooth(0.55, 1, t);
   const moonY = lerp(G + 60, lerp(skyHigh, G, 0.16), moonUp);
@@ -1082,11 +1259,162 @@ const Sky = memo(function Sky({
   );
 });
 
+/** Nebo u sopstvenom sloju, sa sopstvenom oprugom za doba dana. */
+const SkyLayer = memo(function SkyLayer({
+  timeTarget,
+  viewBox,
+  ...rest
+}: {
+  timeTarget: number;
+  viewBox: string;
+  vbX: number;
+  vbY: number;
+  vbW: number;
+  skyHigh: number;
+  sunLevel: number;
+  still: boolean;
+}) {
+  const t = clamp01(useSprung(timeTarget, rest.still, SKY_SPRING));
+  return (
+    <svg
+      viewBox={viewBox}
+      className="absolute inset-0 block h-full w-full [transform:translateZ(0)]"
+      aria-hidden
+    >
+      <Sky t={t} {...rest} />
+    </svg>
+  );
+});
+
+/** Tok energije: tačkice po žici i zraci ka krovu, iznad svega ostalog. */
+const FlowLayer = memo(function FlowLayer({
+  timeTarget,
+  viewBox,
+  skyHigh,
+  wire,
+  solved,
+  rays,
+  flowSpeed,
+  roofX,
+  roofY,
+  spread,
+  treeX,
+  still,
+}: {
+  /** Gde stoji drvo; tok po žici prolazi iza njegove krošnje. null = nema drveta. */
+  treeX: number | null;
+  timeTarget: number;
+  viewBox: string;
+  skyHigh: number;
+  wire: string;
+  solved: boolean;
+  rays: boolean;
+  flowSpeed: number;
+  roofX: number;
+  roofY: number;
+  spread: number;
+  still: boolean;
+}) {
+  const t = clamp01(useSprung(timeTarget, still, SKY_SPRING));
+  const sunX = tri(596, 606, 606, t);
+  const sunY = tri(lerp(skyHigh, G, 0.1), G - 112 - LAND, G + 110, t);
+  return (
+    <svg
+      viewBox={viewBox}
+      className="pointer-events-none absolute inset-0 block h-full w-full [transform:translateZ(0)]"
+      aria-hidden
+    >
+      {treeX !== null && (
+        <mask
+          id="hs-behind-tree"
+          maskUnits="userSpaceOnUse"
+          x={-2000}
+          y={-2000}
+          width={5000}
+          height={5000}
+        >
+          <rect x={-2000} y={-2000} width={5000} height={5000} fill="#fff" />
+          <g
+            transform={`translate(${treeX} ${G - 20}) scale(0.92)`}
+            fill="#000"
+          >
+            <rect x={-4} y={-52} width={8} height={52} />
+            <circle cx={-18} cy={-62} r={24} />
+            <circle cx={16} cy={-58} r={26} />
+            <circle cx={0} cy={-88} r={30} />
+          </g>
+        </mask>
+      )}
+      <g mask={treeX !== null ? "url(#hs-behind-tree)" : undefined}>
+        <motion.path
+          key={solved ? "out" : "in"}
+          d={wire}
+          fill="none"
+          stroke={solved ? "#3ddc97" : "#ff9f1a"}
+          strokeWidth={4}
+          strokeLinecap="round"
+          strokeDasharray="1 17"
+          initial={{ opacity: 0 }}
+          animate={
+            still
+              ? { opacity: 0.95 }
+              : {
+                  opacity: 0.95,
+                  // iz mreže ka kući dok se troši, sa krova ka mreži na rezultatu
+                  strokeDashoffset: solved ? [0, 36] : [0, -36],
+                }
+          }
+          transition={{
+            opacity: { duration: 0.6 },
+            strokeDashoffset: {
+              duration: solved ? 1.6 : flowSpeed,
+              repeat: Infinity,
+              ease: "linear",
+            },
+          }}
+        />
+      </g>
+      {/* Zraci ka krovu — kad ima panela i kad je obračun gotov */}
+      <AnimatePresence>
+        {rays && (
+          <motion.g
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.9, delay: 0.5 }}
+          >
+            {[-0.32, 0, 0.32].map((q) => (
+              <motion.line
+                key={q}
+                x1={sunX - 34}
+                y1={sunY + 22}
+                x2={roofX + q * spread}
+                y2={roofY}
+                stroke="#fff0a8"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeDasharray="2 14"
+                opacity={0.9}
+                animate={still ? undefined : { strokeDashoffset: [0, -32] }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              />
+            ))}
+          </motion.g>
+        )}
+      </AnimatePresence>
+    </svg>
+  );
+});
+
 /* ------------------------------------------------------------------ */
 /*  Scena                                                               */
 /* ------------------------------------------------------------------ */
 
-export default function HouseScene(props: HouseSceneProps) {
+function HouseScene(props: HouseSceneProps) {
   const { type, area, floors, roof, usage, extras, panels, solved } = props;
   const still = useReducedMotion() ?? false;
 
@@ -1103,28 +1431,29 @@ export default function HouseScene(props: HouseSceneProps) {
     solved || props.scanning
       ? 0
       : { danju: 0, ravnomerno: 0.5, uvece: 1 }[usage];
-  const t = clamp01(useSprung(timeTarget, still, SKY_SPRING));
+  // Nebo u svom sloju prati svaki kadar (sunce se kreće), a boje objekta se
+  // osvežavaju u sitnim koracima: oko ne vidi razliku, a crta se mnogo ređe.
+  const t = clamp01(useSprung(timeTarget, still, SKY_SPRING, 1 / 48));
   const n = smooth(0.15, 0.78, t);
 
   const x0 = CX - w / 2;
   const x1 = CX + w / 2;
   const wallTop = G - wallH;
   const roofTop = wallTop - rise;
-  const inset = rise * 0.62;
-  /** 1 = kos krov, 0 = ravan; vodi pretapanje dok se krov spušta. */
-  const pitch = clamp01((rise - 10) / 50);
-  const roofPath = `M${x0 - 12} ${wallTop} L${x0 - 12 + inset + 12 * (1 - pitch)} ${roofTop} L${
-    x1 + 12 - inset - 12 * (1 - pitch)
-  } ${roofTop} L${x1 + 12} ${wallTop} Z`;
-
-  const drawn = Math.min(panels, MAX_DRAWN);
-  const boxes = useMemo(
-    () =>
-      roof === "kos" ? pitchedLayout(drawn, target) : flatLayout(drawn, target),
-    [roof, drawn, target],
-  );
+  /** 1 = kos krov, 0 = ravan; vodi pretapanje crepa u ravnu ploču. */
+  const pitch = clamp01(useSprung(roof === "kos" ? 1 : 0, still));
+  const shape = roofShape(w, wallTop, rise, pitch);
+  const roofPath = `M${CX - shape.bottomHalf} ${wallTop} L${CX - shape.topHalf} ${roofTop} H${
+    CX + shape.topHalf
+  } L${CX + shape.bottomHalf} ${wallTop} Z`;
 
   const business = type === "pravno";
+  // Raspored ide iz trenutnih (opružnih) mera, pa paneli prate krov u stopu.
+  const drawn = Math.min(panels, MAX_DRAWN);
+  const cells =
+    roof === "kos"
+      ? pitchedCells(drawn, shape)
+      : flatCells(drawn, shape, business ? 4 : 3);
 
   /* Kadar prati oblik kontejnera: širina crteža je stalna, a nebo i tlo se
      produžavaju, pa scena ispuni i uspravnu karticu i nisku traku na telefonu. */
@@ -1150,6 +1479,7 @@ export default function HouseScene(props: HouseSceneProps) {
   const vbX = VB_W / 2 - vbW / 2;
   const vbY = G + 20 + bottomPad / zoom - vbH;
   const skyHigh = vbY + topPad / zoom + 56;
+  const viewBox = `${vbX} ${vbY} ${vbW} ${vbH}`;
 
   const amb = ambient(t);
   const c = (hex: string) => {
@@ -1180,6 +1510,8 @@ export default function HouseScene(props: HouseSceneProps) {
     roofTop,
     pitch,
     roofPath,
+    bottomHalf: shape.bottomHalf,
+    topHalf: shape.topHalf,
     slots,
     slotW: w / slots,
     doorSlot: Math.floor(slots / 2),
@@ -1193,24 +1525,35 @@ export default function HouseScene(props: HouseSceneProps) {
   };
 
   const flowSpeed = lerp(2.6, 0.9, props.billLevel);
-  const sunX = tri(596, 606, 606, t);
-  const sunY = tri(lerp(skyHigh, G, 0.1), G - 112, G + 110, t);
 
   // Žica: od vrha stuba do ugla fasade, blago ulegnuta.
   const wireEnd = { x: x1 - 2, y: wallTop + 12 };
   const wire = `M ${POLE_X} ${G - 150} Q ${(POLE_X + wireEnd.x) / 2} ${
     (G - 150 + wireEnd.y) / 2 + 26
   } ${wireEnd.x} ${wireEnd.y}`;
-  const roofMid = { x: CX, y: roofTop + rise * 0.5 };
+  const panelFrame = c("#cdd5de");
   const panelSpring = still
     ? { duration: 0 }
     : { type: "spring" as const, ...SPRING };
 
   return (
-    <div ref={frame} className="h-full w-full">
+    <div ref={frame} className="relative h-full w-full">
+      {/* Tri sloja: nebo i tok energije se stalno kreću, pa imaju svoje
+          platno i ne teraju objekat da se iznova iscrtava. */}
+      <SkyLayer
+        timeTarget={timeTarget}
+        viewBox={viewBox}
+        vbX={vbX}
+        vbY={vbY}
+        vbW={vbW}
+        skyHigh={skyHigh}
+        sunLevel={props.sunLevel}
+        still={still}
+      />
+
       <svg
-        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
-        className="block h-full w-full"
+        viewBox={viewBox}
+        className="absolute inset-0 block h-full w-full [transform:translateZ(0)]"
         role="img"
         aria-label={`Ilustracija objekta sa ${panels} solarnih panela`}
       >
@@ -1235,6 +1578,23 @@ export default function HouseScene(props: HouseSceneProps) {
           <linearGradient id="hs-roofshade" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#fff" stopOpacity={0.1} />
             <stop offset="1" stopColor="#000" stopOpacity={0.22} />
+          </linearGradient>
+          <linearGradient
+            id="hs-land"
+            gradientUnits="userSpaceOnUse"
+            x1={0}
+            y1={G - LAND}
+            x2={0}
+            y2={G}
+          >
+            <stop
+              offset="0"
+              stopColor={tri3("#86bd78", "#5b6152", "#15211e", t)}
+            />
+            <stop
+              offset="1"
+              stopColor={tri3("#5c9c52", "#3d4a36", "#101b17", t)}
+            />
           </linearGradient>
           <linearGradient id="hs-ground" x1="0" y1="0" x2="0" y2="1">
             <stop
@@ -1286,26 +1646,41 @@ export default function HouseScene(props: HouseSceneProps) {
             height="1"
             patternContentUnits="objectBoundingBox"
           >
-            <rect width="1" height="1" fill={c("#c9d2dc")} />
             <rect
-              x="0.05"
-              y="0.035"
-              width="0.9"
-              height="0.93"
-              fill={tri3("#1c4c96", "#2a3f7a", "#0b1730", t)}
+              width="1"
+              height="1"
+              fill={tri3("#173f86", "#26366f", "#0a142b", t)}
+            />
+            <rect
+              width="1"
+              height="0.5"
+              fill={tri3("#2a5fb8", "#3a4d8f", "#101d3c", t)}
+              opacity={0.55}
             />
             <path
-              d="M0.05 0.035H0.95V0.5Z"
-              fill="#9ccaff"
-              opacity={0.22 * (1 - n)}
-            />
-            <path
-              d="M0.5 0.035V0.965M0.05 0.27H0.95M0.05 0.5H0.95M0.05 0.73H0.95"
-              stroke={tri3("#8fbaf2", "#7f8fc4", "#2a3c66", t)}
-              strokeOpacity={0.6}
-              strokeWidth="0.025"
+              d="M0.333 0V1M0.667 0V1M0 0.2H1M0 0.4H1M0 0.6H1M0 0.8H1"
+              stroke={tri3("#9cc4f5", "#8a98c8", "#2a3c66", t)}
+              strokeOpacity={0.5}
+              strokeWidth="0.022"
             />
           </pattern>
+          <linearGradient
+            id="hs-array"
+            gradientUnits="userSpaceOnUse"
+            x1={x0}
+            y1={roofTop}
+            x2={x1}
+            y2={wallTop + rise * 0.6}
+          >
+            <stop offset="0.3" stopColor="#fff" stopOpacity={0} />
+            <stop offset="0.47" stopColor="#fff" stopOpacity={0.3 * (1 - n)} />
+            <stop offset="0.56" stopColor="#fff" stopOpacity={0.06 * (1 - n)} />
+            <stop offset="0.7" stopColor="#fff" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="hs-flatshade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#000" stopOpacity={0.22} />
+            <stop offset="1" stopColor="#fff" stopOpacity={0.08} />
+          </linearGradient>
           <linearGradient id="hs-scan" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#ffe08a" stopOpacity={0} />
             <stop offset="0.5" stopColor="#fff3c4" stopOpacity={0.75} />
@@ -1321,38 +1696,41 @@ export default function HouseScene(props: HouseSceneProps) {
           </clipPath>
         </defs>
 
-        <Sky
-          t={t}
-          vbX={vbX}
-          vbY={vbY}
-          vbW={vbW}
-          skyHigh={skyHigh}
-          sunLevel={props.sunLevel}
-          still={still}
+        {/* Brda na horizontu, pa zemljište koje se pruža iza objekta */}
+        <g transform={`translate(0 ${-LAND})`}>
+          <path
+            d={`M-2000 ${G - 50} H0 Q 90 ${G - 96} 210 ${G - 62} T 430 ${G - 74} T 640 ${G - 92} T 720 ${G - 80} H2720 V${G} H-2000 Z`}
+            fill={tri3("#6fa98f", "#5b4a6e", "#0d1623", t)}
+          />
+          <path
+            d={`M-2000 ${G - 30} H0 Q 140 ${G - 58} 280 ${G - 30} T 520 ${G - 36} T 720 ${G - 48} H2720 V${G} H-2000 Z`}
+            fill={tri3("#4f9160", "#3d3f52", "#0a111a", t)}
+          />
+        </g>
+        <rect
+          x={-2000}
+          y={G - LAND}
+          width={4720}
+          height={LAND + 1}
+          fill="url(#hs-land)"
         />
-
-        {/* Brda i tlo */}
-        <path
-          d={`M-2000 ${G - 50} H0 Q 90 ${G - 96} 210 ${G - 62} T 430 ${G - 74} T 640 ${G - 92} T 720 ${G - 80} H2720 V${G} H-2000 Z`}
-          fill={tri3("#6fa98f", "#5b4a6e", "#0d1623", t)}
-        />
-        <path
-          d={`M-2000 ${G - 30} H0 Q 140 ${G - 58} 280 ${G - 30} T 520 ${G - 36} T 720 ${G - 48} H2720 V${G} H-2000 Z`}
-          fill={tri3("#4f9160", "#3d3f52", "#0a111a", t)}
-        />
+        {/* Daleko drveće na ivici zemljišta daje dubinu */}
+        {FAR_TREES.map(([x, r]) => (
+          <ellipse
+            key={x}
+            cx={x}
+            cy={G - LAND - r * 0.55}
+            rx={r * 1.25}
+            ry={r}
+            fill={tri3("#3f7f52", "#34394a", "#09101a", t)}
+          />
+        ))}
         <rect
           x={-2000}
           y={G}
           width={4720}
           height={1200}
           fill="url(#hs-ground)"
-        />
-        <rect
-          x={-2000}
-          y={G}
-          width={4720}
-          height={1.5}
-          fill={tri3("#7ab86a", "#55604a", "#1c2a25", t)}
         />
 
         {/* Stub i žica ka mreži */}
@@ -1381,67 +1759,7 @@ export default function HouseScene(props: HouseSceneProps) {
             fill={c("#5b5148")}
           />
           <path d={wire} fill="none" stroke={c("#2f333a")} strokeWidth={1.6} />
-          <motion.path
-            key={solved ? "out" : "in"}
-            d={wire}
-            fill="none"
-            stroke={solved ? "#3ddc97" : "#ff9f1a"}
-            strokeWidth={4}
-            strokeLinecap="round"
-            strokeDasharray="1 17"
-            initial={{ opacity: 0 }}
-            animate={
-              still
-                ? { opacity: 0.95 }
-                : {
-                    opacity: 0.95,
-                    // iz mreže ka kući dok se troši, sa krova ka mreži na rezultatu
-                    strokeDashoffset: solved ? [0, 36] : [0, -36],
-                  }
-            }
-            transition={{
-              opacity: { duration: 0.6 },
-              strokeDashoffset: {
-                duration: solved ? 1.6 : flowSpeed,
-                repeat: Infinity,
-                ease: "linear",
-              },
-            }}
-          />
         </g>
-
-        {/* Zraci ka krovu — kad ima panela i kad je obračun gotov */}
-        <AnimatePresence>
-          {solved && panels > 0 && (
-            <motion.g
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.9, delay: 0.5 }}
-            >
-              {[-0.32, 0, 0.32].map((q) => (
-                <motion.line
-                  key={q}
-                  x1={sunX - 34}
-                  y1={sunY + 22}
-                  x2={roofMid.x + q * w * 0.7}
-                  y2={roofMid.y - 8}
-                  stroke="#fff0a8"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeDasharray="2 14"
-                  opacity={0.9}
-                  animate={still ? undefined : { strokeDashoffset: [0, -32] }}
-                  transition={{
-                    duration: 1.2,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                />
-              ))}
-            </motion.g>
-          )}
-        </AnimatePresence>
 
         {/* Senka objekta i svetlo iz prozora na tlu */}
         <ellipse
@@ -1575,44 +1893,14 @@ export default function HouseScene(props: HouseSceneProps) {
           </motion.g>
         </AnimatePresence>
 
-        {/* Nosač redova na ravnom krovu */}
-        <rect
-          x={x0 + 8}
-          y={roofTop - 3}
-          width={Math.max(0, w - 16)}
-          height={3}
-          rx={1}
-          fill={c("#4b525c")}
-          opacity={(1 - pitch) * (boxes.length ? 1 : 0)}
-        />
-
         {/* Paneli */}
         <AnimatePresence>
-          {boxes.map((b, i) => (
-            <motion.rect
-              key={i}
-              rx={1.2}
-              fill="url(#hs-panel)"
-              initial={{
-                attrX: b.x,
-                attrY: b.y - 30,
-                width: b.w,
-                height: b.h,
-                opacity: 0,
-              }}
-              animate={{
-                attrX: b.x,
-                attrY: b.y,
-                width: b.w,
-                height: b.h,
-                opacity: b.dim,
-              }}
-              exit={{ opacity: 0, attrY: b.y - 20 }}
-              transition={{
-                ...panelSpring,
-                delay: still ? 0 : Math.min(i, 24) * 0.014,
-                opacity: { duration: 0.35, delay: Math.min(i, 24) * 0.014 },
-              }}
+          {cells.map((cell) => (
+            <Panel
+              key={cell.key}
+              cell={cell}
+              still={still}
+              frame={panelFrame}
             />
           ))}
         </AnimatePresence>
@@ -1703,9 +1991,38 @@ export default function HouseScene(props: HouseSceneProps) {
           )}
         </AnimatePresence>
       </svg>
+
+      <FlowLayer
+        timeTarget={timeTarget}
+        viewBox={viewBox}
+        skyHigh={skyHigh}
+        wire={wire}
+        solved={solved}
+        rays={solved && panels > 0}
+        flowSpeed={flowSpeed}
+        roofX={CX}
+        roofY={roofTop + rise * 0.5 - 8}
+        spread={w * 0.7}
+        treeX={business ? null : x1 + 84}
+        still={still}
+      />
     </div>
   );
 }
+
+export default memo(HouseScene);
+
+/** Daleko drveće: x i veličina. */
+const FAR_TREES: [number, number][] = [
+  [-60, 9],
+  [38, 7],
+  [96, 10],
+  [118, 7],
+  [548, 8],
+  [642, 10],
+  [700, 7],
+  [790, 9],
+];
 
 /** Zvezde u udelima kadra (x, y, poluprečnik), da prate svaki oblik scene. */
 const STARS: [number, number, number][] = [
