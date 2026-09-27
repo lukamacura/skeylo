@@ -1,18 +1,45 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
+  BadgePercent,
+  BarChart3,
+  CalendarCheck,
   Camera,
-  CheckCircle2,
-  Handshake,
-  MapPin,
-  MessageCircle,
-  Minus,
-  Plus,
+  Check,
+  CreditCard,
+  Eye,
+  Facebook,
+  Globe,
+  Heart,
+  Instagram,
+  LayoutGrid,
+  Lightbulb,
+  Lock,
+  Megaphone,
+  Mic,
+  MonitorPlay,
+  MousePointerClick,
+  Palette,
+  PenLine,
+  QrCode,
+  ReceiptText,
+  RefreshCw,
+  Scissors,
+  ShoppingCart,
   Smartphone,
+  Store,
+  Target,
+  Ticket,
+  Timer,
+  TrendingUp,
+  UserCog,
+  Users,
   Video,
+  X,
+  Youtube,
 } from "lucide-react";
 import {
   Count,
@@ -27,14 +54,273 @@ import {
   Visual,
   item,
   pop,
+  useIsPhone,
   useSlideActive,
   useTheme,
   type Theme,
 } from "./primitives";
-import { Bar, NetoLogo, PriceTag, Ticker, Timeline } from "./visuals";
-import CatalogDemo from "./CatalogDemo";
+import { NetoLogo, Ticker } from "./visuals";
+import { ProofRow, rowA, rowB } from "../BentoGrid";
+import CatalogDemo, { SITE_URL } from "./CatalogDemo";
 import AppDemo from "./AppDemo";
 import { DemoStage } from "./DemoStage";
+
+const TILE_RADIUS = "14px 14px 14px 4px";
+const META_BLUE = "#0866FF";
+
+type IconType = React.ElementType;
+
+/* ------------------------------------------------------------------------ */
+/* Shared pieces                                                              */
+/* ------------------------------------------------------------------------ */
+
+/* Meta's loop, drawn as a stroke so it takes the colour of its tile. */
+function MetaIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M2.5 14.6c0-4.3 1.9-8.1 4.6-8.1 2 0 3.400 2 4.900 4.600 1.500 2.700 2.900 6.400 5.600 6.400 2.200 0 3.900-1.600 3.900-4.400 0-3.600-1.700-6.600-4.200-6.600-2 0-3.600 2-5.300 4.900-1.600 2.800-3.100 6.100-5.700 6.100-2.100 0-3.800-1.300-3.800-3z" />
+    </svg>
+  );
+}
+
+function MetaTile({ size = 56 }: { size?: number }) {
+  return (
+    <span
+      className="grid flex-none place-items-center text-white"
+      style={{
+        width: size,
+        height: size,
+        background: META_BLUE,
+        borderRadius: TILE_RADIUS,
+      }}
+    >
+      <MetaIcon size={size * 0.54} />
+    </span>
+  );
+}
+
+/* Organic has no single logo, so it gets the networks themselves. */
+function SocialTile({ size = 56 }: { size?: number }) {
+  const s = size * 0.6;
+  const icon = s * 0.56;
+  const nets: [IconType, string][] = [
+    [Instagram, "linear-gradient(45deg,#f9ce34,#ee2a7b 50%,#6228d7)"],
+    [Facebook, "#1877F2"],
+    [Youtube, "#FF0033"],
+  ];
+  return (
+    <span
+      className="flex flex-none items-center"
+      style={{ height: size }}
+      aria-hidden
+    >
+      {nets.map(([Icon, bg], i) => (
+        <span
+          key={i}
+          className="grid place-items-center rounded-full text-white"
+          style={{
+            width: s,
+            height: s,
+            background: bg,
+            marginLeft: i ? -s * 0.28 : 0,
+            boxShadow: "0 0 0 2px rgba(255,255,255,0.9)",
+            zIndex: 3 - i,
+          }}
+        >
+          <Icon size={icon} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function IconTile({
+  icon: Icon,
+  bg = RED,
+  color = "#fff",
+}: {
+  icon: IconType;
+  bg?: string;
+  color?: string;
+}) {
+  return (
+    <span
+      className="grid h-[var(--h,56px)] w-[var(--h,56px)] flex-none place-items-center"
+      style={{ background: bg, color, borderRadius: TILE_RADIUS }}
+    >
+      <Icon size={26} />
+    </span>
+  );
+}
+
+function Face({
+  src,
+  name,
+  size = 56,
+}: {
+  src: string;
+  name: string;
+  size?: number;
+}) {
+  return (
+    <Image
+      src={src}
+      alt={name}
+      width={size}
+      height={size}
+      className="flex-none rounded-full object-cover"
+      style={{
+        width: size,
+        height: size,
+        background: "#111",
+        boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${RED}`,
+      }}
+    />
+  );
+}
+
+/* A row of steps on one line, with a dot that keeps travelling along it.
+   Every step is --h tall at the top, so the line runs through the middle
+   of the tiles and the dot passes behind them. A compact row shrinks its
+   tiles on a phone, to fit five across. */
+function Flow({
+  steps,
+  compact = false,
+}: {
+  steps: { top: ReactNode; label: string }[];
+  compact?: boolean;
+}) {
+  const active = useSlideActive();
+  const t = useTheme();
+  const edge = `${50 / steps.length}%`;
+  return (
+    <div
+      className={`relative grid ${compact ? "[--h:44px] md:[--h:56px]" : "[--h:56px]"}`}
+      style={{
+        gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute top-[calc(var(--h)/2-1px)] h-[2px]"
+        style={{ left: edge, right: edge, background: t.line }}
+      >
+        <motion.i
+          className="absolute -top-1 -ml-[5px] block h-2.5 w-2.5 rounded-full"
+          style={{ background: t.hl }}
+          initial={{ left: "0%", opacity: 0 }}
+          animate={
+            active
+              ? { left: ["0%", "100%"], opacity: [0, 1, 1, 0] }
+              : { left: "0%", opacity: 0 }
+          }
+          transition={{
+            duration: 2.6,
+            delay: 0.9,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatDelay: 0.4,
+          }}
+        />
+      </div>
+      {steps.map((s, i) => (
+        <motion.div
+          key={s.label}
+          variants={pop}
+          custom={i % 2 ? 3 : -3}
+          className="relative flex flex-col items-center px-0.5 text-center"
+        >
+          <span className="flex h-[var(--h)] items-center justify-center">
+            {s.top}
+          </span>
+          <span
+            className={`mt-2 font-bold leading-[1.2] md:text-[15px] ${compact ? "text-[11px]" : "text-[12.5px]"}`}
+          >
+            {s.label}
+          </span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function Caption({ children }: { children: ReactNode }) {
+  const t = useTheme();
+  return (
+    <p
+      className="mb-4 text-[10px] uppercase tracking-[0.14em] md:text-[11px]"
+      style={{ fontFamily: MONO, color: t.muted }}
+    >
+      {children}
+    </p>
+  );
+}
+
+/* The nudge beside a demo phone: a line of handwriting-sized type and an
+   arrow that keeps pointing at the phone. Beside the phone where there is
+   room, above it on a phone-sized screen. */
+function HintArrow({ down = false }: { down?: boolean }) {
+  return (
+    <motion.svg
+      viewBox="0 0 64 40"
+      width={down ? 44 : 64}
+      height={down ? 28 : 40}
+      fill="none"
+      stroke={RED}
+      strokeWidth={3.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="flex-none"
+      style={{ rotate: down ? 70 : 0 }}
+      animate={down ? { y: [0, 5, 0] } : { x: [0, 8, 0] }}
+      transition={{ duration: 1.3, ease: "easeInOut", repeat: Infinity }}
+    >
+      <path d="M4 10c16-8 36-4 52 14" />
+      <path d="M42 26l15-1-3-15" />
+    </motion.svg>
+  );
+}
+
+const HINT = "Klikni da probaš demo verziju";
+
+function DemoHintAbove() {
+  const t = useTheme();
+  return (
+    <motion.p
+      variants={item}
+      className="mb-2 flex items-center justify-center gap-2 text-[15px] font-extrabold italic lg:hidden"
+      style={{ color: t.fg, fontFamily: DISPLAY }}
+    >
+      {HINT}
+      <HintArrow down />
+    </motion.p>
+  );
+}
+
+function DemoHintBeside() {
+  const t = useTheme();
+  return (
+    <motion.p
+      variants={item}
+      className="absolute right-[calc(50%+210px)] top-[30%] hidden w-[210px] flex-col items-end gap-2 text-right text-[24px] font-extrabold italic leading-[1.1] lg:flex"
+      style={{ color: t.fg, fontFamily: DISPLAY }}
+    >
+      {HINT}
+      <HintArrow />
+    </motion.p>
+  );
+}
 
 /* ------------------------------------------------------------------------ */
 /* 01  Cover                                                                  */
@@ -96,8 +382,7 @@ function CoverBody() {
             style={{ color: "#CFCFCF" }}
             {...fade(1.4)}
           >
-            Šest ljudi i kompletna oprema rade za Neto u Novom Sadu i okolini,
-            svakog meseca.
+            Šest ljudi i kompletna oprema, za Neto u Novom Sadu i okolini.
           </motion.p>
           <motion.p
             className="mt-5 text-center text-[13px] md:mt-7"
@@ -116,352 +401,131 @@ function CoverBody() {
 }
 
 /* ------------------------------------------------------------------------ */
-/* 02  Where you are                                                          */
+/* 02  The crew                                                               */
 /* ------------------------------------------------------------------------ */
 
-function Facts() {
-  return (
-    <Slide id="facts" theme="light">
-      <FactsBody />
-    </Slide>
-  );
-}
-
-function FactsBody() {
-  const t = useTheme();
-  const facts: [ReactNode, string][] = [
-    [<Count key="a" to={24} />, "maloprodajna objekta u Novom Sadu i okolini"],
-    [
-      <Count key="b" to={37} delay={0.1} />,
-      "maloprodajnih objekata u celom lancu",
-    ],
-    [
-      <Count key="c" to={14} suffix="h" delay={0.2} />,
-      "otvoreno svaki dan, 7 do 21",
-    ],
-    [
-      <Count key="d" to={8} suffix="k" delay={0.3} />,
-      "pratilaca na Instagramu",
-    ],
-  ];
-  return (
-    <>
-      <Headline>
-        Novi Sad je pun Neto maloprodajnih objekata. [[Grad to još ne zna.]]
-      </Headline>
-      <Sub>
-        Mreža je već tu. Jedna kampanja za Novi Sad i okolinu može da pokrene
-        sve maloprodajne objekte odjednom.
-      </Sub>
-      <Visual>
-        <div
-          className="grid grid-cols-2 md:grid-cols-4"
-          style={{ borderTop: "2px solid #000" }}
-        >
-          {facts.map(([v, l], i) => (
-            <motion.div
-              key={l}
-              variants={item}
-              className="py-5 md:px-4 md:py-6"
-              style={{
-                borderBottom: `1px solid ${t.line}`,
-                borderRight: i % 2 === 0 ? `1px solid ${t.line}` : undefined,
-                paddingRight: i % 2 === 0 ? 14 : 0,
-                paddingLeft: i % 2 === 1 ? 16 : 0,
-              }}
-            >
-              <strong
-                className="block text-[40px] font-extrabold italic leading-none md:text-[52px]"
-                style={{ color: RED }}
-              >
-                {v}
-              </strong>
-              <span className="mt-1.5 block text-[15px]">{l}</span>
-            </motion.div>
-          ))}
-        </div>
-      </Visual>
-      <motion.p
-        variants={item}
-        className="mt-5 max-w-2xl text-[15px] md:text-[16px]"
-        style={{ color: t.muted }}
-      >
-        Slogan „Svaki dinar je bitan“ je jak. Danas ga čuju samo oni koji već
-        uđu u maloprodajni objekat. Mi hoćemo da ga čuju svi u Novom Sadu i
-        okolini.
-      </motion.p>
-    </>
-  );
-}
-
-/* ------------------------------------------------------------------------ */
-/* 03  The crew                                                               */
-/* ------------------------------------------------------------------------ */
+const PEOPLE = {
+  luka: { name: "Luka Macura", img: "/people/luka.webp" },
+  mihajlo: { name: "Mihajlo Obradović", img: "/people/mihac.webp" },
+  filip: { name: "Filip Ruvčeski", img: "/people/filip.webp" },
+  nina: { name: "Nina Kostić", img: "/people/nina.webp" },
+  stefan: { name: "Stefan Stojanović", img: "/people/stefan.webp" },
+  kuzma: { name: "Luka Kuzmanović", img: "/people/kuzma.webp" },
+};
 
 const CREW: {
-  name: string;
+  who: keyof typeof PEOPLE;
   role: string;
-  img?: string;
-  does: string[];
-  costLabel?: string;
-  cost?: string;
-  gear?: boolean;
+  does: [IconType, string][];
 }[] = [
   {
-    name: "Luka Macura",
+    who: "luka",
     role: "Informacione tehnologije",
-    img: "/people/luka.webp",
     does: [
-      "Pravi kompletan novi Neto websajt",
-      "Istražuje i dogovara se sa vašim softverskim timom oko sistema",
-      "Dogovara se sa timom oko povezanosti i usklađenosti reklama i kampanje sa sajtom",
+      [Globe, "Sajt"],
+      [LayoutGrid, "Katalog"],
+      [Smartphone, "Mobilna aplikacija"],
     ],
   },
   {
-    name: "Mihajlo Obradović",
-    role: "Video producent i direktor postprodukcije",
-    img: "/people/mihac.webp",
+    who: "filip",
+    role: "Strategija i oglasi",
     does: [
-      "Na terenu realizuje skripte koje Filip napiše",
-      "Snima u maloprodajnim objektima i po Novom Sadu, sa modelima i voditeljem",
-      "Nadgleda sve što montažeri rade, do finalne verzije",
+      [PenLine, "Kreative"],
+      [Target, "Meta"],
+      [BarChart3, "Izveštaji"],
     ],
   },
   {
-    name: "Filip Ruvčeski",
-    role: "Strateg i media buyer",
-    img: "/people/filip.webp",
+    who: "nina",
+    role: "Organizacija",
     does: [
-      "Piše skripte i osmišljava sve oglase i sadržaj",
-      "Pravi nedeljni plan akcija, koji vi odobravate",
-      "Vodi Meta kampanju za Novi Sad i okolinu",
-      "Svake nedelje šalje izveštaj i objašnjava brojke",
+      [CalendarCheck, "Termini"],
+      [Users, "Modeli"],
     ],
   },
   {
-    name: "Nina Kostić",
-    role: "Organizacija snimanja",
-    img: "/people/nina.webp",
+    who: "mihajlo",
+    role: "Produkcija",
     does: [
-      "Dogovara termine snimanja sa poslovođama maloprodajnih objekata",
-      "Organizuje modele, rekvizite i lokacije",
+      [Video, "Snimanje"],
+      [Eye, "Kontrola"],
+      [Scissors, "Montaža"],
     ],
   },
   {
-    name: "Stefan Stojanović",
-    role: "Video editor",
-    img: "/people/stefan.webp",
-    does: ["Montira video sadržaj", "Kreira dizajne i grafike"],
-  },
-  {
-    name: "Luka Kuzmanović",
-    role: "Video editor",
-    img: "/people/kuzma.webp",
-    does: ["Montira video sadržaj", "Kreira dizajne i grafike"],
-  },
-  {
-    name: "Oprema i alati",
-    role: "Već je naša",
-    gear: true,
+    who: "stefan",
+    role: "Montaža",
     does: [
-      "Dve kamere, profesionalno osvetljenje i mikrofoni",
-      "Programi za montažu, dizajn i praćenje rezultata",
+      [Scissors, "Montaža"],
+      [Palette, "Dizajn"],
     ],
-    costLabel: "Da je kupujete sami",
-    cost: "više od 6.000 €",
+  },
+  {
+    who: "kuzma",
+    role: "Montaža",
+    does: [
+      [Scissors, "Montaža"],
+      [Palette, "Dizajn"],
+    ],
   },
 ];
-
-function Bullet({
-  children,
-  dark = false,
-}: {
-  children: ReactNode;
-  dark?: boolean;
-}) {
-  return (
-    <li className="relative py-[5px] pl-[22px] text-[15px] leading-[1.4] md:text-[16px]">
-      <span
-        aria-hidden
-        className="absolute left-0 top-[12px] h-2.5 w-2.5"
-        style={{
-          background: dark ? "#FF6B63" : RED,
-          borderRadius: "3px 3px 3px 0",
-        }}
-      />
-      {children}
-    </li>
-  );
-}
 
 function Crew() {
   return (
     <Slide id="crew" theme="paper">
-      <Headline>Vaš marketing tim. [[Svi rade za Neto.]]</Headline>
-      <Sub>
-        Ne dobijate nekoga ko se javi jednom mesečno. Dobijate uigran tim od
-        šest ljudi, sa planom, izveštajem i pozivom svake nedelje.
-      </Sub>
-      <Visual className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {CREW.map((m, i) => (
-          <motion.article
-            key={m.name}
-            variants={pop}
-            custom={i % 2 ? 1.5 : -1.5}
-            className="flex flex-col overflow-hidden px-[18px] pt-5"
-            style={{
-              background: m.gear ? "#000" : "#fff",
-              color: m.gear ? "#fff" : "#1A1A1A",
-              border: "2px solid #000",
-              borderRadius: NETO_RADIUS,
-            }}
-          >
-            <div className="grid grid-cols-[64px_1fr] items-center gap-3.5">
-              {m.gear ? (
+      <Headline>Vaš marketing tim. [[Šest ljudi.]]</Headline>
+      <Visual className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-3">
+        {CREW.map((m, i) => {
+          const p = PEOPLE[m.who];
+          return (
+            <motion.article
+              key={p.name}
+              variants={pop}
+              custom={i % 2 ? 1.5 : -1.5}
+              className="flex flex-col gap-2.5 bg-white p-3 md:flex-row md:items-center md:gap-4 md:p-4"
+              style={{ border: "2px solid #000", borderRadius: NETO_RADIUS }}
+            >
+              <Face src={p.img} name={p.name} />
+              <div className="min-w-0">
+                <b className="block text-[15px] font-extrabold leading-[1.15] md:text-[18px]">
+                  {p.name}
+                </b>
                 <span
-                  className="grid h-[52px] w-[52px] place-items-center text-white"
-                  style={{
-                    background: RED,
-                    borderRadius: "14px 14px 14px 4px",
-                  }}
-                >
-                  <Camera size={26} />
-                </span>
-              ) : (
-                <Image
-                  src={m.img!}
-                  alt={m.name}
-                  width={64}
-                  height={64}
-                  className="h-16 w-16 rounded-full object-cover"
-                  style={{
-                    background: "#111",
-                    boxShadow: `0 0 0 3px #fff, 0 0 0 5px ${RED}`,
-                  }}
-                />
-              )}
-              <div>
-                <div className="text-[19px] font-extrabold leading-[1.15]">
-                  {m.name}
-                </div>
-                <span
-                  className="mt-0.5 block text-[15px] font-medium"
-                  style={{ color: m.gear ? "#FF6B63" : RED }}
+                  className="block text-[13px] font-medium md:text-[15px]"
+                  style={{ color: RED }}
                 >
                   {m.role}
                 </span>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {m.does.map(([Icon, label]) => (
+                    <span
+                      key={label}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-bold md:text-[13px]"
+                      style={{ background: "#F7F6F2" }}
+                    >
+                      <Icon size={13} style={{ color: RED }} />
+                      {label}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-            <ul className="mt-3.5 flex-1">
-              {m.does.map((d) => (
-                <Bullet key={d} dark={m.gear}>
-                  {d}
-                </Bullet>
-              ))}
-            </ul>
-            {m.cost ? (
-              <div
-                className="-mx-[18px] mt-4 flex justify-between gap-3 px-[18px] py-3 text-[14px]"
-                style={{
-                  background: m.gear ? "#1C1C1C" : "#F7F6F2",
-                  borderTop: `1px solid ${m.gear ? "#333" : "#E4E2DC"}`,
-                  color: m.gear ? "#9A9A9A" : "#6B6B6B",
-                }}
-              >
-                <span>{m.costLabel}</span>
-                <b
-                  className="whitespace-nowrap"
-                  style={{ color: m.gear ? "#fff" : "#1A1A1A" }}
-                >
-                  {m.cost}
-                </b>
-              </div>
-            ) : (
-              <div className="pb-5" />
-            )}
-          </motion.article>
-        ))}
-      </Visual>
-    </Slide>
-  );
-}
-
-/* ------------------------------------------------------------------------ */
-/* 04  Versus                                                                 */
-/* ------------------------------------------------------------------------ */
-
-function Versus() {
-  return (
-    <Slide id="versus" theme="dark">
-      <Headline>Čak i na minimalcu, [[ovaj tim vas košta više.]]</Headline>
-      <Sub>
-        Šest plata sa doprinosima, bez opreme, bez zamene kad neko ode na
-        bolovanje. Ili jedan tim koji je već uigran.
-      </Sub>
-      <Visual className="grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-        <div
-          className="px-5 pb-6 pt-6 md:px-7"
-          style={{
-            background: "#0d0d0d",
-            border: "1px solid #222",
-            borderRadius: "4px 26px 4px 4px",
-          }}
-        >
-          <div>
-            <div
-              className="flex items-baseline justify-between gap-2.5 text-[15px]"
-              style={{ color: "#CFCFCF" }}
-            >
-              <span>6 zaposlenih na minimalcu</span>
-              <b className="whitespace-nowrap text-[30px] font-black italic text-white md:text-[34px]">
-                <Count to={5220} /> €
-              </b>
-            </div>
-            <Bar pct={100} color="#5A5A5A" />
-          </div>
-          <div className="mt-6">
-            <div
-              className="flex items-baseline justify-between gap-2.5 text-[15px]"
-              style={{ color: "#CFCFCF" }}
-            >
-              <span>Skeylo za Neto</span>
-              <b className="whitespace-nowrap text-[30px] font-black italic text-white md:text-[34px]">
-                <Count to={3500} delay={0.5} /> €{" "}
-                <small
-                  className="text-[14px] font-bold not-italic"
-                  style={{ color: "#B5B5B5" }}
-                >
-                  + PDV
-                </small>
-              </b>
-            </div>
-            <Bar pct={67} color={RED} delay={0.5} />
-          </div>
-          <p
-            className="mt-5 pt-[18px] text-[16px] md:text-[17px]"
-            style={{ borderTop: "1px dashed #444", color: "#E6E6E6" }}
-          >
-            Bez zapošljavanja, bolovanja, godišnjih odmora i kupovine opreme.
-          </p>
-          <p className="mt-2.5 text-[14px]" style={{ color: "#8A8A8A" }}>
-            Poređenje je cena tima, bez PDV-a. Modeli i ad budžet se plaćaju
-            posebno, i kad je tim vaš i kad je naš.
-          </p>
-        </div>
+            </motion.article>
+          );
+        })}
         <motion.div
           variants={item}
-          className="bg-white px-5 py-5 text-[#1A1A1A]"
-          style={{ border: `2px dashed ${RED}`, borderRadius: NETO_RADIUS }}
+          className="col-span-2 flex items-center justify-between gap-3 bg-black px-4 py-3 text-white lg:col-span-3"
+          style={{ borderRadius: NETO_RADIUS }}
         >
-          <Handshake size={26} style={{ color: RED }} />
-          <b className="mt-3 block text-[21px] font-extrabold italic leading-[1.2] text-black md:text-[24px]">
-            Vaš deo: odobrite plan jednom nedeljno.
+          <span className="flex items-center gap-3 md:gap-4">
+            {[Camera, Lightbulb, Mic, MonitorPlay].map((Icon, i) => (
+              <Icon key={i} size={22} style={{ color: "#FF6B63" }} />
+            ))}
+          </span>
+          <b className="text-right text-[14px] font-extrabold italic leading-[1.2] md:text-[17px]">
+            Uz nas dobijate profesionalnu opremu
           </b>
-          <p className="mt-2 text-[16px]">
-            Vaši administratori unose akcije u admin panel, a poslovođe nam
-            otvaraju vrata za snimanje. Ideje, snimanje, montažu, oglase, sajt,
-            Viber i izveštaje radimo mi.
-          </p>
         </motion.div>
       </Visual>
     </Slide>
@@ -469,323 +533,106 @@ function Versus() {
 }
 
 /* ------------------------------------------------------------------------ */
-/* 05  Pillars                                                                */
+/* 03  The website and the catalogue                                          */
 /* ------------------------------------------------------------------------ */
 
-const PILLARS: {
-  icon: React.ElementType;
-  title: string;
-  one: string;
-  points: string[];
-  measureLabel: string;
-  measure: string;
-  potential?: boolean;
-}[] = [
-  {
-    icon: MapPin,
-    title: "Interaktivni Katalog",
-    one: "Jedna kampanja za Novi Sad i okolinu, od oglasa do kase",
-    points: [
-      "Oglas poziva: „Klikni i pogledaj gde je tvoj najbliži Neto“.",
-      "Uz dozvolu za lokaciju, Interaktivni Katalog odmah prikazuje najbliži maloprodajni objekat i akcije.",
-      "Kupac bira šta mu treba, a katalog uživo računa cenu i koliko štedi.",
-      "Na kraju dobija kod za dodatni popust na kasi. U primeru je to NETOTAJNA12 za još 2%.",
-      "Kod i visina popusta su predlog. Zato odmah stupamo u kontakt sa vašim softverskim timom i potvrđujemo kako kod radi na kasi, pre pokretanja kampanje.",
-      "Admin panel: vaši administratori na jednom mestu dodaju, menjaju i brišu artikle i prikazuju popuste. Katalog se odmah ažurira.",
-    ],
-    measureLabel: "Merimo:",
-    measure:
-      "posete katalogu, izabrane proizvode, izabrane objekte i iskorišćene kodove. Kako se kod prati na kasi dogovaramo sa vašim softverskim timom.",
-  },
-  {
-    icon: Video,
-    title: "Sadržaj koji prodaje „Svaki dinar je bitan“",
-    one: "Profesionalna produkcija, snimanje po Novom Sadu i okolini",
-    points: [
-      "„Korpa od 2.000 dinara“: koliko toga stane u korpu kod vas.",
-      "Ulične ankete po Novom Sadu, sa pravim Novosađanima.",
-      "Serijal sa vašim zaposlenima. Poznata lica grade poverenje i osećaj „naš Neto“.",
-    ],
-    measureLabel: "Merimo:",
-    measure: "doseg u Novom Sadu, pregleda do kraja i rast pratilaca.",
-  },
-  {
-    icon: MessageCircle,
-    title: "Viber zajednica",
-    one: "Sopstvena publika koja ne zavisi od oglasa",
-    points: [
-      "Viber zajednica koja svake nedelje dobija novi Interaktivni Katalog.",
-      "Posle koda za popust, kupac jednim klikom ulazi u Viber zajednicu.",
-      "Svaki oglas i svaki video vodi u katalog, a katalog u zajednicu, pa svaka kampanja ostavlja trajnu vrednost.",
-    ],
-    measureLabel: "Merimo:",
-    measure: "broj članova i koliko njih otvori Interaktivni Katalog.",
-  },
-  {
-    icon: Handshake,
-    title: "Dobavljači finansiraju deo marketinga",
-    one: "Opcija koju možemo da razvijemo kasnije",
-    points: [
-      "Brendovi čije proizvode prodajete imaju budžete za promociju.",
-      "Dobavljač plaća istaknuto mesto u vašoj akciji nedelje ili u sadržaju.",
-      "Na taj način deo mesečnog troška pokriva neko treći.",
-    ],
-    measureLabel: "Kada:",
-    measure: "posle pilota, kad imamo brojke koje pokazujemo dobavljačima.",
-    potential: true,
-  },
-  {
-    icon: Smartphone,
-    title: "Neto aplikacija za telefon",
-    one: "Potencijal za kasnije, nije deo ove ponude",
-    points: [
-      "Aplikacija nalik MojMaxi: kupac pokaže kod na kasi i dobije popust, na primer 200 din za račun preko 2.000 din.",
-      "Notifikacije kad izađe nova akcija, bez plaćanja oglasa.",
-      "Digitalna kartica lojalnosti i istorija kupovine.",
-      "Prvi korak je sastanak sa timom koji vodi artikle i softver, da razumemo kako sistem i baza rade i povežemo ih sa aplikacijom.",
-    ],
-    measureLabel: "Kada:",
-    measure:
-      "tek posle pilota, kao poseban projekat sa posebnom ponudom. Pre toga zajedno prolazimo vaš postojeći sistem i logiku baze podataka. Primer kako bi mogla da izgleda je nekoliko slajdova dalje.",
-    potential: true,
-  },
-];
-
-function Pillar({
-  p,
-  open,
-  onToggle,
-}: {
-  p: (typeof PILLARS)[number];
-  open: boolean;
-  onToggle: () => void;
-}) {
-  const Icon = p.icon;
+function Web() {
   return (
-    <motion.div
-      variants={item}
-      className="overflow-hidden"
-      style={{
-        border: p.potential ? "2px dashed #9A9A9A" : "2px solid #000",
-        background: p.potential ? "#F7F6F2" : "#fff",
-        borderRadius: NETO_RADIUS,
-      }}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="grid w-full cursor-pointer grid-cols-[52px_1fr_26px] items-center gap-3.5 px-[18px] py-[18px] pl-4 text-left"
-        style={{ fontFamily: DISPLAY }}
-      >
-        <span
-          aria-hidden
-          className="grid h-[52px] w-[52px] place-items-center"
-          style={{
-            background: p.potential ? "#fff" : RED,
-            color: p.potential ? RED : "#fff",
-            border: p.potential ? `2px dashed ${RED}` : undefined,
-            borderRadius: "14px 14px 14px 4px",
-          }}
-        >
-          <Icon size={26} />
-        </span>
-        <span className="text-[19px] font-extrabold leading-[1.15] text-black md:text-[20px]">
-          {p.title}
-          {p.potential && (
-            <span className="ml-2 inline-block rounded-[20px] bg-black px-[9px] py-[3px] align-[3px] text-[12px] font-bold text-white">
-              Potencijal
-            </span>
-          )}
-          <span
-            className="mt-[3px] block text-[15px] font-normal leading-[1.35]"
-            style={{ color: "#6B6B6B" }}
-          >
-            {p.one}
-          </span>
-        </span>
-        <motion.span
-          aria-hidden
-          className="grid h-[26px] w-[26px] place-items-center rounded-full"
-          animate={{
-            background: open ? RED : "rgba(226,35,26,0)",
-            borderColor: open ? RED : "#000",
-            color: open ? "#fff" : "#000",
-            rotate: open ? 90 : 0,
-          }}
-          transition={{ duration: 0.3 }}
-          style={{ border: "2px solid #000" }}
-        >
-          <motion.span
-            animate={{ rotate: open ? -90 : 0 }}
-            transition={{ duration: 0.3 }}
-            className="grid place-items-center"
-          >
-            {open ? (
-              <Minus size={14} strokeWidth={3} />
-            ) : (
-              <Plus size={14} strokeWidth={3} />
-            )}
-          </motion.span>
-        </motion.span>
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="body"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              height: { duration: 0.35, ease: EASE_OUT },
-              opacity: { duration: 0.25 },
-            }}
-            className="overflow-hidden"
-          >
-            <div
-              className="px-[18px] pb-5"
-              style={{ borderTop: "1px solid #E4E2DC" }}
-            >
-              <ul className="mt-3.5">
-                {p.points.map((pt) => (
-                  <li
-                    key={pt}
-                    className="relative py-[7px] pl-[22px] text-[15.5px] md:text-[16px]"
-                  >
-                    <span
-                      aria-hidden
-                      className="absolute left-0 top-[15px] h-2.5 w-2.5"
-                      style={{ background: RED, borderRadius: "3px 3px 3px 0" }}
-                    />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
-              <p
-                className="mt-3 rounded-[10px] px-3.5 py-3 text-[15px]"
-                style={{ background: p.potential ? "#fff" : "#F7F6F2" }}
-              >
-                <b style={{ color: RED }}>{p.measureLabel}</b> {p.measure}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-function Pillars() {
-  const [open, setOpen] = useState<number | null>(0);
-  return (
-    <Slide id="pillars" theme="paper">
-      <Headline>Šta radimo [[u pilotu.]]</Headline>
-      <Sub>
-        Tri stuba koja rade zajedno u pilotu, i dva za kasnije. Otvorite svaki
-        za detalje.
-      </Sub>
-      <Visual className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        {PILLARS.map((p, i) => (
-          <Pillar
-            key={p.title}
-            p={p}
-            open={open === i}
-            onToggle={() => setOpen(open === i ? null : i)}
-          />
-        ))}
-      </Visual>
+    <Slide id="web" theme="light">
+      <WebBody />
     </Slide>
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/* 06  Demo                                                                   */
-/* ------------------------------------------------------------------------ */
-
-function Steps({
-  rows,
-  dark = false,
-  caption,
-}: {
-  rows: [string, string][];
-  dark?: boolean;
-  caption?: string;
-}) {
+function WebBody() {
+  const t = useTheme();
   return (
-    <ol className="mt-6 flex flex-col gap-4 md:mt-8">
-      {caption && (
-        <motion.li
+    <>
+      <Headline>Interaktivni Katalog [[na vašem sajtu.]]</Headline>
+      <Visual>
+        <motion.div
           variants={item}
-          aria-hidden
-          className="text-[10px] uppercase tracking-[0.14em] lg:hidden"
-          style={{ fontFamily: MONO, color: "#8A8A8A" }}
+          className="flex max-w-xl items-center gap-3"
         >
-          {caption}
-        </motion.li>
-      )}
-      {rows.map(([k, v], i) => (
-        <motion.li key={k} variants={item} className="flex gap-3.5">
+          <Face src={PEOPLE.luka.img} name={PEOPLE.luka.name} size={44} />
           <span
-            className="grid h-8 w-8 flex-none place-items-center text-[14px] font-black italic text-white"
-            style={{ background: RED, borderRadius: "50% 50% 50% 12%" }}
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] md:text-[15px]"
+            style={{ background: t.card, border: `1px solid ${t.line}` }}
           >
-            {i + 1}
+            <Lock size={13} strokeWidth={2.6} style={{ color: RED }} />
+            <span className="truncate">{SITE_URL}</span>
           </span>
-          <span>
-            <span className="block text-[16px] font-extrabold md:text-[17px]">
-              {k}
-            </span>
-            <span
-              className="mt-0.5 block text-[14.5px] leading-relaxed md:text-[15px]"
-              style={{ color: dark ? "#B5B5B5" : "#6B6B6B" }}
-            >
-              {v}
-            </span>
-          </span>
-        </motion.li>
-      ))}
-    </ol>
-  );
-}
-
-/* Each demo takes two slides: first the story, then the phone alone, drawn
-   as large as the stage allows, so it reads as a phone to be touched. */
-function Demo() {
-  return (
-    <Slide id="demo" theme="light">
-      <Headline>Interaktivni Katalog. [[Probajte ga kao kupac.]]</Headline>
-      <Sub>
-        Na sledećem slajdu je pravi, klikabilan telefon. Od oglasa do koda za
-        kasu za manje od minut.
-      </Sub>
-      <div className="max-w-2xl">
-        <Steps
-          caption="Šta kupac prolazi"
-          rows={[
-            [
-              "Oglas na Instagramu i Facebooku",
-              "Jedan klik vodi u katalog, bez instaliranja.",
-            ],
-            [
-              "Najbliži maloprodajni objekat",
-              "Uz lokaciju, ili izborom mesta.",
-            ],
-            ["Korpa koja računa", "Kupac vidi cenu i uštedu dok bira."],
-            [
-              "Kod za kasu i Viber",
-              "Na primer NETOTAJNA12 za još 2%, pa jedan klik do Viber zajednice. Kod i popust su predlog, potvrđujemo ih sa vašim softverskim timom.",
-            ],
-          ]}
-        />
-      </div>
-    </Slide>
+        </motion.div>
+        <motion.p
+          variants={item}
+          className="mb-7 mt-4 max-w-2xl text-[clamp(0.95rem,3.6vw,1.1rem)] leading-relaxed"
+          style={{ color: t.muted }}
+        >
+          Luka pravi novi Neto sajt. U sklopu njega dobijate Interaktivni
+          katalog i Admin panel gde se dodaju/izmenjuju/brišu trenutne akcije i
+          slike proizvoda. Pregledno i jednostavno za korišćenje.
+        </motion.p>
+        <div className="grid gap-7 lg:grid-cols-2 lg:gap-10">
+          <div>
+            <Caption>Kroz šta kupac prolazi</Caption>
+            <Flow
+              compact
+              steps={[
+                { top: <IconTile icon={Megaphone} />, label: "Vidi oglas" },
+                { top: <IconTile icon={Globe} />, label: "Otvori sajt" },
+                {
+                  top: <IconTile icon={ShoppingCart} />,
+                  label: "Bira proizvode",
+                },
+                {
+                  top: <IconTile icon={BadgePercent} />,
+                  label: "Dobija popuste i promo kod",
+                },
+                {
+                  top: <IconTile icon={Ticket} />,
+                  label: "Predaje kod na kasi",
+                },
+              ]}
+            />
+          </div>
+          <div>
+            <Caption>Kako radi sistem</Caption>
+            <Flow
+              steps={[
+                {
+                  top: <IconTile icon={UserCog} bg="#000" />,
+                  label: "Admin unese akciju",
+                },
+                {
+                  top: <IconTile icon={RefreshCw} bg="#000" />,
+                  label: "Katalog se odmah menja",
+                },
+                {
+                  top: <IconTile icon={Eye} bg="#000" />,
+                  label: "Kupac vidi akciju",
+                },
+              ]}
+            />
+          </div>
+        </div>
+      </Visual>
+      <motion.p
+        variants={item}
+        className="mt-6 text-[13px] md:text-[14px]"
+        style={{ color: t.muted }}
+      >
+        Kod i popust potvrđujemo sa vašim softverskim timom.
+      </motion.p>
+    </>
   );
 }
 
 function DemoPhone() {
   return (
     <Slide id="demo-phone" theme="light" eyebrow={false} className="!py-4">
-      <motion.div variants={pop} custom={2} className="w-full">
+      <DemoHintAbove />
+      <motion.div variants={pop} custom={2} className="relative w-full">
+        <DemoHintBeside />
         <DemoStage>
           <CatalogDemo />
         </DemoStage>
@@ -795,43 +642,296 @@ function DemoPhone() {
 }
 
 /* ------------------------------------------------------------------------ */
-/* 07  The app                                                                */
+/* 04  Paid and organic                                                       */
+/* ------------------------------------------------------------------------ */
+
+function Pulse({ color, children }: { color: string; children: ReactNode }) {
+  const active = useSlideActive();
+  return (
+    <span className="relative grid h-14 flex-none place-items-center">
+      <motion.i
+        aria-hidden
+        className="absolute left-0 top-0 h-14 w-14"
+        style={{ border: `2px solid ${color}`, borderRadius: TILE_RADIUS }}
+        initial={{ scale: 1, opacity: 0 }}
+        animate={
+          active
+            ? { scale: [1, 1.5], opacity: [0.8, 0] }
+            : { scale: 1, opacity: 0 }
+        }
+        transition={{
+          duration: 1.8,
+          delay: 0.8,
+          ease: "easeOut",
+          repeat: Infinity,
+        }}
+      />
+      <span className="relative">{children}</span>
+    </span>
+  );
+}
+
+function Creatives() {
+  const kinds: {
+    label: string;
+    title: string;
+    mark: ReactNode;
+    color: string;
+    points: [IconType, string][];
+  }[] = [
+    {
+      label: "Plaćeni",
+      title: "Direktno dovodi kupce.",
+      mark: (
+        <Pulse color={META_BLUE}>
+          <MetaTile />
+        </Pulse>
+      ),
+      color: META_BLUE,
+      points: [
+        [Target, "Novi Sad i okolina"],
+        [MousePointerClick, "Klik vodi u katalog"],
+        [Store, "Kupac dolazi u objekat"],
+      ],
+    },
+    {
+      label: "Organski",
+      title: "Gradi brend.",
+      mark: <SocialTile />,
+      color: "#FF4B42",
+      points: [
+        [Heart, "Poverenje"],
+        [Users, "Pratioci"],
+        [TrendingUp, "Prepoznatljivost"],
+      ],
+    },
+  ];
+  return (
+    <Slide id="creatives" theme="dark">
+      <Headline>Kreativa je [[ono što prodaje.]]</Headline>
+      <Sub>Dve vrste sadržaja, dve različite svrhe.</Sub>
+      <Visual className="grid gap-4 md:grid-cols-2">
+        {kinds.map((k, i) => (
+          <motion.div
+            key={k.label}
+            variants={pop}
+            custom={i ? 1.5 : -1.5}
+            className="px-5 py-5 md:px-6 md:py-6"
+            style={{
+              background: "#0d0d0d",
+              border: "1px solid #2A2A2A",
+              borderRadius: NETO_RADIUS,
+            }}
+          >
+            <div className="flex items-center gap-4">
+              {k.mark}
+              <div>
+                <span
+                  className="block text-[11px] uppercase tracking-[0.16em]"
+                  style={{ fontFamily: MONO, color: k.color }}
+                >
+                  {k.label}
+                </span>
+                <b className="block text-[24px] font-extrabold italic leading-[1.1] md:text-[28px]">
+                  {k.title}
+                </b>
+              </div>
+            </div>
+            <ul className="mt-5 grid gap-3">
+              {k.points.map(([Icon, text]) => (
+                <li
+                  key={text}
+                  className="flex items-center gap-3 text-[15px] md:text-[17px]"
+                >
+                  <span
+                    className="grid h-9 w-9 flex-none place-items-center rounded-full"
+                    style={{ background: "#1C1C1C", color: k.color }}
+                  >
+                    <Icon size={18} />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        ))}
+      </Visual>
+    </Slide>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+/* 05  How a creative is made                                                 */
+/* ------------------------------------------------------------------------ */
+
+/* A big face with the tool of the job pinned to it. */
+function Worker({
+  who,
+  icon: Icon,
+  does,
+}: {
+  who: keyof typeof PEOPLE;
+  icon: IconType;
+  does: string;
+}) {
+  const p = PEOPLE[who];
+  return (
+    <motion.div
+      variants={pop}
+      custom={-3}
+      className="relative flex items-center gap-4 md:flex-col md:gap-0 md:text-center"
+    >
+      <span className="relative flex-none">
+        <Image
+          src={p.img}
+          alt={p.name}
+          width={112}
+          height={112}
+          className="h-[76px] w-[76px] rounded-full object-cover md:h-[112px] md:w-[112px]"
+          style={{
+            background: "#111",
+            boxShadow: `0 0 0 3px #F7F6F2, 0 0 0 6px ${RED}`,
+          }}
+        />
+        <span
+          aria-hidden
+          className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-black text-white md:h-10 md:w-10"
+          style={{ boxShadow: "0 0 0 3px #F7F6F2" }}
+        >
+          <Icon size={17} />
+        </span>
+      </span>
+      <span className="md:mt-4">
+        <span
+          className="block text-[11px] uppercase tracking-[0.12em] md:text-[12px]"
+          style={{ fontFamily: MONO, color: RED }}
+        >
+          {p.name.split(" ")[0]}
+        </span>
+        <span className="block text-[19px] font-extrabold leading-[1.15] md:text-[20px]">
+          {does}
+        </span>
+      </span>
+    </motion.div>
+  );
+}
+
+/* The line runs down the faces on a phone and across them on a desktop,
+   and the dot follows whichever way it runs. */
+function Production() {
+  return (
+    <Slide id="production" theme="paper">
+      <ProductionBody />
+    </Slide>
+  );
+}
+
+function ProductionBody() {
+  const active = useSlideActive();
+  const phone = useIsPhone();
+  const to = ["0%", "100%"];
+  return (
+    <>
+      <Headline>Od ideje [[do objave.]]</Headline>
+      <Visual className="relative flex flex-col gap-6 md:grid md:grid-cols-5 md:gap-0">
+        <div
+          aria-hidden
+          className="absolute bottom-10 left-[37px] top-10 w-[2px] md:bottom-auto md:left-[10%] md:right-[10%] md:top-[55px] md:h-[2px] md:w-auto"
+          style={{ background: "#D9D6CE" }}
+        >
+          <motion.i
+            key={phone ? "down" : "across"}
+            className="absolute -ml-[5px] -mt-[5px] block h-3 w-3 rounded-full"
+            style={{
+              background: RED,
+              left: phone ? 1 : undefined,
+              top: phone ? undefined : 1,
+            }}
+            initial={{ opacity: 0 }}
+            animate={
+              active
+                ? {
+                    ...(phone ? { top: to } : { left: to }),
+                    opacity: [0, 1, 1, 0],
+                  }
+                : { opacity: 0 }
+            }
+            transition={{
+              duration: 3,
+              delay: 0.9,
+              ease: "easeInOut",
+              repeat: Infinity,
+              repeatDelay: 0.4,
+            }}
+          />
+        </div>
+        <Worker who="filip" icon={PenLine} does="Piše kreative" />
+        <Worker who="nina" icon={Users} does="Organizuje modele" />
+        <Worker who="mihajlo" icon={Video} does="Snima" />
+        {/* Mihajlo's second job: the dashed frame ties him to the editors. */}
+        <div
+          className="relative -mx-3 -my-3 flex flex-col gap-6 rounded-[18px] px-3 pb-11 pt-3 md:col-span-2 md:mx-0 md:-mb-0 md:-mt-4 md:grid md:grid-cols-2 md:gap-0 md:px-0 md:pb-14 md:pt-4"
+          style={{ border: `2px dashed ${RED}` }}
+        >
+          <Worker who="stefan" icon={Scissors} does="Montira" />
+          <Worker who="kuzma" icon={Scissors} does="Montira" />
+          <motion.p
+            variants={item}
+            className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-1.5 text-[13px] font-bold md:text-[15px]"
+          >
+            <Eye size={16} className="flex-none" style={{ color: RED }} />
+            Mihajlo kontroliše montažu
+          </motion.p>
+        </div>
+      </Visual>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+/* 06  The app                                                                */
 /* ------------------------------------------------------------------------ */
 
 function TheApp() {
+  const gets: [IconType, string][] = [
+    [Ticket, "Vaučeri"],
+    [QrCode, "Kod na kasi"],
+    [CreditCard, "Kartica lojalnosti"],
+  ];
   return (
     <Slide id="app" theme="dark">
-      <Headline>
-        Neto aplikacija. [[Potencijal za kasnije.]] Nije deo ove ponude.
-      </Headline>
+      <Headline>Neto aplikacija. [[Potencijal za budućnost.]]</Headline>
       <Sub>
-        Aplikacija nalik MojMaxi, kao poseban projekat posle pilota: kupac
-        pokaže kod na kasi i dobije popust, na primer 200 din za račun preko
-        2.000 din. Pre toga je potreban sastanak sa timom koji vodi artikle i
-        softver, da razumemo postojeći sistem i bazu i povežemo ih sa
-        aplikacijom. Telefon na sledećem slajdu radi kao pravi: dodirnite
-        obaveštenje ili Neto ikonicu.
+        Sledeći korak, kad katalog zaživi. Aplikacija koja će imati integrisan
+        Interaktivni katalog uz vaučere, karticu lojalnosti i lični profil
+        kupca.
       </Sub>
-      <div className="max-w-2xl">
-        <Steps
-          dark
-          caption="Šta bi kupac dobio"
-          rows={[
-            [
-              "Obaveštenje bez oglasa",
-              "Nova akcija stiže na telefon, besplatno, svake nedelje.",
-            ],
-            [
-              "Kod na kasi",
-              "Kupac pokaže kod i dobije popust, npr. 200 din za račun preko 2.000.",
-            ],
-            [
-              "Katalog uvek pri ruci",
-              "Lista za kupovinu pre nego što uđe u maloprodajni objekat.",
-            ],
-          ]}
-        />
-      </div>
+      <motion.div variants={item} className="mt-5 flex items-center gap-3">
+        <Face src={PEOPLE.luka.img} name={PEOPLE.luka.name} size={44} />
+        <b className="text-[16px] font-extrabold md:text-[18px]">
+          Razvoj vodi Luka
+        </b>
+      </motion.div>
+      <Visual className="grid max-w-3xl grid-cols-3 gap-2.5 md:gap-4">
+        {gets.map(([Icon, label], i) => (
+          <motion.div
+            key={label}
+            variants={pop}
+            custom={i % 2 ? 2 : -2}
+            className="flex flex-col items-center gap-3 px-2 py-5 text-center md:py-7"
+            style={{
+              background: "#0d0d0d",
+              border: "1px dashed #4A4A4A",
+              borderRadius: NETO_RADIUS,
+            }}
+          >
+            <IconTile icon={Icon} />
+            <b className="text-[13px] font-extrabold leading-[1.2] md:text-[17px]">
+              {label}
+            </b>
+          </motion.div>
+        ))}
+      </Visual>
     </Slide>
   );
 }
@@ -839,7 +939,9 @@ function TheApp() {
 function AppPhone() {
   return (
     <Slide id="app-phone" theme="dark" eyebrow={false} className="!py-4">
-      <motion.div variants={pop} custom={-2} className="w-full">
+      <DemoHintAbove />
+      <motion.div variants={pop} custom={-2} className="relative w-full">
+        <DemoHintBeside />
         <DemoStage>
           <AppDemo />
         </DemoStage>
@@ -849,75 +951,66 @@ function AppPhone() {
 }
 
 /* ------------------------------------------------------------------------ */
-/* 08  Pilot                                                                  */
+/* 07  Results                                                                */
 /* ------------------------------------------------------------------------ */
 
-function Pilot() {
-  return (
-    <Slide id="pilot" theme="red">
-      <Headline>Ovako će izgledati saradnja.</Headline>
-      <Sub>Tri koraka, redom. Svaki sledeći se oslanja na prethodni.</Sub>
-      <Visual className="max-w-3xl">
-        <Timeline
-          steps={[
-            {
-              title: "Prvo",
-              body: "Sastanak sa vašim softverskim timom: potvrđujemo kako promo kod radi na kasi i da li artikli mogu da stižu u katalog direktno iz vašeg sistema. Pravimo novi sajt sa Interaktivnim Katalogom i admin panelom, kroz koji vaši administratori unose artikle i popuste.",
-            },
-            {
-              title: "Drugo",
-              body: "Snimamo prvi sadržaj, pokrećemo Meta kampanju za Novi Sad i okolinu i otvaramo Viber zajednicu. Svake nedelje šaljemo izveštaj i plan akcija za sledeću nedelju.",
-            },
-            {
-              title: "Treće",
-              body: "Gasimo ono što ne prodaje, pojačavamo ono što prodaje. Kad imamo brojke, zajedno odlučujemo o širenju na ceo lanac i o aplikaciji.",
-            },
-          ]}
-        />
-      </Visual>
-    </Slide>
-  );
-}
-
-/* ------------------------------------------------------------------------ */
-/* 09  KPI                                                                    */
-/* ------------------------------------------------------------------------ */
-
-function Kpi() {
-  const rows: [string, string][] = [
-    ["Posete Interaktivnom Katalogu", "i izabrani proizvodi"],
-    ["Izabrani najbliži objekti", "koji objekti privlače kupce"],
-    ["Iskorišćeni kodovi na kasi", "praćenje dogovaramo sa vašim timom"],
-    ["Prodaja artikala sa akcije", "u Novom Sadu i okolini, iz vaših podataka"],
-    ["Doseg i pregledi do kraja", "u Novom Sadu, uz rast pratilaca"],
-    ["Članovi Viber zajednice", "rast nedeljno i otvaranja kataloga"],
+/* The proof wall and the four numbers of the landing page's Rezultati
+   section, in the deck's own dress. */
+function Results() {
+  const stats: [IconType, ReactNode, string][] = [
+    [TrendingUp, "4.2x", "prosečan povrat na uloženo"],
+    [
+      Target,
+      <Count key="g" to={133000} suffix="€" delay={0.3} />,
+      "generisano Skeylo kreativama",
+    ],
+    [Timer, "1 mesec", "prosečan period potreban za profit"],
+    [
+      Heart,
+      <Count key="r" to={97} suffix="%" delay={0.5} />,
+      "klijenata ostane duže od godinu dana",
+    ],
   ];
   return (
-    <Slide id="kpi" theme="light">
-      <Headline>Šta pratimo, [[svake nedelje.]]</Headline>
-      <Sub>
-        Izveštaj stiže svake nedelje, sa objašnjenjem, a ne samo tabelom.
-      </Sub>
+    <Slide id="results" theme="dark">
+      <Headline>Rezultati, [[crno na belo.]]</Headline>
       <Visual>
-        <div className="max-w-3xl" style={{ borderTop: "2px solid #000" }}>
-          {rows.map(([k, v]) => (
+        <div className="-mx-5 flex flex-col gap-3 [mask-image:linear-gradient(to_right,transparent,black_7%,black_93%,transparent)] md:-mx-10 md:gap-4">
+          <div className="flex h-[126px] items-center overflow-hidden sm:h-[148px]">
+            <ProofRow
+              shots={rowA}
+              anim="animate-[marquee_86s_linear_infinite]"
+            />
+          </div>
+          <div className="flex h-[126px] items-center overflow-hidden sm:h-[148px]">
+            <ProofRow
+              shots={rowB}
+              anim="animate-[marquee_88s_linear_infinite_reverse]"
+            />
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
+          {stats.map(([Icon, value, label], i) => (
             <motion.div
-              key={k}
-              variants={item}
-              className="grid grid-cols-[auto_1fr_auto] items-baseline gap-3.5 py-4"
-              style={{ borderBottom: "1px solid #E4E2DC" }}
+              key={label}
+              variants={pop}
+              custom={i % 2 ? 1.5 : -1.5}
+              className="px-4 py-4 md:px-5 md:py-5"
+              style={{
+                background: "#0d0d0d",
+                border: "1px solid #2A2A2A",
+                borderRadius: NETO_RADIUS,
+              }}
             >
-              <CheckCircle2
-                size={18}
-                className="translate-y-[3px]"
-                style={{ color: RED }}
-              />
-              <b className="text-[17px] font-bold md:text-[18px]">{k}</b>
+              <Icon size={22} style={{ color: "#FF4B42" }} />
+              <strong className="mt-3 block whitespace-nowrap text-[26px] font-black italic leading-none md:text-[38px]">
+                {value}
+              </strong>
               <span
-                className="text-right text-[14px]"
-                style={{ color: "#6B6B6B" }}
+                className="mt-1.5 block text-[12.5px] leading-[1.25] md:text-[14px]"
+                style={{ color: "#B5B5B5" }}
               >
-                {v}
+                {label}
               </span>
             </motion.div>
           ))}
@@ -928,176 +1021,217 @@ function Kpi() {
 }
 
 /* ------------------------------------------------------------------------ */
-/* 10  Proof                                                                  */
+/* 08  The offer                                                              */
 /* ------------------------------------------------------------------------ */
 
-function Proof() {
-  const cases: {
-    logo: string;
-    round?: boolean;
-    name: string;
-    where: string;
-    stat: string;
-    statLabel: string;
-    body: string;
-  }[] = [
-    {
-      logo: "/logos/ils-logo.webp",
-      round: true,
-      name: "Infinity Laser Studio",
-      where: "Novi Sad, kompletna saradnja",
-      stat: "Pun",
-      statLabel: "kapacitet termina posle kampanje",
-      body: "Sajt, sadržaj i oglasi iz jednog tima. Studio je došao do punog rasporeda.",
-    },
-    {
-      logo: "/logos/egotike.webp",
-      name: "EgoTike",
-      where: "online prodaja patika",
-      stat: "~11x",
-      statLabel: "povrat na ad budžet za 17 dana",
-      body: "Testirali smo više kreativa i pojačali one koji prodaju.",
-    },
-  ];
+const PACKS: {
+  name: string;
+  tag: string;
+  featured?: boolean;
+  paid: boolean;
+  organic: boolean;
+  team: number;
+  ads: number;
+  models: number;
+  note: string;
+}[] = [
+  {
+    name: "Full paket",
+    tag: "Najkompletniji",
+    featured: true,
+    paid: true,
+    organic: true,
+    team: 3500,
+    ads: 1500,
+    models: 700,
+    note: "Oglasi dovode kupce, organski gradi brend.",
+  },
+  {
+    name: "Meta paket",
+    tag: "Direktno do kupca",
+    paid: true,
+    organic: false,
+    team: 2800,
+    ads: 1500,
+    models: 300,
+    note: "Oglas vodi kupca pravo u katalog.",
+  },
+  {
+    name: "Organski paket",
+    tag: "Prepoznatljivost brenda",
+    paid: false,
+    organic: true,
+    team: 2800,
+    ads: 0,
+    models: 400,
+    note: "Bez oglasa nema direktnog dolaska na sajt. Više na sastanku.",
+  },
+];
+
+function Has({
+  on,
+  mark,
+  children,
+}: {
+  on: boolean;
+  mark: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <Slide id="proof" theme="paper">
-      <Headline>Šta je ovaj tim [[već uradio.]]</Headline>
-      <Sub>
-        Skeylo je tim iz Novog Sada. Radimo dugoročno, sa malim brojem
-        klijenata, da bi svaki dobio pun tim.
-      </Sub>
-      <Visual className="grid gap-4 md:grid-cols-2">
-        {cases.map((c, i) => (
-          <motion.div
-            key={c.name}
-            variants={pop}
-            custom={i ? 1.5 : -1.5}
-            className="bg-black px-5 py-[22px] text-white"
-            style={{ borderRadius: NETO_RADIUS }}
-          >
-            <div className="flex items-center gap-3.5">
-              <Image
-                src={c.logo}
-                alt={`${c.name} logo`}
-                width={64}
-                height={64}
-                className={`h-16 w-16 flex-none object-contain ${c.round ? "rounded-full" : "rounded-[14px_14px_14px_4px] bg-white p-1.5"}`}
-              />
-              <div>
-                <b className="block text-[22px] font-extrabold italic leading-[1.1]">
-                  {c.name}
-                </b>
-                <small
-                  className="mt-0.5 block text-[14px]"
-                  style={{ color: "#9A9A9A" }}
-                >
-                  {c.where}
-                </small>
-              </div>
-            </div>
-            <div
-              className="mt-[18px] flex items-baseline gap-3 py-3.5"
-              style={{
-                borderTop: "1px dashed #444",
-                borderBottom: "1px dashed #444",
-              }}
-            >
-              <strong
-                className="text-[44px] font-black italic leading-none"
-                style={{ color: RED }}
-              >
-                {c.stat}
-              </strong>
-              <span
-                className="text-[15px] leading-[1.3]"
-                style={{ color: "#DDD" }}
-              >
-                {c.statLabel}
-              </span>
-            </div>
-            <p className="mt-3 text-[15px]" style={{ color: "#BDBDBD" }}>
-              {c.body}
-            </p>
-          </motion.div>
-        ))}
-      </Visual>
-    </Slide>
+    <li
+      className="flex items-center gap-2.5 text-[15px] leading-[1.25]"
+      style={{ opacity: on ? 1 : 0.4 }}
+    >
+      <span className="flex w-[46px] flex-none items-center">{mark}</span>
+      <span className={`flex-1 ${on ? "font-bold" : "line-through"}`}>
+        {children}
+      </span>
+      {on ? (
+        <Check size={16} strokeWidth={3} />
+      ) : (
+        <X size={16} strokeWidth={3} />
+      )}
+    </li>
   );
 }
-
-/* ------------------------------------------------------------------------ */
-/* 11  Price                                                                  */
-/* ------------------------------------------------------------------------ */
 
 function Price() {
   return (
     <Slide id="price" theme="dark">
-      <Headline center>Ceo tim. [[Jedna cena za tim.]]</Headline>
-      <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-14">
-        <motion.div variants={item}>
-          <PriceTag
-            forWhom="Ceo tim za Neto diskonte"
-            amount="3.500"
-            currency="€"
-            per="mesečno + 20% PDV"
-            items={[
-              "Strateg i media buyer",
-              "Video producent i direktor postprodukcije",
-              "Dva video editora",
-              "Informacione tehnologije",
-              "Organizatorka snimanja",
-              "Novi sajt sa Interaktivnim Katalogom",
-              "Admin panel za artikle i popuste",
-              "Sva oprema i alati",
-              "Nedeljni izveštaj i poziv",
-            ]}
-          />
-        </motion.div>
-        <div>
-          <motion.p
-            variants={item}
-            className="mt-4 pb-3 text-[11px] uppercase tracking-[0.14em] lg:mt-0"
-            style={{ color: "#8A8A8A", fontFamily: MONO }}
-          >
-            Van cene tima
-          </motion.p>
-          <motion.div variants={item} style={{ borderTop: "1px solid #333" }}>
-            {[
-              ["Troškovi modela i voditelja", "okvirno 800 €"],
-              ["Ad budžet, plaća se direktno Meti", "od 1.500 €"],
-              ["Trajanje pilota", "90 dana"],
-            ].map(([k, v]) => (
-              <div
-                key={k}
-                className="flex justify-between gap-4 py-4 text-[16px]"
-                style={{ borderBottom: "1px solid #333" }}
+      <Headline center>Tri paketa. [[Vi birate.]]</Headline>
+      <Visual className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
+        {PACKS.map((p, i) => {
+          const line = p.featured ? "rgba(255,255,255,0.35)" : "#333";
+          const soft = p.featured ? "rgba(255,255,255,0.85)" : "#B5B5B5";
+          return (
+            <motion.article
+              key={p.name}
+              variants={pop}
+              custom={i === 1 ? 0 : i ? 1.5 : -1.5}
+              className="flex flex-col px-5 py-6 text-white"
+              style={{
+                background: p.featured ? RED : "#0d0d0d",
+                border: p.featured ? `2px solid ${RED}` : "2px solid #2A2A2A",
+                borderRadius: "10px 34px 10px 10px",
+              }}
+            >
+              <span
+                className="text-[10.5px] uppercase tracking-[0.16em]"
+                style={{ fontFamily: MONO, color: soft }}
               >
-                <span style={{ color: "#B5B5B5" }}>{k}</span>
-                <b className="whitespace-nowrap">{v}</b>
+                {p.tag}
+              </span>
+              <h2 className="mt-1 text-[26px] font-black italic leading-[1.05]">
+                {p.name}
+              </h2>
+
+              <ul className="mt-4 grid gap-2.5">
+                <Has
+                  on
+                  mark={
+                    <span
+                      className="grid h-8 w-8 place-items-center rounded-full"
+                      style={{
+                        background: p.featured ? "#fff" : RED,
+                        color: p.featured ? RED : "#fff",
+                      }}
+                    >
+                      <Globe size={17} />
+                    </span>
+                  }
+                >
+                  Sajt + Interaktivni Katalog
+                </Has>
+                <Has on={p.paid} mark={<MetaTile size={32} />}>
+                  15 plaćenih video oglasa
+                </Has>
+                <Has on={p.organic} mark={<SocialTile size={30} />}>
+                  20 organskih klipova
+                </Has>
+              </ul>
+
+              <div
+                className="mt-5 text-[15px]"
+                style={{ borderTop: `1px solid ${line}` }}
+              >
+                {(
+                  [
+                    ["Tim", `${p.team.toLocaleString("de-DE")} €`],
+                    [
+                      "Meta oglasi",
+                      p.ads ? `~${p.ads.toLocaleString("de-DE")} €` : "nema",
+                    ],
+                    ["Modeli", `~${p.models} €`],
+                  ] as const
+                ).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex justify-between gap-3 py-2.5"
+                    style={{ borderBottom: `1px solid ${line}` }}
+                  >
+                    <span style={{ color: soft }}>{k}</span>
+                    <b className="whitespace-nowrap">{v}</b>
+                  </div>
+                ))}
               </div>
-            ))}
-          </motion.div>
-          <motion.p
-            variants={item}
-            className="mt-[18px] text-[14px]"
-            style={{ color: "#8A8A8A" }}
+
+              <div className="mt-4 flex items-end justify-between gap-3">
+                <span className="pb-1.5 text-[13px]" style={{ color: soft }}>
+                  Ukupno, okvirno
+                </span>
+                <strong className="whitespace-nowrap text-[44px] font-black italic leading-none tracking-[-0.02em]">
+                  <Count to={p.team + p.ads + p.models} delay={0.4 + i * 0.2} />{" "}
+                  <span className="text-[24px]">€</span>
+                </strong>
+              </div>
+              <p
+                className="mt-3 text-[13.5px] leading-[1.35]"
+                style={{ color: soft }}
+              >
+                {p.note}
+              </p>
+            </motion.article>
+          );
+        })}
+      </Visual>
+      <motion.div
+        variants={item}
+        className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-end"
+      >
+        <div className="grid max-w-2xl gap-2">
+          <p
+            className="flex items-start gap-2.5 text-[14px] leading-[1.4]"
+            style={{ color: "#B5B5B5" }}
           >
-            Plaćanje je na početku svakog meseca saradnje. Troškovi modela i
-            voditelja i ad budžet se dogovaraju pre svakog meseca. Posle pilota
-            zajedno odlučujemo o nastavku.
-          </motion.p>
-          <motion.div
-            variants={item}
-            className="mt-10 text-[14px]"
-            style={{ color: "#8A8A8A" }}
+            <TrendingUp
+              size={18}
+              className="mt-0.5 flex-none"
+              style={{ color: "#FF4B42" }}
+            />
+            <span>
+              Budžet za Meta oglase je investicija: vraća se kroz kupce koje
+              dovodi u prodavnicu. Cene su mesečne.
+            </span>
+          </p>
+          <p
+            className="flex items-start gap-2.5 px-3.5 py-3 text-[14.5px] leading-[1.4] text-white"
+            style={{ border: "1px solid #4A4A4A", borderRadius: NETO_RADIUS }}
           >
-            <strong className="block text-[22px] font-extrabold italic text-white">
-              Svaki dinar je bitan.
-            </strong>
-            I svaki dinar u marketingu. Skeylo, Novi Sad
-          </motion.div>
+            <ReceiptText
+              size={18}
+              className="mt-0.5 flex-none"
+              style={{ color: "#FF4B42" }}
+            />
+            <span>
+              <b>Sve cene su bez PDV-a.</b> Ako vam je potrebna faktura, na cenu
+              se dodaje PDV.
+            </span>
+          </p>
         </div>
-      </div>
+        <strong className="text-[20px] font-extrabold italic md:text-right">
+          Svaki dinar je bitan.
+        </strong>
+      </motion.div>
     </Slide>
   );
 }
@@ -1111,15 +1245,8 @@ export const SLIDES: {
   Component: () => React.JSX.Element;
 }[] = [
   { id: "cover", label: "Neto × Skeylo", theme: "dark", Component: Cover },
-  { id: "facts", label: "Gde ste sada", theme: "light", Component: Facts },
   { id: "crew", label: "Vaš tim", theme: "paper", Component: Crew },
-  { id: "pillars", label: "Šta radimo", theme: "paper", Component: Pillars },
-  {
-    id: "demo",
-    label: "Interaktivni Katalog",
-    theme: "light",
-    Component: Demo,
-  },
+  { id: "web", label: "Sajt i katalog", theme: "light", Component: Web },
   {
     id: "demo-phone",
     label: "Interaktivni Katalog: demo",
@@ -1127,8 +1254,20 @@ export const SLIDES: {
     Component: DemoPhone,
   },
   {
+    id: "creatives",
+    label: "Plaćeni i organski",
+    theme: "dark",
+    Component: Creatives,
+  },
+  {
+    id: "production",
+    label: "Kako nastaje kreativa",
+    theme: "paper",
+    Component: Production,
+  },
+  {
     id: "app",
-    label: "Aplikacija (kasnije)",
+    label: "Aplikacija: potencijal",
     theme: "dark",
     Component: TheApp,
   },
@@ -1138,9 +1277,6 @@ export const SLIDES: {
     theme: "dark",
     Component: AppPhone,
   },
-  { id: "pilot", label: "Tok saradnje", theme: "red", Component: Pilot },
-  { id: "kpi", label: "Šta pratimo", theme: "light", Component: Kpi },
-  { id: "proof", label: "Šta smo uradili", theme: "paper", Component: Proof },
-  { id: "versus", label: "Koliko to košta", theme: "dark", Component: Versus },
+  { id: "results", label: "Rezultati", theme: "dark", Component: Results },
   { id: "price", label: "Ponuda", theme: "dark", Component: Price },
 ];

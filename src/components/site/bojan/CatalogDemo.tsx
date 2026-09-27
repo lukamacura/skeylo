@@ -8,8 +8,10 @@ import {
   Clapperboard,
   Heart,
   Home,
+  Lock,
   MessageCircle,
   MoreHorizontal,
+  RotateCw,
   Search,
   Send,
   ShoppingCart,
@@ -57,6 +59,7 @@ const STORES: [string, string][] = [
 ];
 const TOWNS = ["Novi Sad", "Petrovaradin", "Futog", "Kać"];
 const CODE = "NETOTAJNA12";
+export const SITE_URL = "vaš-sajt.rs/katalog";
 
 export default function CatalogDemo() {
   const [screen, setScreen] = useState(0);
@@ -96,7 +99,7 @@ export default function CatalogDemo() {
     <PhoneFrame
       homeBar="dark"
       captionColor={MUTED}
-      caption="Dodirnite oglas i prođite put kupca. Cene su izmišljene; pravi katalog se puni vašim akcijama svake nedelje."
+      caption="Dodirnite oglas: otvara se katalog na vašem sajtu. Cene su primer."
     >
       <div
         className="absolute inset-0 text-[15px] text-[#1A1A1A]"
@@ -219,15 +222,27 @@ export function DBtn({
   );
 }
 
+/* The catalogue is a page on Neto's website, so every screen after the ad
+   sits under a browser's address bar. */
 function AppHead() {
   return (
-    <div
-      className="mb-3 flex items-center gap-2.5 px-0.5 pb-3 pt-1"
-      style={{ borderBottom: "1px solid #E4E2DC" }}
-    >
-      <MiniLogo />
-      <span className="text-[16px] font-extrabold">Interaktivni Katalog</span>
-    </div>
+    <>
+      <div
+        className="mb-2 flex items-center gap-1.5 rounded-full px-3 py-[6px] text-[12px]"
+        style={{ background: "#E4E2DC", color: "#3A3A3A" }}
+      >
+        <Lock size={11} strokeWidth={2.6} />
+        <span className="flex-1 truncate text-center">{SITE_URL}</span>
+        <RotateCw size={12} strokeWidth={2.4} />
+      </div>
+      <div
+        className="mb-3 flex items-center gap-2.5 px-0.5 pb-2.5 pt-0.5"
+        style={{ borderBottom: "1px solid #E4E2DC" }}
+      >
+        <MiniLogo />
+        <span className="text-[16px] font-extrabold">Interaktivni Katalog</span>
+      </div>
+    </>
   );
 }
 
@@ -751,9 +766,7 @@ function TicketScreen({
           <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20.5l1.4-4.4A8.5 8.5 0 1 1 21 11.5z" />
           <path d="M9.5 8.5c.3 2.6 2.4 4.8 5 5.2" />
         </svg>
-        {joined
-          ? "U zajednici si. Vidimo se na Viberu!"
-          : "Pridruži se Viber zajednici"}
+        {joined ? "U zajednici si!" : "Pridruži se Viber zajednici"}
       </DBtn>
       <button
         type="button"

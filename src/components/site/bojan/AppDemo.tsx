@@ -49,7 +49,15 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { DISPLAY, MONO, MUTED, RED, fmt, useSlideActive } from "./primitives";
+import {
+  DISPLAY,
+  MONO,
+  MUTED,
+  RED,
+  fmt,
+  useDemo,
+  useSlideActive,
+} from "./primitives";
 import { MiniLogo, PRODUCTS, Pin, ProductCard, off } from "./visuals";
 import { PhoneFrame } from "./DemoStage";
 
@@ -96,10 +104,9 @@ export default function AppDemo() {
   const pager = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inApp = app !== null;
-  const triedRef = useRef(false);
-  const markTried = useCallback(() => {
-    triedRef.current = true;
-  }, []);
+  const { tried, markTried } = useDemo();
+  const triedRef = useRef(tried);
+  triedRef.current = tried;
 
   /* The notification arrives a beat after the slide does. Once the phone
      has been tried it leaves on its own; before that it waits to be
@@ -679,7 +686,6 @@ export default function AppDemo() {
                     {sheet === "store" && (
                       <StoreSheet
                         store={STORES[fav]}
-                        near={fav === 0}
                         say={say}
                         onClose={() => setSheet(null)}
                       />
@@ -1204,7 +1210,7 @@ function HomeTab({
           className="flex items-center gap-2 text-right text-[11px] font-bold leading-[1.25]"
           style={{ color: RED }}
         >
-          <span className="max-w-[11ch]">200 din za račun preko 2.000</span>
+          <span className="max-w-[9ch]">+5% na sledeću kupovinu</span>
           <Copy size={16} />
         </span>
       </motion.button>
@@ -1574,11 +1580,7 @@ function NotifsSheet() {
   const items = [
     ["Nova akcija nedelje je stigla!", "Mleko 129 din, kafa 339 din.", "sada"],
     ["Skupila si 1.240 poena", "Još 260 do vaučera od 500 din.", "juče"],
-    [
-      "Tvoj kod MARIJA-5N7 je aktivan",
-      "200 din za račun preko 2.000 din.",
-      "pon",
-    ],
+    ["Tvoj kod MARIJA-5N7 je aktivan", "+5% na sledeću kupovinu.", "pon"],
   ];
   return (
     <div
@@ -1611,7 +1613,7 @@ function ClubSheet() {
     ["Kupovina, Bulevar oslobođenja", "23. sep", 120],
     ["Kod iskorišćen na kasi", "23. sep", 50],
     ["Kupovina, Bulevar oslobođenja", "19. sep", 210],
-    ["Vaučer 500 din iskorišćen", "12. sep", -1500],
+    ["Vaučer 500 din iskorišćen", "12. sep", -500],
   ];
   return (
     <>
@@ -1639,7 +1641,7 @@ function ClubSheet() {
             </span>
             <b style={{ color: p > 0 ? "#1f8f3d" : RED }}>
               {p > 0 ? "+" : ""}
-              {fmt(p)}
+              {p}
             </b>
           </Row>
         ))}
@@ -1650,12 +1652,10 @@ function ClubSheet() {
 
 function StoreSheet({
   store,
-  near,
   say,
   onClose,
 }: {
   store: string;
-  near: boolean;
   say: (m: string) => void;
   onClose: () => void;
 }) {
@@ -1693,7 +1693,7 @@ function StoreSheet({
       </div>
       <b className="block text-[16px]">{store}</b>
       <small className="block" style={{ color: MUTED }}>
-        Otvoreno svaki dan 7 do 21{near ? " · 650 m od tebe" : ""}
+        Otvoreno svaki dan 7 do 21 · 650 m od tebe
       </small>
       <div className="mt-3 grid grid-cols-2 gap-2.5">
         <motion.button

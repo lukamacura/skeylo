@@ -39,7 +39,7 @@ type Shot = {
 };
 
 /** Two rows, sizes tuned so the text inside every screenshot stays readable. */
-const rowA: Shot[] = [
+export const rowA: Shot[] = [
   {
     src: "/bento1/b5.webp",
     w: 290,
@@ -122,7 +122,7 @@ const rowA: Shot[] = [
   },
 ];
 
-const rowB: Shot[] = [
+export const rowB: Shot[] = [
   {
     src: "/bento1/b9.webp",
     w: 296,
@@ -213,7 +213,7 @@ const rowIn = {
   show: { transition: { delayChildren: 0.12, staggerChildren: 0.045 } },
 };
 
-function ProofRow({ shots, anim }: { shots: Shot[]; anim: string }) {
+export function ProofRow({ shots, anim }: { shots: Shot[]; anim: string }) {
   const reduce = useReducedMotion();
 
   return (
