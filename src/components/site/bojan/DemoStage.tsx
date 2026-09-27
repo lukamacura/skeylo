@@ -12,7 +12,7 @@ import { DISPLAY } from "./primitives";
 
 /* Breathing room the phone leaves inside the stage. */
 const MARGIN = 16;
-const MIN_SCALE = 0.6;
+const MIN_SCALE = 0.5;
 
 /* The frame every clickable phone sits in. Nothing is drawn around it: the
    phone stands on its own slide and is the only thing to look at.

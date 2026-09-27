@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
@@ -167,10 +167,13 @@ function Face({
   src,
   name,
   size = 56,
+  className,
 }: {
   src: string;
   name: string;
   size?: number;
+  /* Sizes the face from CSS instead, for a face that changes with the screen. */
+  className?: string;
 }) {
   return (
     <Image
@@ -178,10 +181,10 @@ function Face({
       alt={name}
       width={size}
       height={size}
-      className="flex-none rounded-full object-cover"
+      className={`flex-none rounded-full object-cover ${className ?? ""}`}
       style={{
-        width: size,
-        height: size,
+        width: className ? undefined : size,
+        height: className ? undefined : size,
         background: "#111",
         boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${RED}`,
       }}
@@ -258,7 +261,7 @@ function Caption({ children }: { children: ReactNode }) {
   const t = useTheme();
   return (
     <p
-      className="mb-4 text-[10px] uppercase tracking-[0.14em] md:text-[11px]"
+      className="mb-3 text-[10px] uppercase tracking-[0.14em] md:mb-4 md:text-[11px]"
       style={{ fontFamily: MONO, color: t.muted }}
     >
       {children}
@@ -332,6 +335,7 @@ function Cover() {
       id="cover"
       theme="dark"
       eyebrow={false}
+      fit={false}
       className="!px-0 !py-0 [&>div]:flex-1"
     >
       <CoverBody />
@@ -349,17 +353,20 @@ function CoverBody() {
   });
   return (
     <>
-      <div className="flex flex-1 flex-col justify-center px-5 pb-6 pt-9 md:px-10 md:pb-8 md:pt-16">
+      <div className="flex flex-1 flex-col justify-center px-5 pb-[3vh] pt-[4vh] md:px-10 md:pt-[6vh]">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
-          <NetoLogo className="w-[min(58vw,240px)] md:w-[340px]" delay={0.15} />
+          <NetoLogo
+            className="w-[min(58vw,240px,30vh)] md:w-[min(340px,38vh)]"
+            delay={0.15}
+          />
           <motion.div
             aria-hidden
-            className="mt-1.5 text-[clamp(20px,6vw,28px)] font-medium tracking-[0.16em]"
+            className="mt-1.5 text-[clamp(16px,min(6vw,3.4vh),28px)] font-medium tracking-[0.16em]"
             {...fade(0.7)}
           >
             DISKONTI
           </motion.div>
-          <motion.div className="mt-5 md:mt-7" {...fade(0.95)}>
+          <motion.div className="mt-[2.4vh]" {...fade(0.95)}>
             <Image
               src="/logo.webp"
               alt="Skeylo"
@@ -370,7 +377,7 @@ function CoverBody() {
             />
           </motion.div>
           <motion.h1
-            className="mt-6 text-center text-[clamp(2.2rem,10vw,4.2rem)] font-extrabold italic leading-[1.02] tracking-[-0.01em] md:mt-9"
+            className="mt-[3vh] text-center text-[clamp(1.8rem,min(10vw,8.5vh),4.2rem)] font-extrabold italic leading-[1.02] tracking-[-0.01em]"
             initial={{ opacity: 0, y: 18 }}
             animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
             transition={{ duration: 0.7, delay: 1.1, ease: EASE_OUT }}
@@ -378,14 +385,14 @@ function CoverBody() {
             Ceo marketing tim.
           </motion.h1>
           <motion.p
-            className="mt-3 max-w-[32ch] text-center text-[17px] md:mt-4 md:text-[19px]"
+            className="mt-[1.6vh] max-w-[32ch] text-center text-[clamp(14px,2.4vh,17px)] md:text-[clamp(15px,2.4vh,19px)]"
             style={{ color: "#CFCFCF" }}
             {...fade(1.4)}
           >
             Šest ljudi i kompletna oprema, za Neto u Novom Sadu i okolini.
           </motion.p>
           <motion.p
-            className="mt-5 text-center text-[13px] md:mt-7"
+            className="mt-[2.4vh] text-center text-[13px]"
             style={{ color: "#8A8A8A", fontFamily: MONO }}
             {...fade(1.6)}
           >
@@ -475,7 +482,7 @@ function Crew() {
   return (
     <Slide id="crew" theme="paper">
       <Headline>Vaš marketing tim. [[Šest ljudi.]]</Headline>
-      <Visual className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-3">
+      <Visual className="!mt-4 grid grid-cols-2 gap-2 md:!mt-8 md:gap-4 lg:grid-cols-3">
         {CREW.map((m, i) => {
           const p = PEOPLE[m.who];
           return (
@@ -483,47 +490,49 @@ function Crew() {
               key={p.name}
               variants={pop}
               custom={i % 2 ? 1.5 : -1.5}
-              className="flex flex-col gap-2.5 bg-white p-3 md:flex-row md:items-center md:gap-4 md:p-4"
+              className="grid grid-cols-[auto_1fr] content-start items-center gap-x-2.5 bg-white p-2.5 md:gap-x-4 md:p-4"
               style={{ border: "2px solid #000", borderRadius: NETO_RADIUS }}
             >
-              <Face src={p.img} name={p.name} />
-              <div className="min-w-0">
-                <b className="block text-[15px] font-extrabold leading-[1.15] md:text-[18px]">
-                  {p.name}
-                </b>
-                <span
-                  className="block text-[13px] font-medium md:text-[15px]"
-                  style={{ color: RED }}
-                >
-                  {m.role}
-                </span>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {m.does.map(([Icon, label]) => (
-                    <span
-                      key={label}
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-bold md:text-[13px]"
-                      style={{ background: "#F7F6F2" }}
-                    >
-                      <Icon size={13} style={{ color: RED }} />
-                      {label}
-                    </span>
-                  ))}
-                </div>
+              <Face
+                src={p.img}
+                name={p.name}
+                className="m-1 h-8 w-8 md:row-span-3 md:h-14 md:w-14"
+              />
+              <b className="text-[13.5px] font-extrabold leading-[1.1] md:text-[18px]">
+                {p.name}
+              </b>
+              <span
+                className="col-span-2 mt-1 text-[11.5px] font-medium leading-[1.2] md:col-span-1 md:col-start-2 md:mt-0 md:text-[15px]"
+                style={{ color: RED }}
+              >
+                {m.role}
+              </span>
+              <div className="col-span-2 mt-1.5 flex flex-wrap gap-1 md:col-span-1 md:col-start-2 md:mt-2 md:gap-1.5">
+                {m.does.map(([Icon, label]) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-[3px] text-[10.5px] font-bold md:px-2 md:py-1 md:text-[13px]"
+                    style={{ background: "#F7F6F2" }}
+                  >
+                    <Icon size={12} style={{ color: RED }} />
+                    {label}
+                  </span>
+                ))}
               </div>
             </motion.article>
           );
         })}
         <motion.div
           variants={item}
-          className="col-span-2 flex items-center justify-between gap-3 bg-black px-4 py-3 text-white lg:col-span-3"
+          className="col-span-2 flex items-center justify-between gap-3 bg-black px-3.5 py-2.5 text-white md:px-4 md:py-3 lg:col-span-3"
           style={{ borderRadius: NETO_RADIUS }}
         >
-          <span className="flex items-center gap-3 md:gap-4">
+          <span className="flex items-center gap-2.5 md:gap-4">
             {[Camera, Lightbulb, Mic, MonitorPlay].map((Icon, i) => (
-              <Icon key={i} size={22} style={{ color: "#FF6B63" }} />
+              <Icon key={i} size={19} style={{ color: "#FF6B63" }} />
             ))}
           </span>
-          <b className="text-right text-[14px] font-extrabold italic leading-[1.2] md:text-[17px]">
+          <b className="text-right text-[12.5px] font-extrabold italic leading-[1.2] md:text-[17px]">
             Uz nas dobijate profesionalnu opremu
           </b>
         </motion.div>
@@ -565,14 +574,14 @@ function WebBody() {
         </motion.div>
         <motion.p
           variants={item}
-          className="mb-7 mt-4 max-w-2xl text-[clamp(0.95rem,3.6vw,1.1rem)] leading-relaxed"
+          className="mb-5 mt-3 max-w-2xl text-[clamp(0.9rem,3.5vw,1.1rem)] leading-[1.45] md:mb-7 md:mt-4 md:leading-relaxed"
           style={{ color: t.muted }}
         >
           Luka pravi novi Neto sajt. U sklopu njega dobijate Interaktivni
           katalog i Admin panel gde se dodaju/izmenjuju/brišu trenutne akcije i
           slike proizvoda. Pregledno i jednostavno za korišćenje.
         </motion.p>
-        <div className="grid gap-7 lg:grid-cols-2 lg:gap-10">
+        <div className="grid gap-5 lg:grid-cols-2 lg:gap-10">
           <div>
             <Caption>Kroz šta kupac prolazi</Caption>
             <Flow
@@ -618,7 +627,7 @@ function WebBody() {
       </Visual>
       <motion.p
         variants={item}
-        className="mt-6 text-[13px] md:text-[14px]"
+        className="mt-4 text-[12.5px] md:mt-6 md:text-[14px]"
         style={{ color: t.muted }}
       >
         Kod i popust potvrđujemo sa vašim softverskim timom.
@@ -629,7 +638,13 @@ function WebBody() {
 
 function DemoPhone() {
   return (
-    <Slide id="demo-phone" theme="light" eyebrow={false} className="!py-4">
+    <Slide
+      id="demo-phone"
+      theme="light"
+      eyebrow={false}
+      fit={false}
+      className="!py-4"
+    >
       <DemoHintAbove />
       <motion.div variants={pop} custom={2} className="relative w-full">
         <DemoHintBeside />
@@ -710,13 +725,13 @@ function Creatives() {
     <Slide id="creatives" theme="dark">
       <Headline>Kreativa je [[ono što prodaje.]]</Headline>
       <Sub>Dve vrste sadržaja, dve različite svrhe.</Sub>
-      <Visual className="grid gap-4 md:grid-cols-2">
+      <Visual className="!mt-4 grid gap-3 md:!mt-8 md:grid-cols-2 md:gap-4">
         {kinds.map((k, i) => (
           <motion.div
             key={k.label}
             variants={pop}
             custom={i ? 1.5 : -1.5}
-            className="px-5 py-5 md:px-6 md:py-6"
+            className="px-4 py-4 md:px-6 md:py-6"
             style={{
               background: "#0d0d0d",
               border: "1px solid #2A2A2A",
@@ -732,19 +747,19 @@ function Creatives() {
                 >
                   {k.label}
                 </span>
-                <b className="block text-[24px] font-extrabold italic leading-[1.1] md:text-[28px]">
+                <b className="block text-[21px] font-extrabold italic leading-[1.1] md:text-[28px]">
                   {k.title}
                 </b>
               </div>
             </div>
-            <ul className="mt-5 grid gap-3">
+            <ul className="mt-3.5 grid gap-2 md:mt-5 md:gap-3">
               {k.points.map(([Icon, text]) => (
                 <li
                   key={text}
                   className="flex items-center gap-3 text-[15px] md:text-[17px]"
                 >
                   <span
-                    className="grid h-9 w-9 flex-none place-items-center rounded-full"
+                    className="grid h-8 w-8 flex-none place-items-center rounded-full md:h-9 md:w-9"
                     style={{ background: "#1C1C1C", color: k.color }}
                   >
                     <Icon size={18} />
@@ -938,7 +953,13 @@ function TheApp() {
 
 function AppPhone() {
   return (
-    <Slide id="app-phone" theme="dark" eyebrow={false} className="!py-4">
+    <Slide
+      id="app-phone"
+      theme="dark"
+      eyebrow={false}
+      fit={false}
+      className="!py-4"
+    >
       <DemoHintAbove />
       <motion.div variants={pop} custom={-2} className="relative w-full">
         <DemoHintBeside />
@@ -975,7 +996,7 @@ function Results() {
     <Slide id="results" theme="dark">
       <Headline>Rezultati, [[crno na belo.]]</Headline>
       <Visual>
-        <div className="-mx-5 flex flex-col gap-3 [mask-image:linear-gradient(to_right,transparent,black_7%,black_93%,transparent)] md:-mx-10 md:gap-4">
+        <div className="-mx-5 flex flex-col gap-3 [mask-image:linear-gradient(to_right,transparent,black_7%,black_93%,transparent)] max-md:-mx-[25px] max-md:[zoom:0.8] md:-mx-10 md:gap-4">
           <div className="flex h-[126px] items-center overflow-hidden sm:h-[148px]">
             <ProofRow
               shots={rowA}
@@ -989,13 +1010,13 @@ function Results() {
             />
           </div>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 md:mt-6 md:gap-4 lg:grid-cols-4">
           {stats.map(([Icon, value, label], i) => (
             <motion.div
               key={label}
               variants={pop}
               custom={i % 2 ? 1.5 : -1.5}
-              className="px-4 py-4 md:px-5 md:py-5"
+              className="px-3.5 py-3 md:px-5 md:py-5"
               style={{
                 background: "#0d0d0d",
                 border: "1px solid #2A2A2A",
@@ -1003,7 +1024,7 @@ function Results() {
               }}
             >
               <Icon size={22} style={{ color: "#FF4B42" }} />
-              <strong className="mt-3 block whitespace-nowrap text-[26px] font-black italic leading-none md:text-[38px]">
+              <strong className="mt-2 block whitespace-nowrap text-[24px] font-black italic leading-none md:mt-3 md:text-[38px]">
                 {value}
               </strong>
               <span
@@ -1026,6 +1047,7 @@ function Results() {
 
 const PACKS: {
   name: string;
+  short: string;
   tag: string;
   featured?: boolean;
   paid: boolean;
@@ -1036,18 +1058,19 @@ const PACKS: {
   note: string;
 }[] = [
   {
-    name: "Full paket",
-    tag: "Najkompletniji",
-    featured: true,
-    paid: true,
+    name: "Organski paket",
+    short: "Organski",
+    tag: "Prepoznatljivost brenda",
+    paid: false,
     organic: true,
-    team: 3500,
-    ads: 1500,
-    models: 700,
-    note: "Oglasi dovode kupce, organski gradi brend.",
+    team: 2800,
+    ads: 0,
+    models: 400,
+    note: "Bez oglasa nema direktnog dolaska na sajt. Više na sastanku.",
   },
   {
     name: "Meta paket",
+    short: "Meta",
     tag: "Direktno do kupca",
     paid: true,
     organic: false,
@@ -1057,14 +1080,16 @@ const PACKS: {
     note: "Oglas vodi kupca pravo u katalog.",
   },
   {
-    name: "Organski paket",
-    tag: "Prepoznatljivost brenda",
-    paid: false,
+    name: "Full paket",
+    short: "Full",
+    tag: "Najkompletniji",
+    featured: true,
+    paid: true,
     organic: true,
-    team: 2800,
-    ads: 0,
-    models: 400,
-    note: "Bez oglasa nema direktnog dolaska na sajt. Više na sastanku.",
+    team: 3500,
+    ads: 1500,
+    models: 700,
+    note: "Oglasi dovode kupce, organski gradi brend.",
   },
 ];
 
@@ -1079,7 +1104,7 @@ function Has({
 }) {
   return (
     <li
-      className="flex items-center gap-2.5 text-[15px] leading-[1.25]"
+      className="flex items-center gap-2.5 text-[14px] leading-[1.2] md:text-[15px]"
       style={{ opacity: on ? 1 : 0.4 }}
     >
       <span className="flex w-[46px] flex-none items-center">{mark}</span>
@@ -1095,112 +1120,162 @@ function Has({
   );
 }
 
+function Pack({ p, delay }: { p: (typeof PACKS)[number]; delay: number }) {
+  const line = p.featured ? "rgba(255,255,255,0.35)" : "#333";
+  const soft = p.featured ? "rgba(255,255,255,0.85)" : "#B5B5B5";
+  return (
+    <motion.article
+      variants={pop}
+      custom={p.featured ? 1.5 : -1.5}
+      className="flex h-full flex-col px-4 py-4 text-white md:px-5 md:py-6"
+      style={{
+        background: p.featured ? RED : "#0d0d0d",
+        border: p.featured ? `2px solid ${RED}` : "2px solid #2A2A2A",
+        borderRadius: "10px 34px 10px 10px",
+      }}
+    >
+      <span
+        className="text-[10px] uppercase tracking-[0.16em] md:text-[10.5px]"
+        style={{ fontFamily: MONO, color: soft }}
+      >
+        {p.tag}
+      </span>
+      <h2 className="mt-0.5 text-[22px] font-black italic leading-[1.05] md:mt-1 md:text-[26px]">
+        {p.name}
+      </h2>
+
+      <ul className="mt-3 grid gap-1.5 md:mt-4 md:gap-2.5">
+        <Has
+          on
+          mark={
+            <span
+              className="grid h-8 w-8 place-items-center rounded-full"
+              style={{
+                background: p.featured ? "#fff" : RED,
+                color: p.featured ? RED : "#fff",
+              }}
+            >
+              <Globe size={17} />
+            </span>
+          }
+        >
+          Sajt + Interaktivni Katalog
+        </Has>
+        <Has on={p.paid} mark={<MetaTile size={32} />}>
+          15 plaćenih video oglasa
+        </Has>
+        <Has on={p.organic} mark={<SocialTile size={30} />}>
+          20 organskih klipova
+        </Has>
+      </ul>
+
+      <div
+        className="mt-3 text-[14px] md:mt-5 md:text-[15px]"
+        style={{ borderTop: `1px solid ${line}` }}
+      >
+        {(
+          [
+            ["Tim", `${p.team.toLocaleString("de-DE")} €`],
+            [
+              "Meta oglasi",
+              p.ads ? `~${p.ads.toLocaleString("de-DE")} €` : "nema",
+            ],
+            ["Modeli", `~${p.models} €`],
+          ] as const
+        ).map(([k, v]) => (
+          <div
+            key={k}
+            className="flex justify-between gap-3 py-1.5 md:py-2.5"
+            style={{ borderBottom: `1px solid ${line}` }}
+          >
+            <span style={{ color: soft }}>{k}</span>
+            <b className="whitespace-nowrap">{v}</b>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-end justify-between gap-3 md:mt-4">
+        <span
+          className="pb-1 text-[12.5px] md:pb-1.5 md:text-[13px]"
+          style={{ color: soft }}
+        >
+          Ukupno, okvirno
+        </span>
+        <strong className="whitespace-nowrap text-[38px] font-black italic leading-none tracking-[-0.02em] md:text-[44px]">
+          <Count to={p.team + p.ads + p.models} delay={delay} />{" "}
+          <span className="text-[22px] md:text-[24px]">€</span>
+        </strong>
+      </div>
+      <p
+        className="mt-2 text-[12.5px] leading-[1.3] md:mt-3 md:text-[13.5px] md:leading-[1.35]"
+        style={{ color: soft }}
+      >
+        {p.note}
+      </p>
+    </motion.article>
+  );
+}
+
+/* Three packages, cheapest first. A desktop shows them side by side; a
+   phone shows one at a time behind three tabs, all stacked in one cell so
+   the slide keeps its height whichever is open. */
 function Price() {
+  const [open, setOpen] = useState(0);
   return (
     <Slide id="price" theme="dark">
       <Headline center>Tri paketa. [[Vi birate.]]</Headline>
-      <Visual className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
-        {PACKS.map((p, i) => {
-          const line = p.featured ? "rgba(255,255,255,0.35)" : "#333";
-          const soft = p.featured ? "rgba(255,255,255,0.85)" : "#B5B5B5";
-          return (
-            <motion.article
-              key={p.name}
-              variants={pop}
-              custom={i === 1 ? 0 : i ? 1.5 : -1.5}
-              className="flex flex-col px-5 py-6 text-white"
-              style={{
-                background: p.featured ? RED : "#0d0d0d",
-                border: p.featured ? `2px solid ${RED}` : "2px solid #2A2A2A",
-                borderRadius: "10px 34px 10px 10px",
-              }}
-            >
-              <span
-                className="text-[10.5px] uppercase tracking-[0.16em]"
-                style={{ fontFamily: MONO, color: soft }}
-              >
-                {p.tag}
-              </span>
-              <h2 className="mt-1 text-[26px] font-black italic leading-[1.05]">
-                {p.name}
-              </h2>
-
-              <ul className="mt-4 grid gap-2.5">
-                <Has
-                  on
-                  mark={
-                    <span
-                      className="grid h-8 w-8 place-items-center rounded-full"
-                      style={{
-                        background: p.featured ? "#fff" : RED,
-                        color: p.featured ? RED : "#fff",
-                      }}
-                    >
-                      <Globe size={17} />
-                    </span>
-                  }
-                >
-                  Sajt + Interaktivni Katalog
-                </Has>
-                <Has on={p.paid} mark={<MetaTile size={32} />}>
-                  15 plaćenih video oglasa
-                </Has>
-                <Has on={p.organic} mark={<SocialTile size={30} />}>
-                  20 organskih klipova
-                </Has>
-              </ul>
-
-              <div
-                className="mt-5 text-[15px]"
-                style={{ borderTop: `1px solid ${line}` }}
-              >
-                {(
-                  [
-                    ["Tim", `${p.team.toLocaleString("de-DE")} €`],
-                    [
-                      "Meta oglasi",
-                      p.ads ? `~${p.ads.toLocaleString("de-DE")} €` : "nema",
-                    ],
-                    ["Modeli", `~${p.models} €`],
-                  ] as const
-                ).map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="flex justify-between gap-3 py-2.5"
-                    style={{ borderBottom: `1px solid ${line}` }}
-                  >
-                    <span style={{ color: soft }}>{k}</span>
-                    <b className="whitespace-nowrap">{v}</b>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 flex items-end justify-between gap-3">
-                <span className="pb-1.5 text-[13px]" style={{ color: soft }}>
-                  Ukupno, okvirno
-                </span>
-                <strong className="whitespace-nowrap text-[44px] font-black italic leading-none tracking-[-0.02em]">
-                  <Count to={p.team + p.ads + p.models} delay={0.4 + i * 0.2} />{" "}
-                  <span className="text-[24px]">€</span>
-                </strong>
-              </div>
-              <p
-                className="mt-3 text-[13.5px] leading-[1.35]"
-                style={{ color: soft }}
-              >
-                {p.note}
-              </p>
-            </motion.article>
-          );
-        })}
+      <motion.div
+        variants={item}
+        role="tablist"
+        aria-label="Paketi"
+        className="mt-4 grid grid-cols-3 gap-1 rounded-full p-1 lg:hidden"
+        style={{ background: "#161616", border: "1px solid #2A2A2A" }}
+      >
+        {PACKS.map((p, i) => (
+          <button
+            key={p.name}
+            type="button"
+            role="tab"
+            aria-selected={open === i}
+            onClick={() => setOpen(i)}
+            className="relative cursor-pointer rounded-full py-2 text-[13.5px] font-extrabold text-white"
+          >
+            {open === i && (
+              <motion.span
+                layoutId="pack-tab"
+                aria-hidden
+                className="absolute inset-0 rounded-full"
+                style={{ background: RED }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              />
+            )}
+            <span className="relative">{p.short}</span>
+          </button>
+        ))}
+      </motion.div>
+      <Visual className="!mt-3 grid lg:!mt-8 lg:grid-cols-3 lg:items-stretch lg:gap-4">
+        {PACKS.map((p, i) => (
+          <div
+            key={p.name}
+            role="tabpanel"
+            aria-label={p.name}
+            className={`transition-[opacity,transform] duration-300 max-lg:[grid-area:1/1] ${
+              open === i
+                ? ""
+                : "max-lg:pointer-events-none max-lg:invisible max-lg:translate-y-2 max-lg:opacity-0"
+            }`}
+          >
+            <Pack p={p} delay={0.4 + i * 0.2} />
+          </div>
+        ))}
       </Visual>
       <motion.div
         variants={item}
-        className="mt-4 grid gap-4 md:grid-cols-[1fr_auto] md:items-end"
+        className="mt-3 grid gap-4 md:mt-4 md:grid-cols-[1fr_auto] md:items-end"
       >
         <div className="grid max-w-2xl gap-2">
           <p
-            className="flex items-start gap-2.5 text-[14px] leading-[1.4]"
+            className="flex items-start gap-2.5 text-[12.5px] leading-[1.35] md:text-[14px] md:leading-[1.4]"
             style={{ color: "#B5B5B5" }}
           >
             <TrendingUp
@@ -1214,7 +1289,7 @@ function Price() {
             </span>
           </p>
           <p
-            className="flex items-start gap-2.5 px-3.5 py-3 text-[14.5px] leading-[1.4] text-white"
+            className="flex items-start gap-2.5 px-3 py-2 text-[12.5px] leading-[1.35] text-white md:px-3.5 md:py-3 md:text-[14.5px] md:leading-[1.4]"
             style={{ border: "1px solid #4A4A4A", borderRadius: NETO_RADIUS }}
           >
             <ReceiptText
@@ -1228,7 +1303,7 @@ function Price() {
             </span>
           </p>
         </div>
-        <strong className="text-[20px] font-extrabold italic md:text-right">
+        <strong className="hidden text-[20px] font-extrabold italic md:block md:text-right">
           Svaki dinar je bitan.
         </strong>
       </motion.div>

@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -151,18 +152,77 @@ export const SlidePositionContext = createContext<{
   label: string;
 }>({ index: 0, total: 0, label: "" });
 
+/* A slide never scrolls: if its content is taller than the stage, the
+   whole column is zoomed out until it fits. Slides are laid out to fit a
+   phone as they are, so this only steps in on the shortest screens. */
+const MIN_FIT = 0.6;
+
+function Fit({ children }: { children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = box.current;
+    const stage = el?.closest<HTMLElement>("[data-stage]");
+    const section = el?.closest<HTMLElement>("[data-slide]");
+    if (!el || !stage || !section) return;
+    let current = 1;
+    let stageH = stage.clientHeight;
+
+    const measure = () => {
+      /* A stage that changed size starts over from full size. */
+      if (stage.clientHeight !== stageH) {
+        stageH = stage.clientHeight;
+        if (current !== 1) {
+          current = 1;
+          setZoom(1);
+          return;
+        }
+      }
+      const cs = getComputedStyle(section);
+      const room =
+        stageH - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const h = el.getBoundingClientRect().height;
+      if (h <= room + 1) return;
+      const next = Math.max(
+        MIN_FIT,
+        Math.floor(((current * room) / h) * 100) / 100,
+      );
+      if (next < current) {
+        current = next;
+        setZoom(next);
+      }
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    ro.observe(stage);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={box} className="w-full" style={{ zoom }}>
+      {children}
+    </div>
+  );
+}
+
 export function Slide({
   id,
   theme = "dark",
   children,
   className = "",
   eyebrow = true,
+  fit = true,
 }: {
   id: string;
   theme?: Theme;
   children: ReactNode;
   className?: string;
   eyebrow?: boolean;
+  /* Off for slides that size themselves: the cover and the demo phones. */
+  fit?: boolean;
 }) {
   const [active, setActive] = useState(false);
   const t = THEMES[theme];
@@ -172,24 +232,28 @@ export function Slide({
     return () => cancelAnimationFrame(r);
   }, []);
 
+  const body = (
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      animate={active ? "show" : "hidden"}
+      className="mx-auto flex w-full max-w-6xl flex-col"
+    >
+      {eyebrow && <Eyebrow />}
+      {children}
+    </motion.div>
+  );
+
   return (
     <section
       id={id}
       data-slide={id}
-      className={`relative flex min-h-full flex-col justify-center px-5 py-8 md:px-10 md:py-12 ${className}`}
+      className={`relative flex min-h-full flex-col justify-center px-5 py-5 md:px-10 md:py-12 ${className}`}
       style={{ background: t.bg, color: t.fg, fontFamily: DISPLAY }}
     >
       <ThemeContext.Provider value={theme}>
         <ActiveContext.Provider value={active}>
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate={active ? "show" : "hidden"}
-            className="mx-auto flex w-full max-w-6xl flex-col"
-          >
-            {eyebrow && <Eyebrow />}
-            {children}
-          </motion.div>
+          {fit ? <Fit>{body}</Fit> : body}
         </ActiveContext.Provider>
       </ThemeContext.Provider>
     </section>
