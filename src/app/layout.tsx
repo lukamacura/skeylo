@@ -46,7 +46,9 @@ export default async function RootLayout({
   const isAdmin = pathname.startsWith("/admin");
   // /calculator je white-label demo za klijente — bez Skeylo headera/footera.
   const isCalculator = pathname.startsWith("/calculator");
-  const hideChrome = construction || isAdmin || isCalculator;
+  // /ils su privatni dokumenti za klijenta — takođe bez site chrome-a.
+  const isIls = pathname.startsWith("/ils");
+  const hideChrome = construction || isAdmin || isCalculator || isIls;
 
   return (
     <html lang="sr" className={`${display.variable} ${sans.variable}`}>

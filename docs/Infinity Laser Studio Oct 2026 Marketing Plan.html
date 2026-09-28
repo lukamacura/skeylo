@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="sr-Latn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#150e10">
+<title>Infinity Laser Studio | Marketing plan za oktobar 2026</title>
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Urbanist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+:root {
+  color-scheme: dark;
+  --bg: #150e10; --bg-top: #2c1d21; --surface: #1b1215; --surface-2: #241a1e;
+  --line: rgba(222,178,170,.16); --line-strong: rgba(226,186,178,.55);
+  --rose: #cfa29b; --rose-soft: #e6c2ba; --blush: #fff1ec; --ivory: #f3e9e6; --muted: #a8969a; --ink: #1a1113;
+  --serif: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --sans: "Urbanist", "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ease: cubic-bezier(.2,.7,.2,1);
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #150e10; } }
+:root[data-theme="dark"] { --bg: #150e10; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); overflow-x: hidden; }
+*, *::before, *::after { box-sizing: inherit; }
+html, body { margin: 0; }
+body {
+  background-color: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 .85  0 0 0 0 .82  0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--ivory); font-family: var(--sans); font-size: 17px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+
+/* Scroll progress laser */
+.progress { position: fixed; top: 0; left: 0; right: 0; z-index: 50; padding-top: env(safe-area-inset-top, 0px); pointer-events: none; }
+.progress i { display: block; height: 2px; transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(90deg, #a9776f, var(--blush)); box-shadow: 0 0 10px rgba(255,214,204,.8), 0 0 22px rgba(207,162,155,.6); }
+
+/* HERO */
+.hero { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; display: flex; flex-direction: column; padding: 26px 22px 30px;
+  background: radial-gradient(120% 70% at 50% 0%, var(--bg-top) 0%, rgba(21,14,16,0) 72%); }
+.aurora { position: absolute; inset: 0; pointer-events: none; }
+.aurora i { position: absolute; width: 80vmax; height: 80vmax; border-radius: 50%; will-change: transform; }
+.aurora i:nth-child(1) { left: -30vmax; top: -35vmax; background: radial-gradient(circle, rgba(196,110,112,.30) 0%, rgba(196,110,112,0) 60%); animation: drift1 18s ease-in-out infinite alternate; }
+.aurora i:nth-child(2) { right: -35vmax; top: 5vmax; background: radial-gradient(circle, rgba(226,178,168,.20) 0%, rgba(226,178,168,0) 60%); animation: drift2 22s ease-in-out infinite alternate; }
+.aurora i:nth-child(3) { left: -10vmax; bottom: -50vmax; background: radial-gradient(circle, rgba(120,52,64,.40) 0%, rgba(120,52,64,0) 62%); animation: drift3 26s ease-in-out infinite alternate; }
+@keyframes drift1 { to { transform: translate3d(18vmax, 14vmax, 0) scale(1.15); } }
+@keyframes drift2 { to { transform: translate3d(-16vmax, 10vmax, 0) scale(.9); } }
+@keyframes drift3 { to { transform: translate3d(14vmax, -16vmax, 0) scale(1.1); } }
+#dust { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.inf { position: absolute; left: 50%; top: 52%; width: min(980px, 150vw); transform: translate(-50%, -50%); opacity: .5; pointer-events: none; overflow: visible; }
+.inf .track { fill: none; stroke: rgba(207,162,155,.38); stroke-width: .9; }
+.inf .dot { fill: var(--blush); }
+.js .inf .track { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 2.8s var(--ease) .4s forwards; }
+.js .inf .dotg { opacity: 0; animation: fadeIn 1s ease 2.6s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fadeIn { to { opacity: 1; } }
+
+.beam { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; opacity: 0; pointer-events: none; z-index: 3;
+  background: linear-gradient(180deg, rgba(255,241,236,0), var(--blush) 30%, var(--blush) 70%, rgba(255,241,236,0));
+  box-shadow: 0 0 14px 2px rgba(255,214,204,.9), 0 0 70px 16px rgba(207,162,155,.45); }
+.js .beam { animation: sweep 1.9s cubic-bezier(.6,0,.25,1) .25s forwards; }
+@keyframes sweep { 0% { transform: translateX(-4vw); opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { transform: translateX(104vw); opacity: 0; } }
+
+.hero-in { position: relative; z-index: 2; width: 100%; max-width: 760px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+.brandrow { display: flex; justify-content: space-between; align-items: center; gap: 16px; color: var(--muted); font-size: 15px; font-weight: 500; }
+.brandrow strong { color: var(--rose-soft); font-weight: 600; }
+.hero-main { margin: auto 0; padding: 40px 0 70px; }
+h1 { margin: 0 0 26px; font-weight: 600; }
+h1 .pre { display: block; font-family: var(--sans); font-size: clamp(15px, 3.6vw, 18px); font-weight: 700; letter-spacing: .34em; text-transform: uppercase; color: var(--rose); margin-bottom: 10px; }
+.okt { display: block; font-family: var(--serif); font-weight: 600; color: var(--rose); font-size: clamp(76px, 21vw, 190px); line-height: .92; letter-spacing: -.02em; }
+.js .ch { display: inline-block; opacity: 0; transform: translateY(.3em) scale(1.06); filter: blur(12px); animation: chIn 1s var(--ease) forwards; animation-delay: calc(.45s + var(--i) * .14s); }
+@keyframes chIn {
+  55% { opacity: 1; filter: blur(0); color: var(--blush); text-shadow: 0 0 28px rgba(255,222,212,.95), 0 0 60px rgba(207,162,155,.6); }
+  100% { opacity: 1; transform: none; filter: none; color: var(--rose); text-shadow: none; }
+}
+.okt.shine { background: linear-gradient(100deg, var(--rose) 0%, var(--rose) 38%, var(--blush) 50%, var(--rose) 62%, var(--rose) 100%); background-size: 320% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 5.5s ease-in-out infinite; }
+@keyframes shine { 0% { background-position: 100% 0; } 55%, 100% { background-position: 0 0; } }
+.lede { font-size: clamp(18px, 4.6vw, 22px); color: var(--ivory); opacity: .9; margin: 0; max-width: 32em; }
+.js .fx { opacity: 0; transform: translateY(14px); animation: up .9s var(--ease) forwards; animation-delay: var(--d, 0s); }
+@keyframes up { to { opacity: 1; transform: none; } }
+.js .lede.fx { opacity: 0; animation-name: up90; }
+@keyframes up90 { to { opacity: .9; transform: none; } }
+
+.cue { position: absolute; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; transition: opacity .5s ease; }
+.cue i { position: relative; width: 1px; height: 44px; background: rgba(207,162,155,.25); overflow: hidden; }
+.cue i::after { content: ""; position: absolute; left: -1px; top: -40%; width: 3px; height: 40%; background: var(--blush); box-shadow: 0 0 8px var(--blush); animation: drip 1.8s ease-in-out infinite; }
+@keyframes drip { to { top: 110%; } }
+.cue.gone { opacity: 0; }
+.js .cue { opacity: 0; animation: fadeIn 1s ease 2.4s forwards; }
+.js .cue.gone { animation: none; opacity: 0; }
+
+/* PAGE */
+.page { max-width: 760px; margin: 0 auto; padding: 10px 22px 90px; position: relative; }
+.letter { position: relative; padding: 26px 28px; border: 1px solid var(--line); border-radius: 24px; background: rgba(35,26,29,.6); overflow: hidden; }
+.letter p { margin: 0 0 14px; position: relative; }
+.letter .salute { font-family: var(--serif); font-size: 24px; color: var(--rose-soft); }
+.totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; position: relative; }
+.total { border: 1px solid var(--line); border-radius: 18px; padding: 16px 14px 12px; background: var(--surface); position: relative; overflow: hidden; }
+.total b { display: block; font-family: var(--serif); font-size: clamp(30px, 8vw, 40px); font-weight: 600; color: var(--rose-soft); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.total span { font-size: 14px; color: var(--muted); }
+.js .total { opacity: 0; transform: translateY(18px) scale(.96); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.totals.in .total { opacity: 1; transform: none; }
+.totals.in .total:nth-child(2) { transition-delay: .1s; } .totals.in .total:nth-child(3) { transition-delay: .2s; } .totals.in .total:nth-child(4) { transition-delay: .3s; }
+.total::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,230,222,.12) 50%, transparent 70%); transform: translateX(-120%); }
+.totals.in .total::after { animation: glint 1.6s ease .6s forwards; }
+@keyframes glint { to { transform: translateX(120%); } }
+
+section { margin-top: 110px; position: relative; }
+section > *:not(.bignum) { position: relative; z-index: 1; }
+.bignum { position: absolute; right: 0; top: -40px; z-index: 0; font-family: var(--serif); font-weight: 700; font-size: clamp(110px, 30vw, 230px); line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px rgba(207,162,155,.22); pointer-events: none; user-select: none; will-change: transform; }
+.step { font-size: 13px; font-weight: 700; letter-spacing: .32em; text-transform: uppercase; color: var(--rose); margin: 0 0 8px; }
+.lz { position: relative; display: inline-block; max-width: 100%; }
+h2 { font-family: var(--serif); font-weight: 600; color: var(--rose); font-size: clamp(36px, 8.5vw, 56px); line-height: 1.05; margin: 0 0 10px; }
+.lzbeam { position: absolute; top: -8%; bottom: 4%; left: 0; width: 2px; opacity: 0; pointer-events: none;
+  background: var(--blush); box-shadow: 0 0 12px 2px rgba(255,214,204,.95), 0 0 40px 8px rgba(207,162,155,.5); }
+.js .laser { clip-path: inset(-10% 100% -10% 0); }
+.lz.in .laser { animation: lzr 1.15s cubic-bezier(.7,0,.25,1) forwards; }
+.lz.in .lzbeam { animation: lzb 1.15s cubic-bezier(.7,0,.25,1) forwards; }
+@keyframes lzr { to { clip-path: inset(-10% -2% -10% 0); } }
+@keyframes lzb { 0% { left: 0; opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+.sub { color: var(--muted); font-size: 18px; margin: 0 0 28px; }
+
+.task { position: relative; display: grid; grid-template-columns: 58px 1fr; gap: 18px; align-items: start; border: 1px solid var(--line); border-radius: 24px;
+  background: var(--surface); padding: 20px 22px; margin-bottom: 12px; overflow: hidden; }
+.task > * { position: relative; }
+.icon { width: 58px; height: 58px; border-radius: 16px; background: var(--surface-2); display: grid; place-items: center; color: var(--rose-soft); }
+.icon svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.js .icon .draw { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.3s var(--ease) .35s; }
+.task.in .icon .draw { stroke-dashoffset: 0; }
+.task h3 { margin: 2px 0 6px; font-size: 20px; font-weight: 700; color: var(--ivory); line-height: 1.25; }
+.task p { margin: 0; color: var(--muted); font-size: 16px; }
+.meta { margin-top: 12px !important; display: inline-block; font-weight: 700; color: var(--ink) !important; font-size: 15px !important; padding: 5px 14px; border-radius: 999px;
+  background: linear-gradient(180deg, #e2bab2, #c09189); }
+.task.in { animation: flash 1.6s ease; }
+@keyframes flash { 0% { border-color: var(--line-strong); box-shadow: 0 0 30px rgba(207,162,155,.18); } 100% { border-color: var(--line); box-shadow: none; } }
+
+.fine .task::before, .fine .letter::before, .fine .featured .spot { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s ease;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(226,178,168,.13), transparent 60%); }
+.fine .task:hover::before, .fine .letter:hover::before, .fine .featured:hover .spot { opacity: 1; }
+.fine .task { transition: transform .5s var(--ease), border-color .4s ease; }
+.fine .task:hover { transform: translateY(-3px); border-color: rgba(226,186,178,.32); }
+
+.featured { position: relative; margin: 34px 0 16px; padding: 32px 24px 26px; border-radius: 28px; border: 1.5px solid transparent;
+  background: radial-gradient(80% 90% at 0% 0%, rgba(207,162,155,.16) 0%, rgba(27,18,21,0) 60%), var(--surface);
+  box-shadow: 0 0 0 4px rgba(207,162,155,.05), 0 0 50px rgba(207,162,155,.18); }
+.featured::before { content: ""; position: absolute; inset: -1.5px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--ang), rgba(226,186,178,.35) 0deg, rgba(226,186,178,.35) 200deg, var(--blush) 250deg, #b98a82 290deg, rgba(226,186,178,.35) 330deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: spin 5s linear infinite; }
+@keyframes spin { to { --ang: 360deg; } }
+.featured .spot { border-radius: inherit; }
+.pill { position: absolute; top: -13px; left: 22px; z-index: 2; background: linear-gradient(180deg, #e2bab2, #c09189); color: var(--ink);
+  font-size: 12px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; padding: 5px 14px; border-radius: 999px; box-shadow: 0 0 18px rgba(226,186,178,.45); }
+.featured h3 { margin: 0 0 6px; font-size: clamp(26px, 6.5vw, 32px); font-weight: 700; font-family: var(--serif); color: var(--rose-soft); }
+.featured > p { margin: 0 0 24px; color: var(--muted); }
+.mix { display: grid; gap: 14px; }
+.mixrow { display: grid; grid-template-columns: 150px 1fr 34px; gap: 14px; align-items: center; font-size: 16px; }
+.mixrow .name { color: var(--ivory); font-weight: 500; }
+.mixrow .n { text-align: right; font-weight: 700; color: var(--rose-soft); font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.bar i { position: relative; display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #a9776f, #e2bab2); overflow: hidden; }
+.bar i::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -40%; background: linear-gradient(90deg, transparent, rgba(255,245,240,.7), transparent); animation: run 2.6s ease-in-out infinite; }
+@keyframes run { to { left: 110%; } }
+.js .bar i { transform: scaleX(0); transform-origin: 0 50%; transition: transform 1.5s var(--ease); }
+.featured.in .bar i { transform: scaleX(1); }
+.featured.in .mixrow:nth-child(2) .bar i { transition-delay: .15s; } .featured.in .mixrow:nth-child(3) .bar i { transition-delay: .3s; } .featured.in .mixrow:nth-child(4) .bar i { transition-delay: .45s; }
+
+.tlwrap { position: relative; }
+.timeline { list-style: none; padding: 0; margin: 0; position: relative; }
+.tlwrap::before, .tl-fill { content: ""; position: absolute; left: 21px; top: 10px; bottom: 10px; width: 1px; }
+.tlwrap::before { background: var(--line-strong); opacity: .35; }
+.tl-fill { width: 2px; left: 20.5px; background: linear-gradient(180deg, var(--blush), #b98a82); box-shadow: 0 0 10px rgba(255,214,204,.7); transform-origin: 50% 0; z-index: 1; }
+.js .tl-fill { transform: scaleY(0); }
+.phase { position: relative; padding-left: 64px; margin-bottom: 34px; z-index: 2; }
+.phase:last-child { margin-bottom: 0; }
+.dot { position: absolute; left: 0; top: 0; width: 43px; height: 43px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--line-strong);
+  font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--rose-soft); transition: background .5s ease, color .5s ease, box-shadow .5s ease, transform .5s var(--ease); }
+.phase.lit .dot { background: linear-gradient(180deg, #ecc8c0, #b98a82); color: var(--ink); border-color: transparent; transform: scale(1.08);
+  box-shadow: 0 0 0 6px rgba(207,162,155,.12), 0 0 26px rgba(255,214,204,.55); }
+.phase .when { font-size: 13px; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; color: var(--rose); margin: 4px 0 4px; }
+.phase h3 { margin: 0 0 12px; font-size: 22px; font-weight: 700; font-family: var(--serif); color: var(--ivory); }
+.phase ul { margin: 0; padding: 0; list-style: none; }
+.phase li { position: relative; padding-left: 18px; color: var(--muted); margin-bottom: 7px; font-size: 16px; }
+.phase li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--rose); }
+.js .phase li { opacity: 0; transform: translateX(-10px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.phase.in li { opacity: 1; transform: none; }
+.phase.in li:nth-child(2){transition-delay:.06s}.phase.in li:nth-child(3){transition-delay:.12s}.phase.in li:nth-child(4){transition-delay:.18s}
+.phase.in li:nth-child(5){transition-delay:.24s}.phase.in li:nth-child(6){transition-delay:.3s}.phase.in li:nth-child(7){transition-delay:.36s}.phase.in li:nth-child(8){transition-delay:.42s}
+.ongoing { margin-top: 34px; padding: 18px 22px; border-radius: 18px; border: 1px dashed var(--line-strong); color: var(--ivory); font-size: 16px; }
+
+footer { margin-top: 110px; padding-top: 30px; border-top: 1px solid var(--line); }
+footer p { margin: 0 0 6px; color: var(--muted); }
+footer .sig { font-family: var(--serif); font-style: italic; font-size: 30px; color: var(--rose-soft); margin-top: 16px; }
+
+/* Reveal */
+.js .rv { opacity: 0; transform: translateY(34px); transition: opacity .95s var(--ease), transform .95s var(--ease); }
+.js .rv.in { opacity: 1; transform: none; }
+.js .letter.rv { transform: translateY(40px) scale(.97); }
+.js .letter.rv.in { transform: none; }
+
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .hero { padding: 20px 20px 26px; }
+  .brandrow { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .totals { grid-template-columns: repeat(2, 1fr); }
+  .letter { padding: 22px 20px; }
+  .task { grid-template-columns: 48px 1fr; gap: 14px; padding: 18px; border-radius: 22px; }
+  .icon { width: 48px; height: 48px; border-radius: 14px; }
+  .icon svg { width: 22px; height: 22px; }
+  .mixrow { grid-template-columns: 108px 1fr 26px; gap: 10px; font-size: 15px; }
+  section { margin-top: 90px; }
+  .bignum { top: -26px; }
+  .inf { top: 48%; opacity: .42; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .rv, .js .fx, .js .total, .js .phase li, .js .cue { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
+  .js .laser { clip-path: none; animation: none !important; }
+  .js .bar i, .js .tl-fill { transform: none; transition: none; }
+  .js .icon .draw { stroke-dashoffset: 0; transition: none; }
+  .js .inf .track { stroke-dashoffset: 0; animation: none; }
+  .beam, .lzbeam, .inf .dotg, .cue i::after, .bar i::after, .total::after { display: none; }
+  .aurora i, .featured::before, .okt.shine, .task.in { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"><i></i></div>
+
+<header class="hero">
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <canvas id="dust" aria-hidden="true"></canvas>
+  <svg class="inf" viewBox="0 0 400 200" aria-hidden="true">
+    <defs><filter id="glow" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path id="lem" class="track" pathLength="1" d="M200,100 C240,38 345,38 345,100 C345,162 240,162 200,100 C160,38 55,38 55,100 C55,162 160,162 200,100 Z"/>
+    <g class="dotg" filter="url(#glow)">
+      <circle class="dot" r="2.6"><animateMotion dur="7s" repeatCount="indefinite" rotate="auto"><mpath href="#lem"/></animateMotion></circle>
+    </g>
+  </svg>
+  <div class="beam" aria-hidden="true"></div>
+
+  <div class="hero-in">
+    <div class="brandrow fx" style="--d:.1s"><strong>Infinity Laser Studio</strong><span>Pripremio Skeylo Tim</span></div>
+    <div class="hero-main">
+      <h1><span class="pre fx" style="--d:.3s">Marketing plan za</span><span class="okt">oktobar</span></h1>
+      <p class="lede fx" style="--d:1.7s">Oktobar je mesec u kome Sombor dobija svoj sistem zakazivanja i admin panel, Infinity prolazi kroz kompletan rebranding, a Meta reklame se prvi put prikazuju u oba grada.</p>
+    </div>
+  </div>
+  <div class="cue" aria-hidden="true"><span>Skrolujte</span><i></i></div>
+</header>
+
+<main class="page">
+  <div class="letter rv">
+    <p class="salute">Poštovani,</p>
+    <p>pred Vama je plan za oktobar 2026. Zadaci su podeljeni u tri oblasti: sajt, sadržaj i profil sa rastom. Na kraju dokumenta nalazi se raspored po nedeljama, kako biste u svakom trenutku znali šta je u toku i šta sledi.</p>
+    <div class="totals">
+      <div class="total"><b data-count="15">15</b><span>zadataka</span></div>
+      <div class="total"><b data-count="30">30</b><span>novih videa</span></div>
+      <div class="total"><b data-count="93">93</b><span>story-ja</span></div>
+      <div class="total"><b data-count="2">2</b><span>grada</span></div>
+    </div>
+  </div>
+
+  <!-- WEB -->
+  <section>
+    <span class="bignum" aria-hidden="true">01</span>
+    <p class="step rv">Oblast 1 od 3</p>
+    <div class="lz"><h2 class="laser">Sajt i zakazivanje</h2><span class="lzbeam" aria-hidden="true"></span></div>
+    <p class="sub rv">Dva zadatka koja pripremaju sajt za novi izgled i za Sombor.</p>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 13h8M8 16h5"/></svg></div>
+      <div>
+        <h3>Redizajn celog sajta</h3>
+        <p>Sve stranice sajta prelaze na novi vizuelni identitet, isti onaj koji već koristi novi sistem zakazivanja.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M9 14.5l2 2 4-4"/></svg></div>
+      <div>
+        <h3>Sistem zakazivanja i admin panel za Sombor</h3>
+        <p>Sombor dobija sopstveni tok zakazivanja, kao i admin panel preko kog se upravlja somborskim terminima.</p>
+      </div>
+    </article>
+  </section>
+
+  <!-- CONTENT -->
+  <section>
+    <span class="bignum" aria-hidden="true">02</span>
+    <p class="step rv">Oblast 2 od 3</p>
+    <div class="lz"><h2 class="laser">Sadržaj</h2><span class="lzbeam" aria-hidden="true"></span></div>
+    <p class="sub rv">Najveći deo oktobra. Sedam zadataka, od reklama do svakodnevnih story-ja.</p>
+
+    <article class="featured rv">
+      <span class="pill">Najveći fokus</span>
+      <h3>30 novih videa</h3>
+      <p>Četiri formata, svaki sa svojom ulogom. Podkast gradi poverenje kroz stručnost, skečevi i street interview-i donose doseg, a iznenadni tretman prikazuje sirovo iskustvo dolaska u studio.</p>
+      <div class="mix">
+        <div class="mixrow"><span class="name">Skečevi</span><span class="bar"><i style="width:100%"></i></span><span class="n" data-count="13">13</span></div>
+        <div class="mixrow"><span class="name">Simulacije podkasta</span><span class="bar"><i style="width:76.9%"></i></span><span class="n" data-count="10">10</span></div>
+        <div class="mixrow"><span class="name">Street interview-i</span><span class="bar"><i style="width:46.2%"></i></span><span class="n" data-count="6">6</span></div>
+        <div class="mixrow"><span class="name">Iznenadni tretman</span><span class="bar"><i style="width:7.7%"></i></span><span class="n" data-count="1">1</span></div>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></svg></div>
+      <div>
+        <h3>Osvežavanje reklama</h3>
+        <p>Nova serija kreativa za Meta kampanje, pravljena za publiku oba grada. Poruke i scene biće prilagođene tako da podjednako govore klijentima iz Novog Sada i iz Sombora.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5M18.5 3.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg></div>
+      <div>
+        <h3>Iznenadni tretman sa ženom sa ulice</h3>
+        <p>Prilazimo slučajnoj prolaznici i nudimo joj tretman u studiju. Kamera prati sirovo iskustvo dolaska u studio, bez scenarija.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3.5c3 2.5 5 5 5 8.5a5 5 0 0 1-10 0c0-3.5 2-6 5-8.5z"/><path d="M12 9v9"/></svg></div>
+      <div>
+        <h3>Redizajn Infinity logotipa</h3>
+        <p>Osvežen znak brenda, usklađen sa novim izgledom sajta i sistema zakazivanja.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 2.2"/><circle cx="12" cy="12" r="4.5"/></svg></div>
+      <div>
+        <h3>Tri story-ja svakog dana</h3>
+        <p>Ukupno 93 story-ja u oktobru. Kroz story-je gradimo bližu vezu sa pratiocima: pokazujemo svakodnevicu studija i ljude iza njega, i redovno ih direktno pozivamo da zakažu termin.</p>
+      </div>
+    </article>
+  </section>
+
+  <!-- GENERAL -->
+  <section>
+    <span class="bignum" aria-hidden="true">03</span>
+    <p class="step rv">Oblast 3 od 3</p>
+    <div class="lz"><h2 class="laser">Profil i rast</h2><span class="lzbeam" aria-hidden="true"></span></div>
+    <p class="sub rv">Šest zadataka koji jačaju poverenje u nalog, donose novu ponudu i šire publiku na Sombor.</p>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 3l2.3 1.7 2.8-.2.9 2.7 2.3 1.6-.9 2.7.9 2.7-2.3 1.6-.9 2.7-2.8-.2L12 21l-2.3-1.7-2.8.2-.9-2.7-2.3-1.6.9-2.7-.9-2.7 2.3-1.6.9-2.7 2.8.2z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/></svg></div>
+      <div>
+        <h3>Plava kvačica kroz Business Plus pretplatu</h3>
+        <p>Plava kvačica pored imena je prvo što nov pratilac primeti. Nalog odmah deluje kao proveren i ozbiljan brend, što mnogo znači nekome ko prvi put razmišlja kome da poveri svoju kožu.</p>
+        <p style="margin-top:10px">Uz kvačicu profil dobija bolju poziciju u pretrazi i istaknuto prikazivanje, a na profilu možemo da navedemo do tri adrese, što znači i Novi Sad i Sombor. Tu su i zaštita od lažnih naloga koji se predstavljaju kao studio, brža podrška Mete i 2 linka mesečno na Reels-ima. Kvačica se dodeljuje nakon Metine provere biznisa, zato pretplatu aktiviramo na samom početku meseca. Prva nedelja je besplatna.</p>
+        <p class="meta">21,49 € (oko 2.520 RSD) mesečno</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg></div>
+      <div>
+        <h3>Optimizacija profila dr Ane Kasap</h3>
+        <p>Lični profil dr Ane Kasap uređujemo tako da jasno prenosi njeno iskustvo i vodi pratioce ka studiju.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5z"/><path d="M12 8.2v3.2M12 13.3v.1"/></svg></div>
+      <div>
+        <h3>Poseban highlight za svaku nedoumicu</h3>
+        <p>Svaka česta nedoumica dobija svoj highlight na profilu. Na primer, highlight „STERILNO” sa fotografijama čistog prostora i porukom da se studio čisti svako veče, ili highlight o bolu sa edukativnim slikama koje objašnjavaju zašto tretman ne boli.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+      <div>
+        <h3>Plan za story-je</h3>
+        <p>Nedeljni plan tema i formata, kako bi tri story-ja dnevno bila održiva i raznovrsna kroz ceo mesec.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11" rx="2"/><path d="M3.5 13h17M12 9v11M12 9c-1.5-3.5-5.5-4-5.5-1.5S10 9 12 9zM12 9c1.5-3.5 5.5-4 5.5-1.5S14 9 12 9z"/></svg></div>
+      <div>
+        <h3>Nova neodoljiva ponuda</h3>
+        <p>Umesto dosadašnje garancije pravimo novu ponudu koja će nositi reklame u oba grada. Definišemo je na samom početku meseca, kako bi ušla u nove kreative i u Brankine pozive na kraju street interview-a.</p>
+      </div>
+    </article>
+
+    <article class="task rv">
+      <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg></div>
+      <div>
+        <h3>Proširenje reklama na Sombor</h3>
+        <p>Reklame počinju da se prikazuju i publici u Somboru čim budu spremni sistem zakazivanja za Sombor i nove kreative.</p>
+      </div>
+    </article>
+  </section>
+
+  <!-- TIMELINE -->
+  <section>
+    <span class="bignum" aria-hidden="true">04</span>
+    <p class="step rv">Raspored</p>
+    <div class="lz"><h2 class="laser">Oktobar po nedeljama</h2><span class="lzbeam" aria-hidden="true"></span></div>
+    <p class="sub rv">Prve dve nedelje su za snimanje i pripremu, a u trećoj nove kreative i Sombor kreću zajedno.</p>
+
+    <div class="tlwrap"><span class="tl-fill" aria-hidden="true"></span><ol class="timeline">
+      <li class="phase rv">
+        <span class="dot">1</span>
+        <p class="when">1. nedelja</p>
+        <h3>Temelji i snimanje</h3>
+        <ul>
+          <li>Kreiranje nove neodoljive ponude</li>
+          <li>Aktivacija Business Plus pretplate</li>
+          <li>Plan objavljivanja story-ja</li>
+          <li>Optimizacija ličnog profila dr Ane Kasap</li>
+          <li>Kompletan rebranding</li>
+          <li>Snimanje 6 street interview-a i simulacija podkasta</li>
+          <li>Snimanje prvih 6 skečeva</li>
+          <li>Početak izrade sistema zakazivanja i admin panela za Sombor</li>
+        </ul>
+      </li>
+      <li class="phase rv">
+        <span class="dot">2</span>
+        <p class="when">2. nedelja</p>
+        <h3>Sombor i nove kreative</h3>
+        <ul>
+          <li>Završetak sistema zakazivanja i admin panela za Sombor</li>
+          <li>Snimanje novih kreativa za plaćeni saobraćaj</li>
+          <li>Montaža novih kreativa</li>
+        </ul>
+      </li>
+      <li class="phase rv">
+        <span class="dot">3</span>
+        <p class="when">3. nedelja</p>
+        <h3>Kampanja u oba grada</h3>
+        <ul>
+          <li>Postavljanje novih kreativa u Ads Manager</li>
+          <li>Pokretanje kampanje sa targetingom na Novi Sad i Sombor</li>
+        </ul>
+      </li>
+      <li class="phase rv">
+        <span class="dot">4</span>
+        <p class="when">4. nedelja</p>
+        <h3>Ritam i analiza</h3>
+        <ul>
+          <li>Nastavak svakodnevnog objavljivanja</li>
+          <li>Analiza rezultata meseca</li>
+        </ul>
+      </li>
+    </ol></div>
+
+    <p class="ongoing rv">Kroz ceo mesec: oko 7 novih videa nedeljno i 3 story-ja svakog dana.</p>
+  </section>
+
+  <footer class="rv">
+    <p>Za sva pitanja i predloge stojimo Vam na raspolaganju.</p>
+    <p class="sig">Filip, Skeylo Tim</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var d = document.documentElement;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Hero title: split into letters, then hand over to the shimmer */
+  var okt = document.querySelector('.okt');
+  if (okt && !reduce) {
+    var word = okt.textContent;
+    okt.setAttribute('aria-label', word);
+    okt.textContent = '';
+    word.split('').forEach(function (c, i) {
+      var s = document.createElement('span');
+      s.className = 'ch'; s.textContent = c; s.setAttribute('aria-hidden', 'true');
+      s.style.setProperty('--i', i);
+      okt.appendChild(s);
+    });
+    setTimeout(function () { okt.textContent = word; okt.removeAttribute('aria-label'); okt.classList.add('shine'); }, 450 + word.length * 140 + 1100);
+  }
+
+  /* Icons draw themselves */
+  document.querySelectorAll('.icon svg *').forEach(function (el) {
+    if (!el.hasAttribute('stroke-dasharray')) { el.setAttribute('pathLength', '1'); el.classList.add('draw'); }
+  });
+
+  /* Count-up numbers */
+  function countUp(el) {
+    var target = +el.getAttribute('data-count'), start = performance.now(), dur = 1500;
+    (function f(now) {
+      var p = Math.min((now - start) / dur, 1), e = 1 - Math.pow(1 - p, 4);
+      el.textContent = Math.round(target * e);
+      if (p < 1) requestAnimationFrame(f);
+    })(start);
+  }
+
+  /* Reveal on scroll */
+  var targets = document.querySelectorAll('.rv, .lz, .featured, .totals');
+  if ('IntersectionObserver' in window && !reduce) {
+    document.querySelectorAll('[data-count]').forEach(function (e) { e.textContent = '0'; });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var t = en.target;
+        t.classList.add('in');
+        if (t.classList.contains('totals') || t.classList.contains('featured')) t.querySelectorAll('[data-count]').forEach(countUp);
+        io.unobserve(t);
+      });
+    }, { threshold: 0.16, rootMargin: '0px 0px -6% 0px' });
+    targets.forEach(function (e) { io.observe(e); });
+  } else {
+    targets.forEach(function (e) { e.classList.add('in'); });
+  }
+
+  /* Scroll: progress laser, parallax numbers, timeline fill */
+  var bar = document.querySelector('.progress i');
+  var nums = [].slice.call(document.querySelectorAll('.bignum'));
+  var tl = document.querySelector('.tlwrap'), fill = document.querySelector('.tl-fill');
+  var phases = [].slice.call(document.querySelectorAll('.phase'));
+  var cue = document.querySelector('.cue');
+  var ticking = false;
+  function update() {
+    ticking = false;
+    var y = window.scrollY || window.pageYOffset, vh = window.innerHeight;
+    var max = document.documentElement.scrollHeight - vh;
+    bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(y / max, 1) : 0) + ')';
+    if (cue) cue.classList.toggle('gone', y > 40);
+    if (reduce) return;
+    nums.forEach(function (n) {
+      var r = n.parentElement.getBoundingClientRect();
+      if (r.bottom > -200 && r.top < vh + 200) n.style.transform = 'translate3d(0,' + (r.top * -0.14).toFixed(1) + 'px,0)';
+    });
+    if (tl) {
+      var r = tl.getBoundingClientRect(), line = vh * 0.62;
+      var p = Math.min(Math.max((line - r.top) / r.height, 0), 1);
+      fill.style.transform = 'scaleY(' + p.toFixed(3) + ')';
+      phases.forEach(function (ph) { ph.classList.toggle('lit', ph.getBoundingClientRect().top < line); });
+    }
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+
+  /* Desktop only: light follows the cursor */
+  if (window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    d.classList.add('fine');
+    document.querySelectorAll('.task, .letter, .featured').forEach(function (c) {
+      if (c.classList.contains('featured')) { var s = document.createElement('span'); s.className = 'spot'; c.insertBefore(s, c.firstChild); }
+      c.addEventListener('pointermove', function (e) {
+        var r = c.getBoundingClientRect();
+        c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+        c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+      });
+    });
+  }
+
+  /* Hero light dust */
+  var cv = document.getElementById('dust');
+  if (cv && cv.getContext && !reduce) {
+    var ctx = cv.getContext('2d'), P = [], W = 0, H = 0, lastW = 0, running = false;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    function mk(anywhere) {
+      var big = Math.random() < 0.1;
+      return { x: Math.random() * W, y: anywhere ? Math.random() * H : H + 10, r: big ? Math.random() * 2.2 + 1.8 : Math.random() * 1.4 + .4,
+        v: Math.random() * .35 + .1, a: Math.random() * 6.283, s: Math.random() * .02 + .006, dx: (Math.random() - .5) * .16, big: big };
+    }
+    function size() {
+      var r = cv.getBoundingClientRect();
+      if (Math.abs(r.width - lastW) < 2 && P.length) { H = r.height; return; }
+      lastW = W = r.width; H = r.height;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var n = W < 600 ? 44 : 110; P = [];
+      for (var i = 0; i < n; i++) P.push(mk(true));
+    }
+    function frame() {
+      if (!running) return;
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < P.length; i++) {
+        var p = P[i];
+        p.y -= p.v; p.x += p.dx; p.a += p.s;
+        if (p.y < -12) { P[i] = mk(false); continue; }
+        var al = (Math.sin(p.a) * .5 + .5) * (p.big ? .28 : .8) + .06;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(242,204,194,' + al.toFixed(3) + ')';
+        ctx.arc(p.x, p.y, p.r, 0, 6.283);
+        ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    function start() { if (!running) { running = true; requestAnimationFrame(frame); } }
+    size();
+    window.addEventListener('resize', size);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { if (es[0].isIntersecting && !document.hidden) start(); else running = false; }).observe(cv);
+    } else start();
+    document.addEventListener('visibilitychange', function () { if (document.hidden) running = false; else if (cv.getBoundingClientRect().bottom > 0) start(); });
+  }
+})();
+</script>
+</body>
+</html>

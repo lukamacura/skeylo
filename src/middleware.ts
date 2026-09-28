@@ -4,7 +4,7 @@ import { SESSION_COOKIE, isAuthed } from "@/lib/admin-auth";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Header da root layout može da sakrije site chrome (/admin, /calculator).
+  // Header da root layout može da sakrije site chrome (/admin, /calculator, /ils).
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-pathname", pathname);
 
@@ -23,5 +23,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/calculator/:path*", "/calculator"],
+  matcher: [
+    "/admin/:path*",
+    "/calculator/:path*",
+    "/calculator",
+    "/ils/:path*",
+  ],
 };
