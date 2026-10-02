@@ -339,7 +339,14 @@ function Cell({
   );
 }
 
-export default function BentoGrid() {
+export default function BentoGrid({
+  cta,
+  teamLabel = "Tvoj posvećeni tim",
+}: {
+  teamLabel?: string;
+  /** Zamenjuje sadržaj donje široke kartice (podrazumevano: link na pakete). */
+  cta?: React.ReactNode;
+} = {}) {
   return (
     <section id="rezultati" className="relative py-12 md:py-20">
       <div className="container-x">
@@ -389,13 +396,17 @@ export default function BentoGrid() {
                     key={src}
                     className="relative size-9 overflow-hidden rounded-full border-2 border-card"
                   >
-                    <Image src={src} alt="" fill className="object-cover" />
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      sizes="36px"
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
-              <span className="text-sm text-muted-foreground">
-                Tvoj posvećeni tim
-              </span>
+              <span className="text-sm text-muted-foreground">{teamLabel}</span>
             </div>
           </Cell>
 
@@ -459,18 +470,22 @@ export default function BentoGrid() {
             i={5}
             className="col-span-2 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:col-span-4"
           >
-            <div>
-              <h3 className="text-lg font-bold sm:text-2xl">
-                Sve počinje odabirom paketa.
-              </h3>
-            </div>
-            <a
-              href="#paketi"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:py-3 sm:text-base"
-            >
-              Paketi
-              <ArrowUpRight className="size-4" />
-            </a>
+            {cta ?? (
+              <>
+                <div>
+                  <h3 className="text-lg font-bold sm:text-2xl">
+                    Sve počinje odabirom paketa.
+                  </h3>
+                </div>
+                <a
+                  href="#paketi"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 sm:py-3 sm:text-base"
+                >
+                  Paketi
+                  <ArrowUpRight className="size-4" />
+                </a>
+              </>
+            )}
           </Cell>
         </div>
       </div>

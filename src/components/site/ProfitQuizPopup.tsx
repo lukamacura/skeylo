@@ -130,9 +130,14 @@ const STEPS: Step[] = [
 
 type Props = {
   children: React.ReactNode; // trigger
+  /** `type` upisan u skeylo_leads — razlikuje izvor upita u adminu. */
+  leadType?: string;
 };
 
-export default function ProfitQuizPopup({ children }: Props) {
+export default function ProfitQuizPopup({
+  children,
+  leadType = "profit-za-tebe-quiz",
+}: Props) {
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -179,7 +184,7 @@ export default function ProfitQuizPopup({ children }: Props) {
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "profit-za-tebe-quiz", ...data }),
+        body: JSON.stringify({ type: leadType, ...data }),
       });
       if (!res.ok) throw new Error("Network error");
       toast.success("Zahtev poslat.");

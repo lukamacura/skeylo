@@ -596,7 +596,7 @@ export function CompanyFacade({ k }: { k: Ctx }) {
         fill={k.glow("#eef2f6", "#fff3c9")}
         style={{ fontFamily: "var(--font-display), sans-serif" }}
       >
-        VAŠA FIRMA
+        {k.sign ?? "VAŠA FIRMA"}
       </text>
       {/* Sokl */}
       <rect

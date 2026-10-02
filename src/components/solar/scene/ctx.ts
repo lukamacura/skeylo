@@ -22,4 +22,6 @@ export interface Ctx {
   litAt: (floor: number, slot: number) => boolean;
   /** Sitni detalji se crtaju samo kad su dovoljno veliki da se vide. */
   detail: boolean;
+  /** Natpis na fasadi firme; podrazumevano "VAŠA FIRMA". */
+  sign?: string;
 }

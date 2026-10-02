@@ -73,6 +73,9 @@ export interface HouseSceneProps {
   /** Visina (px) zaglavlja i čipova koji leže preko scene; crtež ih zaobilazi. */
   topPad?: number;
   bottomPad?: number;
+  /** Prevodi za druge jezike; podrazumevano srpski. */
+  ariaLabel?: string;
+  signText?: string;
 }
 
 /** Korak opruga za mere: ispod desetine piksela, oko ga ne vidi. */
@@ -228,6 +231,7 @@ function HouseScene(props: HouseSceneProps) {
     litAt: (f, s) =>
       ((f * 7 + s * 13 + 3) % 10) / 10 < 0.3 + props.billLevel * 0.7,
     detail: zoom > 0.78,
+    sign: props.signText,
   };
 
   const flowSpeed = lerp(2.6, 0.9, props.billLevel);
@@ -266,7 +270,9 @@ function HouseScene(props: HouseSceneProps) {
         viewBox={viewBox}
         className="absolute inset-0 block h-full w-full"
         role="img"
-        aria-label={`Ilustracija objekta sa ${panels} solarnih panela`}
+        aria-label={
+          props.ariaLabel ?? `Ilustracija objekta sa ${panels} solarnih panela`
+        }
       >
         <defs>
           <radialGradient id="hs-warm">

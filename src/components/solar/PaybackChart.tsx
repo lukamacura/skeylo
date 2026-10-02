@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { num } from "@/lib/solar";
+import { num as numEn, shortUsd } from "@/lib/solar-us";
 
 /** "1,2 mil." / "350 hilj." — kratko, za ose i oznake. */
 export function shortRsd(n: number): string {
@@ -22,6 +23,46 @@ function niceStep(range: number, ticks: number): number {
   return (unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 5 ? 5 : 10) * pow;
 }
 
+/** Tekstovi grafikona; "en" je za američki kalkulator (USD). */
+const TEXT = {
+  sr: {
+    short: shortRsd,
+    amount: (v: number) => `${num(Math.round(v / 1000) * 1000)} RSD`,
+    today: "danas",
+    Today: "Danas",
+    tick: (yr: number) => `${yr}. god.`,
+    year: (yr: number) => `${yr}. godina`,
+    paid: "Isplaćeno",
+    minus: "U minusu ",
+    plus: "U plusu ",
+    back: "Ulaganje se vraća",
+    profit: "Čista zarada",
+    aria: "Kumulativni novčani tok solarnog sistema kroz 25 godina",
+    caption: "Kumulativni novčani tok po godinama",
+    colYear: "Godina",
+    colValue: "Stanje (RSD)",
+    cell: (v: number) => num(Math.round(v)),
+  },
+  en: {
+    short: shortUsd,
+    amount: (v: number) => `$${numEn(Math.round(v / 100) * 100)}`,
+    today: "Today",
+    Today: "Today",
+    tick: (yr: number) => `Yr ${yr}`,
+    year: (yr: number) => `Year ${yr}`,
+    paid: "Paid off",
+    minus: "Down ",
+    plus: "Up ",
+    back: "Paying back the investment",
+    profit: "Net savings",
+    aria: "Cumulative cash flow of the solar system over 25 years",
+    caption: "Cumulative cash flow by year",
+    colYear: "Year",
+    colValue: "Balance (USD)",
+    cell: (v: number) => numEn(Math.round(v)),
+  },
+} as const;
+
 const INK = "#f2f5f9";
 const MUTED = "#8b97a8";
 const GRID = "rgba(255,255,255,0.07)";
@@ -33,10 +74,16 @@ interface Props {
   /** Kumulativni novčani tok, indeks = godina. */
   cashflow: number[];
   paybackYears: number | null;
+  locale?: keyof typeof TEXT;
 }
 
 /** Kumulativni novčani tok kroz 25 godina: ispod nule je ulaganje, iznad zarada. */
-export default function PaybackChart({ cashflow, paybackYears }: Props) {
+export default function PaybackChart({
+  cashflow,
+  paybackYears,
+  locale = "sr",
+}: Props) {
+  const t = TEXT[locale];
   const wrap = useRef<HTMLDivElement>(null);
   // 0 do prvog merenja: crtež nikad nije širi od kartice, ni na tren.
   const [width, setWidth] = useState(0);
@@ -78,8 +125,8 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
   const onMove = (clientX: number) => {
     const rect = wrap.current?.getBoundingClientRect();
     if (!rect) return;
-    const t = (clientX - rect.left - pad.left) / iw;
-    setHover(Math.round(Math.min(1, Math.max(0, t)) * years));
+    const pos = (clientX - rect.left - pad.left) / iw;
+    setHover(Math.round(Math.min(1, Math.max(0, pos)) * years));
   };
 
   const tipLeft = hover === null ? 0 : x(hover);
@@ -91,7 +138,7 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
         width={width}
         height={height}
         role="img"
-        aria-label="Kumulativni novčani tok solarnog sistema kroz 25 godina"
+        aria-label={t.aria}
         className="block touch-pan-y"
         onPointerMove={(e) => onMove(e.clientX)}
         onPointerDown={(e) => onMove(e.clientX)}
@@ -125,24 +172,24 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
           </clipPath>
         </defs>
 
-        {ticks.map((t) => (
-          <g key={t}>
+        {ticks.map((tick) => (
+          <g key={tick}>
             <line
               x1={pad.left}
               x2={width - pad.right}
-              y1={y(t)}
-              y2={y(t)}
-              stroke={t === 0 ? "rgba(255,255,255,0.28)" : GRID}
+              y1={y(tick)}
+              y2={y(tick)}
+              stroke={tick === 0 ? "rgba(255,255,255,0.28)" : GRID}
             />
             <text
               x={pad.left - 10}
-              y={y(t) + 4}
+              y={y(tick) + 4}
               textAnchor="end"
               fontSize={11}
               fill={MUTED}
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              {shortRsd(t)}
+              {t.short(tick)}
             </text>
           </g>
         ))}
@@ -155,7 +202,7 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
             fontSize={11}
             fill={MUTED}
           >
-            {yr === 0 ? "danas" : `${yr}. god.`}
+            {yr === 0 ? t.today : t.tick(yr)}
           </text>
         ))}
 
@@ -220,7 +267,7 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
               fontWeight={600}
               fill={INK}
             >
-              Isplaćeno
+              {t.paid}
             </text>
           </motion.g>
         )}
@@ -256,15 +303,15 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
           }}
         >
           <div className="text-[#8b97a8]">
-            {hover === 0 ? "Danas" : `${hover}. godina`}
+            {hover === 0 ? t.Today : t.year(hover)}
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 font-semibold tabular-nums text-[#f2f5f9]">
             <span
               className="inline-block size-2 rounded-full"
               style={{ background: cashflow[hover] < 0 ? LOSS : GAIN }}
             />
-            {cashflow[hover] < 0 ? "U minusu " : "U plusu "}
-            {num(Math.round(Math.abs(cashflow[hover]) / 1000) * 1000)} RSD
+            {cashflow[hover] < 0 ? t.minus : t.plus}
+            {t.amount(Math.abs(cashflow[hover]))}
           </div>
         </div>
       )}
@@ -275,23 +322,23 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
             className="inline-block h-0.5 w-4 rounded"
             style={{ background: LOSS }}
           />
-          Ulaganje se vraća
+          {t.back}
         </span>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block h-0.5 w-4 rounded"
             style={{ background: GAIN }}
           />
-          Čista zarada
+          {t.profit}
         </span>
       </div>
 
       <table className="sr-only">
-        <caption>Kumulativni novčani tok po godinama</caption>
+        <caption>{t.caption}</caption>
         <thead>
           <tr>
-            <th>Godina</th>
-            <th>Stanje (RSD)</th>
+            <th>{t.colYear}</th>
+            <th>{t.colValue}</th>
           </tr>
         </thead>
         <tbody>
@@ -299,7 +346,7 @@ export default function PaybackChart({ cashflow, paybackYears }: Props) {
             i % 5 === 0 ? (
               <tr key={i}>
                 <td>{i}</td>
-                <td>{num(Math.round(v))}</td>
+                <td>{t.cell(v)}</td>
               </tr>
             ) : null,
           )}
