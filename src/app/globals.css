@@ -349,3 +349,106 @@ html {
     animation: none;
   }
 }
+
+/* --- Kalkulator bazena: scena ------------------------------------------
+   Talasi, mehurići, para i mlaz idu samo preko transform/opacity/dash. */
+.pl-wave {
+  animation: pl-slide 3.2s linear infinite;
+  will-change: transform;
+}
+.pl-caustic {
+  animation: pl-slide 6s linear infinite;
+  will-change: transform;
+}
+.pl-bubble {
+  animation: pl-bubble 2.2s ease-in infinite;
+  opacity: 0;
+}
+.pl-fan {
+  animation: hs-spin 0.9s linear infinite;
+}
+.pl-steam {
+  animation: pl-steam 4s ease-in-out infinite;
+  opacity: 0;
+}
+.pl-flow {
+  animation: pl-flow 0.8s linear infinite;
+}
+.pl-rgb-stop {
+  animation: pl-rgb-stop 6s linear infinite;
+}
+.pl-rgb-fill {
+  animation: pl-rgb-fill 6s linear infinite;
+}
+@keyframes pl-slide {
+  to {
+    transform: translate3d(calc(-1 * var(--pl-period, 24px)), 0, 0);
+  }
+}
+@keyframes pl-bubble {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(calc(var(--pl-rise, 30) * -1px));
+    opacity: 0;
+  }
+}
+@keyframes pl-steam {
+  0% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+@keyframes pl-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes pl-rgb-stop {
+  0%,
+  100% {
+    stop-color: #ff4d8d;
+  }
+  33% {
+    stop-color: #4dd2ff;
+  }
+  66% {
+    stop-color: #a86bff;
+  }
+}
+@keyframes pl-rgb-fill {
+  0%,
+  100% {
+    fill: #ff4d8d;
+  }
+  33% {
+    fill: #4dd2ff;
+  }
+  66% {
+    fill: #a86bff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-wave,
+  .pl-caustic,
+  .pl-bubble,
+  .pl-fan,
+  .pl-steam,
+  .pl-flow,
+  .pl-rgb-stop,
+  .pl-rgb-fill {
+    animation: none;
+  }
+}
