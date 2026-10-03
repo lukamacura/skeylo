@@ -88,10 +88,12 @@ export function CalculatorOverlay({
   open,
   onClose,
   title = "Kalkulator uštede",
+  src = CALC_SRC,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
+  src?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -135,7 +137,7 @@ export function CalculatorOverlay({
             </button>
           </div>
           <iframe
-            src={CALC_SRC}
+            src={src}
             title={title}
             className="min-h-0 w-full flex-1 border-0"
           />
