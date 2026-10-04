@@ -8,14 +8,12 @@ import {
   ArrowRight,
   CalendarCheck,
   FileSignature,
-  Phone as PhoneIcon,
   PhoneCall,
   Play,
   Search,
   TrendingUp,
   Waves,
 } from "lucide-react";
-import ProfitQuizPopup from "@/components/site/ProfitQuizPopup";
 import {
   BrowserFrame,
   CalculatorOverlay,
@@ -23,7 +21,9 @@ import {
 
 const AQUA = "#4fd8eb";
 const BLUE = "#2aa8ff";
-const LEAD_TYPE = "pool-service-predlog";
+const WHATSAPP = `https://wa.me/381631012474?text=${encodeURIComponent(
+  "Zdravo Luka, pogledao sam predlog za Pool Service. Hajde da razgovaramo.",
+)}`;
 const IMG = "/calculator/pool-service";
 const CALC = "/calculator/bazen";
 
@@ -260,7 +260,7 @@ function SearchCard() {
       <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5">
         <Search className="size-4 shrink-0 text-[#9aa4b4]" />
         <span className="truncate text-sm font-semibold text-white">
-          koliko košta bazen 8x4 novi sad
+          Koliko košta bazen u Novom Sadu
         </span>
       </div>
       <ul className="mt-4 space-y-3">
@@ -274,19 +274,6 @@ function SearchCard() {
           </li>
         ))}
       </ul>
-      <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/[0.05] p-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#25d366]/15">
-          <PhoneIcon className="size-4 text-[#25d366]" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white">
-            „Pozdrav, koliko bi koštao bazen 8×4?”
-          </p>
-          <p className="text-xs text-[#9aa4b4]">
-            Poslato majstoru pre 6 dana · viđeno
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -320,7 +307,7 @@ function AdCard() {
           Pool Service · Sponzorisano
         </p>
         <p className="mt-2 text-balance font-display text-lg font-extrabold leading-tight text-white sm:text-xl">
-          Koliko košta bazen <span style={{ color: AQUA }}>8 × 4 m</span>?
+          Koliko će vas <span style={{ color: AQUA }}>koštati bazen</span>?
         </p>
         <p className="mt-1 text-sm text-[#9aa4b4]">
           Izračunajte okvirnu cenu za 1 minut.
@@ -379,44 +366,98 @@ function LeadCard() {
   );
 }
 
-/** Pool Service zatvara: poziv, obilazak placa, ugovor. */
+/** Pool Service zatvara: poziv, obilazak placa, ugovor — korak po korak. */
 function CloseCard() {
   const steps = [
     { icon: PhoneCall, t: "Poziv", d: "Sreda, 9:15" },
     { icon: CalendarCheck, t: "Obilazak placa", d: "Subota, 10:00" },
     { icon: FileSignature, t: "Ugovor", d: "Dve nedelje kasnije" },
   ];
+  const STEP = 0.7;
   return (
-    <div className={`${cardCls} p-4 sm:p-5`}>
+    <motion.div
+      initial="hidden"
+      whileInView="shown"
+      viewport={{ once: true, margin: "-80px" }}
+      className={`${cardCls} p-4 sm:p-5`}
+    >
       <ol className="grid grid-cols-3 gap-2">
         {steps.map((s, i) => {
           const last = i === steps.length - 1;
           return (
             <li key={s.t} className="relative text-center">
               {!last && (
-                <span className="absolute left-[calc(50%+1.75rem)] right-[calc(-50%+1.75rem)] top-5 h-px bg-white/15" />
+                <span className="absolute left-[calc(50%+1.75rem)] right-[calc(-50%+1.75rem)] top-5 h-px overflow-hidden bg-white/10">
+                  <motion.span
+                    variants={{ hidden: { scaleX: 0 }, shown: { scaleX: 1 } }}
+                    transition={{
+                      duration: STEP * 0.7,
+                      delay: i * STEP + 0.35,
+                      ease: "easeInOut",
+                    }}
+                    className="block h-full origin-left"
+                    style={{ background: AQUA }}
+                  />
+                </span>
               )}
-              <span
-                className="mx-auto flex size-10 items-center justify-center rounded-xl"
+              <motion.span
+                variants={{
+                  hidden: { scale: 0.4, opacity: 0 },
+                  shown: { scale: 1, opacity: 1 },
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 16,
+                  delay: i * STEP,
+                }}
+                className="relative mx-auto flex size-10 items-center justify-center rounded-xl"
                 style={{ background: last ? AQUA : `${AQUA}1f` }}
               >
+                {last && (
+                  <motion.span
+                    aria-hidden
+                    variants={{
+                      hidden: { scale: 1, opacity: 0 },
+                      shown: { scale: [1, 1.7], opacity: [0.6, 0] },
+                    }}
+                    transition={{ duration: 1.1, delay: i * STEP + 0.2 }}
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: AQUA }}
+                  />
+                )}
                 <s.icon
-                  className="size-5"
+                  className="relative size-5"
                   style={{ color: last ? "#04161c" : AQUA }}
                 />
-              </span>
-              <p className="mt-2 text-[13px] font-bold leading-tight text-white">
-                {s.t}
-              </p>
-              <p className="text-[11px] text-[#9aa4b4]">{s.d}</p>
+              </motion.span>
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 8 },
+                  shown: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.4, delay: i * STEP + 0.15 }}
+              >
+                <p className="mt-2 text-[13px] font-bold leading-tight text-white">
+                  {s.t}
+                </p>
+                <p className="text-[11px] text-[#9aa4b4]">{s.d}</p>
+              </motion.div>
             </li>
           );
         })}
       </ol>
-      <p className="mt-4 rounded-xl bg-white/[0.05] px-3.5 py-2.5 text-sm text-[#d6dde6]">
+      <motion.p
+        variants={{
+          hidden: { opacity: 0, y: 10 },
+          shown: { opacity: 1, y: 0 },
+        }}
+        transition={{ duration: 0.45, delay: steps.length * STEP }}
+        className="mt-4 rounded-xl bg-white/[0.05] px-3.5 py-2.5 text-sm text-[#d6dde6]"
+      >
         „Video sam procenu, to je otprilike moj budžet. Kad možete da dođete?”
-      </p>
-    </div>
+      </motion.p>
+    </motion.div>
   );
 }
 
@@ -424,7 +465,7 @@ function CloseCard() {
 function CampaignCard() {
   const rows = [
     { t: "Video · majstor na vašem gradilištu", w: 92, on: true },
-    { t: "Video · koliko košta bazen 8×4", w: 74, on: true },
+    { t: "Video · koliko će vas koštati bazen", w: 74, on: true },
     { t: "Statična slika · akcija", w: 18, on: false },
   ];
   return (
@@ -480,8 +521,8 @@ const TEAM = [
   { name: "Mihajlo", role: "Video produkcija", img: "/people/mihac.webp" },
   { name: "Filip", role: "Meta reklame", img: "/people/filip.webp" },
   { name: "Nina", role: "Organizacija", img: "/people/nina.webp" },
-  { name: "Stefan", role: "Snimanje", img: "/people/stefan.webp" },
-  { name: "Kuzma", role: "Snimanje", img: "/people/kuzma.webp" },
+  { name: "Stefan", role: "Montiranje", img: "/people/stefan.webp" },
+  { name: "Kuzma", role: "Montiranje", img: "/people/kuzma.webp" },
 ];
 
 const LOGOS = [
@@ -551,10 +592,6 @@ export default function PoolServicePitch() {
             <p className="mt-6 max-w-lg text-xl leading-snug text-muted-foreground sm:text-2xl">
               Gradi kuću i hoće bazen. On je vaš sledeći klijent, samo to još ne
               zna.
-            </p>
-            <p className="mt-4 max-w-lg text-base text-muted-foreground">
-              Ovo je njegov put od prve pretrage do potpisanog ugovora, i šta mi
-              radimo na svakom koraku.
             </p>
             <a href="#poglavlje-1" className={`${ctaCls} mt-9`}>
               Pratite Nikolin put
@@ -628,8 +665,8 @@ export default function PoolServicePitch() {
           n={1}
           stage={0}
           when="Mart, na gradilištu"
-          title="Nikola zida kuću. Bazen je u planu."
-          accent="Cena je misterija."
+          title="Bazen je u planu,"
+          accent="a cenu ne zna."
           line="Gugla cenu i dobija isti odgovor: „zavisi”. Majstor ne odgovara na poruku. Bazen pada na listu „jednog dana”."
           scene={
             <Scene
@@ -1034,12 +1071,15 @@ export default function PoolServicePitch() {
             <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
               Pola sata razgovora. Bez obaveze.
             </p>
-            <ProfitQuizPopup leadType={LEAD_TYPE}>
-              <button type="button" className={`${ctaCls} mt-9`}>
-                Zakažite razgovor
-                <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-              </button>
-            </ProfitQuizPopup>
+            <a
+              href={WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${ctaCls} mt-9`}
+            >
+              Pišite Luki na WhatsApp
+              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+            </a>
           </motion.div>
         </div>
       </section>

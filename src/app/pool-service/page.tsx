@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import PoolServicePitch from "@/components/site/pool-service/PoolServicePitch";
+import PoolServiceLanding from "@/components/site/pool-service/PoolServiceLanding";
 
 export const metadata: Metadata = {
   title: "Predlog za Pool Service",
@@ -15,5 +15,5 @@ export const metadata: Metadata = {
 };
 
 export default function PoolServicePitchPage() {
-  return <PoolServicePitch />;
+  return <PoolServiceLanding />;
 }
