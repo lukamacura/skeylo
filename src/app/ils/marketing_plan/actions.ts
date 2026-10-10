@@ -6,6 +6,10 @@ import { ILS_COOKIE, ILS_MAX_AGE, ILS_PASS, ilsToken } from "@/lib/ils-gate";
 
 export type GateState = { wrong: number };
 
+// Stranice iza istog gate-a; posle otključavanja vraćamo korisnika na onu
+// sa koje je došao, nikad na proizvoljan URL.
+const PAGES = ["/ils/marketing_plan", "/ils/google_ads"];
+
 export async function unlock(
   prev: GateState,
   formData: FormData,
@@ -23,5 +27,6 @@ export async function unlock(
     path: "/ils",
     maxAge: ILS_MAX_AGE,
   });
-  redirect("/ils/marketing_plan");
+  const next = String(formData.get("next") ?? "");
+  redirect(PAGES.includes(next) ? next : PAGES[0]);
 }

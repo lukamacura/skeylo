@@ -5,7 +5,17 @@ import { unlock, type GateState } from "@/app/ils/marketing_plan/actions";
 
 const START: GateState = { wrong: 0 };
 
-export default function Gate({ fontClass = "" }: { fontClass?: string }) {
+export default function Gate({
+  fontClass = "",
+  title = "Marketing plan za oktobar",
+  cta = "Otvori plan",
+  next = "/ils/marketing_plan",
+}: {
+  fontClass?: string;
+  title?: string;
+  cta?: string;
+  next?: string;
+}) {
   const [state, action, pending] = useActionState(unlock, START);
   const wrong = state.wrong > 0;
 
@@ -21,10 +31,11 @@ export default function Gate({ fontClass = "" }: { fontClass?: string }) {
           </svg>
           Privatan dokument
         </p>
-        <h1>Marketing plan za oktobar</h1>
+        <h1>{title}</h1>
         <p className="gate-lede">Unesite lozinku koju ste dobili.</p>
 
         <form action={action} className="gate-form">
+          <input type="hidden" name="next" value={next} />
           <label htmlFor="ils-pass" className="sr-only">
             Lozinka
           </label>
@@ -41,7 +52,7 @@ export default function Gate({ fontClass = "" }: { fontClass?: string }) {
             aria-describedby="ils-pass-error"
           />
           <button type="submit" disabled={pending}>
-            {pending ? "Otvaram…" : "Otvori plan"}
+            {pending ? "Otvaram…" : cta}
           </button>
         </form>
 
