@@ -14,16 +14,12 @@ import {
 } from "lucide-react";
 import {
   IVORY,
-  Kicker,
   LINE,
   MetaLogo,
   MUTED,
   ROSE,
   ROSE_SOFT,
-  SERIF,
   SURFACE,
-  item,
-  stagger,
 } from "./primitives";
 
 /* ------------------------------------------------------------------------ */
@@ -35,10 +31,11 @@ import {
    in cqh so a unit is the same on every board width. Where the stage is
    wider than tall the board widens by a factor k (up to K_MAX) and spreads
    sideways; node positions are percentages, so they follow on their own,
-   and the nodes grow a little (--s) into the room the spread opens up. */
+   and everything grows (--s, grow(k)) into the room the spread opens up. */
 const W = 400;
 const H = 680;
-const K_MAX = 1.75;
+const K_MAX = 2.2;
+const grow = (k: number) => Math.min(1.18, 1 + (k - 1) * 0.15);
 const u = (n: number) => `calc(${(n / H) * 100}cqh * var(--s, 1))`;
 const at = (x: number, y: number) => ({
   left: `${(x / W) * 100}%`,
@@ -151,7 +148,7 @@ const flows = (X: Spread): Flow[] => {
     },
     {
       id: "edit",
-      d: `M${X(138)},100 L${X(138)},142`,
+      d: `M${X(138)},110 L${X(138)},142`,
       color: CONTENT,
       n: 2,
       dur: 1.4,
@@ -159,7 +156,7 @@ const flows = (X: Spread): Flow[] => {
     },
     {
       id: "ads",
-      d: `M${X(228)},112 C${X(228)},146 ${X(196)},170 ${X(166, 138)},170`,
+      d: `M${X(228)},120 C${X(228)},148 ${X(196)},170 ${X(166, 138)},170`,
       color: CONTENT,
       n: 2,
       dur: 1.8,
@@ -242,7 +239,7 @@ const flows = (X: Spread): Flow[] => {
      on them opens the site. A smaller crowd than Google's. */
     {
       id: "b2b",
-      d: `M${X(268)},260 L${X(268)},282`,
+      d: `M${X(268)},266 L${X(268)},282`,
       color: B2B,
       n: 1,
       dur: 1.2,
@@ -288,7 +285,7 @@ const flows = (X: Spread): Flow[] => {
     /* Google: Luka opens a new channel, full of women searching. */
     {
       id: "g",
-      d: `M${X(356)},100 L${X(356)},142`,
+      d: `M${X(356)},110 L${X(356)},142`,
       color: NEW,
       n: 2,
       dur: 1.4,
@@ -297,7 +294,7 @@ const flows = (X: Spread): Flow[] => {
     },
     {
       id: "g-w",
-      d: `M${X(356)},236 L${X(356)},266`,
+      d: `M${X(356)},244 L${X(356)},266`,
       color: WOMAN,
       n: 5,
       menEvery: 5,
@@ -407,7 +404,7 @@ function Money({
           <motion.g
             key={i}
             initial={{ opacity: 0, y: 0 }}
-            animate={{ opacity: [0, 1, 1, 0], y: [0, -46], rotate: [-8, 8] }}
+            animate={{ opacity: [0, 1, 1, 0], y: [0, -36], rotate: [-8, 8] }}
             transition={{
               delay: start + (i * dur) / n,
               duration: dur,
@@ -454,6 +451,7 @@ function Crowd({
   man,
   men = [],
   start,
+  size = 1,
 }: {
   cx: number;
   cy: number;
@@ -464,20 +462,24 @@ function Crowd({
   /* Which figures in an otherwise female crowd are men. */
   men?: number[];
   start: number;
+  /* Grows the whole crowd, figures and spacing, around its centre. */
+  size?: number;
 }) {
   const figs = [];
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++) {
       /* Every other row shifts half a step, so it reads as a crowd. */
-      const x = cx + (c - (cols - 1) / 2) * gap + (r % 2 ? gap / 4 : -gap / 4);
-      const y = cy + (r - (rows - 1) / 2) * gap;
+      const step = gap * size;
+      const x =
+        cx + (c - (cols - 1) / 2) * step + (r % 2 ? step / 4 : -step / 4);
+      const y = cy + (r - (rows - 1) / 2) * step;
       figs.push(
         <Figure
           key={`${r}-${c}`}
           x={x}
           y={y}
           man={man || men.includes(r * cols + c)}
-          scale={Math.min(1, gap / 17)}
+          scale={Math.min(1, gap / 17) * size}
           delay={start + (r * cols + c) * 0.04}
         />,
       );
@@ -488,6 +490,7 @@ function Crowd({
 function Currents({ k }: { k: number }) {
   const uid = useId().replace(/:/g, "");
   const X: Spread = (x, anchor = x) => anchor * k + (x - anchor);
+  const s = grow(k);
   return (
     <svg
       viewBox={`0 0 ${W * k} ${H}`}
@@ -670,7 +673,7 @@ function Currents({ k }: { k: number }) {
           x={x}
           y={y}
           textAnchor={anchor}
-          fontSize={9}
+          fontSize={9 * s}
           fontWeight={600}
           fill={text === "novi kanal" ? NEW : MUTED}
           initial={{ opacity: 0 }}
@@ -694,6 +697,7 @@ function Currents({ k }: { k: number }) {
           x={X(x, 48)}
           y={y}
           man={man}
+          scale={s}
           color={CONTENT}
           delay={T.team + 0.25 + i * 0.08}
         />
@@ -702,7 +706,7 @@ function Currents({ k }: { k: number }) {
         x={X(48)}
         y={152}
         textAnchor="middle"
-        fontSize={9}
+        fontSize={9 * s}
         fontWeight={600}
         fill={MUTED}
         initial={{ opacity: 0 }}
@@ -724,6 +728,7 @@ function Currents({ k }: { k: number }) {
         cols={3}
         rows={3}
         gap={17}
+        size={s}
         start={T.crowd + 0.2}
       />
       <Crowd
@@ -733,6 +738,7 @@ function Currents({ k }: { k: number }) {
         rows={1}
         gap={18}
         man
+        size={s}
         start={T.crowd + 0.2}
       />
       <Crowd
@@ -742,6 +748,7 @@ function Currents({ k }: { k: number }) {
         rows={4}
         gap={14}
         men={[3, 9, 12, 18]}
+        size={s}
         start={T.google + 0.4}
       />
       <Crowd
@@ -751,6 +758,7 @@ function Currents({ k }: { k: number }) {
         rows={2}
         gap={13}
         men={[1, 5]}
+        size={s}
         start={T.b2b + 0.3}
       />
 
@@ -765,7 +773,7 @@ function Currents({ k }: { k: number }) {
           x={X(x)}
           y={y}
           textAnchor="middle"
-          fontSize={9}
+          fontSize={9 * s}
           fontWeight={700}
           fill={fill}
           initial={{ opacity: 0 }}
@@ -1441,7 +1449,7 @@ function Board({ k }: { k: number }) {
         width: `min(100cqw, 100cqh * ${(W * k) / H})`,
         height: `min(100cqh, 100cqw * ${H / (W * k)})`,
         containerType: "size",
-        ["--s" as string]: 1 + (k - 1) * 0.2,
+        ["--s" as string]: grow(k),
       }}
     >
       <Currents k={k} />
@@ -1721,37 +1729,13 @@ export function Today() {
           "radial-gradient(110% 55% at 50% 0%, #2c1d21 0%, rgba(21,14,16,0) 70%)",
       }}
     >
-      <section className="relative mx-auto flex h-full w-full max-w-[1680px] flex-col px-3 pb-3 pt-4 md:px-8 md:pt-6 lg:flex-row lg:items-center lg:gap-10 lg:px-10 lg:py-5">
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="show"
-          className="shrink-0 px-2 md:px-0 lg:w-[250px] xl:w-[290px]"
-        >
-          <Kicker>Danas</Kicker>
-          <motion.h1
-            variants={item}
-            className="text-[clamp(1.45rem,6.2vw,1.9rem)] font-semibold leading-[1.1] md:text-[2.1rem] lg:text-[clamp(1.9rem,2.5vw,2.6rem)]"
-            style={{ fontFamily: SERIF }}
-          >
-            Kako klijenti <em style={{ color: ROSE_SOFT }}>danas</em> stižu u
-            Infinity.
-          </motion.h1>
-          <motion.p
-            variants={item}
-            className="mt-4 hidden text-[15px] leading-snug lg:block"
-            style={{ color: MUTED }}
-          >
-            Meta dovodi uglavnom žene, a svi zakazuju preko sajta. Google je
-            sledeći korak: ljudi, <b>koji već sami traže tretman</b>.
-          </motion.p>
-        </motion.div>
+      <section className="relative flex h-full w-full px-2 py-3 md:px-6 md:py-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           ref={box}
-          className="mt-2 flex min-h-0 min-w-0 flex-1 items-center justify-center self-stretch md:mt-4 lg:mt-0"
+          className="flex min-h-0 min-w-0 flex-1 items-center justify-center self-stretch"
           style={{ containerType: "size" }}
         >
           {k !== null && <Board k={k} />}
