@@ -1,0 +1,152 @@
+/* Tipografija skripte: čitko kao Notion, na tamnoj podlozi OS-a. */
+.os-prose {
+  outline: none;
+  min-height: 40vh;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #e6e6ea;
+  caret-color: #f2f2f4;
+  padding-bottom: 30vh;
+}
+
+.os-prose > * + * {
+  margin-top: 0.5em;
+}
+
+.os-prose h1,
+.os-prose h2,
+.os-prose h3 {
+  font-family: var(--font-sans);
+  color: #f2f2f4;
+  font-weight: 650;
+}
+.os-prose h1 {
+  font-size: 1.75em;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin-top: 1.2em;
+}
+.os-prose h2 {
+  font-size: 1.35em;
+  line-height: 1.25;
+  letter-spacing: -0.018em;
+  margin-top: 1.1em;
+}
+.os-prose h3 {
+  font-size: 1.1em;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin-top: 1em;
+}
+.os-prose > :first-child {
+  margin-top: 0;
+}
+
+.os-prose ul,
+.os-prose ol {
+  padding-left: 1.4em;
+}
+.os-prose ul {
+  list-style: disc;
+}
+.os-prose ol {
+  list-style: decimal;
+}
+.os-prose li > p {
+  margin: 0;
+}
+.os-prose li::marker {
+  color: #8e8e96;
+}
+
+.os-prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+.os-prose ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.6em;
+  align-items: flex-start;
+}
+.os-prose ul[data-type="taskList"] li > label {
+  margin-top: 0.3em;
+  user-select: none;
+}
+.os-prose ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.os-prose ul[data-type="taskList"] input[type="checkbox"] {
+  appearance: none;
+  width: 1.05em;
+  height: 1.05em;
+  border-radius: 0.3em;
+  border: 1.5px solid #5a5a62;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background 100ms,
+    border-color 100ms;
+}
+.os-prose ul[data-type="taskList"] input[type="checkbox"]:checked {
+  background: #30d158;
+  border-color: #30d158;
+}
+.os-prose ul[data-type="taskList"] input[type="checkbox"]:checked::after {
+  content: "";
+  width: 0.3em;
+  height: 0.55em;
+  border: solid #0a0a0c;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-0.05em) rotate(45deg);
+}
+.os-prose li[data-checked="true"] > div {
+  color: #8e8e96;
+  text-decoration: line-through;
+  text-decoration-color: #5a5a62;
+}
+
+.os-prose blockquote {
+  border-left: 3px solid rgba(255, 255, 255, 0.18);
+  padding-left: 0.9em;
+  color: #b8b8c0;
+}
+.os-prose hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.4em 0;
+}
+.os-prose code {
+  font-size: 0.88em;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 0.3em;
+  padding: 0.1em 0.35em;
+}
+.os-prose pre {
+  background: #141417;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.6em;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.os-prose pre code {
+  background: none;
+  padding: 0;
+}
+.os-prose a {
+  color: #0a84ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.os-prose strong {
+  color: #f2f2f4;
+  font-weight: 650;
+}
+
+.os-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #5a5a62;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
