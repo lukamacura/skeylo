@@ -3838,7 +3838,9 @@ form {
 }
 .wjob {
   width: min(600px, 100%);
-  min-height: 130px;
+  min-height: 0;
+  field-sizing: content;
+  overflow: hidden;
   background: transparent;
   border: 0;
   border-bottom: 2px solid var(--line);
@@ -3859,6 +3861,15 @@ form {
 }
 .wjob::placeholder {
   color: color-mix(in srgb, var(--cream) 18%, transparent);
+}
+/* laptop: task wizard koristi širinu ekrana, naziv taska ne lomi kratke rečenice */
+@media (min-width: 1024px) {
+  #twiz .wstep {
+    width: min(960px, 100%);
+  }
+  #twiz .wjob {
+    width: 100%;
+  }
 }
 .kinds {
   display: grid;

@@ -3058,7 +3058,7 @@
     <div class="projs">${cs.map((c, i) => `<button type="button" class="popt" data-proj="${esc(c.id)}" aria-pressed="${T.client === c.id}" style="--c:${esc(c.color || "#e1802c")};animation-delay:${(0.08 + i * 0.05).toFixed(2)}s">${logo(c, "lg-ic")}<span>${esc(c.name)}</span></button>`).join("")}</div>`;
     }
     if (k === "job")
-      return `<h2 class="wq">What's <span class="nmg">the job?</span></h2><textarea class="wjob" id="tjob" rows="3" maxlength="200" placeholder="Opiši task…">${esc(T.job)}</textarea><div class="whint">Enter za dalje</div>`;
+      return `<h2 class="wq">What's <span class="nmg">the job?</span></h2><textarea class="wjob" id="tjob" rows="1" maxlength="200" placeholder="Opiši task…">${esc(T.job)}</textarea><div class="whint">Enter za dalje</div>`;
     return `<h2 class="wq">Task ili <span class="nmg">event?</span></h2>
     <div class="kinds"><button type="button" class="kind" data-kind="task" aria-pressed="${T.kind === "task"}">${SV('<path d="M5 21V4h11l-1 4 4 0-1 4H5"/>')}Task</button><button type="button" class="kind" data-kind="event" aria-pressed="${T.kind === "event"}">${SV('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>')}Event</button></div>
     <div id="twhen" style="display:contents">${whenHTML()}</div>
@@ -3095,7 +3095,10 @@
       setTimeout(
         () => {
           const t = $("#tjob");
-          t && t.focus();
+          if (t) {
+            autoGrow(t);
+            t.focus();
+          }
         },
         reduce ? 0 : 150,
       );
@@ -3171,7 +3174,10 @@
   $("#tstage").addEventListener("input", (e) => {
     if (!T) return;
     const id = e.target.id;
-    if (id === "tjob") T.job = e.target.value;
+    if (id === "tjob") {
+      T.job = e.target.value;
+      autoGrow(e.target);
+    }
     if (id === "tdue") T.due = e.target.value;
     if (id === "tsd") {
       T.sd = e.target.value;

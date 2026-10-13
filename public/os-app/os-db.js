@@ -130,7 +130,7 @@
     const k = key(row.col, row.id);
     if (pending.get(k)) return;
     if ((known.get(k) || 0) >= row.v) return;
-    if ((tomb.get(k) || 0) >= row.v) return;
+    if (tomb.has(k) && tomb.get(k) >= row.v) return;
     known.set(k, row.v);
     s.docs.set(row.id, row.data || {});
     emit(row.col);
@@ -214,7 +214,8 @@
           const k = key(c, r.id);
           seen.add(r.id);
           if (pending.get(k)) continue;
-          if ((known.get(k) || 0) > r.v || (tomb.get(k) || 0) >= r.v) continue;
+          if ((known.get(k) || 0) > r.v || (tomb.has(k) && tomb.get(k) >= r.v))
+            continue;
           known.set(k, r.v);
           s.docs.set(r.id, r.data || {});
         }
