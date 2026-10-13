@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Skeylo OS</title>
+<meta name="theme-color" content="#0b0806">
+<link rel="icon" href="/os-app/img/e20eeaf7f1.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600&family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<link rel="stylesheet" href="/os-app/app.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"><canvas id="gridfx"></canvas></div>
+<div id="boot" aria-hidden="true"><img src="/os-app/img/e20eeaf7f1.png" alt=""></div>
+
+<!-- LOGIN -->
+<main id="login" class="screen" hidden>
+  <div class="lg">
+    <img class="wm" src="/os-app/img/d5fd595e8e.png" alt="Skeylo">
+    <section class="lg-card" id="lgCard">
+      <h1>Ko radi danas?</h1>
+      <div class="team" id="team" role="group" aria-label="Izaberi sebe"></div>
+      <form id="lgForm" novalidate>
+        <div class="field"><label class="sr" for="email">Mejl</label><input id="email" type="email" autocomplete="username" placeholder="Mejl" required></div>
+        <div class="field"><label class="sr" for="pass">Lozinka</label><input id="pass" type="password" autocomplete="current-password" placeholder="Lozinka" required></div>
+        <button class="btn" type="submit">Uđi</button>
+        <p class="err" id="err" role="alert"></p>
+      </form>
+    </section>
+  </div>
+</main>
+
+<!-- DASHBOARD -->
+<div id="dash" class="screen wrap" hidden>
+  <header class="top">
+    <button class="home" data-go="" aria-label="Dashboard"><img src="/os-app/img/d5fd595e8e.png" alt="Skeylo"></button>
+    <div class="top-r2"><button class="dwbtn" id="dwbtn"><span class="dwring"><svg class="r" viewBox="0 0 36 36"><circle class="trk" cx="18" cy="18" r="15.5"/><circle class="prg" cx="18" cy="18" r="15.5" stroke-dasharray="97.4" stroke-dashoffset="97.4"/></svg><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5M12 2v3"/></svg></span><span class="lbl" id="dwLbl">Deep Work</span><span class="t" id="dwT" hidden></span><span class="dwmates" id="dwMates"></span></button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button></div>
+  </header>
+  <section class="hero">
+    <div class="hero-l">
+      <h1 class="greet" id="greet"></h1>
+      <div class="earn">
+        <span class="lbl">Zarada ovog meseca</span>
+        <span class="val"><span id="earn">0</span><small class="grad">RSD</small></span>
+      </div>
+    </div>
+    <div class="portrait">
+      <div class="ring"></div>
+      <div class="photo"><img id="heroImg" alt=""></div>
+      <div class="ring front"></div>
+    </div>
+  </section>
+  <section class="cards">
+    <button class="card start" data-go="projects" style="animation-delay:.6s">
+      <span class="sbg" aria-hidden="true"><img src="/os-app/img/654312f796.jpg" alt=""></span>
+      <img class="icon" src="/os-app/img/e20eeaf7f1.png" alt="">
+      <h2>Start<br><span class="grad" id="startWord">Working</span></h2>
+      <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+    <button class="card fincard taskcard" data-go="tasks" style="animation-delay:.7s">
+      <svg class="tkills" viewBox="0 0 200 160" aria-hidden="true">
+<defs>
+<linearGradient id="tkCard" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a1f17"/><stop offset="1" stop-color="#16100c"/></linearGradient>
+<radialGradient id="tkGlow"><stop offset="0" stop-color="#e1802c" stop-opacity=".45"/><stop offset="1" stop-color="#e1802c" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="108" cy="86" rx="82" ry="66" fill="url(#tkGlow)"/>
+<g transform="translate(26 16) rotate(-6 75 60)">
+<g transform="translate(0 0)"><g class="tk tk1">
+<rect x="0" y="0" width="150" height="34" rx="11" fill="url(#tkCard)" stroke="rgba(255,255,255,.10)"/>
+<rect x="0" y="6" width="3.5" height="22" rx="1.75" fill="#ff7eb6"/>
+<circle cx="20" cy="17" r="8" fill="none" stroke="#ff7eb6" stroke-width="2"/>
+<circle class="tkf" cx="20" cy="17" r="8" fill="#ff7eb6"/>
+<path class="tkc" d="M16 17.2l2.8 2.8 5.4-5.6" fill="none" stroke="#120d0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="36" y="11" width="74" height="5" rx="2.5" fill="rgba(244,235,220,.55)"/>
+<rect x="36" y="20" width="41" height="4" rx="2" fill="rgba(244,235,220,.22)"/>
+</g></g>
+<g transform="translate(0 44)"><g class="tk tk2">
+<rect x="0" y="0" width="150" height="34" rx="11" fill="url(#tkCard)" stroke="rgba(255,255,255,.10)"/>
+<rect x="0" y="6" width="3.5" height="22" rx="1.75" fill="#4fbf7f"/>
+<circle cx="20" cy="17" r="8" fill="none" stroke="#4fbf7f" stroke-width="2"/>
+<circle class="tkf" cx="20" cy="17" r="8" fill="#4fbf7f"/>
+<path class="tkc" d="M16 17.2l2.8 2.8 5.4-5.6" fill="none" stroke="#120d0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="36" y="11" width="60" height="5" rx="2.5" fill="rgba(244,235,220,.55)"/>
+<rect x="36" y="20" width="33" height="4" rx="2" fill="rgba(244,235,220,.22)"/>
+</g></g>
+<g transform="translate(0 88)"><g class="tk tk3">
+<rect x="0" y="0" width="150" height="34" rx="11" fill="url(#tkCard)" stroke="rgba(255,255,255,.10)"/>
+<rect x="0" y="6" width="3.5" height="22" rx="1.75" fill="#5b9cf0"/>
+<circle cx="20" cy="17" r="8" fill="none" stroke="#5b9cf0" stroke-width="2"/>
+<circle class="tkf" cx="20" cy="17" r="8" fill="#5b9cf0"/>
+<path class="tkc" d="M16 17.2l2.8 2.8 5.4-5.6" fill="none" stroke="#120d0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="36" y="11" width="82" height="5" rx="2.5" fill="rgba(244,235,220,.55)"/>
+<rect x="36" y="20" width="45" height="4" rx="2" fill="rgba(244,235,220,.22)"/>
+</g></g>
+</g>
+<g class="tkpen"><rect x="-5" y="-26" width="10" height="38" rx="3" fill="#f3b04c"/><rect x="-5" y="-26" width="10" height="8" rx="2" fill="#e1802c"/><path d="M-5 12 L0 22 L5 12z" fill="#f4ebdc"/><path d="M-1.6 18.6 L0 22 L1.6 18.6z" fill="#2a1f17"/></g>
+<path class="spark sp1" d="M172 40 l3 9 9 3 -9 3 -3 9 -3 -9 -9 -3 9 -3z" fill="#fff3d6"/>
+<path class="spark sp2" d="M22 150 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#ffd28a"/>
+</svg>
+      <h2>Task List</h2>
+      <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+    <button class="card fincard" data-go="money" style="animation-delay:.8s">
+      <svg class="coins" viewBox="0 0 230 210" aria-hidden="true">
+<defs>
+<linearGradient id="cTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c4"/><stop offset=".45" stop-color="#f6b64c"/><stop offset="1" stop-color="#e1802c"/></linearGradient>
+<linearGradient id="cSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a420f"/><stop offset=".5" stop-color="#d7822e"/><stop offset="1" stop-color="#7a3a0e"/></linearGradient>
+<radialGradient id="cGlow"><stop offset="0" stop-color="#f3b04c" stop-opacity=".55"/><stop offset="1" stop-color="#f3b04c" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="128" cy="186" rx="86" ry="16" fill="url(#cGlow)"/>
+<g class="cs cs1"><path d="M82,160 v13 a46,15 0 0 0 92,0 v-13 z" fill="url(#cSide)"/><path d="M82,166.5 a46,15 0 0 0 92,0" fill="none" stroke="rgba(255,220,160,.25)" stroke-width="1"/><ellipse cx="128" cy="160" rx="46" ry="15" fill="url(#cTop)"/><ellipse cx="128" cy="160" rx="38" ry="10.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><text x="128" y="160" transform="translate(0 102.4) scale(1 .36)" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,Arial,sans-serif" font-weight="800" font-size="34" fill="#9a4a12" opacity=".75">€</text></g>
+<g class="cs cs2"><path d="M78,140 v13 a46,15 0 0 0 92,0 v-13 z" fill="url(#cSide)"/><path d="M78,146.5 a46,15 0 0 0 92,0" fill="none" stroke="rgba(255,220,160,.25)" stroke-width="1"/><ellipse cx="124" cy="140" rx="46" ry="15" fill="url(#cTop)"/><ellipse cx="124" cy="140" rx="38" ry="10.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><text x="124" y="140" transform="translate(0 89.60000000000001) scale(1 .36)" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,Arial,sans-serif" font-weight="800" font-size="22" fill="#9a4a12" opacity=".75">RSD</text></g>
+<g class="cs cs3"><path d="M84,120 v13 a46,15 0 0 0 92,0 v-13 z" fill="url(#cSide)"/><path d="M84,126.5 a46,15 0 0 0 92,0" fill="none" stroke="rgba(255,220,160,.25)" stroke-width="1"/><ellipse cx="130" cy="120" rx="46" ry="15" fill="url(#cTop)"/><ellipse cx="130" cy="120" rx="38" ry="10.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><text x="130" y="120" transform="translate(0 76.8) scale(1 .36)" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,Arial,sans-serif" font-weight="800" font-size="34" fill="#9a4a12" opacity=".75">€</text></g>
+<g class="cf cf1" transform="rotate(-24 62 62)"><path d="M30,62 v10 a32,11 0 0 0 64,0 v-10 z" fill="url(#cSide)"/><path d="M30,67.0 a32,11 0 0 0 64,0" fill="none" stroke="rgba(255,220,160,.25)" stroke-width="1"/><ellipse cx="62" cy="62" rx="32" ry="11" fill="url(#cTop)"/><ellipse cx="62" cy="62" rx="24" ry="6.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><text x="62" y="62" transform="translate(0 39.68) scale(1 .36)" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,Arial,sans-serif" font-weight="800" font-size="24" fill="#9a4a12" opacity=".75">€</text></g>
+<g class="cf cf2" transform="rotate(18 196 40)"><path d="M174,40 v7 a22,8 0 0 0 44,0 v-7 z" fill="url(#cSide)"/><path d="M174,43.5 a22,8 0 0 0 44,0" fill="none" stroke="rgba(255,220,160,.25)" stroke-width="1"/><ellipse cx="196" cy="40" rx="22" ry="8" fill="url(#cTop)"/><ellipse cx="196" cy="40" rx="14" ry="3.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/><text x="196" y="40" transform="translate(0 25.6) scale(1 .36)" text-anchor="middle" dominant-baseline="central" font-family="Bricolage Grotesque,Arial,sans-serif" font-weight="800" font-size="16" fill="#9a4a12" opacity=".75">€</text></g>
+<path class="spark sp1" d="M178 98 l3 9 9 3 -9 3 -3 9 -3 -9 -9 -3 9 -3z" fill="#fff3d6"/>
+<path class="spark sp2" d="M30 132 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#ffd28a"/>
+<path class="spark sp3" d="M110 22 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#fff3d6"/>
+</svg>
+      <h2>Finance Panel</h2>
+      <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+    <button class="card fincard ckcard" id="ckCard" data-go="cockpit" style="animation-delay:.85s" hidden>
+      <svg class="ckill" viewBox="0 0 200 160" aria-hidden="true"><defs><linearGradient id="ckg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd6e8"/><stop offset="1" stop-color="#ff7eb6"/></linearGradient></defs>
+        <g class="e1"><rect x="30" y="18" width="150" height="34" rx="11" fill="#2d1724" stroke="rgba(255,170,210,.25)"/><rect x="30" y="24" width="4" height="22" rx="2" fill="#ff7eb6"/><rect x="44" y="28" width="70" height="6" rx="3" fill="rgba(255,240,246,.6)"/><rect x="44" y="38" width="40" height="4" rx="2" fill="rgba(255,240,246,.25)"/><circle cx="160" cy="35" r="8" fill="url(#ckg)"/></g>
+        <g class="e2"><rect x="20" y="62" width="150" height="34" rx="11" fill="#2d1724" stroke="rgba(255,170,210,.25)"/><rect x="20" y="68" width="4" height="22" rx="2" fill="#a98bff"/><rect x="34" y="72" width="80" height="6" rx="3" fill="rgba(255,240,246,.6)"/><rect x="34" y="82" width="46" height="4" rx="2" fill="rgba(255,240,246,.25)"/><circle cx="150" cy="79" r="8" fill="#a98bff"/></g>
+        <g class="e3"><rect x="36" y="106" width="150" height="34" rx="11" fill="#2d1724" stroke="rgba(255,170,210,.25)"/><rect x="36" y="112" width="4" height="22" rx="2" fill="#5b9cf0"/><rect x="50" y="116" width="60" height="6" rx="3" fill="rgba(255,240,246,.6)"/><rect x="50" y="126" width="36" height="4" rx="2" fill="rgba(255,240,246,.25)"/><circle cx="166" cy="123" r="8" fill="#5b9cf0"/></g>
+        <path d="M178 12l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="#fff0f6" class="cl"/></svg>
+      <h2>Organisation Cockpit</h2>
+    </button>
+    <button class="card fincard calcard" id="calCard" data-go="cal" style="animation-delay:.88s">
+      <svg class="calill" viewBox="0 0 180 150" aria-hidden="true"><rect x="10" y="14" width="160" height="126" rx="18" fill="var(--surface-2)" stroke="var(--line)"/><rect x="10" y="14" width="160" height="30" rx="18" fill="color-mix(in srgb,var(--orange) 30%,var(--surface-2))"/><rect x="10" y="34" width="160" height="10" fill="color-mix(in srgb,var(--orange) 30%,var(--surface-2))"/><rect x="44" y="6" width="8" height="18" rx="4" fill="var(--orange)"/><rect x="128" y="6" width="8" height="18" rx="4" fill="var(--orange)"/>
+        <g fill="rgba(255,255,255,.08)"></g>
+        <rect x="22" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="51" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="80" y="54" width="20" height="18" rx="5" fill="var(--orange)" class=""/><rect x="109" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="138" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="22" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="51" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="80" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="109" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="138" y="81" width="20" height="18" rx="5" fill="var(--orange)" class="cl"/><rect x="22" y="108" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="51" y="108" width="20" height="18" rx="5" fill="var(--orange)" class="cl"/><rect x="80" y="108" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="109" y="108" width="20" height="18" rx="5" fill="var(--orange)" class=""/><rect x="138" y="108" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/></svg>
+      <h2>Skeylo Calendar</h2>
+    </button>
+    <button class="card fincard lmcard wide2" id="lmCard" data-go="leads" style="animation-delay:.89s">
+      <svg class="lmill" viewBox="0 0 230 140" aria-hidden="true">
+        <g fill="rgba(255,255,255,.035)" stroke="rgba(255,255,255,.08)"><rect x="8" y="14" width="48" height="118" rx="12"/><rect x="64" y="14" width="48" height="118" rx="12"/><rect x="120" y="14" width="48" height="118" rx="12"/><rect x="176" y="14" width="48" height="118" rx="12"/></g>
+        <g fill="rgba(255,255,255,.08)"><rect x="14" y="74" width="36" height="20" rx="6"/><rect x="14" y="100" width="36" height="20" rx="6"/><rect x="70" y="74" width="36" height="20" rx="6"/><rect x="126" y="74" width="36" height="20" rx="6"/><rect x="126" y="100" width="36" height="20" rx="6"/><rect x="182" y="74" width="36" height="20" rx="6"/></g>
+        <g fill="#8a96b8"><circle cx="20" cy="26" r="4"/></g><g fill="#8f6bff"><circle cx="76" cy="26" r="4"/></g><g fill="#e055a8"><circle cx="132" cy="26" r="4"/></g><g fill="#ffc23d"><circle cx="188" cy="26" r="4"/></g>
+        <g class="lmc"><rect class="lmcf" x="12" y="40" width="40" height="26" rx="7" fill="#8a96b8"/><rect x="18" y="47" width="22" height="4" rx="2" fill="rgba(0,0,0,.35)"/><rect x="18" y="55" width="14" height="4" rx="2" fill="rgba(0,0,0,.25)"/></g>
+        <g class="lmok"><circle cx="214" cy="40" r="11" fill="#ffc23d"/><path d="m209 40 3.5 3.5 6.5-7" fill="none" stroke="#2a1600" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </svg>
+      <span class="lmdue" id="lmDue" hidden></span>
+      <h2>Lead Manager</h2>
+    </button>
+    <button class="card gencard" data-go="general" style="animation-delay:.9s">
+      <span class="avstack" id="genAvs" aria-hidden="true"></span>
+      <h2>General</h2>
+    </button>
+  </section>
+</div>
+
+<!-- PROJECT MANAGER -->
+<div id="pm" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <h1><span class="w"><span>Project</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Manager</span></span></h1>
+    <button class="pill solid" id="addClient"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi klijent</button>
+  </div>
+  <div id="clients" class="board"></div>
+</div>
+
+<!-- MONTH HUB -->
+<div id="mh" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Projekti</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead"><div class="cm-id" id="mhId"></div></div>
+  <div class="mods" id="mods"></div>
+</div>
+
+<!-- ORGANISATION COCKPIT -->
+<div id="cockpit" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <section class="ckhero" id="ckHero"></section>
+  <div class="cksec"><h2>Za zakazivanje</h2><span class="cnt" id="ckCntS">0</span><span class="hint">Skripte u To Schedule statusu</span></div>
+  <div class="board ckscripts" id="ckScripts"></div>
+  <div class="ckplan">
+    <aside class="ckside">
+      <div class="cksec"><h2>Entiteti</h2><span class="cnt" id="ckCntE">0</span></div>
+      <div class="cktray" id="ckTray" data-tray="1"></div>
+    </aside>
+    <div class="ckmain">
+      <div class="cksec"><h2>Skeylo Calendar</h2><span class="hint">Prevuci entitet na dan</span></div>
+      <div class="ckcal" id="ckCal"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LEAD MANAGER -->
+<div id="lm" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead lmhead">
+    <h1><span class="w"><span>Lead</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Manager</span></span></h1>
+    <button class="pill solid" id="lmAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi lead</button>
+  </div>
+  <section class="lrail" id="lmRail" aria-label="Pipeline"></section>
+  <div class="lmbar"><button type="button" class="ldue" id="lmDuePill" aria-pressed="false" hidden></button><label class="lsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="lmSearch" type="search" autocomplete="off" placeholder="Pretraži leadove (/)" aria-label="Pretraži leadove"></label></div>
+  <div class="board lboard" id="lmBoard"></div>
+</div>
+
+<!-- LEAD DETAIL -->
+<div id="ld" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Lead Manager</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div id="ldBody"></div>
+</div>
+
+<!-- SKEYLO CALENDAR -->
+<div id="cal" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead"><h1><span class="w"><span>Skeylo</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Calendar</span></span></h1></div>
+  <div class="ckcal" id="calMain"></div>
+</div>
+
+<!-- SCRIPT → ENTITIES BUILDER -->
+<div id="build" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go="cockpit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Cockpit</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="bhead" id="bHead"></div>
+  <div class="bents" id="bEnts"></div>
+  <div class="bhelp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Klikni blokove teksta koji se snimaju zajedno (Shift + klik za više odjednom), pa klikni <b>Dalje</b>.</span></div>
+  <div class="bblocks" id="bBlocks"></div>
+</div>
+<div class="bbar" id="bBar"><span><b id="bCount">0</b> izabrano</span><button class="pill" id="bClear">Poništi</button><button class="pill solid" id="bNext">Dalje<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+
+<!-- CLIENT PLATFORM -->
+<div id="cplat" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Projekti</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead"><div class="cm-id" id="cpId"></div><button class="pill solid" id="cpNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nova stranica</button></div>
+  <div class="cpgrid" id="cpGrid"></div>
+</div>
+
+<!-- ANGLES -->
+<div id="angles" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="angBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Client Platform</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead"><div class="cm-id" id="angId"></div><button class="pill solid" id="angNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi ugao</button></div>
+  <div id="angBody"></div>
+</div>
+
+<!-- GENERAL -->
+<div id="general" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead"><h1><span class="w"><span>General</span></span></h1></div>
+  <div class="gmods" id="gmods"></div>
+</div>
+
+<!-- MODELS -->
+<div id="models" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go="general"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>General</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <h1><span class="w"><span>Models</span></span></h1>
+    <div class="tl-actions">
+      <label class="msearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="sr">Pretraga</span><input id="mq" type="search" placeholder="Pretraži modele" autocomplete="off"></label>
+      <button class="pill solid" id="addModelBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi model</button>
+    </div>
+  </div>
+  <div id="mdlGrid"></div>
+</div>
+
+<!-- TASK LIST -->
+<div id="tasks" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <h1><span class="w"><span>Task</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">List</span></span></h1>
+    <div class="tl-actions">
+      <div class="tseg" id="tview"><span class="knob"></span><button type="button" class="on" data-tv="member">Po članu</button><button type="button" data-tv="proj">Po klijentu</button></div>
+      <button class="pill solid" id="addTask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>
+    </div>
+  </div>
+  <div id="tboard" class="board"></div>
+</div>
+
+<!-- MONTH FINANCES -->
+<div id="fin" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="finBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="finBackLbl">Nazad</span></button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <div class="cm-id" id="finId"></div>
+    <button class="pill solid" id="finAdd" hidden></button>
+  </div>
+  <div id="finBody"></div>
+</div>
+
+<!-- PERSONAL FINANCE PANEL -->
+<div id="money" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div id="moneyBody"></div>
+</div>
+
+<!-- REPORTING -->
+<div id="rp" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="rpBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="rpBackLbl">Nazad</span></button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <div class="cm-id" id="rpId"></div>
+    <button class="pill solid" id="newReport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi izveštaj</button>
+  </div>
+  <div id="rgrid"></div>
+</div>
+
+<!-- REPORT VIEWER -->
+<div id="rv" class="screen wrap" hidden>
+  <div class="rv-top">
+    <button class="pill" id="rvBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Izveštaji</button>
+    <div class="rv-title" id="rvTitle"></div>
+    <button class="pill" id="rvLink"></button>
+  </div>
+  <div class="rv-frame" id="rvFrame"></div>
+</div>
+<a class="vcta" id="vcta" target="_blank" rel="noopener" hidden><span class="pb"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></span>Pogledaj Video</a>
+
+<!-- CONTENT MANAGER -->
+<div id="cm" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="cmBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="cmBackLbl">Nazad</span></button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <div class="cm-id" id="cmId"></div>
+    <button class="pill solid" id="newScript"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nova skripta</button>
+  </div>
+  <div id="sboard" class="board"></div>
+</div>
+
+<!-- SCRIPT EDITOR -->
+<div id="ed" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="edBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="edBackLbl">Content Manager</span></button>
+    <div class="ed-top-r"><span class="save" id="saveState"><i></i><span>Sačuvano</span></span><button class="pill danger ed-del" id="delScriptTop" aria-label="Obriši skriptu" title="Obriši skriptu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>
+  </header>
+  <div class="doc">
+    <h1 class="ed-title" id="edTitle" contenteditable="true" spellcheck="false" data-ph="Naziv skripte"></h1>
+    <div class="props" id="props"></div>
+    <div class="editor" id="editor" contenteditable="true" spellcheck="false"></div>
+    <div class="ed-foot"><button class="pill danger" id="delScript"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span id="delLbl">Obriši skriptu</span></button></div>
+  </div>
+</div>
+<input type="file" id="fileImg" accept="image/*" hidden>
+<input type="file" id="fileAny" hidden>
+<div class="slash" id="slash" hidden></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="dwg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--gold)"/><stop offset="1" stop-color="var(--orange)"/></linearGradient></defs></svg>
+<button class="dwpill" id="dwpill" aria-label="Deep Work tajmer"><span class="dwring"><svg class="r" viewBox="0 0 36 36"><circle class="trk" cx="18" cy="18" r="15.5"/><circle class="prg" cx="18" cy="18" r="15.5" stroke-dasharray="97.4" stroke-dashoffset="0"/></svg></span><span class="t" id="dwpillT">90:00</span><span class="l">Deep Work</span></button>
+<div class="dwo" id="dwo" hidden role="dialog" aria-modal="true" aria-label="Deep Work"><button class="min" id="dwmin" aria-label="Umanji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="dwc" id="dwc"></div></div>
+<div class="trash" id="trash" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg><span>Pusti ovde za brisanje</span></div>
+
+<!-- SHEET -->
+<div class="scrim" id="scrim" hidden>
+  <form class="sheet" id="sheet" novalidate>
+    <h3 id="sheetTitle">Novi klijent</h3>
+    <p id="sheetText" hidden></p>
+    <ul class="dl" id="sheetList" hidden></ul>
+    <label class="sr" for="sheetInput">Naziv</label>
+    <input id="sheetInput" type="text" autocomplete="off" maxlength="60">
+    <div class="swatches" id="swatches" role="group" aria-label="Boja"></div>
+    <div class="row2">
+      <button type="button" class="pill" id="sheetCancel">Otkaži</button>
+      <button type="submit" class="pill solid" id="sheetOk">Dodaj</button>
+    </div>
+  </form>
+</div>
+
+<!-- FINANCE WIZARD -->
+<div class="wiz" id="wiz" hidden role="dialog" aria-modal="true" aria-label="Add Finances">
+  <div class="wiz-top"><div class="dots" id="wdots"></div><button class="wclose" id="wclose" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="wstage" id="wstage"></div>
+  <div class="wnav"><button class="pill" id="wback">Back</button><button class="pill solid" id="wnext">Next</button></div>
+</div>
+
+<!-- ENTITY WIZARD -->
+<div class="wiz" id="ewiz" hidden role="dialog" aria-modal="true" aria-label="Novi entitet">
+  <div class="wiz-top"><div class="dots" id="edots"></div><button class="wclose" id="eclose" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="wstage" id="estage"></div>
+  <div class="wnav"><button class="pill" id="eback">Nazad</button><button class="pill solid" id="enext">Dalje</button></div>
+</div>
+
+<!-- LEAD WIZARD -->
+<div class="wiz" id="lwiz" hidden role="dialog" aria-modal="true" aria-label="Novi lead">
+  <div class="wiz-top"><div class="dots" id="ldots"></div><button class="wclose" id="lclose" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="wstage" id="lstage"></div>
+  <div class="wnav"><button class="pill" id="lback">Nazad</button><button class="pill solid" id="lnext">Dalje</button></div>
+</div>
+<div class="lwinx" id="lwin" hidden role="dialog" aria-label="Novi klijent"><div class="lwbox"><div class="lwbig">CLOSED</div><div class="lwsub"><b id="lwinName"></b> je sada klijent</div><div class="lwbtns"><button class="pill" id="lwinOk">Nastavi</button><button class="pill solid" id="lwinGo">Otvori u Projects</button></div></div></div>
+
+<!-- DAY PLANNER -->
+<div class="dayp" id="dayp" hidden role="dialog" aria-modal="true" aria-label="Plan dana"><div class="dpp" id="dpp"></div></div>
+
+<!-- TIME PICKER -->
+<div class="tpk" id="tpk" hidden role="dialog" aria-modal="true" aria-label="Vreme snimanja"><div class="tpbox" id="tpbox"></div></div>
+
+<!-- ENTITY DETAIL -->
+<div class="scrim" id="escrim" hidden>
+  <form class="sheet" id="esheet" novalidate style="width:min(520px,100%);max-height:calc(100vh - 40px);overflow:auto"></form>
+</div>
+
+<!-- PAGE SHEET -->
+<div class="scrim" id="pscrim" hidden>
+  <form class="sheet" id="psheet" novalidate>
+    <h3 id="psTitle">Nova stranica</h3>
+    <div class="lbl">Naziv</div>
+    <input id="pname" type="text" autocomplete="off" maxlength="50" placeholder="npr. Ponuda, USP, Brand Book">
+    <div class="lbl">Ikonica</div>
+    <div class="icgrid" id="icgrid" role="group" aria-label="Ikonica"></div>
+    <p class="serr" id="perr"></p>
+    <div class="row2"><button type="button" class="pill" id="pcancel">Otkaži</button><button type="submit" class="pill solid" id="pok">Napravi</button></div>
+  </form>
+</div>
+
+<!-- MODEL SHEET -->
+<div class="scrim" id="mscrim" hidden>
+  <form class="sheet" id="msheet" novalidate>
+    <h3 id="msTitle">Novi model</h3>
+    <label class="phup" id="phup"><input type="file" id="mphoto" accept="image/*"><span class="ph-t" id="phT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>Dodaj sliku</span></label>
+    <div class="lbl">Ime i prezime</div>
+    <input id="mname" type="text" autocomplete="off" maxlength="60" placeholder="npr. Mila Jurić">
+    <div class="lbl">Broj telefona</div>
+    <input id="mphone" type="tel" autocomplete="off" maxlength="30" placeholder="+381 6x xxx xxxx">
+    <div class="lbl">Instagram</div>
+    <input id="mig" type="text" autocomplete="off" maxlength="80" placeholder="@korisnicko_ime ili link">
+    <p class="serr" id="merr"></p>
+    <div class="row2"><button type="button" class="pill" id="mcancel">Otkaži</button><button type="submit" class="pill solid" id="mok">Sačuvaj</button></div>
+  </form>
+</div>
+
+<!-- WHO WILL BE MODELING -->
+<div class="wiz" id="mwiz" hidden role="dialog" aria-modal="true" aria-label="Who will be modeling">
+  <div class="wiz-top"><div></div><button class="wclose" id="mwclose" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="wstage"><div class="wstep in mpick" id="mpick"></div></div>
+  <div class="wnav"><button class="pill" id="mwnew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi model</button><button class="pill solid" id="mwdone">Gotovo</button></div>
+</div>
+
+<!-- TASK WIZARD -->
+<div class="wiz" id="twiz" hidden role="dialog" aria-modal="true" aria-label="Add Task">
+  <div class="wiz-top"><div class="dots" id="tdots"></div><button class="wclose" id="tclose" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="wstage" id="tstage"></div>
+  <div class="wnav"><button class="pill" id="tback">Back</button><button class="pill solid" id="tnext">Next</button></div>
+</div>
+
+<!-- TASK DETAIL -->
+<div class="scrim" id="tscrim" hidden>
+  <div class="sheet tdet" id="tdet"></div>
+</div>
+
+<!-- EXPENSE SHEET -->
+<div class="scrim" id="xscrim" hidden>
+  <form class="sheet" id="xsheet" novalidate>
+    <h3>Novi trošak</h3>
+    <div class="lbl">Iznos</div>
+    <input id="xamt" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
+    <div class="seg" id="xseg"><span class="knob"></span><button type="button" class="on" data-cur="RSD">RSD</button><button type="button" data-cur="EUR">EUR</button></div>
+    <div class="lbl">Za šta</div>
+    <input id="xnote" type="text" autocomplete="off" maxlength="60" placeholder="npr. gorivo, oprema">
+    <p class="serr" id="xerr"></p>
+    <div class="row2"><button type="button" class="pill" id="xcancel">Otkaži</button><button type="submit" class="pill solid">Dodaj trošak</button></div>
+  </form>
+</div>
+
+<!-- REPORT SHEET -->
+<div class="scrim" id="rscrim" hidden>
+  <form class="sheet" id="rsheet" novalidate>
+    <h3 id="rsTitle">Novi izveštaj</h3>
+    <label class="drop" id="rdrop"><input type="file" id="rfile" accept=".html,.htm,text/html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 18v-6M9 15l3-3 3 3"/></svg><b id="rdropT">Izaberi .html izveštaj</b><span id="rdropS">ili ga prevuci ovde</span></label>
+    <div class="lbl" id="rnameL">Naziv izveštaja</div>
+    <input id="rname" type="text" autocomplete="off" maxlength="80" placeholder="npr. Izveštaj nedelja 2">
+    <div class="lbl">Loom link</div>
+    <input id="rloom" type="url" autocomplete="off" placeholder="https://www.loom.com/share/...">
+    <p class="serr" id="rerr"></p>
+    <div class="row2">
+      <button type="button" class="pill" id="rsCancel">Otkaži</button>
+      <button type="submit" class="pill solid" id="rsOk">Sačuvaj</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" hidden>Poništi</button></div>
+<script src="/os-app/supabase.js"></script>
+<script src="/os/env.js"></script>
+<script src="/os-app/os-db.js"></script>
+<script src="/os-app/app.js"></script>
+</body>
+</html>
