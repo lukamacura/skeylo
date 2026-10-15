@@ -3,7 +3,10 @@
    Markdown u polju md. Editor isti Markdown prikazuje kao blokove: tekst, naslovi,
    liste, zadaci, citat, napomena, kod, razdelnik, slika, fajl i podstranica.
    "/" otvara blokove i iOS emoji. app.js zove window.SKNotes(most) i dobija
-   { hub, open, sync, leave, flush }. */
+   { hub, open, sync, leave, flush, focusTop }.
+   Isti editor piše i skripte (ekran #ed, open(id, "script")): skripta čuva md, a
+   body (HTML za CRM i stari editor) se generiše iz njega; mdSig = otisak tog body-ja,
+   pa skripta čiji je body kasnije menjan negde drugde ponovo kreće od body-ja. */
 window.SKNotes = function (X) {
   "use strict";
   const { S, api, esc, SV, toast, errMsg } = X;
@@ -766,9 +769,105 @@ window.SKNotes = function (X) {
     return s ? s + "\n" : "";
   }
 
+  /* ---------------- skripte: Markdown -> body (HTML) ---------------- */
+  /* body čitaju CRM i stari editor, pa sadrži samo tagove koje oba propuštaju */
+  const OKSRC = /^(\/_blob\/|https:\/\/|data:image\/|blob:)/i;
+  function htmlOf(md) {
+    let h = "";
+    const st = [];
+    const closeTo = (n) => {
+      while (st.length > n) h += "</li></" + st.pop() + ">";
+    };
+    for (const b of parseMd(md)) {
+      const x = String(b.x || "");
+      if (LISTY.has(b.t)) {
+        const tag = b.t === "ol" ? "ol" : "ul",
+          l = Math.min(b.l || 0, st.length);
+        closeTo(l + 1);
+        if (st.length === l + 1 && st[l] === tag) h += "</li>";
+        else {
+          if (st.length === l + 1) h += "</li></" + st.pop() + ">";
+          h += "<" + tag + ">";
+          st.push(tag);
+        }
+        h +=
+          "<li>" + (b.t === "todo" ? (b.c ? "☑ " : "☐ ") : "") + mdInline(x);
+        continue;
+      }
+      closeTo(0);
+      if (b.t === "p")
+        h += x.trim() ? "<p>" + mdInline(x) + "</p>" : "<p><br></p>";
+      else if (/^h[123]$/.test(b.t)) h += `<${b.t}>${mdInline(x)}</${b.t}>`;
+      else if (b.t === "quote")
+        h += "<blockquote>" + mdInline(x) + "</blockquote>";
+      else if (b.t === "callout")
+        h +=
+          "<blockquote>" +
+          esc(b.i || "💡") +
+          " " +
+          mdInline(x) +
+          "</blockquote>";
+      else if (b.t === "code")
+        h += "<p>" + esc(x).replace(/\n/g, "<br>") + "</p>";
+      else if (b.t === "hr") h += "<hr>";
+      else if (b.t === "img" && OKSRC.test(b.src || ""))
+        h += `<p><img src="${esc(b.src)}" alt=""></p>`;
+      else if (b.t === "file" && OKSRC.test(b.src || ""))
+        h += `<p><a class="file" href="${esc(b.src)}" data-name="${esc(b.name || "Fajl")}">${esc(b.name || "Fajl")}</a></p>`;
+      else if (b.t === "page") h += "<p>" + esc(b.name || "Stranica") + "</p>";
+    }
+    closeTo(0);
+    return h;
+  }
+  function sig(s) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++)
+      h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+    return (h >>> 0).toString(36) + "." + s.length;
+  }
+  /* md skripte; ako je body u međuvremenu menjan van ovog editora, kreće se od body-ja */
+  let smKey = null,
+    smVal = "";
+  function scriptMd(s) {
+    const body = s.body || "";
+    if (typeof s.md === "string" && s.mdSig === sig(body)) return s.md;
+    if (smKey !== body) {
+      smKey = body;
+      smVal = toMd(htmlToBlocks(body));
+    }
+    return smVal;
+  }
+
   /* ---------------- block DOM ---------------- */
-  const root = $("#gpBody"),
-    titleEl = $("#gpTitle");
+  /* host = ekran u kome editor trenutno radi (General stranica ili skripta) */
+  const HOSTS = {
+    page: {
+      col: "notes",
+      hash: "g-",
+      screen: "#gp",
+      root: $("#gpBody"),
+      title: $("#gpTitle"),
+      save: "#gpSave",
+    },
+    script: {
+      col: "scripts",
+      hash: "s-",
+      screen: "#ed",
+      root: $("#edBody"),
+      title: $("#edTitle"),
+      save: "#saveState",
+    },
+  };
+  let H = HOSTS.page,
+    root = H.root,
+    titleEl = H.title;
+  const onRoot = (type, fn, opt) =>
+    [HOSTS.page.root, HOSTS.script.root].forEach((r) =>
+      r.addEventListener(type, fn, opt),
+    );
+  const isScript = () => H === HOSTS.script;
+  const live = () => !$(H.screen).hidden && !root.hidden;
+  const docOf = (id) => (S[H.col] || []).find((n) => n.id === id);
   const PH = {
     p: "Piši ili ukucaj „/“ za blokove i emoji",
     h1: "Naslov 1",
@@ -963,6 +1062,7 @@ window.SKNotes = function (X) {
     root.replaceChildren(...bs.map(make));
     renum();
     solo();
+    if (isScript() && X.scriptRendered) X.scriptRendered();
   }
 
   /* ---------------- caret ---------------- */
@@ -1200,11 +1300,16 @@ window.SKNotes = function (X) {
     pendingRemote = false,
     composing = false,
     kidsT = 0;
-  function setSave(busy) {
-    const el = $("#gpSave");
+  function setSave(busy, sel = H.save) {
+    const el = $(sel);
     el.classList.toggle("busy", busy);
     el.querySelector("span").textContent = busy ? "Čuvam…" : "Sačuvano";
   }
+  const docMd = (p) => (isScript() ? scriptMd(p) : p.md || "");
+  const curMd = () => {
+    const p = docOf(cur);
+    return p ? docMd(p) : "";
+  };
   function changed() {
     dirtyMd = true;
     setSave(true);
@@ -1224,11 +1329,20 @@ window.SKNotes = function (X) {
     clearTimeout(saveT);
     if (!cur || rendered !== cur) return;
     const id = cur,
+      col = H.col,
+      sv = H.save,
+      script = isScript(),
       patch = {};
     if (dirtyMd) {
       dirtyMd = false;
       const md = serialize();
-      if (md !== lastMd) patch.md = lastMd = md;
+      if (md !== lastMd) {
+        patch.md = lastMd = md;
+        if (script) {
+          patch.body = htmlOf(md);
+          patch.mdSig = sig(patch.body);
+        }
+      }
     }
     if (dirtyTitle) {
       dirtyTitle = false;
@@ -1236,19 +1350,19 @@ window.SKNotes = function (X) {
       if (t !== lastTitle) patch.title = lastTitle = t;
     }
     if (!Object.keys(patch).length) {
-      setSave(false);
+      setSave(false, sv);
       return;
     }
     patch.updatedAt = Date.now();
     patch.updatedBy = me() ? me().id : null;
     try {
-      await api.upd("notes", id, patch);
+      await api.upd(col, id, patch);
     } catch (e) {
       toast(errMsg(e));
     }
-    if (!dirtyMd && !dirtyTitle) setSave(false);
-    const p = noteOf(id);
-    if (id === cur && p) head(p);
+    if (!dirtyMd && !dirtyTitle) setSave(false, sv);
+    const p = !script && noteOf(id);
+    if (p && id === cur && !isScript()) head(p);
   }
   const busy = () =>
     composing ||
@@ -1394,8 +1508,19 @@ window.SKNotes = function (X) {
       : "";
   }
   function paint() {
-    const p = noteOf(cur),
+    const p = docOf(cur),
       ok = S.ready && !!p;
+    if (isScript()) {
+      /* naslov, polja i stanje "skripta ne postoji" crta app.js */
+      rendered = null;
+      if (!ok) return;
+      lastMd = scriptMd(p);
+      dirtyMd = pendingRemote = false;
+      clearTimeout(saveT);
+      renderBlocks(lastMd);
+      rendered = cur;
+      return;
+    }
     $("#gpMain").hidden = !ok;
     $("#gpState").hidden = ok;
     if (!ok) {
@@ -1425,7 +1550,7 @@ window.SKNotes = function (X) {
   }
   function paintKids() {
     const box = $("#gpKids");
-    if (!cur) return;
+    if (!cur || isScript()) return;
     const linked = new Set(
       blocks()
         .filter((b) => b.dataset.t === "page")
@@ -1443,37 +1568,45 @@ window.SKNotes = function (X) {
           .join("")
       : "";
   }
-  function open(id) {
-    if (cur === id && rendered === id) {
+  /* kind: "page" (General, #gp) ili "script" (#ed) */
+  function open(id, kind = "page") {
+    const h = HOSTS[kind];
+    if (H === h && cur === id && rendered === id) {
       sync();
       return;
     }
-    if (cur && cur !== id) flush();
-    if (cur !== id) {
+    if (cur && (cur !== id || H !== h)) flush();
+    if (cur !== id || H !== h) {
       undoS = [];
       redoS = [];
     }
-    cur = id;
     closeAll();
+    clearSel();
+    H = h;
+    root = h.root;
+    titleEl = h.title;
+    cur = id;
     paint();
   }
   function sync() {
-    if (!cur || $("#gp").hidden) return;
-    const p = noteOf(cur);
+    if (!cur || !live()) return;
+    const p = docOf(cur);
     if (!S.ready || !p || rendered !== cur) {
       paint();
       return;
     }
-    head(p);
-    if (
-      !dirtyTitle &&
-      document.activeElement !== titleEl &&
-      titleEl.textContent !== (p.title || "")
-    ) {
-      titleEl.textContent = p.title || "";
-      lastTitle = p.title || "";
+    if (!isScript()) {
+      head(p);
+      if (
+        !dirtyTitle &&
+        document.activeElement !== titleEl &&
+        titleEl.textContent !== (p.title || "")
+      ) {
+        titleEl.textContent = p.title || "";
+        lastTitle = p.title || "";
+      }
     }
-    const md = p.md || "";
+    const md = docMd(p);
     if (md !== lastMd && !dirtyMd) {
       if (busy()) pendingRemote = true;
       else applyRemote(md);
@@ -1484,7 +1617,7 @@ window.SKNotes = function (X) {
     paintKids();
   }
   function leave(h) {
-    if (!cur || h === "g-" + cur) return;
+    if (!cur || h === H.hash + cur) return;
     flush();
     closeAll();
     clearSel();
@@ -2093,10 +2226,13 @@ window.SKNotes = function (X) {
       return;
     }
     const f = fold(q.trim());
+    /* skripta ide klijentu u CRM, pa u njoj nema podstranica ni linkova na General */
     const items = BLOCKS.filter(
-      (b) => !f || fold(b.label).includes(f) || b.kw.includes(f),
+      (b) =>
+        !(b.id === "page" && isScript()) &&
+        (!f || fold(b.label).includes(f) || b.kw.includes(f)),
     ).map((b) => ({ k: "b", b }));
-    if (f)
+    if (f && !isScript())
       notes()
         .filter(
           (n) => n.id !== cur && fold(n.title || "Bez naslova").includes(f),
@@ -2681,7 +2817,7 @@ window.SKNotes = function (X) {
     changed();
     selectBlocks(d.els);
   }
-  root.addEventListener("pointerdown", (e) => {
+  onRoot("pointerdown", (e) => {
     const h = e.target.closest(".nb-h");
     if (!h || e.button !== 0) return;
     e.preventDefault();
@@ -2691,7 +2827,7 @@ window.SKNotes = function (X) {
       h.setPointerCapture(e.pointerId);
     } catch (err) {}
   });
-  root.addEventListener("pointermove", (e) => {
+  onRoot("pointermove", (e) => {
     if (!DG || e.pointerId !== DG.id) return;
     if (!DG.moved) {
       if (Math.hypot(e.clientX - DG.x, e.clientY - DG.y) < 5) return;
@@ -2700,7 +2836,7 @@ window.SKNotes = function (X) {
     }
     dragMove(e.clientX, e.clientY);
   });
-  root.addEventListener("pointerup", (e) => {
+  onRoot("pointerup", (e) => {
     if (!DG || e.pointerId !== DG.id) return;
     const d = DG;
     if (!d.moved) {
@@ -2710,12 +2846,12 @@ window.SKNotes = function (X) {
     }
     dragEnd(true);
   });
-  root.addEventListener("pointercancel", () => dragEnd(false));
+  onRoot("pointercancel", () => dragEnd(false));
 
   /* ---------------- drag-select across blocks (mouse) ---------------- */
   let DS = null,
     justSel = false;
-  root.addEventListener("pointerdown", (e) => {
+  onRoot("pointerdown", (e) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
     if (e.target.closest(".nb-g,.nb-ck,.nb-ci,.nb-cbar")) return;
     const b = blockAtY(e.clientY);
@@ -2795,7 +2931,7 @@ window.SKNotes = function (X) {
   };
   function fbPlace() {
     const r =
-      !touch() && !SL && EP.hidden && LK.hidden && !$("#gp").hidden
+      !touch() && !SL && EP.hidden && LK.hidden && live()
         ? selBlockRange()
         : null;
     if (!r) {
@@ -3024,7 +3160,7 @@ window.SKNotes = function (X) {
       : null;
   };
   function mbarSync() {
-    const el = touch() && !$("#gp").hidden ? activeBlock() : null;
+    const el = touch() && live() ? activeBlock() : null;
     if (!el) {
       MB.hidden = true;
       return;
@@ -3254,7 +3390,7 @@ window.SKNotes = function (X) {
     focusBlock(anchor, off);
     changed();
   }
-  root.addEventListener("paste", (e) => {
+  onRoot("paste", (e) => {
     const t = e.target.closest && e.target.closest(".nb-t");
     const cd = e.clipboardData;
     if (!t || !cd) return;
@@ -3295,11 +3431,11 @@ window.SKNotes = function (X) {
     else insertBlocks(el, t, bs);
     changed();
   });
-  root.addEventListener("dragover", (e) => {
+  onRoot("dragover", (e) => {
     if (e.dataTransfer && [...e.dataTransfer.types].includes("Files"))
       e.preventDefault();
   });
-  root.addEventListener("drop", (e) => {
+  onRoot("drop", (e) => {
     const fs = [...((e.dataTransfer && e.dataTransfer.files) || [])];
     if (!fs.length) return;
     e.preventDefault();
@@ -3353,8 +3489,7 @@ window.SKNotes = function (X) {
           if (!nb.isConnected) return;
           nb.replaceWith(make({ t: kind, src: url, name: f.name, alt: "" }));
           changed();
-          if (pendingRemote && !busy())
-            applyRemote((noteOf(cur) || {}).md || "");
+          if (pendingRemote && !busy()) applyRemote(curMd());
         },
         (e) => {
           nb.remove();
@@ -3381,12 +3516,12 @@ window.SKNotes = function (X) {
   }
 
   /* ---------------- editor events ---------------- */
-  root.addEventListener("compositionstart", () => (composing = true));
-  root.addEventListener("compositionend", () => {
+  onRoot("compositionstart", () => (composing = true));
+  onRoot("compositionend", () => {
     composing = false;
     changed();
   });
-  root.addEventListener("beforeinput", (e) => {
+  onRoot("beforeinput", (e) => {
     if (e.inputType === "historyUndo" || e.inputType === "historyRedo") {
       e.preventDefault();
       e.inputType === "historyUndo" ? undo() : redo();
@@ -3417,7 +3552,7 @@ window.SKNotes = function (X) {
     }
     noteTyping(t);
   });
-  root.addEventListener("input", (e) => {
+  onRoot("input", (e) => {
     const t = e.target.closest && e.target.closest(".nb-t");
     if (!t) return;
     const el = t.parentElement;
@@ -3437,7 +3572,7 @@ window.SKNotes = function (X) {
     } else if (SL) updateSlash();
     changed();
   });
-  root.addEventListener("keydown", (e) => {
+  onRoot("keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     const t = e.target.closest && e.target.closest(".nb-t");
     if (!t) return;
@@ -3581,7 +3716,7 @@ window.SKNotes = function (X) {
       }
     }
   });
-  root.addEventListener("click", (e) => {
+  onRoot("click", (e) => {
     if (justSel) {
       justSel = false;
       return;
@@ -3660,26 +3795,26 @@ window.SKNotes = function (X) {
     }
   }
   $("#gpFill").addEventListener("click", clickBelow);
-  root.addEventListener("mouseover", (e) => {
+  onRoot("mouseover", (e) => {
     const a = e.target.closest && e.target.closest(".nb-t a[href]");
     if (a && !a.title) a.title = MOD + "klik otvara link";
   });
-  root.addEventListener("focusin", () => {
+  onRoot("focusin", () => {
     clearSel();
     requestAnimationFrame(mbarSync);
   });
-  root.addEventListener("focusout", () => {
+  onRoot("focusout", () => {
     setTimeout(() => {
       mbarSync();
       if (!root.contains(document.activeElement)) {
         if (SL && !slashEl.contains(document.activeElement)) closeSlash();
         flush();
-        if (pendingRemote && !busy()) applyRemote((noteOf(cur) || {}).md || "");
+        if (pendingRemote && !busy()) applyRemote(curMd());
       }
     }, 150);
   });
   document.addEventListener("selectionchange", () => {
-    if ($("#gp").hidden) return;
+    if (!live()) return;
     if (SL && slashQ() === null) closeSlash();
     cancelAnimationFrame(fbRaf);
     fbRaf = requestAnimationFrame(() => {
@@ -3688,7 +3823,7 @@ window.SKNotes = function (X) {
     });
   });
   const reflow = () => {
-    if ($("#gp").hidden) return;
+    if (!live()) return;
     if (fbShown) fbPlace();
     mbarSync();
     placePicker();
@@ -3700,7 +3835,7 @@ window.SKNotes = function (X) {
     visualViewport.addEventListener("scroll", reflow);
   }
   document.addEventListener("pointerdown", (e) => {
-    if ($("#gp").hidden) return;
+    if (!live()) return;
     if (
       !EP.hidden &&
       !EP.contains(e.target) &&
@@ -3723,7 +3858,7 @@ window.SKNotes = function (X) {
       clearSel();
   });
   document.addEventListener("keydown", (e) => {
-    if ($("#gp").hidden) return;
+    if (!live()) return;
     const k = e.key,
       mod = e.metaKey || e.ctrlKey,
       low = k.length === 1 ? k.toLowerCase() : k;
@@ -3806,20 +3941,24 @@ window.SKNotes = function (X) {
   });
 
   /* ---------------- title + header controls ---------------- */
+  /* iz naslova u prvi blok; Enter ubacuje prazan red na vrh ako prvi blok nije prazan */
+  function focusTop(insert) {
+    const f = blocks()[0];
+    if (insert && f && !(f.dataset.t === "p" && isEmpty(tOf(f)))) {
+      pushUndo();
+      const p = make({ t: "p", x: "" });
+      root.prepend(p);
+      focusBlock(p, 0);
+      changed();
+    } else if (f) focusBlock(f, 0);
+  }
   titleEl.addEventListener("input", titleChanged);
   titleEl.addEventListener("keydown", (e) => {
     if (e.isComposing) return;
     const atEnd = caretOff(titleEl) >= titleEl.textContent.length;
     if (e.key === "Enter" || (e.key === "ArrowDown" && atEnd)) {
       e.preventDefault();
-      const f = blocks()[0];
-      if (e.key === "Enter" && f && !(f.dataset.t === "p" && isEmpty(tOf(f)))) {
-        pushUndo();
-        const p = make({ t: "p", x: "" });
-        root.prepend(p);
-        focusBlock(p, 0);
-        changed();
-      } else if (f) focusBlock(f, 0);
+      focusTop(e.key === "Enter");
     }
   });
   titleEl.addEventListener("paste", (e) => {
@@ -3915,5 +4054,5 @@ window.SKNotes = function (X) {
     t.style.setProperty("--my", e.clientY - r.top + "px");
   });
 
-  return { hub, open, sync, leave, flush };
+  return { hub, open, sync, leave, flush, focusTop };
 };

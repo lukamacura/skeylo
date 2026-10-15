@@ -1129,6 +1129,7 @@
     switching = true;
     try {
       await flushSave();
+      if (NT) await NT.flush();
     } catch (e) {}
     let slug;
     try {
@@ -4540,7 +4541,9 @@
     saveTimer = null,
     dirty = {},
     lastPropsSig = "";
+  /* skripte pišu u blok editor iz notes.js (#edBody), stranice klijenta u stari #editor */
   const editor = $("#editor"),
+    edRoot = $("#edBody"),
     edTitle = $("#edTitle");
   try {
     document.execCommand("defaultParagraphSeparator", false, "p");
@@ -4707,11 +4710,12 @@
       $("#props").innerHTML = S.ready
         ? `<div class="state"><b>${isPage ? "Stranica" : "Skripta"} ne postoji</b>Možda je obrisana.</div>`
         : '<div class="state">Učitavam…</div>';
-      editor.hidden = true;
+      editor.hidden = edRoot.hidden = true;
       $("#delScript").hidden = true;
       return;
     }
-    editor.hidden = false;
+    editor.hidden = !isPage;
+    edRoot.hidden = isPage;
     $("#delScript").hidden = false;
     applyTheme(s.clientId);
     const restart = edId !== id;
@@ -4719,17 +4723,20 @@
     dirty = {};
     if (!isPage && !edReturn) edReturn = s.monthId;
     edTitle.textContent = s.title || "";
-    editor.innerHTML = prepForEdit(s.body);
-    updEmpty();
     if (isPage) {
+      editor.innerHTML = prepForEdit(s.body);
+      updEmpty();
       $("#props").innerHTML = "";
       $("#props").hidden = true;
-    } else renderProps(true);
+    } else {
+      if (NT) NT.open(id, "script");
+      renderProps(true);
+    }
     ccSig = "";
     renderCcmt();
     setSave(false);
     if (restart)
-      [edTitle, $("#props"), editor].forEach((el) => {
+      [edTitle, $("#props"), isPage ? editor : edRoot].forEach((el) => {
         el.style.animation = "none";
         el.offsetHeight;
         el.style.animation = "";
@@ -4752,7 +4759,7 @@
       if (edId && S.ready) openEditor(edId);
       return;
     }
-    if (editor.hidden) {
+    if ((edCol === "scripts" ? edRoot : editor).hidden) {
       openEditor(edId);
       return;
     }
@@ -4762,7 +4769,9 @@
       edTitle.textContent !== (s.title || "")
     )
       edTitle.textContent = s.title || "";
-    if (document.activeElement !== editor && !dirty.body) {
+    if (edCol === "scripts") {
+      if (NT) NT.sync();
+    } else if (document.activeElement !== editor && !dirty.body) {
       const html = prepForEdit(s.body);
       if (sanitize(editor.innerHTML) !== sanitize(s.body || "")) {
         editor.innerHTML = html;
@@ -4815,6 +4824,22 @@
     queue("title", edTitle.textContent.trim());
   });
   edTitle.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
+    if (edCol === "scripts" && NT) {
+      let atEnd = false;
+      const sel = getSelection();
+      if (sel.rangeCount && sel.isCollapsed) {
+        const r = document.createRange();
+        r.selectNodeContents(edTitle);
+        r.setStart(sel.focusNode, sel.focusOffset);
+        atEnd = !r.toString().length;
+      }
+      if (e.key === "Enter" || (e.key === "ArrowDown" && atEnd)) {
+        e.preventDefault();
+        NT.focusTop(e.key === "Enter");
+      }
+      return;
+    }
     if (e.key === "Enter") {
       e.preventDefault();
       editor.focus();
@@ -5877,7 +5902,13 @@
     if (!q) return null;
     const map = [];
     let hay = "";
-    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    /* samo tekst blokova: brojevi lista i dugmići nisu deo skripte */
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (x) =>
+        x.parentElement && x.parentElement.closest(".nb-t")
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT,
+    });
     let n;
     while ((n = w.nextNode())) {
       const d = n.data;
@@ -5916,7 +5947,7 @@
       box = $("#ccmt"),
       s = curScript();
     const all =
-      s && !editor.hidden
+      s && !edRoot.hidden
         ? S.comments
             .filter((c) => c.scriptId === s.id)
             .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
@@ -5969,11 +6000,11 @@
     if (HLS) HLS.delete("cc-q");
     CCR = new Map();
     const s = curScript();
-    if (!s || editor.hidden) return;
+    if (!s || edRoot.hidden) return;
     const rs = [];
     openComments(s.id).forEach((c) => {
       if (!c.quote) return;
-      const r = findQuote(editor, c.quote, c.before, c.after);
+      const r = findQuote(edRoot, c.quote, c.before, c.after);
       if (r) {
         CCR.set(c.id, r);
         rs.push(r);
@@ -6083,7 +6114,7 @@
   $("#ccmt").addEventListener("pointerleave", () => {
     if (HLS) HLS.delete("cc-on");
   });
-  editor.addEventListener("click", () => {
+  edRoot.addEventListener("click", () => {
     if (!CCR.size) return;
     const sel = getSelection();
     if (!sel.rangeCount || !sel.isCollapsed) return;
@@ -6097,7 +6128,7 @@
       } catch (e) {}
     }
   });
-  editor.addEventListener("input", () => {
+  edRoot.addEventListener("input", () => {
     if (!CCR.size) return;
     clearTimeout(ccEdTm);
     ccEdTm = setTimeout(paintCcHl, 350);
@@ -6109,6 +6140,8 @@
   $("#delScriptTop").onclick = () =>
     openSheet(edCol === "cpages" ? "delpage" : "delete");
   async function deleteScript(s) {
+    /* tekst koji blok editor još nije sačuvao ide u kopiju za "Poništi" */
+    if (edId === s.id && NT) await NT.flush();
     const { id, ...data } = s;
     const copy = JSON.parse(JSON.stringify(data));
     const cms = S.comments
@@ -10075,6 +10108,7 @@
       nav,
       me: () => me,
       assets: () => ASSETS,
+      scriptRendered: () => paintCcHl(),
     });
   /* =====================================================================
    FINAL CREATIVES
