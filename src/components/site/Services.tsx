@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 
 import CardMedia from "./CardMedia";
-import analiza from "../../../public/analiza.webp";
-import webdev from "../../../public/webdev.webp";
-import kreativa from "../../../public/kreativa.webp";
-import meta from "../../../public/meta.webp";
+import analiza from "../../../public/site/analiza.webp";
+import webdev from "../../../public/site/webdev.webp";
+import kreativa from "../../../public/site/kreativa.webp";
+import meta from "../../../public/site/meta.webp";
 
 type Service = {
   icon: LucideIcon;

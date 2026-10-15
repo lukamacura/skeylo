@@ -5,9 +5,9 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Search, PenTool, Rocket, type LucideIcon } from "lucide-react";
 
 import CardMedia from "./CardMedia";
-import analiza from "../../../public/analiza.webp";
-import webdev from "../../../public/teren.webp";
-import scale from "../../../public/scale.webp";
+import analiza from "../../../public/site/analiza.webp";
+import webdev from "../../../public/site/teren.webp";
+import scale from "../../../public/site/scale.webp";
 
 type Step = {
   icon: LucideIcon;
