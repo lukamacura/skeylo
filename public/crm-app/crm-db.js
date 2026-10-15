@@ -6,7 +6,17 @@
    Šta klijent sme da čita i piše čuvaju RLS pravila i funkcije u bazi, ne ovaj fajl. */
 (() => {
   const E = window.OS_ENV || {};
-  const CLIENT_ID = document.documentElement.dataset.client;
+  /* klijenti u izboru na ulazu; novi klijent = novi red ovde + njegov CLIENT i boje u app.js */
+  const CLIENTS = [
+    {
+      id: "ils",
+      name: "Infinity Laser Studio",
+      place: "Novi Sad · Sombor",
+      logo: "/crm-app/img/ils-knot.webp",
+    },
+  ];
+  const APP_CLIENT = document.documentElement.dataset.client;
+  let CLIENT_ID = APP_CLIENT;
   const NAME_KEY = "skeylo-crm-name";
   const COLS = [
     "items",
@@ -26,7 +36,8 @@
       autoRefreshToken: true,
     },
   });
-  const $ = (s) => document.querySelector(s);
+  const $ = (s) => document.querySelector(s),
+    $$ = (s) => [...document.querySelectorAll(s)];
   const root = document.documentElement;
   const GUEST = (/^#raspored\.(.+)$/.exec(location.hash) || [])[1] || null;
   const newId = () => {
@@ -41,22 +52,20 @@
     };
   };
 
-  /* ---------- app.js se učitava tek kad znamo ko je unutra ---------- */
+  /* ---------- app.js: skida se odmah, izvršava tek kad znamo ko je unutra ---------- */
+  const APP_SRC = fetch("/crm-app/app.js").then((r) => {
+    if (!r.ok) throw new Error("app.js " + r.status);
+    return r.text();
+  });
   let appLoaded = null;
   function loadApp() {
     if (!appLoaded)
-      appLoaded = new Promise((res, rej) => {
+      appLoaded = APP_SRC.then((src) => {
         const s = document.createElement("script");
-        s.src = "/crm-app/app.js";
-        s.onload = res;
-        s.onerror = rej;
+        s.textContent = src + "\n//# sourceURL=/crm-app/app.js";
         document.body.appendChild(s);
       });
     return appLoaded;
-  }
-  function reveal() {
-    root.classList.remove("gated");
-    requestAnimationFrame(() => root.classList.remove("booting"));
   }
 
   /* ---------- izvor podataka: dokumenti klijenta + realtime ---------- */
@@ -331,30 +340,221 @@
     if (!data.session) return null;
     const { data: me, error } = await sb.rpc("crm_me");
     if (error || !me) return null;
-    if (me.clientId !== CLIENT_ID) {
+    if (me.clientId !== APP_CLIENT) {
       await sb.auth.signOut().catch(() => {});
       return null;
     }
     return me;
   }
+  /* ---------- ulaz: izbor klijenta → prijava → aplikacija ----------
+     Sve animacije su transform/opacity (GPU). Logo leti sa kartice klijenta u prijavu;
+     "Klijenti" vraća istim putem (može da se okrene i usred leta). */
+  const EZ = "cubic-bezier(.2,.8,.2,1)";
+  const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const gate = $("#gate"),
+    pick = $("#gpick"),
+    box = $("#gbox"),
+    mark = $("#gMark");
+  const frames = (n) =>
+    new Promise((r) => {
+      const f = () => (--n > 0 ? requestAnimationFrame(f) : r());
+      requestAnimationFrame(f);
+    });
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const ARROW =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+  // fontovi i logoi pre prve animacije, da ništa ne "skoči" usred pokreta
+  async function ready(imgs) {
+    await Promise.race([
+      Promise.all([
+        document.fonts ? document.fonts.ready : null,
+        ...imgs.map((src) => {
+          const i = new Image();
+          i.src = src;
+          return i.decode().catch(() => {});
+        }),
+      ]),
+      wait(1500),
+    ]);
+  }
+
+  function showPicker() {
+    $("#gcl").innerHTML = CLIENTS.map(
+      (c) =>
+        `<li><button type="button" class="gc" data-client="${c.id}"><span class="gci"><img src="${c.logo}" alt=""></span><span class="gct"><b></b><small>${c.place || ""}</small></span><span class="gca">${ARROW}</span></button></li>`,
+    ).join("");
+    $$("#gcl .gc").forEach((b, i) => {
+      b.querySelector("b").textContent = CLIENTS[i].name;
+    });
+    [...pick.children].forEach((el, i) => el.style.setProperty("--i", i));
+    pick.hidden = false;
+    pick.classList.add("in");
+  }
+
+  let anims = [],
+    dir = null,
+    picked = null;
+  function settle(d) {
+    const login = d === "fwd";
+    pick.style.visibility = login ? "hidden" : "";
+    box.style.visibility = login ? "visible" : "";
+    if (login && fine)
+      $(box.querySelector("#gName").value ? "#gPass" : "#gName").focus({
+        preventScroll: true,
+      });
+  }
+  function track() {
+    const d = dir;
+    Promise.all(anims.map((a) => a.finished))
+      .then(() => dir === d && settle(d))
+      .catch(() => {});
+  }
+  function flight(card) {
+    const L = [],
+      add = (el, kf, o) =>
+        el && L.push(el.animate(kf, { easing: EZ, fill: "both", ...o }));
+    const logo = card.querySelector(".gci"),
+      A = logo.getBoundingClientRect(),
+      B = mark.getBoundingClientRect();
+    const dx = A.left + A.width / 2 - (B.left + B.width / 2),
+      dy = A.top + A.height / 2 - (B.top + B.height / 2),
+      s = A.width / B.width,
+      T = reduce ? 260 : 620;
+    // izbor odlazi gore, ostale kartice tonu
+    [...pick.children].forEach((el) => {
+      if (el.id === "gcl") return;
+      add(
+        el,
+        reduce
+          ? [{ opacity: 1 }, { opacity: 0 }]
+          : [
+              { opacity: 1, transform: "none" },
+              { opacity: 0, transform: "translateY(-14px)" },
+            ],
+        { duration: 280, easing: "cubic-bezier(.4,0,1,1)" },
+      );
+    });
+    $$("#gcl .gc").forEach((c) => {
+      add(
+        c,
+        reduce
+          ? [{ opacity: 1 }, { opacity: 0 }]
+          : [
+              { opacity: 1, transform: "none" },
+              {
+                opacity: 0,
+                transform: c === card ? "scale(.97)" : "translateY(10px)",
+              },
+            ],
+        { duration: 260, easing: "cubic-bezier(.4,0,1,1)" },
+      );
+    });
+    // logo kartice se sakrije u trenutku kad krene let (i vrati tek kad sleti nazad)
+    add(
+      logo,
+      [
+        { opacity: 1, offset: 0 },
+        { opacity: 0, offset: 0.001 },
+        { opacity: 0 },
+      ],
+      { duration: T, easing: "linear" },
+    );
+    // let: logo iz kartice postaje znak prijave
+    add(
+      mark,
+      reduce
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [
+            { opacity: 1, transform: `translate(${dx}px,${dy}px) scale(${s})` },
+            { opacity: 1, transform: "none" },
+          ],
+      { duration: T },
+    );
+    // prijava dolazi redom, posle leta
+    let i = 0;
+    [...box.children].forEach((el) => {
+      if (el === mark) return;
+      const o = parseFloat(getComputedStyle(el).getPropertyValue("--o")) || 1;
+      add(
+        el,
+        reduce
+          ? [{ opacity: 0 }, { opacity: o }]
+          : [
+              { opacity: 0, transform: "translateY(14px)" },
+              { opacity: o, transform: "none" },
+            ],
+        { duration: reduce ? 200 : 480, delay: reduce ? 0 : 170 + i++ * 38 },
+      );
+    });
+    add($("#gGlow"), [{ opacity: 0 }, { opacity: 1 }], {
+      duration: T,
+      easing: "ease",
+    });
+    return L;
+  }
+  function toLogin(card) {
+    const c = CLIENTS.find((x) => x.id === card.dataset.client);
+    if (!c) return;
+    if (anims.some((a) => a.playState === "running")) {
+      if (dir === "back" && picked === card) {
+        dir = "fwd";
+        anims.forEach((a) => a.reverse());
+        box.inert = false;
+        pick.inert = true;
+        track();
+      }
+      return;
+    }
+    picked = card;
+    CLIENT_ID = c.id;
+    $("#gLogo").src = c.logo;
+    $("#gSub").textContent = c.name;
+    $("#gErr").textContent = "";
+    pick.classList.remove("in");
+    pick.style.visibility = "";
+    box.style.visibility = "visible";
+    anims.forEach((a) => a.cancel());
+    dir = "fwd";
+    anims = flight(card);
+    box.inert = false;
+    pick.inert = true;
+    track();
+  }
+  function toPicker() {
+    if (dir !== "fwd") return;
+    dir = "back";
+    pick.style.visibility = "";
+    box.inert = true;
+    pick.inert = false;
+    if (document.activeElement) document.activeElement.blur();
+    anims.forEach((a) => a.reverse());
+    track();
+    setTimeout(
+      () => picked && picked.focus({ preventScroll: true }),
+      reduce ? 0 : 400,
+    );
+  }
+  $("#gcl").addEventListener("click", (e) => {
+    const b = e.target.closest(".gc");
+    if (b) toLogin(b);
+  });
+  $("#gBack").addEventListener("click", toPicker);
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && dir === "fwd" && !box.classList.contains("busy"))
+      toPicker();
+  });
+
   function askLogin() {
     return new Promise((done) => {
-      const gate = $("#gate"),
-        box = $("#gbox"),
-        nm = $("#gName"),
+      const nm = $("#gName"),
         pw = $("#gPass"),
         err = $("#gErr"),
         btn = $("#gGo");
-      root.classList.add("gated");
-      root.classList.remove("booting");
-      gate.hidden = false;
       try {
         nm.value = localStorage.getItem(NAME_KEY) || "";
       } catch (e) {}
-      setTimeout(
-        () => (nm.value ? pw : nm).focus({ preventScroll: true }),
-        300,
-      );
       const shake = (msg, el) => {
         err.textContent = msg;
         box.classList.remove("bad");
@@ -367,11 +567,12 @@
       };
       box.addEventListener("submit", async (e) => {
         e.preventDefault();
-        if (btn.disabled) return;
+        if (btn.disabled || dir !== "fwd") return;
         const name = nm.value.replace(/\s+/g, " ").trim();
         if (!name) return shake("Upiši svoje ime (ide uz komentare).", nm);
         if (!pw.value) return shake("Upiši šifru.", pw);
         btn.disabled = true;
+        box.classList.add("busy");
         err.textContent = "";
         let j = {},
           r = null;
@@ -387,9 +588,13 @@
           });
           j = await r.json().catch(() => ({}));
         } catch (x) {}
-        if (!r || !r.ok) {
+        const fin = (msg, el) => {
           btn.disabled = false;
-          return shake(
+          box.classList.remove("busy");
+          shake(msg, el);
+        };
+        if (!r || !r.ok)
+          return fin(
             !r
               ? "Nema veze. Probaj ponovo."
               : j.error === "not_configured"
@@ -401,50 +606,98 @@
                     : "Pogrešna šifra.",
             r && r.status < 500 && j.error !== "no_name" ? pw : nm,
           );
-        }
         const { error } = await sb.auth.setSession(j);
         const me = !error && (await whoAmI());
-        if (!me) {
-          btn.disabled = false;
-          return shake("Nešto nije u redu. Probaj ponovo.", pw);
-        }
+        if (!me) return fin("Nešto nije u redu. Probaj ponovo.", pw);
         try {
           localStorage.setItem(NAME_KEY, me.name);
         } catch (x) {}
         pw.value = "";
+        nm.blur();
+        pw.blur();
         done(me);
       });
     });
   }
 
+  /* izlaz iz prijave: forma se povuče, ostaje znak sa prstenom dok se aplikacija sprema */
+  async function leaveLogin() {
+    const L = [];
+    [...box.children].forEach((el, i) => {
+      if (el === mark) return;
+      L.push(
+        el.animate(
+          [
+            { opacity: parseFloat(getComputedStyle(el).opacity) },
+            { opacity: 0, transform: reduce ? "none" : "translateY(-10px)" },
+          ],
+          {
+            duration: 260,
+            delay: i * 12,
+            easing: "cubic-bezier(.4,0,1,1)",
+            fill: "forwards",
+          },
+        ),
+      );
+    });
+    await Promise.all(L.map((a) => a.finished)).catch(() => {});
+  }
+
+  /* ulazak u aplikaciju bez trzanja:
+     1) app.js je već skinut (APP_SRC), izvrši se dok je ekran miran
+     2) uvodna animacija čeka; dashboard se iscrta ispod zavese
+     3) zavesa nestaje na GPU-u, a uvod kreće tačno tada */
+  async function enter(connect) {
+    await loadApp();
+    const dash = $("#dash"),
+      onDash = () => !dash.classList.contains("away");
+    try {
+      if (onDash()) EMB.pause(true);
+    } catch (e) {}
+    connect();
+    root.classList.remove("gated");
+    await frames(2);
+    gate.classList.add("out");
+    if (!reduce && box.style.visibility === "visible")
+      mark.animate([{ transform: "none" }, { transform: "scale(1.12)" }], {
+        duration: 550,
+        easing: EZ,
+        fill: "forwards",
+      });
+    try {
+      if (onDash()) EMB.pause(false);
+    } catch (e) {}
+    setTimeout(() => (gate.hidden = true), 600);
+  }
+
   async function start() {
     if (GUEST) {
-      // gost nikad ne vidi prijavu, dashboard ni vault: samo taj jedan raspored
-      await loadApp();
-      SkeyloCRM.useSource(guestSource(GUEST));
-      reveal();
+      // gost nikad ne vidi izbor, prijavu, dashboard ni vault: samo taj jedan raspored
+      await enter(() => SkeyloCRM.useSource(guestSource(GUEST)));
       return;
     }
-    // sa sačuvanom sesijom app.js se učitava paralelno sa proverom
     let hasSaved = false;
     try {
       hasSaved = !!localStorage.getItem("skeylo-crm-auth");
     } catch (e) {}
-    if (hasSaved) loadApp().catch(() => {});
-    let me = await whoAmI().catch(() => null);
+    let me = hasSaved ? await whoAmI().catch(() => null) : null;
     if (!me) {
+      await ready(CLIENTS.map((c) => c.logo));
+      showPicker();
       me = await askLogin();
-      const g = $("#gate");
-      g.classList.add("out");
-      setTimeout(() => (g.hidden = true), 600);
+      await leaveLogin();
     }
-    await loadApp();
-    SkeyloCRM.connect(liveSource, me.clientId, { uid: me.uid, name: me.name });
+    await enter(() =>
+      SkeyloCRM.connect(liveSource, me.clientId, {
+        uid: me.uid,
+        name: me.name,
+      }),
+    );
     wireAccount(me);
-    reveal();
   }
   start().catch((e) => {
     console.error("[crm]", e);
-    reveal();
+    root.classList.remove("gated");
+    gate.hidden = true;
   });
 })();

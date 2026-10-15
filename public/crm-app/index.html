@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="sr" class="booting" data-client="ils">
+<html lang="sr" class="gated" data-client="ils">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -13,16 +13,24 @@
 <link rel="stylesheet" href="/crm-app/shell.css">
 </head>
 <body>
-<!-- prijava klijenta (crm-db.js); gost link #raspored.… je ne prikazuje -->
-<div class="gate" id="gate" hidden>
-  <form class="gbox" id="gbox" novalidate autocomplete="on">
-    <div class="gmark"><img src="/crm-app/img/ils-knot.webp" alt="Infinity Laser Studio"></div>
+<!-- ulaz: izbor klijenta → prijava (crm-db.js); gost link #raspored.… ih preskače -->
+<div class="gate" id="gate">
+  <i class="gglow n" aria-hidden="true"></i><i class="gglow c" id="gGlow" aria-hidden="true"></i>
+  <section class="gpick" id="gpick" aria-labelledby="gpT" hidden>
+    <i class="gwm" aria-hidden="true"></i>
+    <p class="gkick">Klijentska platforma</p>
+    <h1 id="gpT">Izaberi <span class="em">klijenta</span></h1>
+    <ul class="gcl" id="gcl"></ul>
+  </section>
+  <form class="gbox" id="gbox" novalidate autocomplete="on" inert>
+    <button type="button" class="gback" id="gBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Klijenti</button>
+    <div class="gmark" id="gMark"><img id="gLogo" alt=""></div>
     <h1>Dobrodošli u <span class="em">Skeylo platformu</span></h1>
-    <p class="gsub">Infinity Laser Studio</p>
+    <p class="gsub" id="gSub"></p>
     <label class="gfield"><span>Ime</span><input id="gName" name="username" autocomplete="username" autocapitalize="words" spellcheck="false" maxlength="40" placeholder="npr. Ana"></label>
     <label class="gfield"><span>Šifra</span><input id="gPass" name="password" type="password" autocomplete="current-password"></label>
     <div class="gerr" id="gErr" aria-live="polite"></div>
-    <button type="submit" class="gbtn" id="gGo">Uđi</button>
+    <button type="submit" class="gbtn" id="gGo"><span>Uđi</span></button>
     <i class="gfoot" aria-hidden="true"></i>
   </form>
 </div>
