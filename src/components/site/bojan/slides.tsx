@@ -368,7 +368,7 @@ function CoverBody() {
           </motion.div>
           <motion.div className="mt-[2.4vh]" {...fade(0.95)}>
             <Image
-              src="/logo.webp"
+              src="/brand/logo.webp"
               alt="Skeylo"
               width={2000}
               height={717}

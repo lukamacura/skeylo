@@ -24,7 +24,7 @@ const BLUE = "#2aa8ff";
 const WHATSAPP = `https://wa.me/381631012474?text=${encodeURIComponent(
   "Zdravo Luka, pogledao sam predlog za Pool Service. Hajde da razgovaramo.",
 )}`;
-const IMG = "/calculator/pool-service";
+const IMG = "/clients/pool-service";
 const CALC = "/calculator/bazen";
 
 const reveal = {
@@ -677,7 +677,11 @@ export default function PoolServicePitch() {
           }
           artifact={<SearchCard />}
           proof={[
-            { src: "/analiza.webp", t: "Istraživanje kupca", pos: "50% 35%" },
+            {
+              src: "/site/analiza.webp",
+              t: "Istraživanje kupca",
+              pos: "50% 35%",
+            },
             { src: "/podcast/korak1.webp", t: "Strategija" },
             { src: "/people/mihac/7.webp", t: "Scenariji za video" },
           ]}
@@ -747,7 +751,7 @@ export default function PoolServicePitch() {
             </button>
           }
           proof={[
-            { src: "/webdev.webp", t: "Dizajn i razvoj", pos: "50% 60%" },
+            { src: "/site/webdev.webp", t: "Dizajn i razvoj", pos: "50% 60%" },
             {
               src: `${IMG}/calc-mobile.jpg`,
               t: "Pravljeno za telefon",
@@ -811,17 +815,25 @@ export default function PoolServicePitch() {
           line="Kampanje palimo pre sezone, dok ljudi planiraju. Gasimo oglase koji ne rade, pojačavamo one koji donose upite."
           scene={
             <Scene
-              src="/meta.webp"
+              src="/site/meta.webp"
               alt="Media buyer vodi Meta kampanje"
               pos="50% 40%"
             />
           }
           artifact={<CampaignCard />}
           proof={[
-            { src: "/scale.webp", t: "Optimizacija svaki dan", pos: "50% 40%" },
-            { src: "/kreativa.webp", t: "Testiranje kreativa", pos: "50% 45%" },
             {
-              src: "/bento1/b5.webp",
+              src: "/site/scale.webp",
+              t: "Optimizacija svaki dan",
+              pos: "50% 40%",
+            },
+            {
+              src: "/site/kreativa.webp",
+              t: "Testiranje kreativa",
+              pos: "50% 45%",
+            },
+            {
+              src: "/bento/b5.webp",
               t: "ROAS 11,19 za klijenta",
               contain: true,
             },
@@ -946,7 +958,7 @@ export default function PoolServicePitch() {
                 style={{ borderColor: AQUA }}
               >
                 <Image
-                  src="/ana.webp"
+                  src="/site/testimonials/ana.webp"
                   alt="Ana Kasap"
                   fill
                   sizes="128px"
@@ -972,13 +984,13 @@ export default function PoolServicePitch() {
             <motion.div {...reveal} className="grid grid-cols-2 gap-4">
               {[
                 {
-                  src: "/bento1/b7.webp",
+                  src: "/bento/b7.webp",
                   t: "Prihod u jednom mesecu",
                   w: 550,
                   h: 360,
                 },
                 {
-                  src: "/bento1/b9.webp",
+                  src: "/bento/b9.webp",
                   t: "ROAS iz Meta kampanje",
                   w: 296,
                   h: 182,
@@ -1014,9 +1026,9 @@ export default function PoolServicePitch() {
             </p>
             <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
               {[
-                { src: "/bento1/b3.webp", w: 1076, h: 160 },
-                { src: "/bento1/b16.webp", w: 904, h: 156 },
-                { src: "/bento1/b19.webp", w: 844, h: 162 },
+                { src: "/bento/b3.webp", w: 1076, h: 160 },
+                { src: "/bento/b16.webp", w: 904, h: 156 },
+                { src: "/bento/b19.webp", w: 844, h: 162 },
               ].map((s) => (
                 <div
                   key={s.src}

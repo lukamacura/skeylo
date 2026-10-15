@@ -1,0 +1,260 @@
+/* CRM na sajtu: prijava, meni naloga i mekano pojavljivanje naslova.
+   Sve ostalo je app.css (dizajn iz docs/os/Skeylo CRM Minimalist App Design.html). */
+
+/* dok prijava nije gotova, aplikacija se ne vidi */
+html.gated body > :not(.gate) {
+  visibility: hidden;
+}
+html.booting body > :not(.gate) {
+  opacity: 0;
+}
+body > .page,
+body > .rapp {
+  transition: opacity 0.5s var(--ease);
+}
+
+/* ---------- prijava ---------- */
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px
+    calc(20px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  background:
+    radial-gradient(
+      900px 560px at 50% -10%,
+      rgba(227, 169, 174, 0.14),
+      transparent 70%
+    ),
+    var(--bg);
+  transition:
+    opacity 0.5s var(--ease),
+    visibility 0s 0.5s;
+}
+.gate.out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.gate[hidden] {
+  display: none;
+}
+.gbox {
+  width: min(400px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+  animation: gIn 0.8s var(--ease) both;
+}
+@keyframes gIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.gmark {
+  position: relative;
+  width: 108px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(#2a1520, #140a0e 70%);
+  box-shadow:
+    0 0 0 1px rgba(240, 190, 198, 0.22),
+    0 30px 70px -20px rgba(227, 169, 174, 0.35);
+}
+.gmark::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  padding: 1px;
+  background: var(--metal);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  opacity: 0.6;
+}
+.gmark img {
+  width: 66%;
+  height: 66%;
+  object-fit: contain;
+}
+.gbox h1 {
+  margin: 6px 0 0;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(34px, 9vw, 44px);
+  line-height: 1.05;
+}
+.gbox h1 .em {
+  padding-right: 0.06em;
+}
+.gsub {
+  margin: -8px 0 6px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.gfield {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+}
+.gfield span {
+  padding-left: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.gfield input {
+  width: 100%;
+  height: 56px;
+  padding: 0 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(240, 190, 198, 0.16);
+  background: rgba(10, 5, 7, 0.6);
+  color: var(--cream);
+  font: inherit;
+  font-size: 17px; /* 16px+ da iOS ne zumira */
+  outline: none;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.3s;
+}
+.gfield input:focus {
+  border-color: rgba(240, 190, 198, 0.5);
+  box-shadow: 0 0 0 4px rgba(227, 169, 174, 0.1);
+}
+.gerr {
+  min-height: 22px;
+  margin: -6px 0 -8px;
+  color: #ff8b7e;
+  font-size: 15px;
+}
+.gbtn {
+  width: 100%;
+  height: 56px;
+  margin-top: 2px;
+  border-radius: 18px;
+  background: var(--metal);
+  background-size: 160% 100%;
+  color: #2a1218;
+  font-weight: 600;
+  font-size: 17px;
+  transition:
+    transform 0.3s var(--spring),
+    filter 0.2s,
+    background-position 0.8s var(--ease);
+}
+.gbtn:hover {
+  background-position: 60% 0;
+}
+.gbtn:active {
+  transform: scale(0.97);
+}
+.gbtn:disabled {
+  filter: saturate(0.4) brightness(0.8);
+  cursor: progress;
+}
+.gbox.bad {
+  animation: shake 0.45s;
+}
+.gfoot {
+  margin-top: 10px;
+  width: 110px;
+  aspect-ratio: 520/177;
+  background: url("/os-app/img/d5fd595e8e.png") center/contain no-repeat;
+  opacity: 0.5;
+}
+
+/* ---------- meni naloga (klik na logo gore desno) ---------- */
+.top .who {
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+.top .who:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.acct {
+  position: fixed;
+  z-index: 70;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: 20px;
+  background: rgba(38, 20, 28, 0.97);
+  border: 1px solid rgba(240, 190, 198, 0.2);
+  box-shadow: 0 30px 60px -20px #000;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: acctIn 0.22s var(--ease);
+}
+@keyframes acctIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.acct .an {
+  padding: 10px 14px 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.acct .an b {
+  display: block;
+  color: var(--cream);
+  font-size: 16px;
+  font-weight: 500;
+}
+.acct button {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-align: left;
+  font-size: 15px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+.acct button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--cream);
+}
+
+/* ---------- naslov stranice: mekano, bez lasera ---------- */
+.ew.soft {
+  animation: softIn 0.6s var(--ease) both;
+}
+@keyframes softIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.14em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew.soft,
+  .gbox {
+    animation: none;
+  }
+}
+
+/* telefon: najduži meseci (Septembar, Decembar) i godina staju u karticu */
+@media (max-width: 760px) {
+  .ph-name {
+    font-size: clamp(50px, 15.5vw, 84px);
+  }
+  .ph-name .yr {
+    display: block;
+    margin: 0.12em 0 0 0.04em;
+    font-size: 0.36em;
+  }
+}

@@ -6,6 +6,8 @@
     nina: "/os-app/img/f8e39d5612.jpg",
   };
   const ICON = "/os-app/img/e20eeaf7f1.png";
+  // Pozadina Start kartice po osobi (ostali: podrazumevana iz index.html)
+  const START_BG = { luka: "/os-app/img/edc_luka.webp" };
   const TEAM = [
     { id: "filip", name: "Filip", voc: "Filipe", email: "filip@skeylo.com" },
     {
@@ -125,6 +127,9 @@
     file: SV(
       '<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
     ),
+    msg: SV(
+      '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5.1A8 8 0 1 1 21 12z"/>',
+    ),
   };
   let me = null;
 
@@ -182,11 +187,12 @@
   /* ---------------- toast ---------------- */
   let tt,
     undoFn = null;
-  function toast(msg, undo) {
+  function toast(msg, undo, label) {
     const el = $("#toast");
     $("#toastMsg").textContent = msg;
     undoFn = undo || null;
     $("#toastUndo").hidden = !undo;
+    $("#toastUndo").textContent = label || "Poništi";
     el.classList.toggle("has-undo", !!undo);
     el.classList.add("show");
     clearTimeout(tt);
@@ -289,7 +295,7 @@
         models: ["Iva"],
         location: "",
         props: "",
-        body: "",
+        body: "<h2>Hook</h2><p>Klijentkinje nam se vraćaju i dovode drugarice.</p><h2>Telo</h2><p>Prvi tretman je besplatan za sve nove klijentkinje.</p><p>Tretman traje kratko, a većina klijentkinja oseti samo blago toplo peckanje.</p><h2>CTA</h2><p>Zakaži termin preko linka u opisu.</p>",
         order: 1000,
       },
       {
@@ -339,12 +345,50 @@
     dayItems: [],
     days: [],
     leads: [],
+    notes: [],
+    comments: [],
+    creatives: [],
+    creativeComments: [],
+    creativeNotes: [],
+    schedules: [],
     fresh: new Set(),
   };
+  let NT = null; // General stranice (notes.js)
   FALLBACK.entities = [];
   FALLBACK.dayItems = [];
+  FALLBACK.notes = [
+    {
+      id: "n-uvod",
+      title: "Kako radi General",
+      icon: "👋",
+      parentId: null,
+      order: 1,
+      createdAt: 1791750000000,
+      createdBy: "luka",
+      md: "Svaka stranica je **Markdown**. Ukucaj `/` za blokove i emoji.\n\n## Prečice\n\n- `#` + razmak je naslov, `-` lista, `1.` numerisana\n- `[]` + razmak je zadatak\n- `**bold**`, `_italic_` i `` `kod` `` rade dok kucaš\n\n- [ ] Probaj da prevučeš ovaj blok za ⋮⋮\n- [x] Napravi prvu stranicu\n\n> [!NOTE] 💡\n> Klikni na emoji da ga promeniš.\n",
+    },
+  ];
   FALLBACK.days = [];
   FALLBACK.leads = [];
+  /* komentari klijenta iz CRM-a (Creative Inspection): {clientId, scriptId, monthId, text, quote, before, after, author:"client", authorName, authorUid, createdAt, order, resolved} */
+  FALLBACK.comments = [
+    {
+      id: "cm-demo",
+      clientId: "ils",
+      scriptId: "s1",
+      monthId: "ils-2026-10",
+      text: "Promeni ovo, prvi tretman nije besplatan. Možemo da ponudimo besplatne konsultacije.",
+      quote: "Prvi tretman je besplatan za sve nove klijentkinje.",
+      before: "Telo",
+      after: "Tretman traje kratko",
+      author: "client",
+      authorName: "Ana",
+      authorUid: null,
+      createdAt: Date.now() - 2 * 36e5,
+      order: Date.now() - 2 * 36e5,
+      resolved: false,
+    },
+  ];
   FALLBACK.cpages = [
     {
       id: "cp-skeylo-privacy",
@@ -489,6 +533,10 @@
       order: 6000,
     },
   ];
+  FALLBACK.creatives = [];
+  FALLBACK.creativeComments = [];
+  FALLBACK.creativeNotes = [];
+  FALLBACK.schedules = [];
   FALLBACK.reports = [];
   FALLBACK.finances = [];
   FALLBACK.expenses = [];
@@ -635,6 +683,12 @@
       "dayItems",
       "days",
       "leads",
+      "notes",
+      "comments",
+      "creatives",
+      "creativeComments",
+      "creativeNotes",
+      "schedules",
     ])
       S[k] = FALLBACK[k].map((x) => ({
         ...x,
@@ -672,6 +726,9 @@
           (snap) => {
             S[col] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
             got[col] = true;
+            if (col === "comments") onComments();
+            if (col === "creativeComments") onCreativeComments();
+            if (col === "creativeNotes") onCreativeNotes();
             if (
               [
                 "clients",
@@ -688,6 +745,12 @@
                 "dayItems",
                 "days",
                 "leads",
+                "notes",
+                "comments",
+                "creatives",
+                "creativeComments",
+                "creativeNotes",
+                "schedules",
               ].every((k) => got[k])
             ) {
               S.ready = true;
@@ -712,6 +775,12 @@
     sub("dayItems");
     sub("days");
     sub("leads");
+    sub("notes");
+    sub("comments");
+    sub("creatives");
+    sub("creativeComments");
+    sub("creativeNotes");
+    sub("schedules");
   })();
   function refresh(col) {
     if (!$("#pm").hidden) renderPM();
@@ -721,6 +790,7 @@
     if (!$("#money").hidden) renderMONEY();
     if (!$("#tasks").hidden && !tBusy) renderTASKS();
     if (!$("#general").hidden) renderGEN();
+    if (NT && !$("#gp").hidden) NT.sync();
     if (!$("#cplat").hidden) renderCP();
     if (!$("#cockpit").hidden && !edrag) renderCK();
     if (!$("#cal").hidden && !edrag) renderCalPage();
@@ -741,6 +811,12 @@
     if (!$("#rv").hidden) renderRV();
     if (!$("#cm").hidden && !drag) renderCM();
     if (!$("#ed").hidden) syncEditorFromStore(col);
+    if (!$("#fc").hidden) {
+      renderFC();
+      fcSyncViewer();
+    }
+    syncModelNames();
+    syncSchedules();
   }
 
   /* ---------------- routing ---------------- */
@@ -755,6 +831,7 @@
     "cplat",
     "angles",
     "general",
+    "gp",
     "models",
     "tasks",
     "pm",
@@ -765,6 +842,7 @@
     "rv",
     "cm",
     "ed",
+    "fc",
   ];
   let view = { name: "dash" };
   function show(id) {
@@ -798,16 +876,19 @@
     curHash = location.hash.slice(1);
     closeSlash();
     closePops();
+    clearCcHl();
     if (!me) {
       show("login");
       return;
     }
     const h = location.hash.slice(1);
+    if (NT) NT.leave(h);
     if (
       view.name === "ed" &&
       h !== (view.col === "cpages" ? "p-" : "s-") + view.id
     )
       flushSave();
+    if (!h.startsWith("fc-")) fcCloseViewer();
     $("#vcta").hidden = true;
     if (h === "projects") {
       applyTheme(null);
@@ -821,6 +902,11 @@
       show("general");
       firstGen = true;
       renderGEN();
+    } else if (h.startsWith("g-")) {
+      applyTheme(null);
+      view = { name: "gp", id: h.slice(2) };
+      show("gp");
+      if (NT) NT.open(view.id);
     } else if (h === "models") {
       applyTheme(null);
       view = { name: "models" };
@@ -864,6 +950,19 @@
       show("cm");
       firstCM = true;
       renderCM();
+    } else if (h.startsWith("fc-")) {
+      const x = h.slice(3),
+        k = x.indexOf("."),
+        mid = k < 0 ? x : x.slice(0, k),
+        cid = k < 0 ? null : x.slice(k + 1) || null;
+      const same = view.name === "fc" && view.id === mid && !$("#fc").hidden;
+      view = { name: "fc", id: mid, cid };
+      if (!same) {
+        show("fc");
+        firstFC = true;
+      }
+      renderFC();
+      fcSyncViewer();
     } else if (h.startsWith("s-")) {
       view = { name: "ed", id: h.slice(2), col: "scripts" };
       show("ed");
@@ -933,9 +1032,13 @@
       now - navAt > 800
     ) {
       try {
-        history.replaceState(history.state, "", "#" + curHash);
+        history.replaceState(
+          history.state,
+          "",
+          location.href.split("#")[0] + "#" + curHash,
+        );
       } catch (err) {
-        location.replace("#" + curHash);
+        location.hash = curHash;
       }
       return;
     }
@@ -954,7 +1057,13 @@
       toast(s.dataset.soon + " stiže uskoro");
       return;
     }
-    if (e.target.closest("[data-logout]")) {
+    const sw = e.target.closest("[data-switch]");
+    if (sw) {
+      switchTo(TEAM.find((t) => t.id === sw.dataset.switch));
+      return;
+    }
+    if (e.target.closest("[data-signout]")) {
+      closeSwitch();
       me = null;
       store.del();
       DW = null;
@@ -962,8 +1071,82 @@
       dwRender();
       applyTheme(null);
       OS.signOut().finally(() => location.replace(location.pathname));
+      return;
     }
+    const lo = e.target.closest("[data-logout]");
+    if (lo) {
+      $("#swp").hidden ? openSwitch(lo) : closeSwitch();
+      return;
+    }
+    if (!$("#swp").hidden && !e.target.closest("#swp")) closeSwitch();
   });
+  /* brza promena osobe: klik na sebe gore desno */
+  const ROLES = {
+    filip: "Skripte · Meta",
+    mihajlo: "Snimanje · Montaža",
+    luka: "Sajtovi · Ads",
+    nina: "Organizacija",
+  };
+  const CHECK = SV('<path d="m5 12 5 5 9-10"/>');
+  function openSwitch(anchor) {
+    const p = $("#swp");
+    p.innerHTML =
+      `<div class="swh">Promeni osobu</div>` +
+      TEAM.map((u) => {
+        const cur = me && u.id === me.id;
+        return `<button type="button" class="swi${cur ? " cur" : ""}" role="menuitemradio" aria-checked="${cur}" data-switch="${u.id}"><img src="${IMG[u.id]}" alt=""><span class="swt"><b>${esc(u.name)}</b><small>${ROLES[u.id] || ""}</small></span>${cur ? `<span class="swc">${CHECK}</span>` : ""}</button>`;
+      }).join("") +
+      `<button type="button" class="swi out" role="menuitem" data-signout>Odjavi se</button>`;
+    $$("[data-logout]").forEach((b) => b.setAttribute("aria-expanded", "true"));
+    const r = anchor.getBoundingClientRect();
+    p.style.top = r.bottom + 8 + "px";
+    p.style.right = Math.max(12, innerWidth - r.right) + "px";
+    p.hidden = false;
+  }
+  function closeSwitch() {
+    $("#swp").hidden = true;
+    $$("[data-logout]").forEach((b) =>
+      b.setAttribute("aria-expanded", "false"),
+    );
+  }
+  $$("[data-logout]").forEach((b) => {
+    b.setAttribute("aria-haspopup", "menu");
+    b.setAttribute("aria-expanded", "false");
+    b.insertAdjacentHTML(
+      "beforeend",
+      '<svg class="mecv" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+    );
+  });
+  let switching = false;
+  async function switchTo(u) {
+    closeSwitch();
+    if (!u || switching || (me && me.id === u.id)) return;
+    const pass = OS.savedPass();
+    if (!pass) {
+      toast("Odjavi se pa izaberi osobu");
+      return;
+    }
+    switching = true;
+    try {
+      await flushSave();
+    } catch (e) {}
+    let slug;
+    try {
+      slug = await OS.signIn(u.id, pass);
+    } catch (x) {
+      switching = false;
+      toast("Promena nije uspela");
+      return;
+    }
+    switching = false;
+    const n = TEAM.find((t) => t.id === slug);
+    if (!n) return;
+    clearInterval(dwTick);
+    applyTheme(null);
+    store.set(n.id);
+    login(n);
+    toast("Sada si " + n.name);
+  }
   function login(u) {
     me = u;
     $$(".meImg").forEach((i) => (i.src = IMG[u.id]));
@@ -971,6 +1154,11 @@
     $("#heroImg").src = IMG[u.id];
     $("#heroImg").alt = u.name;
     $("#startWord").textContent = u.id === "filip" ? "Grinding" : "Working";
+    const sbg = $(".card.start .sbg img");
+    sbg.dataset.def ||= sbg.getAttribute("src");
+    sbg.src = START_BG[u.id] || sbg.dataset.def;
+    // Luka: Start vodi na njegove taskove umesto na Projects
+    $(".card.start").dataset.go = u.id === "luka" ? "tasks" : "projects";
     renderGreeting(u);
     earnShown = -1;
     updateDashCal();
@@ -978,11 +1166,15 @@
     route();
     dwLoad();
   }
+  $(".card.start").addEventListener("click", () => {
+    if (me && me.id === "luka") tView = "member";
+  });
   const team = $("#team");
   TEAM.forEach((u) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "tp";
+    b.dataset.id = u.id;
     b.setAttribute("aria-pressed", "false");
     b.innerHTML = `<span class="av"><img src="${IMG[u.id]}" alt=""></span>${u.name}`;
     b.onclick = () => {
@@ -990,40 +1182,50 @@
         .querySelectorAll(".tp")
         .forEach((x) => x.setAttribute("aria-pressed", "false"));
       b.setAttribute("aria-pressed", "true");
-      $("#pass").focus();
-      OS.emailFor(u.id).then((m) => {
-        if (m && b.getAttribute("aria-pressed") === "true")
-          $("#email").value = m;
-      });
+      $("#err").textContent = "";
+      const saved = OS.savedPass();
+      if (saved) {
+        $("#pass").value = saved;
+        $("#lgForm").requestSubmit();
+      } else $("#pass").focus();
     };
     team.appendChild(b);
   });
   $("#lgForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const email = $("#email").value.trim().toLowerCase(),
+    const pick = team.querySelector('.tp[aria-pressed="true"]'),
       pass = $("#pass").value,
       err = $("#err");
-    if (!email || !pass) {
-      err.textContent = "Unesi mejl i lozinku.";
+    if (!pick) {
+      err.textContent = "Izaberi sebe.";
+      return shake($("#lgCard"));
+    }
+    if (!pass) {
+      err.textContent = "Unesi lozinku.";
       return shake($("#lgCard"));
     }
     const btn = $("#lgForm .btn");
     btn.disabled = true;
     let slug;
     try {
-      slug = await OS.signIn(email, pass);
+      slug = await OS.signIn(pick.dataset.id, pass);
     } catch (x) {
       btn.disabled = false;
       err.textContent =
         x && x.code === "not_member"
-          ? "Ovaj nalog nije u timu."
-          : "Pogrešan mejl ili lozinka.";
+          ? "Ova osoba nije u timu."
+          : x && x.code === "not_configured"
+            ? "Lozinka nije podešena na serveru (OS_TEAM_PASSWORD)."
+            : x && x.code === "network"
+              ? "Nema veze. Probaj ponovo."
+              : "Pogrešna lozinka.";
+      $("#pass").select();
       return shake($("#lgCard"));
     }
     btn.disabled = false;
     const u = TEAM.find((t) => t.id === slug);
     if (!u) {
-      err.textContent = "Ovaj nalog nije u timu.";
+      err.textContent = "Ova osoba nije u timu.";
       return shake($("#lgCard"));
     }
     err.textContent = "";
@@ -1315,8 +1517,15 @@
           ? "skripte"
           : "skripti";
     root.innerHTML = `<button class="mod" data-go="cm-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.12s" : "animation:none"}">
-    <div class="mod-l"><div class="mod-top"><span class="mi">${IC_BOARD}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Content<br>Manager</h2><div class="tot"><b id="mhTot">${scripts.length}</b>${word(scripts.length)}</div></div></div>
-  </button>${reportCard(it, c, anim)}${financeCard(it, c, anim)}`;
+    <div class="mod-l"><div class="mod-top"><span class="mi">${IC_BOARD}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Content<br>Manager</h2><div class="tot"><b id="mhTot">${scripts.length}</b>${word(scripts.length)}</div>${(() => {
+      const n = S.comments.filter(
+        (c) => !c.resolved && scripts.some((x) => x.id === c.scriptId),
+      ).length;
+      return n
+        ? `<div class="mh-cc">${IC.msg}<span>${n} ${ccWord(n)} klijenta</span></div>`
+        : "";
+    })()}</div></div>
+  </button>${creativesCard(it, c, anim, 0.18)}${reportCard(it, c, anim)}${financeCard(it, c, anim)}`;
     if (anim) countUp($("#mhTot"), scripts.length);
   }
 
@@ -2212,6 +2421,7 @@
     <div class="mod-top"><span class="mi">${SV('<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M16 4a4 4 0 0 1 0 8M22 21v-1a7 7 0 0 0-4-6.3"/>')}</span><span class="avstack">${S.ready ? avStack(4) : ""}</span></div>
     <div><h2>Models</h2><div class="tot"><b>${S.models.length}</b>${S.models.length % 10 === 1 && S.models.length % 100 !== 11 ? "model" : "modela"}</div></div>
   </button>`;
+    if (NT) NT.hub(anim);
   }
   let firstModels = true,
     mq = "";
@@ -2457,7 +2667,10 @@
       for (const sc of S.scripts.filter((x) => (x.models || []).includes(id))) {
         const arr = sc.models.map((v) => (v === id ? m.name : v));
         try {
-          await api.upd("scripts", sc.id, { models: arr });
+          await api.upd("scripts", sc.id, {
+            models: arr,
+            modelNames: arr.map((v) => modelRef(v).name).filter(Boolean),
+          });
         } catch (err) {}
       }
       refresh();
@@ -2949,29 +3162,178 @@
               : n + " otvorenih taskova") +
           (late ? " · " + late + " kasni" : "");
   }
-  /* task detail */
+  /* task detail = izmena taska */
+  let E = null;
   function openTaskDetail(id) {
     const t = S.tasks.find((x) => x.id === id);
     if (!t) return;
-    const tc = taskClient(t);
+    const ev = t.kind === "event";
+    E = {
+      id,
+      title: t.title || "",
+      who: new Set(t.assignees || []),
+      client: taskClient(t).id,
+      kind: t.kind === "task" || ev ? t.kind : "none",
+      due: t.due || "",
+      sd: ev && t.start ? t.start.slice(0, 10) : "",
+      st: ev && t.start ? t.start.slice(11, 16) : "",
+      ed: ev && t.end ? t.end.slice(0, 10) : "",
+      et: ev && t.end ? t.end.slice(11, 16) : "",
+    };
     const by = TEAM.find((u) => u.id === t.createdBy);
-    $("#tdet").innerHTML = `<div class="t">${esc(t.title)}</div>
-    <div class="r"><span class="avs">${(t.assignees || []).map((i) => (IMG[i] ? `<img src="${IMG[i]}" alt="">` : "")).join("")}</span>${(t.assignees || []).map((i) => (TEAM.find((u) => u.id === i) || { name: i }).name).join(", ")}</div>
-    <div class="r"><span class="tchip proj">${logo(tc, "ri")}${esc(tc.name)}</span>${dateChip(t)}</div>
+    const cs = [...S.clients].sort((a, b) => (a.order || 0) - (b.order || 0));
+    if (!cs.some((c) => c.id === E.client))
+      cs.unshift({ id: E.client, name: taskClient(t).name });
+    $("#tdet").innerHTML =
+      `<textarea class="tdtl" id="etitle" rows="1" maxlength="200" placeholder="Opiši task…">${esc(E.title)}</textarea>
+    <div class="lbl">Ko radi</div>
+    <div class="tdwho">${["luka", "mihajlo", "nina", "filip"]
+      .map((uid) => {
+        const u = TEAM.find((x) => x.id === uid) || { name: uid };
+        return `<button type="button" class="tdp${TBLACK[uid] ? " blk" : ""}" data-ewho="${uid}" aria-pressed="${E.who.has(uid)}" style="--m:${TCOL[uid]}"><img src="${IMG[uid]}" alt=""><span>${esc(u.name)}</span></button>`;
+      })
+      .join("")}</div>
+    <div class="lbl">Klijent</div>
+    <select id="ecli" class="tdsel">${cs.map((c) => `<option value="${esc(c.id)}"${c.id === E.client ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+    <div class="lbl">Rok</div>
+    <div class="tdkind">${[
+      ["task", "Task"],
+      ["event", "Event"],
+      ["none", "No hurry"],
+    ]
+      .map(
+        ([k, l]) =>
+          `<button type="button" data-ekind="${k}" aria-pressed="${E.kind === k}">${l}</button>`,
+      )
+      .join("")}</div>
+    <div id="ewhen">${eWhenHTML()}</div>
     ${by ? `<div class="r">Dodao/la: ${esc(by.name)}${t.createdAt ? " · " + fmtDay.format(new Date(t.createdAt)) : ""}</div>` : ""}
-    <div class="row2"><button class="pill danger" data-tdel="${esc(t.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši</button><button class="pill solid" data-tdone="${esc(t.id)}">${t.done ? "Vrati u otvorene" : "Završi task"}</button></div>`;
+    <button class="pill solid" id="esave">Sačuvaj izmene</button>
+    <div class="row2"><button class="pill danger" data-tdel="${esc(t.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši</button><button class="pill" data-tdone="${esc(t.id)}">${t.done ? "Vrati u otvorene" : "Završi task"}</button></div>`;
+    updESave();
     const s = $("#tscrim");
     s.hidden = false;
     requestAnimationFrame(() => s.classList.add("open"));
   }
+  function eWhenHTML() {
+    if (E.kind === "task")
+      return `<div class="when"><input type="date" id="edue" value="${E.due}"></div>`;
+    if (E.kind === "event")
+      return `<div class="when"><div class="wrow"><span>Od</span><input type="date" id="esd" value="${E.sd}"><input type="time" id="est" value="${E.st}"></div><div class="wrow"><span>Do</span><input type="date" id="eed" value="${E.ed}"><input type="time" id="eet" value="${E.et}"></div></div>`;
+    return "";
+  }
+  function updESave() {
+    const b = $("#esave");
+    if (!b || !E) return;
+    const ok =
+      E.title.trim().length > 0 &&
+      E.who.size > 0 &&
+      (E.kind === "task"
+        ? !!E.due
+        : E.kind === "event"
+          ? !!(E.sd && E.st)
+          : true);
+    b.disabled = !ok;
+    b.style.opacity = ok ? 1 : 0.45;
+  }
+  async function saveTaskEdit() {
+    if (!E) return;
+    const data = {
+      title: E.title.trim(),
+      assignees: [...E.who],
+      kind: E.kind,
+      due: E.kind === "task" ? E.due : "",
+      start: E.kind === "event" ? `${E.sd}T${E.st || "00:00"}` : "",
+      end:
+        E.kind === "event" && E.ed ? `${E.ed}T${E.et || E.st || "00:00"}` : "",
+    };
+    if (data.kind === "event" && data.end && data.end < data.start)
+      data.end = data.start;
+    const id = E.id;
+    const t = S.tasks.find((x) => x.id === id);
+    if (t && taskClient(t).id !== E.client) {
+      data.clientId = E.client;
+      data.projectId = "";
+    }
+    closeTaskDetail();
+    try {
+      await api.upd("tasks", id, data);
+      firstTasks = false;
+      renderTASKS();
+      updateDashTasks();
+      toast("Task izmenjen");
+    } catch (err) {
+      toast(errMsg(err));
+    }
+  }
+  $("#tdet").addEventListener("input", (e) => {
+    if (!E) return;
+    const id = e.target.id;
+    if (id === "etitle") {
+      E.title = e.target.value;
+      autoGrow(e.target);
+    }
+    if (id === "ecli") E.client = e.target.value;
+    if (id === "edue") E.due = e.target.value;
+    if (id === "esd") {
+      E.sd = e.target.value;
+      if (!E.ed || E.ed < E.sd) {
+        E.ed = E.sd;
+        const ed = $("#eed");
+        if (ed) ed.value = E.ed;
+      }
+    }
+    if (id === "est") E.st = e.target.value;
+    if (id === "eed") E.ed = e.target.value;
+    if (id === "eet") E.et = e.target.value;
+    updESave();
+  });
+  $("#tdet").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && e.target.id === "etitle") {
+      e.preventDefault();
+      if (!$("#esave").disabled) saveTaskEdit();
+    }
+  });
   function closeTaskDetail() {
     const s = $("#tscrim");
     s.classList.remove("open");
+    E = null;
     setTimeout(() => (s.hidden = true), reduce ? 0 : 250);
   }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && E) closeTaskDetail();
+  });
   $("#tscrim").addEventListener("click", async (e) => {
     if (e.target.id === "tscrim") {
       closeTaskDetail();
+      return;
+    }
+    const w = e.target.closest("[data-ewho]");
+    if (w && E) {
+      const uid = w.dataset.ewho;
+      E.who.has(uid) ? E.who.delete(uid) : E.who.add(uid);
+      w.setAttribute("aria-pressed", E.who.has(uid));
+      updESave();
+      return;
+    }
+    const kd = e.target.closest("[data-ekind]");
+    if (kd && E) {
+      E.kind = kd.dataset.ekind;
+      $$("#tdet [data-ekind]").forEach((x) =>
+        x.setAttribute("aria-pressed", x === kd),
+      );
+      if (E.kind === "event" && !E.sd) {
+        E.sd = E.ed = todayStr();
+        E.st = "10:00";
+        E.et = "11:00";
+      }
+      if (E.kind === "task" && !E.due) E.due = todayStr();
+      $("#ewhen").innerHTML = eWhenHTML();
+      updESave();
+      return;
+    }
+    if (e.target.closest("#esave")) {
+      if (!$("#esave").disabled) saveTaskEdit();
       return;
     }
     const d = e.target.closest("[data-tdel]");
@@ -3695,6 +4057,7 @@
       progress(i + 1, n);
       await DB.doc(`reportChunks/${id}_${i}`).set({
         reportId: id,
+        clientId: it.clientId,
         i,
         data: html.slice(i * CHUNK, (i + 1) * CHUNK),
       });
@@ -3810,7 +4173,9 @@
   function cardHTML(s, c, anim, delay) {
     const fresh = S.fresh.has(s.id);
     const models = (s.models || []).filter(Boolean).map(modelRef);
-    return `<div class="scard${fresh ? " new" : ""}" role="button" tabindex="0" data-script="${esc(s.id)}" style="--c:${c};${fresh ? "" : anim ? `animation-delay:${delay.toFixed(2)}s` : "animation:none"}">
+    const cc = openComments(s.id).length;
+    return `<div class="scard${fresh ? " new" : ""}${cc ? " has-cc" : ""}" role="button" tabindex="0" data-script="${esc(s.id)}" style="--c:${c};${fresh ? "" : anim ? `animation-delay:${delay.toFixed(2)}s` : "animation:none"}">
+    ${cc ? `<span class="sc-cc" title="Komentari klijenta" aria-label="${cc} ${ccWord(cc)} klijenta">${IC.msg}<b>${cc}</b></span>` : ""}
     <div class="st${s.title ? "" : " empty"}">${esc(s.title || "Bez naziva")}</div>
     ${s.angle ? `<div class="meta">${IC.angle}<span>${esc(s.angle)}</span></div>` : ""}
     ${s.format ? `<span class="fpill" style="--f:${fmtColor(s.format)}">${esc(s.format)}</span>` : ""}
@@ -4360,6 +4725,8 @@
       $("#props").innerHTML = "";
       $("#props").hidden = true;
     } else renderProps(true);
+    ccSig = "";
+    renderCcmt();
     setSave(false);
     if (restart)
       [edTitle, $("#props"), editor].forEach((el) => {
@@ -4408,6 +4775,7 @@
       !openPop
     )
       renderProps(false);
+    renderCcmt();
   }
   function setSave(busy) {
     const el = $("#saveState");
@@ -4431,6 +4799,10 @@
     }
     patch.updatedAt = Date.now();
     patch.updatedBy = me ? me.id : null;
+    if (edCol === "scripts" && Array.isArray(patch.models))
+      patch.modelNames = patch.models
+        .map((v) => modelRef(v).name)
+        .filter(Boolean);
     try {
       await api.upd(edCol, id, patch);
       if (!Object.keys(dirty).length) setSave(false);
@@ -5415,6 +5787,322 @@
     queue("body", sanitize(editor.innerHTML));
   }
 
+  /* ---------------- komentari klijenta (CRM → Creative Inspection) ----------------
+   Klijent označi tekst u svojoj skripti i ostavi komentar; ovde ga vidiš u editoru,
+   citat je podvučen u tekstu, a "Označi kao rešeno" klijentu u CRM-u pokaže da je gotovo. */
+  function openComments(sid) {
+    return S.comments.filter((c) => c.scriptId === sid && !c.resolved);
+  }
+  function ccWord(n) {
+    return n % 10 === 1 && n % 100 !== 11 ? "komentar" : "komentara";
+  }
+  const CC_CHECK = SV('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 2.6);
+  const CC_NEW = new Set();
+  let ccKnown = null,
+    ccSig = "",
+    ccShowDone = false,
+    CCR = new Map(),
+    ccHlTm = 0,
+    ccEdTm = 0;
+  const HLS =
+    window.CSS && CSS.highlights && typeof Highlight === "function"
+      ? CSS.highlights
+      : null;
+  function ccAgo(ts) {
+    if (!ts) return "";
+    const m = Math.round((Date.now() - ts) / 60000);
+    if (m < 1) return "upravo";
+    if (m < 60) return `pre ${m} min`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `pre ${h} h`;
+    const d = Math.round(h / 24);
+    if (d === 1) return "juče";
+    if (d < 7) return `pre ${d} dana`;
+    return fmtDay.format(new Date(ts));
+  }
+  function onComments() {
+    const ids = new Set(S.comments.map((c) => c.id));
+    if (ccKnown) {
+      const add = S.comments.filter(
+        (c) => !ccKnown.has(c.id) && c.author === "client" && !c.resolved,
+      );
+      if (add.length && me) {
+        add.forEach((c) => {
+          CC_NEW.add(c.id);
+          setTimeout(() => CC_NEW.delete(c.id), 8000);
+        });
+        const c = add[0],
+          sc = S.scripts.find((x) => x.id === c.scriptId),
+          cl = S.clients.find((x) => x.id === c.clientId);
+        toast(
+          add.length > 1
+            ? `${add.length} nova komentara klijenta`
+            : `Novi komentar · ${c.authorName || (cl && cl.name) || "Klijent"}${sc && sc.title ? ` · ${sc.title}` : ""}`,
+          () => {
+            edReturn = null;
+            nav("s-" + c.scriptId);
+          },
+          "Otvori",
+        );
+      }
+    }
+    ccKnown = ids;
+  }
+  /* CRM ne čita bazu modela (tamo su telefoni), pa skripta nosi i imena modela */
+  var mnTm = 0; /* var: refresh() može da se pozove pre ove linije (lokalni režim) */
+  function syncModelNames() {
+    clearTimeout(mnTm);
+    mnTm = setTimeout(async () => {
+      if (!S.ready || !me) return;
+      for (const sc of S.scripts) {
+        const want = (sc.models || [])
+            .map((v) => modelRef(v).name)
+            .filter(Boolean),
+          have = Array.isArray(sc.modelNames) ? sc.modelNames : null;
+        if (
+          have
+            ? want.length === have.length && want.every((x, i) => x === have[i])
+            : !want.length
+        )
+          continue;
+        try {
+          await api.upd("scripts", sc.id, { modelNames: want });
+        } catch (e) {}
+      }
+    }, 1500);
+  }
+  function findQuote(root, quote, before, after) {
+    const sq = (x) => String(x || "").replace(/\s+/g, ""),
+      q = sq(quote);
+    if (!q) return null;
+    const map = [];
+    let hay = "";
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = w.nextNode())) {
+      const d = n.data;
+      for (let i = 0; i < d.length; i++) {
+        if (/\s/.test(d[i])) continue;
+        hay += d[i];
+        map.push([n, i]);
+      }
+    }
+    const b = sq(before).slice(-24),
+      a = sq(after).slice(0, 24);
+    let at = -1,
+      k;
+    if (b && a && (k = hay.indexOf(b + q + a)) >= 0) at = k + b.length;
+    if (at < 0 && b && (k = hay.indexOf(b + q)) >= 0) at = k + b.length;
+    if (at < 0 && a && (k = hay.indexOf(q + a)) >= 0) at = k;
+    if (at < 0) at = hay.indexOf(q);
+    if (at < 0) return null;
+    const s0 = map[at],
+      e0 = map[at + q.length - 1],
+      r = document.createRange();
+    r.setStart(s0[0], s0[1]);
+    r.setEnd(e0[0], e0[1] + 1);
+    return r;
+  }
+  function ccHTML(c, cl) {
+    return `<article class="cc${c.resolved ? " res" : ""}${CC_NEW.has(c.id) ? " new" : ""}" data-cc="${esc(c.id)}">
+    <div class="cc-top">${logo(cl, "cc-av")}<b>${esc(c.authorName || cl.name || "Klijent")}</b><span class="cc-t">${esc(ccAgo(c.createdAt))}</span></div>
+    ${c.quote ? `<button type="button" class="cc-q" data-cc-find="${esc(c.id)}" title="Pronađi u tekstu">${esc(c.quote)}</button>` : ""}
+    <p class="cc-x">${esc(c.text)}</p>
+    <button type="button" class="cc-ok${c.resolved ? " on" : ""}" data-cc-res="${esc(c.id)}">${CC_CHECK}<span>${c.resolved ? "Rešeno" : "Označi kao rešeno"}</span></button>
+  </article>`;
+  }
+  function renderCcmt() {
+    const rail = $("#ccmtRail"),
+      box = $("#ccmt"),
+      s = curScript();
+    const all =
+      s && !editor.hidden
+        ? S.comments
+            .filter((c) => c.scriptId === s.id)
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+        : [];
+    if (!all.length) {
+      if (!rail.hidden) {
+        rail.hidden = true;
+        box.innerHTML = "";
+      }
+      ccSig = "";
+      clearCcHl();
+      return;
+    }
+    const sig = JSON.stringify([
+      s.id,
+      ccShowDone,
+      all.map((c) => [
+        c.id,
+        !!c.resolved,
+        c.text,
+        c.quote,
+        c.authorName,
+        CC_NEW.has(c.id),
+      ]),
+    ]);
+    if (sig !== ccSig) {
+      ccSig = sig;
+      const open = all.filter((c) => !c.resolved),
+        done = all.filter((c) => c.resolved),
+        cl = S.clients.find((x) => x.id === s.clientId) || {
+          id: s.clientId,
+          name: "Klijent",
+        };
+      rail.hidden = false;
+      box.innerHTML = `<div class="cc-h"><span class="cc-ic">${IC.msg}</span><h2>Komentari klijenta</h2>${open.length ? `<span class="cc-n">${open.length}</span>` : ""}</div>
+      <div class="cc-list">${open.length ? open.map((c) => ccHTML(c, cl)).join("") : `<div class="cc-zero">${CC_CHECK}Sve je rešeno</div>`}</div>
+      ${done.length ? `<button type="button" class="cc-tog" data-cc-tog aria-expanded="${ccShowDone}">${ccShowDone ? "Sakrij rešene" : "Rešeni"} · ${done.length}</button>${ccShowDone ? `<div class="cc-list cc-done">${done.map((c) => ccHTML(c, cl)).join("")}</div>` : ""}` : ""}`;
+    }
+    paintCcHl();
+  }
+  /* citati se podvlače u editoru bez diranja teksta (CSS Highlight API) */
+  function clearCcHl() {
+    if (HLS) {
+      HLS.delete("cc-q");
+      HLS.delete("cc-on");
+    }
+    CCR = new Map();
+  }
+  function paintCcHl() {
+    if (HLS) HLS.delete("cc-q");
+    CCR = new Map();
+    const s = curScript();
+    if (!s || editor.hidden) return;
+    const rs = [];
+    openComments(s.id).forEach((c) => {
+      if (!c.quote) return;
+      const r = findQuote(editor, c.quote, c.before, c.after);
+      if (r) {
+        CCR.set(c.id, r);
+        rs.push(r);
+      }
+    });
+    if (HLS && rs.length) HLS.set("cc-q", new Highlight(...rs));
+    $$("#ccmt [data-cc-find]").forEach((b) => {
+      const lost = !CCR.has(b.dataset.ccFind) && !b.closest(".res");
+      b.classList.toggle("lost", lost);
+      b.title = lost ? "Tekst je u međuvremenu izmenjen" : "Pronađi u tekstu";
+    });
+  }
+  function ccFind(id) {
+    const r = CCR.get(id);
+    if (!r) return;
+    const el =
+      r.startContainer.nodeType === 1
+        ? r.startContainer
+        : r.startContainer.parentElement;
+    el.scrollIntoView({
+      block: "center",
+      behavior: reduce ? "auto" : "smooth",
+    });
+    if (HLS) {
+      HLS.set("cc-on", new Highlight(r));
+      clearTimeout(ccHlTm);
+      ccHlTm = setTimeout(() => HLS.delete("cc-on"), 1800);
+    } else {
+      const sel = getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r.cloneRange());
+    }
+  }
+  function ccPulse(id) {
+    const a = $(`#ccmt [data-cc="${CSS.escape(id)}"]`);
+    if (!a) return;
+    a.scrollIntoView({
+      block: "nearest",
+      behavior: reduce ? "auto" : "smooth",
+    });
+    a.classList.remove("flash");
+    void a.offsetWidth;
+    a.classList.add("flash");
+  }
+  async function ccResolve(id) {
+    const c = S.comments.find((x) => x.id === id);
+    if (!c) return;
+    const res = !c.resolved,
+      patch = res
+        ? {
+            resolved: true,
+            resolvedAt: Date.now(),
+            resolvedBy: me ? me.id : null,
+          }
+        : { resolved: false, resolvedAt: null, resolvedBy: null };
+    const old = {
+      resolved: !!c.resolved,
+      resolvedAt: c.resolvedAt || null,
+      resolvedBy: c.resolvedBy || null,
+    };
+    try {
+      await api.upd("comments", id, patch);
+      refresh();
+      toast(
+        res ? "Komentar je rešen" : "Komentar je ponovo otvoren",
+        async () => {
+          try {
+            await api.upd("comments", id, old);
+            refresh();
+          } catch (e) {
+            toast(errMsg(e));
+          }
+        },
+      );
+    } catch (e) {
+      Object.assign(c, old);
+      refresh();
+      toast(errMsg(e));
+    }
+  }
+  $("#ccmt").addEventListener("click", (e) => {
+    const f = e.target.closest("[data-cc-find]");
+    if (f) {
+      ccFind(f.dataset.ccFind);
+      return;
+    }
+    const r = e.target.closest("[data-cc-res]");
+    if (r) {
+      ccResolve(r.dataset.ccRes);
+      return;
+    }
+    if (e.target.closest("[data-cc-tog]")) {
+      ccShowDone = !ccShowDone;
+      ccSig = "";
+      renderCcmt();
+    }
+  });
+  $("#ccmt").addEventListener("pointerover", (e) => {
+    if (!HLS) return;
+    const a = e.target.closest("[data-cc]"),
+      r = a && CCR.get(a.dataset.cc);
+    if (r) {
+      clearTimeout(ccHlTm);
+      HLS.set("cc-on", new Highlight(r));
+    } else if (!a) HLS.delete("cc-on");
+  });
+  $("#ccmt").addEventListener("pointerleave", () => {
+    if (HLS) HLS.delete("cc-on");
+  });
+  editor.addEventListener("click", () => {
+    if (!CCR.size) return;
+    const sel = getSelection();
+    if (!sel.rangeCount || !sel.isCollapsed) return;
+    const p = sel.getRangeAt(0);
+    for (const [id, r] of CCR) {
+      try {
+        if (r.isPointInRange(p.startContainer, p.startOffset)) {
+          ccPulse(id);
+          break;
+        }
+      } catch (e) {}
+    }
+  });
+  editor.addEventListener("input", () => {
+    if (!CCR.size) return;
+    clearTimeout(ccEdTm);
+    ccEdTm = setTimeout(paintCcHl, 350);
+  });
+
   /* delete script */
   $("#delScript").onclick = () =>
     openSheet(edCol === "cpages" ? "delpage" : "delete");
@@ -5423,17 +6111,34 @@
   async function deleteScript(s) {
     const { id, ...data } = s;
     const copy = JSON.parse(JSON.stringify(data));
+    const cms = S.comments
+      .filter((c) => c.scriptId === id)
+      .map((c) => JSON.parse(JSON.stringify(c)));
     if (edId === id) {
       clearTimeout(saveTimer);
       dirty = {};
     }
     try {
       await api.del("scripts", id);
-      if (!DB) S.scripts = S.scripts.filter((x) => x.id !== id);
+      for (const c of cms) {
+        try {
+          await api.del("comments", c.id);
+        } catch (e) {}
+      }
+      if (!DB) {
+        S.scripts = S.scripts.filter((x) => x.id !== id);
+        S.comments = S.comments.filter((c) => c.scriptId !== id);
+      }
       refresh();
       toast(`Obrisano: ${s.title || "Bez naziva"}`, async () => {
         try {
           await api.set("scripts", id, copy);
+          for (const c of cms) {
+            const { id: cid, ...cd } = c;
+            try {
+              await api.set("comments", cid, cd);
+            } catch (e) {}
+          }
           markFresh(id);
           refresh();
         } catch (e) {
@@ -5483,6 +6188,17 @@
       cpages: S.cpages.filter((x) => x.clientId === cid),
       angles: S.angles.filter((x) => x.clientId === cid),
       entities: S.entities.filter((x) => x.clientId === cid),
+      comments: S.comments.filter((x) => x.clientId === cid),
+      creatives: S.creatives.filter(
+        (x) => x.clientId === cid || ids.has(x.monthId),
+      ),
+      creativeComments: S.creativeComments.filter(
+        (x) => x.clientId === cid || ids.has(x.monthId),
+      ),
+      creativeNotes: S.creativeNotes.filter(
+        (x) => x.clientId === cid || ids.has(x.monthId),
+      ),
+      schedules: S.schedules.filter((x) => x.clientId === cid),
     };
   }
   function openSheet(mode, client) {
@@ -5513,6 +6229,8 @@
           f.cpages.length + (f.angles.length ? 1 : 0),
           "stranica u Client Platformi",
         ],
+        [f.comments.length, "komentara klijenta"],
+        [f.creatives.length, "kreativa (sa fajlovima)"],
       ]
         .map(([n, l]) => `<li><b>${n}</b> ${l}</li>`)
         .join("");
@@ -5598,6 +6316,7 @@
       if (!$("#tscrim").hidden) closeTaskDetail();
       if (!$("#mscrim").hidden) closeModelSheet();
       closePops();
+      closeSwitch();
     }
   });
   $("#sheet").addEventListener("submit", async (e) => {
@@ -5633,6 +6352,15 @@
         for (const x of f.cpages) await api.del("cpages", x.id);
         for (const x of f.angles) await api.del("angles", x.id);
         for (const x of f.entities) await api.del("entities", x.id);
+        for (const x of f.comments) await api.del("comments", x.id);
+        for (const x of f.creativeComments)
+          await api.del("creativeComments", x.id);
+        for (const x of f.creativeNotes) await api.del("creativeNotes", x.id);
+        for (const x of f.creatives) {
+          await api.del("creatives", x.id);
+          fcDropAll(x);
+        }
+        for (const x of f.schedules) await api.del("schedules", x.id);
         for (const x of f.items) await api.del("items", x.id);
         await api.del("clients", c.id);
         if (!DB) {
@@ -5646,6 +6374,11 @@
             "cpages",
             "angles",
             "entities",
+            "comments",
+            "creatives",
+            "creativeComments",
+            "creativeNotes",
+            "schedules",
           ]) {
             const z = ids(k);
             S[k] = S[k].filter((x) => !z.has(x.id));
@@ -7314,7 +8047,7 @@
       `<div class="dph"><div><h2>${esc(fmtLong.format(pdate(d)))}</h2><div class="sub">${ents.length} ${ents.length === 1 ? "entitet" : "entiteta"}${evn ? ` · ${evn} ${evn === 1 ? "event" : "eventa"}` : ""}${mods.length ? " · " + mods.map((v) => esc(modelRef(v).name)).join(", ") : ""}</div></div><button class="x" id="dpClose" aria-label="Zatvori">${ICK.x}</button></div>
     ${rg ? `<div class="dpsum"><div class="big"><b>${hm(rg[0])}</b><span class="arr"></span><b>${hm(rg[1])}</b></div><div class="tprib static"><div class="rtrack">${ribTicks(R0, R1)}${ribBlocks(d, null, R0, R1)}</div></div></div>` : ""}
     <div class="tl">${rows || `<div class="dpnone">Ovaj dan je prazan. Prevuci entitet iz Cockpita na ovaj dan ili dodaj pauzu i prevoz.</div>`}</div>
-    <div class="dpadd"><button class="pill" data-dadd="pause">${ICK.coffee.replace("<svg", "<svg style='width:18px;height:18px'")}Dodaj pauzu</button><button class="pill" data-dadd="travel">${ICK.car.replace("<svg", "<svg style='width:18px;height:18px'")}Dodaj prevoz</button></div>`;
+    <div class="dpadd">${schButtons(d)}<button class="pill" data-dadd="pause">${ICK.coffee.replace("<svg", "<svg style='width:18px;height:18px'")}Dodaj pauzu</button><button class="pill" data-dadd="travel">${ICK.car.replace("<svg", "<svg style='width:18px;height:18px'")}Dodaj prevoz</button></div>`;
   }
   $("#dayp").addEventListener("click", async (e) => {
     if (e.target.id === "dayp" || e.target.closest("#dpClose")) {
@@ -7648,13 +8381,13 @@
   }
 
   /* ================= LEAD MANAGER ================= */
-  /* Leads heat up as they move toward a deal: cold steel -> violet -> magenta -> ember -> molten gold. Rejected cools to ash. */
+  /* Leads heat up as they move toward a deal: cold steel -> violet -> magenta -> ember -> green (closed). Rejected cools to ash. */
   const LST = [
     { id: "new", name: "Not Contacted", c: "#8a96b8" },
     { id: "contacted", name: "Contacted", c: "#8f6bff" },
     { id: "meet", name: "Meet Booked", c: "#e055a8" },
     { id: "nego", name: "In-Negotiation", c: "#ff7438" },
-    { id: "closed", name: "Closed", c: "#ffc23d" },
+    { id: "closed", name: "Closed", c: "#3fcf7a" },
     { id: "rejected", name: "Rejected", c: "#7a716a" },
   ];
   const LFLOW = ["new", "contacted", "meet", "nego", "closed"];
@@ -8178,7 +8911,7 @@
       } catch (e) {}
     }, 400);
     if (reduce) return;
-    const cols = ["#fff3d1", "#ffd36b", "#ffc23d", "#ff9a3c", "#ff7438"],
+    const cols = ["#e6fff0", "#7fe3a6", "#3fcf7a", "#22a35a", "#9df0bd"],
       W = innerWidth,
       H = innerHeight;
     let k = 0;
@@ -9324,12 +10057,2798 @@
     );
   })();
 
+  /* ---------------- general: Notion-style stranice ---------------- */
+  if (window.SKNotes)
+    NT = window.SKNotes({
+      S,
+      api,
+      esc,
+      SV,
+      toast,
+      errMsg,
+      markFresh,
+      refresh,
+      applyTheme,
+      fmtEdit,
+      TEAM,
+      IMG,
+      nav,
+      me: () => me,
+      assets: () => ASSETS,
+    });
+  /* =====================================================================
+   FINAL CREATIVES
+   Mihajlo prevuče gotove kreative (pun kvalitet) u mesec → klijent ih
+   odmah vidi u svom CRM-u (Final Creatives). Filip ostavlja beleške
+   Mihajlu, Export / Export All daje originalne fajlove za Ads Manager.
+   Kolekcije:
+   creatives        {clientId, monthId, title, kind:"video"|"image"|"carousel",
+                     files:[{asset | parts:[id…] | url,path, type, name, size, w, h, dur}],
+                     poster:{asset | url,path}, order, createdAt, createdBy, updatedAt, v}
+   creativeComments {clientId, creativeId, monthId, text, at, slide, author:"client",
+                     authorName, authorUid, createdAt, order, resolved}   ← piše klijent (CRM)
+   creativeNotes    {clientId, creativeId, monthId, text, at, slide, author:"team",
+                     authorId, authorName, createdAt, order, resolved}    ← samo tim
+   ===================================================================== */
+  const FC_V = /^video\/(mp4|webm|quicktime)$/,
+    FC_I = /^image\/(jpeg|png|webp|gif)$/;
+  const FC_MAX = 20 * 1024 * 1024,
+    FC_PART =
+      19 * 1024 * 1024; /* artefakt: do 20 MB po fajlu; veći idu u delovima */
+  const CRM_BASE =
+    location.origin +
+    "/crm"; /* adresa klijentskog CRM-a (klijent može imati svoj: clients.crmUrl) */
+  const FC_EXT = {
+    "video/mp4": "mp4",
+    "video/webm": "webm",
+    "video/quicktime": "mov",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  const IC_FC = SV(
+    '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="m10 8.5 5 3.5-5 3.5z" fill="currentColor"/>',
+  );
+  const IC_FCPLAY =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>';
+  const IC_FCCAR =
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7.5" y="2.5" width="14" height="14" rx="3"/><path d="M3.5 7.5v10a3 3 0 0 0 3 3h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  const IC_FCDL = SV('<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>', 2.2);
+  const IC_FCUP = SV('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', 2);
+  let firstFC = true,
+    STORE_EXT = null,
+    fcHov = null,
+    fcQueue = false,
+    fcRunOk = 0,
+    fcRunErr = 0,
+    fcCX = null,
+    fcCxOff = false,
+    fcSlide = 0,
+    fcVP = null,
+    fcGo = null,
+    fcSending = false,
+    fcDelArm = null;
+  const FCUP = new Map(),
+    FCBL = new Map(),
+    FC_NEW = new Set();
+  const fcType = (f) => {
+    let t = String((f && f.type) || "").toLowerCase();
+    if (t === "image/jpg") t = "image/jpeg";
+    if (!t || t === "application/octet-stream") {
+      const e = String((f && f.name) || "")
+        .split(".")
+        .pop()
+        .toLowerCase();
+      t =
+        {
+          mp4: "video/mp4",
+          m4v: "video/mp4",
+          webm: "video/webm",
+          mov: "video/quicktime",
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          png: "image/png",
+          webp: "image/webp",
+          gif: "image/gif",
+        }[e] || t;
+    }
+    return t;
+  };
+  const fcKind = (c) => {
+    const fs = c.files || [];
+    return (
+      c.kind ||
+      (fs.length > 1
+        ? "carousel"
+        : /^video\//.test((fs[0] || {}).type || "")
+          ? "video"
+          : "image")
+    );
+  };
+  const fcSrc = (x) => (x ? x.url || (x.asset ? "/_blob/" + x.asset : "") : "");
+  const fcPoster = (c) =>
+    fcSrc(c.poster) || (fcKind(c) !== "video" ? fcSrc((c.files || [])[0]) : "");
+  const fcExtOf = (x) => {
+    const n = String((x && x.name) || ""),
+      m = n.match(/\.([a-z0-9]{2,5})$/i);
+    return m ? m[1].toLowerCase() : FC_EXT[x && x.type] || "bin";
+  };
+  const fcSafe = (s) =>
+    String(s || "")
+      .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80) || "Kreativa";
+  const fcNN = (i) => String(i + 1).padStart(2, "0");
+  const fcT = (s) => {
+    s = Math.max(0, Math.floor(Number(s) || 0));
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  };
+  const fcJe = (n) =>
+    n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "su" : "je";
+  const fcWord = (n) =>
+    n % 10 === 1 && n % 100 !== 11
+      ? "kreativa"
+      : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
+        ? "kreative"
+        : "kreativa";
+  function creativesOf(mid) {
+    return S.creatives
+      .filter((c) => c.monthId === mid)
+      .sort(
+        (a, b) =>
+          (a.order || 0) - (b.order || 0) ||
+          (a.createdAt || 0) - (b.createdAt || 0),
+      );
+  }
+  function fcOpenCC(cid) {
+    return S.creativeComments.filter(
+      (x) => x.creativeId === cid && !x.resolved,
+    );
+  }
+  function fcOpenN(cid) {
+    return S.creativeNotes.filter((x) => x.creativeId === cid && !x.resolved);
+  }
+  function fcTitle(name) {
+    let t = String(name || "")
+      .replace(/\.[a-z0-9]{2,5}$/i, "")
+      .replace(/[_]+/g, " ")
+      .replace(/\s*-+\s*/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    for (let k = 0; k < 4; k++)
+      t = t
+        .replace(
+          /(^|[\s(\[]+)(final(no)?|finalna|export(ed)?|copy|kopija|v\d{1,2}|\(\d+\)|\d{3,4}x\d{3,4})[)\]]*$/i,
+          "",
+        )
+        .trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Kreativa";
+  }
+  function fcNewId() {
+    return DB
+      ? DB.collection("creatives").doc().id
+      : "cr-" +
+          Date.now().toString(36) +
+          Math.random().toString(36).slice(2, 7);
+  }
+  function fcLinkOf(it) {
+    const c = S.clients.find((x) => x.id === it.clientId) || {};
+    return (
+      String(c.crmUrl || CRM_BASE).replace(/#.*$/, "") +
+      "#creatives." +
+      encodeURIComponent(it.id)
+    );
+  }
+
+  /* ---------- skladište ----------
+   artefakt: assets (do 20 MB po fajlu, veći se čuvaju u delovima) · sajt: SkeyloOS.useStorage({put, remove}) (npr. Firebase Storage) */
+  function fcMode() {
+    return STORE_EXT ? "ext" : ASSETS ? "assets" : DB ? "none" : "local";
+  }
+  async function fcUp1(blob, type) {
+    try {
+      return await ASSETS.upload(blob, { type });
+    } catch (e) {
+      if (e && e.code === "store_unavailable") {
+        await new Promise((r) => setTimeout(r, 1200));
+        return await ASSETS.upload(blob, { type });
+      }
+      throw e;
+    }
+  }
+  async function fcCut(blob, e) {
+    /* deo ne sme da počne razmakom ili znakom "<" (skladište bi ga odbilo kao tekst) */
+    const b = new Uint8Array(
+      await blob.slice(e, Math.min(blob.size, e + 512)).arrayBuffer(),
+    );
+    let k = 0;
+    while (
+      k < b.length &&
+      (b[k] === 60 ||
+        b[k] === 32 ||
+        b[k] === 9 ||
+        b[k] === 10 ||
+        b[k] === 13 ||
+        b[k] === 12)
+    )
+      k++;
+    return e + k;
+  }
+  async function fcPut(blob, type, onP, path) {
+    const m = fcMode();
+    if (m === "ext") {
+      const r = await STORE_EXT.put(blob, {
+        type,
+        path,
+        onProgress: (p) => onP && onP(p),
+      });
+      onP && onP(1);
+      return { url: r.url, path: r.path || path };
+    }
+    if (m === "assets") {
+      const part = window.__FC_PART || FC_PART,
+        max = window.__FC_PART ? part : FC_MAX;
+      if (blob.size <= max) {
+        const r = await fcUp1(blob, type);
+        onP && onP(1);
+        return { asset: r.id };
+      }
+      const parts = [];
+      let s = 0;
+      try {
+        while (s < blob.size) {
+          let e = Math.min(blob.size, s + part);
+          if (e < blob.size) e = await fcCut(blob, e);
+          const r = await fcUp1(blob.slice(s, e, type), type);
+          parts.push(r.id);
+          s = e;
+          onP && onP(s / blob.size);
+        }
+      } catch (err) {
+        for (const id of parts) {
+          try {
+            await ASSETS.delete(id);
+          } catch (x) {}
+        }
+        throw err;
+      }
+      return { parts };
+    }
+    if (m === "local") {
+      onP && onP(1);
+      return { url: URL.createObjectURL(blob) };
+    }
+    throw { code: "no_store" };
+  }
+  async function fcDrop(x) {
+    /* briše fajl iz skladišta (nepovratno) */
+    if (!x) return;
+    try {
+      if (x.path && STORE_EXT && STORE_EXT.remove)
+        await STORE_EXT.remove(x.path);
+      else if (ASSETS) {
+        if (x.asset) await ASSETS.delete(x.asset);
+        if (x.parts)
+          for (const p of x.parts) {
+            try {
+              await ASSETS.delete(p);
+            } catch (e) {}
+          }
+      } else if (x.url && x.url.startsWith("blob:")) URL.revokeObjectURL(x.url);
+    } catch (e) {}
+  }
+  function fcDropAll(c, later) {
+    const refs = [...(c.files || []), c.poster].filter(Boolean);
+    const go = () => refs.forEach(fcDrop);
+    if (later) setTimeout(go, later);
+    else go();
+  }
+  async function fcBlob(x, onP) {
+    if (x.parts) {
+      const out = [];
+      for (let i = 0; i < x.parts.length; i++) {
+        const r = await fetch("/_blob/" + x.parts[i]);
+        if (!r.ok) throw new Error("fetch");
+        out.push(await r.blob());
+        onP && onP((i + 1) / x.parts.length);
+      }
+      return new Blob(out, { type: x.type || "" });
+    }
+    const r = await fetch(fcSrc(x));
+    if (!r.ok) throw new Error("fetch");
+    const b = await r.blob();
+    onP && onP(1);
+    return b;
+  }
+  async function fcPlayURL(x, onP) {
+    /* fajl u delovima: spoji ga za puštanje (čuva poslednja 3) */
+    if (!x.parts) return fcSrc(x);
+    const k = x.parts.join(",");
+    if (FCBL.has(k)) return FCBL.get(k);
+    const u = URL.createObjectURL(await fcBlob(x, onP));
+    FCBL.set(k, u);
+    if (FCBL.size > 3) {
+      const [k0, u0] = FCBL.entries().next().value;
+      URL.revokeObjectURL(u0);
+      FCBL.delete(k0);
+    }
+    return u;
+  }
+  function fcErr(e) {
+    const c = e && e.code;
+    if (c === "too_large") return e.msg || "Fajl je prevelik za ovo skladište.";
+    if (c === "unsupported_type")
+      return "Ovaj format ne može da se sačuva. Probaj MP4, JPG ili PNG.";
+    if (c === "quota_or_state")
+      return "Nema više prostora. Obriši stare kreative pa probaj ponovo.";
+    if (c === "rate_limited")
+      return "Previše otpremanja odjednom. Probaj ponovo za minut.";
+    if (c === "no_store" || c === "not_granted" || c === "capability_disabled")
+      return "Ovde ne može da se otpremi. Otvori Skeylo OS kao urednik.";
+    if (c === "quota_exceeded") return "Baza je puna.";
+    return "Otpremanje nije uspelo. Probaj ponovo.";
+  }
+
+  /* ---------- podaci o fajlu: dimenzije, trajanje, sličica ---------- */
+  function fcFrame(src, w, h, max) {
+    max = max || 720;
+    const s = Math.min(1, max / Math.max(1, w)),
+      cw = Math.max(1, Math.round(w * s)),
+      ch = Math.max(1, Math.round(h * s));
+    const cv = document.createElement("canvas");
+    cv.width = cw;
+    cv.height = ch;
+    const x = cv.getContext("2d");
+    x.imageSmoothingQuality = "high";
+    x.drawImage(src, 0, 0, cw, ch);
+    return new Promise((res, rej) =>
+      cv.toBlob(
+        (b) => (b ? res(b) : rej(new Error("toBlob"))),
+        "image/jpeg",
+        0.86,
+      ),
+    );
+  }
+  function fcVideoInfo(file) {
+    return new Promise((res) => {
+      const v = document.createElement("video");
+      v.muted = true;
+      v.playsInline = true;
+      v.preload = "auto";
+      const u = URL.createObjectURL(file);
+      let done = false;
+      const fin = (o) => {
+        if (done) return;
+        done = true;
+        clearTimeout(tm);
+        try {
+          v.removeAttribute("src");
+          v.load();
+        } catch (e) {}
+        URL.revokeObjectURL(u);
+        res(o);
+      };
+      const tm = setTimeout(() => fin({}), 20000);
+      v.onloadedmetadata = () => {
+        const d = isFinite(v.duration) ? v.duration : 0;
+        try {
+          v.currentTime = Math.min(3, d * 0.3 || 0);
+        } catch (e) {
+          fin({ w: v.videoWidth, h: v.videoHeight, dur: d });
+        }
+      };
+      v.onseeked = async () => {
+        const w = v.videoWidth,
+          h = v.videoHeight,
+          d = isFinite(v.duration) ? v.duration : 0;
+        let poster = null;
+        try {
+          if (w && h) poster = await fcFrame(v, w, h);
+        } catch (e) {}
+        fin({ w, h, dur: d, poster });
+      };
+      v.onerror = () => fin({});
+      v.src = u;
+    });
+  }
+  async function fcImageInfo(file) {
+    try {
+      const bm = await createImageBitmap(file);
+      const o = { w: bm.width, h: bm.height };
+      try {
+        o.thumb = await fcFrame(bm, bm.width, bm.height);
+      } catch (e) {}
+      if (bm.close) bm.close();
+      return o;
+    } catch (e) {
+      return new Promise((res) => {
+        const u = URL.createObjectURL(file),
+          im = new Image();
+        im.onload = async () => {
+          const o = { w: im.naturalWidth, h: im.naturalHeight };
+          try {
+            o.thumb = await fcFrame(im, o.w, o.h);
+          } catch (x) {}
+          URL.revokeObjectURL(u);
+          res(o);
+        };
+        im.onerror = () => {
+          URL.revokeObjectURL(u);
+          res({});
+        };
+        im.src = u;
+      });
+    }
+  }
+
+  /* ---------- stranica ---------- */
+  function renderFC() {
+    if ($("#fc").hidden) return;
+    const it = S.items.find((i) => i.id === view.id),
+      body = $("#fcBody");
+    if (!S.ready) {
+      $("#fcId").innerHTML = "";
+      body.innerHTML = '<div class="state">Učitavam kreative…</div>';
+      return;
+    }
+    if (!it) {
+      $("#fcId").innerHTML = "";
+      $("#fcActs").hidden = true;
+      body.innerHTML =
+        '<div class="state"><b>Ovaj mesec ne postoji</b>Možda je obrisan.<button class="pill" data-go="projects">Nazad na projekte</button></div>';
+      return;
+    }
+    const c = S.clients.find((x) => x.id === it.clientId) || {
+      id: "",
+      name: "",
+      color: "#e1802c",
+    };
+    applyTheme(c.id);
+    $("#fcActs").hidden = false;
+    const anim = firstFC;
+    firstFC = false;
+    $("#fcId").style.setProperty("--c", c.color || "#e1802c");
+    $("#fcId").innerHTML =
+      `${logo(c, "lg-ic")}<div><h1><span class="w"><span>Final Creatives</span></span></h1><div class="sub">${esc(c.name)} · ${esc(it.title)}</div></div>`;
+    if (!anim) $("#fcId .w>span").style.animation = "none";
+    $("#fcBackLbl").textContent = it.title;
+    const L = creativesOf(it.id),
+      ups = [...FCUP.values()].filter(
+        (u) => u.monthId === it.id && !L.some((x) => x.id === u.id),
+      );
+    $("#fcAll").disabled = !L.length;
+    $("#fcAdd").hidden = !fcCanUp();
+    if (!L.length && !ups.length) {
+      body.innerHTML = fcCanUp()
+        ? `<div class="fcempty" id="fcEmpty" role="button" tabindex="0"><span class="fce-o">${IC_FCUP}</span><b>Prevuci kreative ovde</b><span>ili klikni da ih izabereš</span></div>`
+        : `<div class="state"><b>Još nema kreativa</b>Otpremanje je dostupno uredniku Skeylo OS-a.</div>`;
+      return;
+    }
+    const sig =
+      L.map((x) =>
+        [
+          x.id,
+          x.title,
+          fcPoster(x),
+          (x.files || []).length,
+          x.v || 1,
+          fcOpenCC(x.id).length + fcOpenN(x.id).length,
+        ].join("~"),
+      ).join("|") +
+      "#" +
+      ups.map((u) => u.id).join("|");
+    const g = body.querySelector(".fcgrid");
+    if (g && g.dataset.sig === sig) {
+      ups.forEach(fcPaintUp);
+      return;
+    }
+    if (fcHov) {
+      fcHover(null);
+    }
+    body.innerHTML = `<div class="fcgrid${anim ? " enter" : ""}" data-sig="${esc(sig)}">${L.map((x, i) => fcCard(x, i)).join("")}${ups.map((u, k) => fcUpCard(u, L.length + k)).join("")}</div>`;
+    ups.forEach(fcPaintUp);
+    L.forEach((x) => {
+      if (FC_NEW.has(x.id)) {
+        FC_NEW.delete(x.id);
+        const el = body.querySelector(`.fcc[data-fcid="${CSS.escape(x.id)}"]`);
+        if (el) {
+          el.classList.add("up", "done");
+          el.querySelector(".fcc-f").insertAdjacentHTML(
+            "beforeend",
+            `<span class="fcc-veil">${fcRing(1)}<svg class="fcc-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>`,
+          );
+          setTimeout(
+            () => {
+              el.classList.remove("up", "done");
+              const v = el.querySelector(".fcc-veil");
+              v && v.remove();
+              el.classList.add("land");
+              setTimeout(() => el.classList.remove("land"), 1000);
+            },
+            reduce ? 300 : 1600,
+          );
+        }
+      }
+    });
+  }
+  function fcRing(p) {
+    return `<svg class="fcc-ring" viewBox="0 0 64 64" aria-hidden="true"><circle class="t" cx="32" cy="32" r="26"/><circle class="p" cx="32" cy="32" r="26" style="--p:${p || 0}"/></svg>`;
+  }
+  function fcCard(x, i) {
+    const k = fcKind(x),
+      p = fcPoster(x),
+      f = (x.files || [])[0] || {},
+      n = fcOpenCC(x.id).length + fcOpenN(x.id).length;
+    return `<article class="fcc" data-fcid="${esc(x.id)}" style="--i:${i}">
+    <button class="fcc-f" type="button" data-fc-open="${esc(x.id)}" aria-label="${esc(x.title || "Kreativa")}">${p ? `<img class="fcc-pos" src="${esc(p)}" alt="" decoding="async" loading="lazy">` : `<span class="fcc-none">${IC_FC}</span>`}${k === "video" && !f.parts && fcSrc(f) ? `<video class="fcc-vid" muted loop playsinline preload="none" data-src="${esc(fcSrc(f))}"></video>` : ""}${k !== "image" ? `<span class="fcc-k">${k === "video" ? IC_FCPLAY : IC_FCCAR}</span>` : ""}${n ? `<span class="fcc-cc" title="Otvoreni komentari">${IC.msg}${n}</span>` : ""}</button>
+    <div class="fcc-b"><span class="fcc-n">${fcNN(i)}</span><span class="fcc-t">${esc(x.title || "Kreativa")}</span><button class="fcc-dl" type="button" data-fc-export="${esc(x.id)}" aria-label="Export: ${esc(x.title || "Kreativa")}" title="Export">${IC_FCDL}</button></div>
+  </article>`;
+  }
+  function fcUpCard(u, i) {
+    return `<article class="fcc up" data-fcup="${esc(u.id)}" style="--i:${i}">
+    <div class="fcc-f">${u.thumb ? `<img class="fcc-pos" src="${esc(u.thumb)}" alt="">` : `<span class="fcc-none">${IC_FC}</span>`}${u.kind !== "image" ? `<span class="fcc-k">${u.kind === "video" ? IC_FCPLAY : IC_FCCAR}</span>` : ""}<span class="fcc-veil"></span></div>
+    <div class="fcc-b"><span class="fcc-n">${fcNN(i)}</span><span class="fcc-t">${esc(u.title)}</span></div>
+  </article>`;
+  }
+  function fcPaintUp(u) {
+    const el = document.querySelector(`.fcc[data-fcup="${CSS.escape(u.id)}"]`);
+    if (!el) return;
+    const img = el.querySelector(".fcc-pos");
+    if (u.thumb && !img) {
+      const f = el.querySelector(".fcc-f"),
+        none = f.querySelector(".fcc-none");
+      if (none) none.remove();
+      f.insertAdjacentHTML(
+        "afterbegin",
+        `<img class="fcc-pos" src="${esc(u.thumb)}" alt="">`,
+      );
+    }
+    const v = el.querySelector(".fcc-veil");
+    el.classList.toggle(
+      "wait",
+      u.state === "queued" || (u.state === "up" && !u.thumb),
+    );
+    el.classList.toggle(
+      "q",
+      u.state === "queued" || (u.state === "up" && !(u.prog > 0)),
+    );
+    el.classList.toggle("err", u.state === "err");
+    el.classList.toggle("done", u.state === "done");
+    if (u.state === "err") {
+      if (!v.querySelector(".fcc-e"))
+        v.innerHTML = `<div class="fcc-e"><b>Nije otpremljeno</b><span>${esc(u.err || "")}</span><div><button type="button" data-fcup-retry="${esc(u.id)}">Ponovo</button><button type="button" data-fcup-x="${esc(u.id)}">Ukloni</button></div></div>`;
+      return;
+    }
+    if (!v.querySelector(".fcc-ring"))
+      v.innerHTML =
+        fcRing(u.prog) +
+        `<svg class="fcc-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>`;
+    const p = v.querySelector(".fcc-ring .p");
+    if (p)
+      p.style.setProperty(
+        "--p",
+        u.state === "done" ? 1 : Math.max(0.02, u.prog || 0),
+      );
+  }
+  function fcCanUp() {
+    const m = fcMode();
+    return m === "ext" || m === "assets" || m === "local";
+  }
+  /* pregled videa na prelazak mišem */
+  function fcHover(card) {
+    if (fcHov === card) return;
+    if (fcHov) {
+      const v = fcHov.querySelector(".fcc-vid");
+      if (v) v.pause();
+      fcHov.classList.remove("playing");
+    }
+    fcHov = card;
+    if (!card) return;
+    const v = card.querySelector(".fcc-vid");
+    if (!v) return;
+    if (!v.getAttribute("src") && v.dataset.src) v.src = v.dataset.src;
+    v.onplaying = () => {
+      if (fcHov === card) card.classList.add("playing");
+    };
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
+  /* ---------- ubacivanje ---------- */
+  function fcAsk(n) {
+    return new Promise((res) => {
+      const a = $("#fcAsk");
+      $("#fcAskT").textContent =
+        `${n} ${n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "slike" : "slika"}`;
+      a.hidden = false;
+      requestAnimationFrame(() => a.classList.add("on"));
+      setTimeout(() => a.querySelector("[data-ask=carousel]").focus(), 60);
+      const done = (v) => {
+        a.classList.remove("on");
+        setTimeout(
+          () => {
+            a.hidden = true;
+          },
+          reduce ? 0 : 250,
+        );
+        a.onclick = null;
+        document.removeEventListener("keydown", key, true);
+        res(v);
+      };
+      const key = (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          done(null);
+        }
+      };
+      document.addEventListener("keydown", key, true);
+      a.onclick = (e) => {
+        const b = e.target.closest("[data-ask]");
+        if (b) {
+          done(b.dataset.ask === "cancel" ? null : b.dataset.ask);
+          return;
+        }
+        if (e.target === a) done(null);
+      };
+    });
+  }
+  async function fcIngest(list, mid, from) {
+    const it = S.items.find((i) => i.id === mid);
+    if (!it) return;
+    if (!fcCanUp()) {
+      toast(fcErr({ code: "no_store" }));
+      return;
+    }
+    const nat = (a, b) =>
+      a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    const files = [...list].filter((f) => f && f.size > 0),
+      vids = [],
+      imgs = [],
+      bad = [];
+    for (const f of files) {
+      const t = fcType(f);
+      if (FC_V.test(t)) {
+        if (t === "video/quicktime" && fcMode() === "assets")
+          bad.push([f, "mov"]);
+        else vids.push(f);
+      } else if (FC_I.test(t)) imgs.push(f);
+      else bad.push([f, "type"]);
+    }
+    if (bad.length) {
+      const mov = bad.find((b) => b[1] === "mov");
+      toast(
+        mov
+          ? `„${mov[0].name}“ izvezi kao MP4 (H.264) pa ga ubaci ponovo`
+          : bad.length === 1
+            ? `„${bad[0][0].name}“ nije video ni slika (MP4, WebM, JPG, PNG, WebP, GIF)`
+            : `${bad.length} fajla preskočena (MP4, WebM, JPG, PNG, WebP, GIF)`,
+      );
+    }
+    if (!vids.length && !imgs.length) return;
+    vids.sort(nat);
+    imgs.sort(nat);
+    const groups = [];
+    if (imgs.length > 1) {
+      const ch = await fcAsk(imgs.length);
+      if (!ch) {
+        if (!vids.length) return;
+      } else if (ch === "carousel")
+        groups.push({ kind: "carousel", files: imgs });
+      else imgs.forEach((f) => groups.push({ kind: "image", files: [f] }));
+    } else if (imgs.length) groups.push({ kind: "image", files: imgs });
+    vids.forEach((f) => groups.push({ kind: "video", files: [f] }));
+    if (!groups.length) return;
+    const L = creativesOf(mid),
+      base = Math.max(Date.now(), ...L.map((x) => (x.order || 0) + 1));
+    const made = groups.map((g, i) => {
+      const id = fcNewId(),
+        u = {
+          id,
+          monthId: mid,
+          clientId: it.clientId,
+          kind: g.kind,
+          files: g.files,
+          title:
+            g.kind === "carousel"
+              ? fcCarTitle(g.files)
+              : fcTitle(g.files[0].name),
+          order: base + i,
+          prog: 0,
+          state: "queued",
+          thumb: g.kind !== "video" ? URL.createObjectURL(g.files[0]) : null,
+        };
+      FCUP.set(id, u);
+      return u;
+    });
+    if (fcMode() === "local")
+      toast("Probni režim: kreative se ne čuvaju posle osvežavanja");
+    renderFC();
+    fcFly(made, from);
+    fcRun();
+  }
+  function fcCarTitle(files) {
+    const t = files.map((f) => fcTitle(f.name));
+    let p = t[0] || "";
+    for (const s of t) while (p && !s.startsWith(p)) p = p.slice(0, -1);
+    p = p.replace(/[\s\d.,:;–-]+$/, "").trim();
+    return p.length > 2 ? p : "Karusel";
+  }
+  async function fcRun() {
+    if (fcQueue) return;
+    fcQueue = true;
+    fcRunOk = 0;
+    fcRunErr = 0;
+    try {
+      let u;
+      while ((u = [...FCUP.values()].find((x) => x.state === "queued"))) {
+        if (await fcProcess(u)) fcRunOk++;
+        else fcRunErr++;
+      }
+    } finally {
+      fcQueue = false;
+    }
+    const ok = fcRunOk,
+      er = fcRunErr;
+    if (ok && !er) {
+      if (!$("#fc").hidden)
+        setTimeout(
+          () => {
+            if (!fcQueue) fcCelebrate(ok);
+          },
+          reduce ? 0 : 1100,
+        );
+      else toast(`${ok} ${fcWord(ok)} ${fcJe(ok)} u CRM-u`);
+    } else if (ok && er)
+      toast(`${ok} ${fcWord(ok)} ${fcJe(ok)} u CRM-u, ${er} nije otpremljeno`);
+  }
+  async function fcProcess(u) {
+    u.state = "up";
+    u.prog = 0;
+    fcPaintUp(u);
+    const done = [];
+    try {
+      const metas = [];
+      if (u.kind === "video") {
+        const m = await fcVideoInfo(u.files[0]);
+        metas.push(m);
+        if (m.poster) {
+          u.thumb = URL.createObjectURL(m.poster);
+          fcPaintUp(u);
+        }
+      } else for (const f of u.files) metas.push(await fcImageInfo(f));
+      const pb =
+          u.kind === "video" ? metas[0].poster : metas[0] && metas[0].thumb,
+        total = u.files.reduce((a, f) => a + f.size, 0) + (pb ? pb.size : 0);
+      let at = 0;
+      const base = `creatives/${u.clientId}/${u.monthId}/${u.id}/`,
+        files = [];
+      for (let i = 0; i < u.files.length; i++) {
+        const f = u.files[i],
+          t = fcType(f),
+          m = metas[i] || {};
+        const ref = await fcPut(
+          f,
+          t,
+          (p) => {
+            u.prog = Math.min(0.98, (at + p * f.size) / total);
+            fcPaintUp(u);
+          },
+          base + fcNN(i) + "." + fcExtOf({ name: f.name, type: t }),
+        );
+        done.push(ref);
+        at += f.size;
+        files.push(
+          Object.assign(
+            {},
+            ref,
+            { type: t, name: f.name, size: f.size },
+            m.w ? { w: m.w, h: m.h } : {},
+            m.dur ? { dur: Math.round(m.dur * 10) / 10 } : {},
+          ),
+        );
+      }
+      let poster = null;
+      if (pb) {
+        const ref = await fcPut(pb, "image/jpeg", null, base + "poster.jpg");
+        done.push(ref);
+        poster = Object.assign({}, ref, { w: metas[0].w, h: metas[0].h });
+      }
+      FC_NEW.add(u.id);
+      setTimeout(() => FC_NEW.delete(u.id), 6000);
+      u.state = "done";
+      u.prog = 1;
+      fcPaintUp(u);
+      try {
+        await api.set("creatives", u.id, {
+          clientId: u.clientId,
+          monthId: u.monthId,
+          title: u.title,
+          kind: u.kind,
+          files,
+          poster,
+          order: u.order,
+          createdAt: Date.now(),
+          createdBy: me ? me.id : null,
+          v: 1,
+        });
+      } catch (e) {
+        FC_NEW.delete(u.id);
+        throw e;
+      }
+      fcPaintUp(u);
+      setTimeout(
+        () => {
+          FCUP.delete(u.id);
+          if (u.thumb && u.thumb.startsWith("blob:") && fcMode() !== "local")
+            setTimeout(() => URL.revokeObjectURL(u.thumb), 4000);
+          renderFC();
+        },
+        reduce ? 200 : 1500,
+      );
+      return true;
+    } catch (e) {
+      done.forEach(fcDrop);
+      u.state = "err";
+      u.err = fcErr(e);
+      fcPaintUp(u);
+      return false;
+    }
+  }
+  /* kartice doleću sa mesta gde su fajlovi pušteni */
+  function fcFly(list, from) {
+    if (reduce || !from) return;
+    requestAnimationFrame(() =>
+      list.forEach((u, k) => {
+        const el = document.querySelector(
+          `.fcc[data-fcup="${CSS.escape(u.id)}"]`,
+        );
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const dx = from.x - (r.left + r.width / 2),
+          dy = from.y - (r.top + r.height / 2);
+        el.animate(
+          [
+            {
+              transform: `translate(${dx}px,${dy}px) scale(.12) rotate(${k % 2 ? 8 : -8}deg)`,
+              opacity: 0,
+            },
+            { opacity: 1, offset: 0.25 },
+            { transform: "none", opacity: 1 },
+          ],
+          {
+            duration: 900,
+            delay: k * 90,
+            easing: "cubic-bezier(.2,.9,.25,1.12)",
+            fill: "backwards",
+          },
+        );
+      }),
+    );
+  }
+  /* Bravo — kad se sve otpremi */
+  function fcCelebrate(n) {
+    const y = $("#fcYay");
+    $("#fcYayName").textContent = ((me && me.name) || "") + ".";
+    $("#fcYaySub").textContent =
+      fcMode() === "local"
+        ? `${n} ${fcWord(n)} u probnom režimu`
+        : n === 1
+          ? "Kreativa je u CRM-u. Klijent je već vidi."
+          : `${n} ${fcWord(n)} ${fcJe(n)} u CRM-u. Klijent ih već vidi.`;
+    y.hidden = false;
+    y.classList.remove("out");
+    y.querySelectorAll(".fy-t span,.fy-s,.fy-l").forEach((e) => {
+      e.style.animation = "none";
+      void e.offsetWidth;
+      e.style.animation = "";
+    });
+    if (!reduce) fcSparks($("#fcYayCv"));
+    clearTimeout(fcCelebrate.t);
+    fcCelebrate.t = setTimeout(
+      () => {
+        y.classList.add("out");
+        setTimeout(() => {
+          y.hidden = true;
+        }, 700);
+      },
+      reduce ? 1800 : 2900,
+    );
+  }
+  function fcSparks(cv) {
+    const W = (cv.width = innerWidth * (devicePixelRatio > 1 ? 1.5 : 1)),
+      H = (cv.height = innerHeight * (devicePixelRatio > 1 ? 1.5 : 1)),
+      x = cv.getContext("2d");
+    const cs = getComputedStyle(document.documentElement),
+      cols = [
+        cs.getPropertyValue("--orange").trim() || "#e1802c",
+        cs.getPropertyValue("--gold").trim() || "#f3b04c",
+        "#ffffff",
+      ];
+    const P = [];
+    for (let i = 0; i < 150; i++) {
+      const a = Math.random() * Math.PI * 2,
+        s = (4 + Math.random() * 13) * (W / 1400 + 0.4);
+      P.push({
+        x: W / 2,
+        y: H * 0.48,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s - 3,
+        l: 1,
+        d: 0.006 + Math.random() * 0.012,
+        r: 1 + Math.random() * 2.6,
+        c: cols[i % 3],
+        t: Math.random() < 0.35,
+      });
+    }
+    const t0 = performance.now();
+    const step = (t) => {
+      x.clearRect(0, 0, W, H);
+      let alive = 0;
+      for (const p of P) {
+        if (p.l <= 0) continue;
+        alive++;
+        p.vx *= 0.985;
+        p.vy = p.vy * 0.985 + 0.16;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.l -= p.d;
+        x.globalAlpha = Math.max(0, p.l);
+        x.fillStyle = p.c;
+        if (p.t) {
+          x.save();
+          x.translate(p.x, p.y);
+          x.rotate(Math.atan2(p.vy, p.vx));
+          x.fillRect(-p.r * 3, -p.r * 0.45, p.r * 6, p.r * 0.9);
+          x.restore();
+        } else {
+          x.beginPath();
+          x.arc(p.x, p.y, p.r, 0, 7);
+          x.fill();
+        }
+      }
+      if (alive && t - t0 < 3200) requestAnimationFrame(step);
+      else x.clearRect(0, 0, W, H);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- prevlačenje fajlova iz računara (portal) ---------- */
+  (function () {
+    const P = $("#fcPortal"),
+      O = $("#fcPo");
+    let depth = 0,
+      on = false,
+      hideT = 0;
+    for (let k = 0; k < 14; k++) {
+      const i = document.createElement("i");
+      i.className = "fcp-p";
+      i.style.setProperty(
+        "--a",
+        ((k * 360) / 14 + Math.random() * 12).toFixed(1) + "deg",
+      );
+      i.style.setProperty("--k", k);
+      O.appendChild(i);
+    }
+    const hasFiles = (e) => {
+      const t = e.dataTransfer && e.dataTransfer.types;
+      return !!t && [...t].includes("Files");
+    };
+    const onFC = () => !$("#fc").hidden && view.name === "fc";
+    const active = () =>
+      onFC() &&
+      fcCanUp() &&
+      S.ready &&
+      S.items.some((i) => i.id === view.id) &&
+      (!view.cid || !!fcvCur);
+    const show = () => {
+      if (on) return;
+      on = true;
+      clearTimeout(hideT);
+      P.querySelector(".fcp-t").textContent = view.cid
+        ? "Nova verzija."
+        : "Pusti.";
+      P.hidden = false;
+      P.classList.remove("drop");
+      requestAnimationFrame(() => P.classList.add("on"));
+    };
+    const hide = () => {
+      if (!on) return;
+      on = false;
+      P.classList.remove("on");
+      hideT = setTimeout(() => {
+        P.hidden = true;
+      }, 300);
+    };
+    addEventListener("dragenter", (e) => {
+      if (!hasFiles(e) || !active()) return;
+      e.preventDefault();
+      depth++;
+      show();
+    });
+    addEventListener("dragover", (e) => {
+      if (!hasFiles(e) || !onFC()) return;
+      e.preventDefault();
+      if (!active()) {
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+        return;
+      }
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      O.style.setProperty(
+        "--px",
+        ((e.clientX - innerWidth / 2) * 0.06).toFixed(1) + "px",
+      );
+      O.style.setProperty(
+        "--py",
+        ((e.clientY - innerHeight / 2) * 0.06).toFixed(1) + "px",
+      );
+      if (!on) show();
+    });
+    addEventListener("dragleave", (e) => {
+      if (!on) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0 || (e.clientX <= 0 && e.clientY <= 0)) hide();
+    });
+    addEventListener("drop", (e) => {
+      if (!hasFiles(e) || !onFC()) return;
+      e.preventDefault();
+      depth = 0;
+      if (!active()) {
+        hide();
+        return;
+      }
+      const files = [...(e.dataTransfer.files || [])],
+        pt = { x: e.clientX, y: e.clientY };
+      if (on && !reduce) {
+        P.classList.add("drop");
+        const f = $("#fcFlash");
+        f.style.left = pt.x + "px";
+        f.style.top = pt.y + "px";
+        f.classList.remove("go");
+        void f.offsetWidth;
+        f.classList.add("go");
+        on = false;
+        hideT = setTimeout(() => {
+          P.hidden = true;
+          P.classList.remove("on", "drop");
+        }, 700);
+      } else hide();
+      if (view.cid) {
+        const c = S.creatives.find((x) => x.id === fcvCur);
+        if (c) fcReplace(c, files);
+        return;
+      }
+      fcIngest(files, view.id, pt);
+    });
+  })();
+
+  /* ---------- pregled jedne kreative ---------- */
+  const fcv = $("#fcv"),
+    fcvMedia = $("#fcvMedia"),
+    fcvScroll = $("#fcvScroll");
+  let fcvCur = null,
+    fcvTok = 0,
+    fcvSig = "";
+  function fcSyncViewer() {
+    if (view.name !== "fc" || !view.cid) {
+      fcCloseViewer();
+      return;
+    }
+    if (!S.ready) return;
+    const c = S.creatives.find(
+      (x) => x.id === view.cid && x.monthId === view.id,
+    );
+    if (!c) {
+      fcCloseViewer();
+      if (!FCUP.has(view.cid)) nav("fc-" + view.id);
+      return;
+    }
+    if (fcvCur !== c.id) fcOpenViewer(c);
+    else fcUpdViewer(c);
+  }
+  function fcOpenViewer(c) {
+    const tok = ++fcvTok,
+      first = fcv.hidden;
+    fcvCur = c.id;
+    fcCX = null;
+    fcCxOff = false;
+    fcSlide = 0;
+    fcDelArm = null;
+    fcv.hidden = false;
+    document.documentElement.classList.add("fcv-open");
+    if (first) {
+      fcv.classList.remove("on");
+      requestAnimationFrame(() => {
+        if (tok === fcvTok) fcv.classList.add("on");
+      });
+    }
+    fcvMedia.dataset.sig = "";
+    fcUpdViewer(c, true);
+    if (first)
+      setTimeout(() => {
+        if (
+          tok === fcvTok &&
+          !fcv.hidden &&
+          !fcv.contains(document.activeElement)
+        )
+          $("#fcvIn").focus({ preventScroll: true });
+      }, 60);
+    $("#fcvIn").scrollTop = 0;
+    fcvScroll.scrollTop = 0;
+  }
+  function fcCloseViewer() {
+    if (fcv.hidden) return;
+    ++fcvTok;
+    fcStop();
+    fcv.classList.remove("on");
+    fcv.hidden = true;
+    fcvMedia.innerHTML = "";
+    fcvMedia.dataset.sig = "";
+    fcvCur = null;
+    fcvSig = "";
+    document.documentElement.classList.remove("fcv-open");
+  }
+  function fcUpdViewer(c, first) {
+    const L = creativesOf(c.monthId),
+      i = L.findIndex((x) => x.id === c.id);
+    ["#fcvPrev", "#fcvPrevM"].forEach((s) => ($(s).disabled = i <= 0));
+    ["#fcvNext", "#fcvNextM"].forEach(
+      (s) => ($(s).disabled = i < 0 || i >= L.length - 1),
+    );
+    const ti = $("#fcvTitle");
+    if (document.activeElement !== ti) ti.value = c.title || "";
+    const f = (c.files || [])[0] || {},
+      k = fcKind(c),
+      who = TEAM.find((t) => t.id === c.createdBy);
+    const sz = (c.files || []).reduce((a, x) => a + (x.size || 0), 0);
+    $("#fcvMeta").innerHTML = [
+      `${fcNN(i)} / ${String(L.length).padStart(2, "0")}`,
+      k === "video"
+        ? `${f.w && f.h ? `${f.w}×${f.h}` : "Video"}${f.dur ? ` · ${fcT(f.dur)}` : ""}`
+        : k === "carousel"
+          ? `${(c.files || []).length} slajdova`
+          : f.w
+            ? `${f.w}×${f.h}`
+            : "Slika",
+      sz ? fcSize(sz) : "",
+      who ? who.name : "",
+    ]
+      .filter(Boolean)
+      .map(esc)
+      .join("<i></i>");
+    const sig =
+      (c.files || [])
+        .map((x) => fcSrc(x) || (x.parts || []).join(","))
+        .join("|") +
+      "#" +
+      fcSrc(c.poster);
+    if (fcvMedia.dataset.sig !== sig) {
+      fcvMedia.dataset.sig = sig;
+      fcStop();
+      fcFit(c);
+      fcvMedia.innerHTML = fcMediaHTML(c);
+      fcInitMedia(c);
+      fcAmb(fcPoster(c));
+    }
+    fcRenderSide(c, first);
+  }
+  const fcSize = (b) =>
+    b >= 1073741824
+      ? (b / 1073741824).toFixed(1).replace(".", ",") + " GB"
+      : b >= 1048576
+        ? Math.round(b / 1048576) + " MB"
+        : Math.max(1, Math.round(b / 1024)) + " KB";
+  function fcFit(c) {
+    const f = (c.files || [])[0] || {},
+      ar = f.w && f.h ? f.w / f.h : fcKind(c) === "video" ? 9 / 16 : 4 / 5,
+      st = $("#fcvStage"),
+      cs = getComputedStyle(st);
+    const wide = matchMedia("(min-width:861px)").matches,
+      aw =
+        st.clientWidth -
+        parseFloat(cs.paddingLeft) -
+        parseFloat(cs.paddingRight);
+    const ah = wide
+      ? st.clientHeight -
+        parseFloat(cs.paddingTop) -
+        parseFloat(cs.paddingBottom)
+      : Math.min(innerHeight * 0.72, 780);
+    let w = aw,
+      h = w / ar;
+    if (h > ah) {
+      h = ah;
+      w = h * ar;
+    }
+    fcvMedia.style.width = Math.max(120, Math.floor(w)) + "px";
+    fcvMedia.style.height = Math.max(120, Math.floor(h)) + "px";
+    fcvMedia.dataset.ar = ar;
+  }
+  addEventListener("resize", () => {
+    if (!fcv.hidden && fcvCur) {
+      const c = S.creatives.find((x) => x.id === fcvCur);
+      if (c) fcFit(c);
+    }
+  });
+  let fcAmbTok = 0;
+  function fcAmb(src) {
+    const cv = $("#fcvAmb"),
+      tok = ++fcAmbTok;
+    if (!src) {
+      cv.hidden = true;
+      return;
+    }
+    const im = new Image();
+    im.onload = () => {
+      if (tok !== fcAmbTok) return;
+      try {
+        const r = im.naturalWidth / im.naturalHeight || 1,
+          s = document.createElement("canvas");
+        s.width = 8;
+        s.height = Math.max(6, Math.round(8 / r));
+        s.getContext("2d").drawImage(im, 0, 0, s.width, s.height);
+        cv.width = 64;
+        cv.height = Math.max(40, Math.round(64 / r));
+        const x = cv.getContext("2d");
+        x.imageSmoothingQuality = "high";
+        x.drawImage(s, 0, 0, cv.width, cv.height);
+        cv.hidden = false;
+      } catch (e) {
+        cv.hidden = true;
+      }
+    };
+    im.onerror = () => {
+      if (tok === fcAmbTok) cv.hidden = true;
+    };
+    im.src = src;
+  }
+  const FC_I_PL =
+      '<svg class="i-pl" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
+    FC_I_PA =
+      '<svg class="i-pa" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>';
+  const FC_I_VO = SV(
+      '<path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+    ).replace("<svg ", '<svg class="i-vo" '),
+    FC_I_MU = SV(
+      '<path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 6 6M22 9l-6 6"/>',
+    ).replace("<svg ", '<svg class="i-mu" ');
+  const fcChev = (d) =>
+    SV(
+      d < 0 ? '<path d="M15 18l-6-6 6-6"/>' : '<path d="M9 18l6-6-6-6"/>',
+      2.4,
+    );
+  function fcMediaHTML(c) {
+    const k = fcKind(c),
+      fs = c.files || [],
+      f = fs[0] || {};
+    if (k === "video")
+      return `<div class="fvp"><video playsinline loop preload="auto"${c.poster ? ` poster="${esc(fcSrc(c.poster))}"` : ""}${f.parts ? "" : ` src="${esc(fcSrc(f))}"`}></video>
+    <button class="fvp-big" type="button" data-fvp="play" aria-label="Pusti">${FC_I_PL.replace(' class="i-pl"', "")}</button>
+    <div class="fvp-ctl"><button type="button" data-fvp="play" aria-label="Pusti ili pauziraj">${FC_I_PL}${FC_I_PA}</button><div class="fvp-s"><i class="fvp-fill"></i><span class="fvp-mk"></span><i class="fvp-kn"></i></div><span class="fvp-tm"><b class="fvp-c">0:00</b> / <span class="fvp-d">${f.dur ? fcT(f.dur) : "0:00"}</span></span><button type="button" data-fvp="mute" aria-label="Zvuk">${FC_I_VO}${FC_I_MU}</button></div>
+    ${f.parts ? `<div class="fcv-load">${fcRing(0)}</div>` : ""}</div>`;
+    if (k === "carousel")
+      return `<div class="fcs"><div class="fcs-t">${fs.map((x, i) => `<img src="${esc(fcSrc(x))}" alt="Slajd ${i + 1}" draggable="false"${i > 1 ? ' loading="lazy"' : ""}>`).join("")}</div><button class="fcs-a p" type="button" data-fcs="-1" aria-label="Prethodni slajd">${fcChev(-1)}</button><button class="fcs-a n" type="button" data-fcs="1" aria-label="Sledeći slajd">${fcChev(1)}</button><div class="fcs-d">${fs.map((x, i) => `<i${i ? "" : ' class="on"'}></i>`).join("")}</div></div>`;
+    return `<img src="${esc(fcSrc(f))}" alt="${esc(c.title || "Kreativa")}" draggable="false">`;
+  }
+  function fcInitMedia(c) {
+    fcVP = null;
+    fcGo = null;
+    const tok = fcvTok;
+    const v = fcvMedia.querySelector("video");
+    if (v) {
+      const root = fcvMedia.querySelector(".fvp");
+      fcVP = { v, root, raf: 0 };
+      fcWireVP(fcVP);
+      const f = (c.files || [])[0] || {};
+      if (f.parts) {
+        const ld = root.querySelector(".fcv-load .p");
+        fcPlayURL(f, (p) => {
+          if (ld) ld.style.setProperty("--p", p);
+        })
+          .then((u) => {
+            if (tok !== fcvTok || !fcVP || fcVP.v !== v) return;
+            v.src = u;
+            const l = root.querySelector(".fcv-load");
+            l && l.remove();
+            fcPlay();
+          })
+          .catch(() => {
+            const l = root.querySelector(".fcv-load");
+            if (l)
+              l.innerHTML =
+                '<span style="color:#fff">Video nije dostupan</span>';
+          });
+      } else fcPlay();
+    }
+    const cs = fcvMedia.querySelector(".fcs");
+    if (cs) fcWireCS(cs);
+  }
+  function fcWireVP(P) {
+    const { v, root } = P,
+      fill = root.querySelector(".fvp-fill"),
+      kn = root.querySelector(".fvp-kn"),
+      ct = root.querySelector(".fvp-c"),
+      dt = root.querySelector(".fvp-d"),
+      sc = root.querySelector(".fvp-s");
+    const upd = () => {
+      const d = v.duration || 0,
+        t = v.currentTime || 0,
+        p = d ? Math.min(1, t / d) : 0;
+      fill.style.transform = `scaleX(${p})`;
+      kn.style.left = p * 100 + "%";
+      ct.textContent = fcT(t);
+      if (d && isFinite(d)) dt.textContent = fcT(d);
+    };
+    const loop = () => {
+      upd();
+      if (!v.paused && fcVP === P) P.raf = requestAnimationFrame(loop);
+    };
+    v.addEventListener("play", () => {
+      root.classList.add("playing");
+      cancelAnimationFrame(P.raf);
+      P.raf = requestAnimationFrame(loop);
+    });
+    v.addEventListener("pause", () => {
+      root.classList.remove("playing");
+      upd();
+    });
+    v.addEventListener("loadedmetadata", () => {
+      upd();
+      fcMarks();
+    });
+    v.addEventListener("volumechange", () =>
+      root.classList.toggle("muted", v.muted),
+    );
+    v.addEventListener("click", () => fcToggle());
+    let drag = false;
+    const at = (e) => {
+      const r = sc.getBoundingClientRect(),
+        p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      if (v.duration) {
+        v.currentTime = p * v.duration;
+        upd();
+      }
+    };
+    sc.addEventListener("pointerdown", (e) => {
+      drag = true;
+      try {
+        sc.setPointerCapture(e.pointerId);
+      } catch (x) {}
+      root.classList.add("scrub");
+      at(e);
+    });
+    sc.addEventListener("pointermove", (e) => {
+      if (drag) at(e);
+    });
+    const end = () => {
+      drag = false;
+      root.classList.remove("scrub");
+    };
+    sc.addEventListener("pointerup", end);
+    sc.addEventListener("pointercancel", end);
+    let idle = 0;
+    const wake = () => {
+      root.classList.add("awake");
+      clearTimeout(idle);
+      idle = setTimeout(() => root.classList.remove("awake"), 2200);
+    };
+    root.addEventListener("pointermove", wake);
+    root.addEventListener("pointerdown", wake);
+    wake();
+    root.classList.toggle("muted", v.muted);
+    upd();
+  }
+  function fcPlay() {
+    if (!fcVP) return;
+    const v = fcVP.v;
+    v.muted = false;
+    const p = v.play();
+    if (p && p.catch)
+      p.catch(() => {
+        if (fcVP && fcVP.v === v) {
+          v.muted = true;
+          const q = v.play();
+          if (q && q.catch) q.catch(() => {});
+        }
+      });
+  }
+  function fcStop() {
+    if (fcVP) {
+      try {
+        fcVP.v.pause();
+      } catch (e) {}
+      cancelAnimationFrame(fcVP.raf);
+    }
+    fcVP = null;
+  }
+  function fcToggle() {
+    if (!fcVP) return;
+    const v = fcVP.v;
+    if (v.paused) {
+      const p = v.play();
+      if (p && p.catch) p.catch(() => {});
+    } else v.pause();
+  }
+  function fcMarks() {
+    if (!fcVP || !fcvCur) return;
+    const box = fcVP.root.querySelector(".fvp-mk"),
+      d = fcVP.v.duration;
+    if (!box) return;
+    if (!d || !isFinite(d)) {
+      box.innerHTML = "";
+      return;
+    }
+    const m = (L, c) =>
+      L.filter((x) => x.at != null)
+        .map(
+          (x) =>
+            `<i class="${c}" style="left:${Math.min(100, (x.at / d) * 100).toFixed(2)}%"></i>`,
+        )
+        .join("");
+    box.innerHTML = m(fcOpenCC(fcvCur), "c") + m(fcOpenN(fcvCur), "n");
+  }
+  function fcWireCS(cs) {
+    const tr = cs.querySelector(".fcs-t"),
+      n = cs.querySelectorAll(".fcs-t img").length,
+      dots = [...cs.querySelectorAll(".fcs-d i")];
+    const go = (i) => {
+      fcSlide = Math.max(0, Math.min(n - 1, i));
+      tr.style.transform = `translateX(${-fcSlide * 100}%)`;
+      dots.forEach((d, k) => d.classList.toggle("on", k === fcSlide));
+      cs.classList.toggle("first", fcSlide === 0);
+      cs.classList.toggle("last", fcSlide === n - 1);
+      if (fcCX && fcCX.slide != null) {
+        fcCX = { slide: fcSlide };
+        fcSyncForm();
+      }
+    };
+    fcGo = go;
+    go(0);
+    let x0 = null,
+      y0 = 0,
+      dx = 0,
+      w = 1,
+      lock = null;
+    cs.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      x0 = e.clientX;
+      y0 = e.clientY;
+      dx = 0;
+      lock = null;
+      w = cs.clientWidth || 1;
+      tr.style.transition = "none";
+    });
+    cs.addEventListener("pointermove", (e) => {
+      if (x0 == null) return;
+      dx = e.clientX - x0;
+      const dy = e.clientY - y0;
+      if (lock == null && (Math.abs(dx) > 8 || Math.abs(dy) > 8))
+        lock = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (lock === "x")
+        tr.style.transform = `translateX(calc(${-fcSlide * 100}% + ${dx}px))`;
+    });
+    const up = () => {
+      if (x0 == null) return;
+      tr.style.transition = "";
+      x0 = null;
+      if (lock === "x" && dx < -w * 0.16) go(fcSlide + 1);
+      else if (lock === "x" && dx > w * 0.16) go(fcSlide - 1);
+      else go(fcSlide);
+    };
+    cs.addEventListener("pointerup", up);
+    cs.addEventListener("pointercancel", up);
+    cs.addEventListener("pointerleave", up);
+  }
+  /* desna strana: komentari klijenta + beleške tima */
+  function fcRenderSide(c, first) {
+    const cc = S.creativeComments
+      .filter((x) => x.creativeId === c.id)
+      .sort(
+        (a, b) =>
+          (a.resolved ? 1 : 0) - (b.resolved ? 1 : 0) ||
+          (b.createdAt || 0) - (a.createdAt || 0),
+      );
+    const nn = S.creativeNotes
+      .filter((x) => x.creativeId === c.id)
+      .sort(
+        (a, b) =>
+          (a.resolved ? 1 : 0) - (b.resolved ? 1 : 0) ||
+          (b.createdAt || 0) - (a.createdAt || 0),
+      );
+    const sig =
+      c.id +
+      "|" +
+      cc.map((x) => x.id + (x.resolved ? 1 : 0) + x.text).join(",") +
+      "|" +
+      nn.map((x) => x.id + (x.resolved ? 1 : 0) + x.text).join(",");
+    const keep = fcvScroll.querySelector(".fcform textarea"),
+      val = keep ? keep.value : "",
+      foc = keep && document.activeElement === keep;
+    if (!first && sig === fcvSig) {
+      fcMarks();
+      return;
+    }
+    fcvSig = sig;
+    const occ = cc.filter((x) => !x.resolved).length,
+      onn = nn.filter((x) => !x.resolved).length;
+    const ph =
+      me && me.id === "mihajlo" ? "Beleška za tim…" : "Komentar za Mihajla…";
+    fcvScroll.innerHTML =
+      (cc.length
+        ? `<section><h4 class="fcv-h">Klijent${occ ? `<b>${occ}</b>` : ""}</h4><ol class="fcl">${cc.map((x) => fcNoteHTML(x, "client")).join("")}</ol></section>`
+        : "") +
+      `<section><h4 class="fcv-h">Tim${onn ? `<b>${onn}</b>` : ""}</h4>
+      <div class="fcform" data-fcform><textarea rows="1" maxlength="2000" placeholder="${ph}" aria-label="${ph}"></textarea><div class="fcf-b"><span class="fcchip" data-fccx hidden></span><button class="pill solid" type="button" data-fcsend disabled>Pošalji</button></div></div>
+      ${nn.length ? `<ol class="fcl" style="margin-top:12px">${nn.map((x) => fcNoteHTML(x, "team")).join("")}</ol>` : ""}</section>`;
+    const ta = fcvScroll.querySelector(".fcform textarea");
+    if (val) {
+      ta.value = val;
+      fcGrow(ta);
+    }
+    if (foc) ta.focus();
+    fcSyncForm();
+    fcMarks();
+  }
+  function fcNoteHTML(x, src) {
+    const u = src === "team" ? TEAM.find((t) => t.id === x.authorId) : null,
+      mine = src === "team" && me && x.authorId === me.id;
+    const chip =
+      x.at != null
+        ? `<button type="button" class="fcchip" data-fcseek="${Number(x.at)}">${IC_FCPLAY}${fcT(x.at)}</button>`
+        : x.slide != null
+          ? `<button type="button" class="fcchip" data-fcslide="${Number(x.slide)}">Slajd ${Number(x.slide) + 1}</button>`
+          : "";
+    const who =
+      src === "team"
+        ? `${u ? `<img src="${IMG[u.id]}" alt="">` : ""}<span class="who">${esc(x.authorName || (u && u.name) || "Tim")}</span>`
+        : `<span class="cl">${esc((x.authorName || "K").charAt(0).toUpperCase())}</span><span class="who">${esc(x.authorName || "Klijent")}</span>`;
+    const nw = FC_NEW.has(x.id);
+    if (nw) FC_NEW.delete(x.id);
+    return `<li class="fcn${x.resolved ? " res" : ""}${nw ? " new" : ""}" data-fcn="${esc(x.id)}" data-src="${src}"><div class="fcn-h">${who}<span class="ago">${ccAgo(x.createdAt)}</span></div><p class="fcn-x">${esc(x.text)}</p><div class="fcn-f">${chip}${mine && !x.resolved ? `<button type="button" class="fcn-del" data-fcndel="${esc(x.id)}" aria-label="Obriši belešku">${SV('<path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/>')}</button>` : ""}<button type="button" class="fcn-ok" data-fcres="${esc(x.id)}" aria-pressed="${x.resolved ? "true" : "false"}">${CC_CHECK}${x.resolved ? "Rešeno" : "Reši"}</button></div></li>`;
+  }
+  function fcGrow(ta) {
+    ta.style.height = "auto";
+    ta.style.height = Math.min(200, ta.scrollHeight) + "px";
+  }
+  function fcSyncForm() {
+    const f = fcvScroll.querySelector("[data-fcform]");
+    if (!f) return;
+    const ta = f.querySelector("textarea"),
+      chip = f.querySelector("[data-fccx]");
+    const lbl = fcCX
+      ? fcCX.at != null
+        ? "u " + fcT(fcCX.at)
+        : fcCX.slide != null
+          ? `Slajd ${fcCX.slide + 1}`
+          : ""
+      : "";
+    chip.hidden = !lbl;
+    if (lbl)
+      chip.innerHTML = `${esc(lbl)}<button type="button" data-fccxx aria-label="Bez vremena">${SV('<path d="M18 6 6 18M6 6l12 12"/>', 2.6)}</button>`;
+    f.querySelector("[data-fcsend]").disabled = !ta.value.trim() || fcSending;
+  }
+  function fcCapture() {
+    if (fcCxOff || fcCX || !fcvCur) return;
+    const c = S.creatives.find((x) => x.id === fcvCur);
+    if (!c) return;
+    const k = fcKind(c);
+    if (k === "video" && fcVP) {
+      fcVP.v.pause();
+      fcCX = { at: Math.round(fcVP.v.currentTime * 10) / 10 };
+    } else if (k === "carousel") fcCX = { slide: fcSlide || 0 };
+    fcSyncForm();
+  }
+  async function fcSendNote() {
+    const c = S.creatives.find((x) => x.id === fcvCur),
+      f = fcvScroll.querySelector("[data-fcform]");
+    if (!c || !f || fcSending) return;
+    const ta = f.querySelector("textarea"),
+      text = ta.value.trim();
+    if (!text) return;
+    const x = fcCX,
+      now = Date.now();
+    fcSending = true;
+    ta.value = "";
+    fcGrow(ta);
+    fcCX = null;
+    fcCxOff = false;
+    fcSyncForm();
+    try {
+      const id = await api.add("creativeNotes", {
+        clientId: c.clientId,
+        creativeId: c.id,
+        monthId: c.monthId,
+        text: text.slice(0, 2000),
+        at: x && x.at != null ? x.at : null,
+        slide: x && x.slide != null ? x.slide : null,
+        author: "team",
+        authorId: me ? me.id : null,
+        authorName: me ? me.name : "Tim",
+        createdAt: now,
+        order: now,
+        resolved: false,
+      });
+      FC_NEW.add(id);
+      setTimeout(() => FC_NEW.delete(id), 2500);
+      fcKnownN && fcKnownN.add(id);
+      toast("Beleška je poslata");
+      if (!DB) fcRenderSide(c, true);
+    } catch (e) {
+      ta.value = text;
+      fcGrow(ta);
+      fcCX = x;
+      toast(errMsg(e));
+    } finally {
+      fcSending = false;
+      fcSyncForm();
+    }
+  }
+  async function fcResolve(id, src) {
+    const col = src === "client" ? "creativeComments" : "creativeNotes",
+      x = S[col].find((y) => y.id === id);
+    if (!x) return;
+    const v = !x.resolved;
+    try {
+      await api.upd(col, id, { resolved: v });
+      const c = S.creatives.find((y) => y.id === fcvCur);
+      if (c) fcRenderSide(c, true);
+      renderFC();
+      if (v)
+        toast(
+          src === "client" ? "Rešeno. Klijent to vidi u CRM-u." : "Rešeno",
+          async () => {
+            try {
+              await api.upd(col, id, { resolved: false });
+              const c2 = S.creatives.find((y) => y.id === fcvCur);
+              if (c2) fcRenderSide(c2, true);
+              renderFC();
+            } catch (e) {}
+          },
+        );
+    } catch (e) {
+      toast(errMsg(e));
+    }
+  }
+  async function fcDelNote(id) {
+    const x = S.creativeNotes.find((y) => y.id === id);
+    if (!x) return;
+    const { id: _, ...copy } = x;
+    try {
+      await api.del("creativeNotes", id);
+      if (!DB) S.creativeNotes = S.creativeNotes.filter((y) => y.id !== id);
+      const c = S.creatives.find((y) => y.id === fcvCur);
+      if (c) fcRenderSide(c, true);
+      toast("Beleška je obrisana", async () => {
+        try {
+          await api.set("creativeNotes", id, copy);
+          const c2 = S.creatives.find((y) => y.id === fcvCur);
+          if (c2) fcRenderSide(c2, true);
+        } catch (e) {}
+      });
+    } catch (e) {
+      toast(errMsg(e));
+    }
+  }
+  function fcStep(d) {
+    if (view.name !== "fc" || !view.cid) return false;
+    const L = creativesOf(view.id),
+      i = L.findIndex((x) => x.id === view.cid),
+      n = L[i + d];
+    if (i < 0 || !n) return false;
+    nav(`fc-${view.id}.${n.id}`);
+    return true;
+  }
+  async function fcRename() {
+    const c = S.creatives.find((x) => x.id === fcvCur),
+      ti = $("#fcvTitle");
+    if (!c) return;
+    const t = ti.value.trim().slice(0, 90);
+    if (!t) {
+      ti.value = c.title || "";
+      return;
+    }
+    if (t === c.title) return;
+    try {
+      await api.upd("creatives", c.id, { title: t, updatedAt: Date.now() });
+      renderFC();
+    } catch (e) {
+      ti.value = c.title || "";
+      toast(errMsg(e));
+    }
+  }
+  /* zamena: nova verzija istog posla (komentari ostaju) */
+  async function fcReplace(c, list) {
+    if (!fcCanUp()) {
+      toast(fcErr({ code: "no_store" }));
+      return;
+    }
+    const nat = (a, b) =>
+      a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    const fs = [...list].filter((f) => f && f.size > 0),
+      vids = fs.filter((f) => FC_V.test(fcType(f))),
+      imgs = fs.filter((f) => FC_I.test(fcType(f))).sort(nat);
+    if (
+      vids.some((f) => fcType(f) === "video/quicktime") &&
+      fcMode() === "assets"
+    ) {
+      toast("MOV izvezi kao MP4 (H.264) pa ga ubaci ponovo");
+      return;
+    }
+    let kind, files;
+    if (vids.length === 1 && !imgs.length) {
+      kind = "video";
+      files = vids;
+    } else if (!vids.length && imgs.length === 1) {
+      kind = "image";
+      files = imgs;
+    } else if (!vids.length && imgs.length > 1) {
+      kind = "carousel";
+      files = imgs;
+    } else {
+      toast("Izaberi jedan video, jednu sliku ili slike za karusel");
+      return;
+    }
+    const box = document.createElement("div");
+    box.className = "fcv-up";
+    box.innerHTML = fcRing(0);
+    fcvMedia.appendChild(box);
+    const ring = box.querySelector(".p");
+    const done = [];
+    try {
+      const metas = [];
+      if (kind === "video") metas.push(await fcVideoInfo(files[0]));
+      else for (const f of files) metas.push(await fcImageInfo(f));
+      const pb =
+          kind === "video" ? metas[0].poster : metas[0] && metas[0].thumb,
+        total = files.reduce((a, f) => a + f.size, 0) + (pb ? pb.size : 0);
+      let at = 0;
+      const v = (c.v || 1) + 1,
+        base = `creatives/${c.clientId}/${c.monthId}/${c.id}/v${v}-`,
+        out = [];
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i],
+          t = fcType(f),
+          m = metas[i] || {};
+        const ref = await fcPut(
+          f,
+          t,
+          (p) =>
+            ring &&
+            ring.style.setProperty(
+              "--p",
+              Math.min(0.98, (at + p * f.size) / total),
+            ),
+          base + fcNN(i) + "." + fcExtOf({ name: f.name, type: t }),
+        );
+        done.push(ref);
+        at += f.size;
+        out.push(
+          Object.assign(
+            {},
+            ref,
+            { type: t, name: f.name, size: f.size },
+            m.w ? { w: m.w, h: m.h } : {},
+            m.dur ? { dur: Math.round(m.dur * 10) / 10 } : {},
+          ),
+        );
+      }
+      let poster = null;
+      if (pb) {
+        const ref = await fcPut(pb, "image/jpeg", null, base + "poster.jpg");
+        done.push(ref);
+        poster = Object.assign({}, ref, { w: metas[0].w, h: metas[0].h });
+      }
+      const old = {
+          kind: fcKind(c),
+          files: c.files,
+          poster: c.poster || null,
+          v: c.v || 1,
+        },
+        neu = { files: out, poster };
+      let undone = false;
+      await api.upd("creatives", c.id, {
+        kind,
+        files: out,
+        poster,
+        updatedAt: Date.now(),
+        v,
+      });
+      box.remove();
+      renderFC();
+      toast("Nova verzija je u CRM-u", async () => {
+        undone = true;
+        try {
+          await api.upd(
+            "creatives",
+            c.id,
+            Object.assign({}, old, { updatedAt: Date.now() }),
+          );
+          fcDropAll(neu, 4000);
+          renderFC();
+        } catch (e) {
+          toast(errMsg(e));
+        }
+      });
+      setTimeout(() => {
+        if (!undone) fcDropAll(old);
+      }, 20000);
+    } catch (e) {
+      done.forEach(fcDrop);
+      box.remove();
+      toast(fcErr(e));
+    }
+  }
+  async function fcDelete(c) {
+    const { id, ...copy } = JSON.parse(JSON.stringify(c));
+    const cms = S.creativeComments
+        .filter((x) => x.creativeId === id)
+        .map((x) => JSON.parse(JSON.stringify(x))),
+      nts = S.creativeNotes
+        .filter((x) => x.creativeId === id)
+        .map((x) => JSON.parse(JSON.stringify(x)));
+    let undone = false;
+    try {
+      if (view.cid === id) nav("fc-" + c.monthId);
+      await api.del("creatives", id);
+      for (const x of cms) {
+        try {
+          await api.del("creativeComments", x.id);
+        } catch (e) {}
+      }
+      for (const x of nts) {
+        try {
+          await api.del("creativeNotes", x.id);
+        } catch (e) {}
+      }
+      if (!DB) {
+        S.creatives = S.creatives.filter((x) => x.id !== id);
+        S.creativeComments = S.creativeComments.filter(
+          (x) => x.creativeId !== id,
+        );
+        S.creativeNotes = S.creativeNotes.filter((x) => x.creativeId !== id);
+      }
+      renderFC();
+      toast(`Obrisano: ${c.title || "Kreativa"}`, async () => {
+        undone = true;
+        cms.forEach((x) => fcKnownC && fcKnownC.add(x.id));
+        nts.forEach((x) => fcKnownN && fcKnownN.add(x.id));
+        try {
+          await api.set("creatives", id, copy);
+          for (const x of cms) {
+            const { id: k, ...d } = x;
+            await api.set("creativeComments", k, d);
+          }
+          for (const x of nts) {
+            const { id: k, ...d } = x;
+            await api.set("creativeNotes", k, d);
+          }
+          renderFC();
+        } catch (e) {
+          toast(errMsg(e));
+        }
+      });
+      setTimeout(() => {
+        if (!undone && !S.creatives.some((x) => x.id === id)) fcDropAll(copy);
+      }, 9000);
+    } catch (e) {
+      toast(errMsg(e));
+      renderFC();
+    }
+  }
+
+  /* ---------- Export ---------- */
+  const CRC_T = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  async function fcCrc(b, onP) {
+    let c = 0xffffffff;
+    const step = 4194304;
+    for (let i = 0; i < b.size; i += step) {
+      const u = new Uint8Array(await b.slice(i, i + step).arrayBuffer());
+      for (let j = 0; j < u.length; j++)
+        c = CRC_T[(c ^ u[j]) & 255] ^ (c >>> 8);
+      onP && onP(Math.min(1, (i + step) / b.size));
+    }
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  async function fcZip(entries, onP) {
+    /* ZIP bez kompresije (video i slike su već kompresovani) */
+    const enc = new TextEncoder(),
+      parts = [],
+      cen = [],
+      d = new Date();
+    let off = 0;
+    const tm =
+        ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) &
+        65535,
+      dt =
+        (((d.getFullYear() - 1980) << 9) |
+          ((d.getMonth() + 1) << 5) |
+          d.getDate()) &
+        65535;
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i],
+        nm = enc.encode(e.name),
+        sz = e.blob.size,
+        crc = await fcCrc(e.blob, (p) => onP && onP((i + p) / entries.length));
+      if (off + sz > 4e9) throw { code: "zip_big" };
+      const h = new DataView(new ArrayBuffer(30));
+      [
+        [0, 0x04034b50, 4],
+        [4, 20, 2],
+        [6, 0x0800, 2],
+        [8, 0, 2],
+        [10, tm, 2],
+        [12, dt, 2],
+        [14, crc, 4],
+        [18, sz, 4],
+        [22, sz, 4],
+        [26, nm.length, 2],
+        [28, 0, 2],
+      ].forEach(([o, v, n]) =>
+        n === 4 ? h.setUint32(o, v >>> 0, true) : h.setUint16(o, v, true),
+      );
+      const c = new DataView(new ArrayBuffer(46));
+      [
+        [0, 0x02014b50, 4],
+        [4, 20, 2],
+        [6, 20, 2],
+        [8, 0x0800, 2],
+        [10, 0, 2],
+        [12, tm, 2],
+        [14, dt, 2],
+        [16, crc, 4],
+        [20, sz, 4],
+        [24, sz, 4],
+        [28, nm.length, 2],
+        [30, 0, 2],
+        [32, 0, 2],
+        [34, 0, 2],
+        [36, 0, 2],
+        [38, 0, 4],
+        [42, off, 4],
+      ].forEach(([o, v, n]) =>
+        n === 4 ? c.setUint32(o, v >>> 0, true) : c.setUint16(o, v, true),
+      );
+      parts.push(h.buffer, nm, e.blob);
+      cen.push(c.buffer, nm);
+      off += 30 + nm.length + sz;
+    }
+    const cs = cen.reduce((a, b) => a + b.byteLength, 0),
+      end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, entries.length, true);
+    end.setUint16(10, entries.length, true);
+    end.setUint32(12, cs, true);
+    end.setUint32(16, off, true);
+    return new Blob([...parts, ...cen, end.buffer], {
+      type: "application/zip",
+    });
+  }
+  async function fcSave(name, blob) {
+    let dl = null;
+    try {
+      dl =
+        window.claude && window.claude.use
+          ? await window.claude.use("downloads")
+          : null;
+    } catch (e) {
+      dl = null;
+    }
+    if (dl) {
+      try {
+        await dl.save({ filename: name, data: blob });
+        return true;
+      } catch (e) {
+        const c = e && e.code;
+        if (c === "declined") return false;
+        if (c === "rate_limited") {
+          toast("Sačekaj trenutak pa probaj ponovo");
+          return false;
+        }
+        if (c === "rejected_extension" || c === "extension_not_enabled") {
+          toast("Ovaj format ne može da se preuzme ovde");
+          return false;
+        }
+        if (
+          c !== "unavailable" &&
+          c !== "not_granted" &&
+          c !== "capability_disabled" &&
+          c !== "capability_removed"
+        ) {
+          toast("Preuzimanje nije uspelo");
+          return false;
+        }
+      }
+    }
+    const a = document.createElement("a"),
+      u = URL.createObjectURL(blob);
+    a.href = u;
+    a.download = name;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(u);
+      a.remove();
+    }, 6000);
+    return true;
+  }
+  function fcEntries(c, prefix) {
+    const fs = c.files || [];
+    if (fcKind(c) === "carousel" || fs.length > 1)
+      return fs.map((x, i) => ({
+        x,
+        name: `${prefix}/${fcNN(i)}.${fcExtOf(x)}`,
+      }));
+    return fs.slice(0, 1).map((x) => ({ x, name: `${prefix}.${fcExtOf(x)}` }));
+  }
+  async function fcExport(c, btn) {
+    if (!c || (btn && btn.classList.contains("busy"))) return;
+    btn && btn.classList.add("busy");
+    try {
+      const L = creativesOf(c.monthId),
+        i = L.findIndex((x) => x.id === c.id),
+        title = fcSafe(c.title),
+        fs = c.files || [];
+      if (fcKind(c) === "carousel" || fs.length > 1) {
+        const list = [];
+        for (const e of fcEntries(c, title))
+          list.push({ name: e.name.split("/").pop(), blob: await fcBlob(e.x) });
+        await fcSave(
+          `${i >= 0 ? fcNN(i) + " " : ""}${title}.zip`,
+          await fcZip(list),
+        );
+      } else if (fs[0])
+        await fcSave(`${title}.${fcExtOf(fs[0])}`, await fcBlob(fs[0]));
+    } catch (e) {
+      toast(
+        e && e.code === "zip_big"
+          ? "Prevelika arhiva (preko 4 GB)"
+          : "Fajl nije dostupan za preuzimanje",
+      );
+    } finally {
+      btn && btn.classList.remove("busy");
+    }
+  }
+  async function fcExportAll() {
+    const it = S.items.find((i) => i.id === view.id),
+      b = $("#fcAll"),
+      lbl = $("#fcAllLbl");
+    if (!it || b.classList.contains("busy")) return;
+    const L = creativesOf(it.id);
+    if (!L.length) return;
+    const cl = S.clients.find((x) => x.id === it.clientId) || { name: "" },
+      yr =
+        it.type === "month" && it.year && !/\d{4}/.test(it.title || "")
+          ? " " + it.year
+          : "";
+    const name = fcSafe(`${cl.name} – ${it.title}${yr}`);
+    b.classList.add("busy");
+    const set = (p, t) => {
+      b.style.setProperty("--p", p);
+      lbl.textContent = t;
+    };
+    try {
+      const ents = [];
+      L.forEach((c, i) =>
+        fcEntries(c, `${fcNN(i)} ${fcSafe(c.title)}`).forEach((e) =>
+          ents.push(e),
+        ),
+      );
+      const list = [];
+      for (let k = 0; k < ents.length; k++) {
+        set((k / ents.length) * 0.6, `Preuzimam ${k + 1}/${ents.length}`);
+        list.push({ name: ents[k].name, blob: await fcBlob(ents[k].x) });
+      }
+      set(0.6, "Pakujem…");
+      const zip = await fcZip(list, (p) =>
+        set(0.6 + p * 0.4, `Pakujem ${Math.round(p * 100)}%`),
+      );
+      set(1, "Spremno");
+      await fcSave(name + ".zip", zip);
+    } catch (e) {
+      toast(
+        e && e.code === "zip_big"
+          ? "Prevelika arhiva (preko 4 GB). Preuzmi kreative pojedinačno."
+          : "Export nije uspeo. Probaj ponovo.",
+      );
+    } finally {
+      b.classList.remove("busy");
+      b.style.removeProperty("--p");
+      lbl.textContent = "Export All";
+    }
+  }
+
+  /* ---------- link za klijenta ---------- */
+  async function fcCopyLink() {
+    const it = S.items.find((i) => i.id === view.id);
+    if (!it) return;
+    const url = fcLinkOf(it);
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      }
+    } catch (e) {}
+    if (!ok) {
+      try {
+        const t = document.createElement("textarea");
+        t.value = url;
+        t.setAttribute("readonly", "");
+        t.style.cssText = "position:fixed;left:-9999px;top:0";
+        document.body.appendChild(t);
+        t.select();
+        ok = document.execCommand("copy");
+        t.remove();
+      } catch (e) {}
+    }
+    const old = $("#fcActs .fclink");
+    if (old) old.remove();
+    if (ok) {
+      toast("Link za klijenta je kopiran");
+      return;
+    }
+    const p = document.createElement("div");
+    p.className = "fclink";
+    p.innerHTML = `<input readonly value="${esc(url)}" aria-label="Link za klijenta">`;
+    $("#fcActs").appendChild(p);
+    const inp = p.querySelector("input");
+    inp.focus();
+    inp.select();
+    setTimeout(
+      () =>
+        document.addEventListener("pointerdown", function f(e) {
+          if (!p.contains(e.target)) {
+            p.remove();
+            document.removeEventListener("pointerdown", f);
+          }
+        }),
+      0,
+    );
+  }
+
+  /* ---------- obaveštenja ---------- */
+  let fcKnownC = null,
+    fcKnownN = null;
+  function onCreativeComments() {
+    const ids = new Set(S.creativeComments.map((x) => x.id));
+    if (fcKnownC && me) {
+      const add = S.creativeComments.filter(
+        (x) => !fcKnownC.has(x.id) && x.author === "client" && !x.resolved,
+      );
+      add.forEach((x) => {
+        FC_NEW.add(x.id);
+        setTimeout(() => FC_NEW.delete(x.id), 8000);
+      });
+      const show = add.filter(
+        (x) => !(view.name === "fc" && view.cid === x.creativeId),
+      );
+      if (show.length) {
+        const x = show[0],
+          c = S.creatives.find((y) => y.id === x.creativeId);
+        toast(
+          show.length > 1
+            ? `${show.length} nova komentara klijenta na kreative`
+            : `Klijent · ${(c && c.title) || "Kreativa"}: „${String(x.text || "").slice(0, 42)}${String(x.text || "").length > 42 ? "…" : ""}“`,
+          () => nav(`fc-${x.monthId}.${x.creativeId}`),
+          "Otvori",
+        );
+      }
+    }
+    fcKnownC = ids;
+    fcRefreshUI();
+  }
+  function onCreativeNotes() {
+    const ids = new Set(S.creativeNotes.map((x) => x.id));
+    if (fcKnownN && me) {
+      const add = S.creativeNotes.filter(
+        (x) => !fcKnownN.has(x.id) && x.authorId !== me.id && !x.resolved,
+      );
+      add.forEach((x) => {
+        FC_NEW.add(x.id);
+        setTimeout(() => FC_NEW.delete(x.id), 8000);
+      });
+      const show = add.filter(
+        (x) => !(view.name === "fc" && view.cid === x.creativeId),
+      );
+      if (show.length) {
+        const x = show[0],
+          c = S.creatives.find((y) => y.id === x.creativeId);
+        toast(
+          `${x.authorName || "Tim"} · ${(c && c.title) || "Kreativa"}: „${String(x.text || "").slice(0, 42)}${String(x.text || "").length > 42 ? "…" : ""}“`,
+          () => nav(`fc-${x.monthId}.${x.creativeId}`),
+          "Otvori",
+        );
+      }
+    }
+    fcKnownN = ids;
+    fcRefreshUI();
+  }
+  function fcRefreshUI() {
+    if (!$("#fc").hidden) {
+      renderFC();
+      fcSyncViewer();
+    }
+    if (!$("#mh").hidden) renderMH();
+  }
+
+  /* kartica u mesecu */
+  function creativesCard(it, c, anim, delay) {
+    const L = creativesOf(it.id),
+      n = L.reduce(
+        (a, x) => a + fcOpenCC(x.id).length + fcOpenN(x.id).length,
+        0,
+      ),
+      th = L.slice(-3).map(fcPoster).filter(Boolean).reverse();
+    return `<button class="mod" data-go="fc-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${delay}s` : "animation:none"}">
+    <div class="mod-l"><div class="mod-top"><span class="mi">${IC_FC}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Final<br>Creatives</h2><div class="tot"><b>${L.length}</b>${fcWord(L.length)}</div>${n ? `<div class="mh-cc">${IC.msg}<span>${n} ${ccWord(n)}</span></div>` : ""}</div></div>
+    ${th.length ? `<span class="mh-fc" aria-hidden="true">${th.map((s, i) => `<img src="${esc(s)}" alt="" style="--k:${i}">`).join("")}</span>` : ""}
+  </button>`;
+  }
+
+  /* ---------- događaji ---------- */
+  $("#fcBack").onclick = () => nav("m-" + view.id);
+  $("#fcAdd").onclick = () => $("#fcFile").click();
+  $("#fcAll").onclick = () => fcExportAll();
+  $("#fcLink").onclick = () => fcCopyLink();
+  $("#fcFile").addEventListener("change", (e) => {
+    const fs = [...e.target.files];
+    e.target.value = "";
+    if (fs.length) {
+      const r = $("#fcAdd").getBoundingClientRect();
+      fcIngest(fs, view.id, {
+        x: r.left + r.width / 2,
+        y: r.top + r.height / 2,
+      });
+    }
+  });
+  $("#fcRep").addEventListener("change", (e) => {
+    const fs = [...e.target.files];
+    e.target.value = "";
+    const c = S.creatives.find((x) => x.id === fcvCur);
+    if (fs.length && c) fcReplace(c, fs);
+  });
+  $("#fcBody").addEventListener("click", (e) => {
+    const em = e.target.closest("#fcEmpty");
+    if (em) {
+      $("#fcFile").click();
+      return;
+    }
+    const ex = e.target.closest("[data-fc-export]");
+    if (ex) {
+      fcExport(
+        S.creatives.find((x) => x.id === ex.dataset.fcExport),
+        ex,
+      );
+      return;
+    }
+    const op = e.target.closest("[data-fc-open]");
+    if (op) {
+      nav(`fc-${view.id}.${op.dataset.fcOpen}`);
+      return;
+    }
+    const rt = e.target.closest("[data-fcup-retry]");
+    if (rt) {
+      const u = FCUP.get(rt.dataset.fcupRetry);
+      if (u) {
+        u.state = "queued";
+        u.err = null;
+        u.prog = 0;
+        renderFC();
+        fcRun();
+      }
+      return;
+    }
+    const rx = e.target.closest("[data-fcup-x]");
+    if (rx) {
+      const u = FCUP.get(rx.dataset.fcupX);
+      if (u) {
+        FCUP.delete(u.id);
+        renderFC();
+      }
+      return;
+    }
+  });
+  $("#fcBody").addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.id === "fcEmpty") {
+      e.preventDefault();
+      $("#fcFile").click();
+    }
+  });
+  if (fine) {
+    $("#fcBody").addEventListener("pointerover", (e) => {
+      const c = e.target.closest(".fcc:not(.up)");
+      fcHover(c);
+    });
+    $("#fcBody").addEventListener("pointerleave", () => fcHover(null));
+    $("#fcBody").addEventListener(
+      "pointermove",
+      (e) => {
+        const f = e.target.closest(".fcc-f");
+        if (!f) return;
+        const r = f.getBoundingClientRect();
+        f.parentNode.style.setProperty(
+          "--mx",
+          (e.clientX - r.left).toFixed(0) + "px",
+        );
+        f.parentNode.style.setProperty(
+          "--my",
+          (e.clientY - r.top).toFixed(0) + "px",
+        );
+        f.style.setProperty("--mx", (e.clientX - r.left).toFixed(0) + "px");
+        f.style.setProperty("--my", (e.clientY - r.top).toFixed(0) + "px");
+      },
+      { passive: true },
+    );
+  }
+  fcv.addEventListener("click", (e) => {
+    if (e.target.id === "fcvStage" && matchMedia("(min-width:861px)").matches) {
+      nav("fc-" + view.id);
+      return;
+    }
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.id === "fcvX") {
+      nav("fc-" + view.id);
+      return;
+    }
+    if (b.id === "fcvPrev" || b.id === "fcvPrevM") {
+      fcStep(-1);
+      return;
+    }
+    if (b.id === "fcvNext" || b.id === "fcvNextM") {
+      fcStep(1);
+      return;
+    }
+    const c = S.creatives.find((x) => x.id === fcvCur);
+    if (b.dataset.fvp === "play") {
+      fcToggle();
+      return;
+    }
+    if (b.dataset.fvp === "mute") {
+      if (fcVP) fcVP.v.muted = !fcVP.v.muted;
+      return;
+    }
+    if (b.dataset.fcs) {
+      if (fcGo) fcGo(fcSlide + Number(b.dataset.fcs));
+      return;
+    }
+    if (b.dataset.fcseek != null) {
+      if (fcVP) {
+        fcVP.v.currentTime = Math.max(0, Number(b.dataset.fcseek));
+        fcVP.v.pause();
+        fcVP.root.classList.add("awake");
+      }
+      if (!matchMedia("(min-width:861px)").matches)
+        fcvMedia.scrollIntoView({
+          block: "center",
+          behavior: reduce ? "auto" : "smooth",
+        });
+      return;
+    }
+    if (b.dataset.fcslide != null) {
+      if (fcGo) fcGo(Number(b.dataset.fcslide));
+      if (!matchMedia("(min-width:861px)").matches)
+        fcvMedia.scrollIntoView({
+          block: "center",
+          behavior: reduce ? "auto" : "smooth",
+        });
+      return;
+    }
+    if (b.dataset.fcres) {
+      fcResolve(b.dataset.fcres, b.closest("[data-src]").dataset.src);
+      return;
+    }
+    if (b.dataset.fcndel) {
+      fcDelNote(b.dataset.fcndel);
+      return;
+    }
+    if (b.hasAttribute("data-fcsend")) {
+      fcSendNote();
+      return;
+    }
+    if (b.hasAttribute("data-fccxx")) {
+      fcCX = null;
+      fcCxOff = true;
+      fcSyncForm();
+      const ta = fcvScroll.querySelector(".fcform textarea");
+      ta && ta.focus();
+      return;
+    }
+    if (!c) return;
+    if (b.dataset.fcv === "export") {
+      fcExport(c, b);
+      return;
+    }
+    if (b.dataset.fcv === "replace") {
+      $("#fcRep").click();
+      return;
+    }
+    if (b.dataset.fcv === "delete") {
+      if (fcDelArm === c.id) {
+        fcDelArm = null;
+        fcDelete(c);
+        return;
+      }
+      fcDelArm = c.id;
+      const t = b.lastChild.textContent;
+      b.lastChild.textContent = "Sigurno? Klikni opet";
+      b.style.borderColor = "var(--bad)";
+      b.style.color = "var(--bad)";
+      setTimeout(() => {
+        if (b.isConnected) {
+          b.lastChild.textContent = t;
+          b.style.borderColor = "";
+          b.style.color = "";
+        }
+        if (fcDelArm === c.id) fcDelArm = null;
+      }, 3200);
+      return;
+    }
+  });
+  fcv.addEventListener("input", (e) => {
+    if (e.target.matches(".fcform textarea")) {
+      fcGrow(e.target);
+      fcSyncForm();
+    }
+  });
+  fcv.addEventListener("focusin", (e) => {
+    if (e.target.matches(".fcform textarea")) fcCapture();
+  });
+  fcv.addEventListener("focusout", (e) => {
+    if (e.target.matches(".fcform textarea"))
+      setTimeout(() => {
+        const ta = fcvScroll.querySelector(".fcform textarea");
+        if (
+          ta &&
+          document.activeElement !== ta &&
+          !ta.value.trim() &&
+          !fcvScroll
+            .querySelector("[data-fcform]")
+            .contains(document.activeElement)
+        ) {
+          fcCX = null;
+          fcCxOff = false;
+          fcSyncForm();
+        }
+      }, 160);
+    if (e.target.id === "fcvTitle") fcRename();
+  });
+  fcv.addEventListener("keydown", (e) => {
+    if (e.target.id === "fcvTitle" && e.key === "Enter") {
+      e.preventDefault();
+      e.target.blur();
+      return;
+    }
+    if (
+      e.target.matches(".fcform textarea") &&
+      e.key === "Enter" &&
+      (e.metaKey || e.ctrlKey)
+    ) {
+      e.preventDefault();
+      fcSendNote();
+      return;
+    }
+  });
+  (function () {
+    let x0 = null,
+      y0 = 0,
+      t0 = 0;
+    const st = $("#fcvStage");
+    st.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" || e.target.closest(".fcs,.fvp-s,button"))
+        return;
+      x0 = e.clientX;
+      y0 = e.clientY;
+      t0 = performance.now();
+    });
+    st.addEventListener("pointerup", (e) => {
+      if (x0 == null) return;
+      const dx = e.clientX - x0,
+        dy = e.clientY - y0;
+      x0 = null;
+      if (
+        Math.abs(dx) > 60 &&
+        Math.abs(dx) > Math.abs(dy) * 1.4 &&
+        performance.now() - t0 < 700
+      )
+        fcStep(dx < 0 ? 1 : -1);
+    });
+    st.addEventListener("pointercancel", () => {
+      x0 = null;
+    });
+  })();
+  document.addEventListener("keydown", (e) => {
+    if (fcv.hidden || view.name !== "fc") return;
+    if (e.key === "Escape") {
+      if (!$("#fcAsk").hidden) return;
+      e.preventDefault();
+      nav("fc-" + view.id);
+      return;
+    }
+    const a = document.activeElement;
+    if (
+      e.altKey ||
+      e.ctrlKey ||
+      e.metaKey ||
+      (a && a.matches && a.matches("input,textarea,select,[contenteditable]"))
+    )
+      return;
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (fcStep(e.key === "ArrowRight" ? 1 : -1)) e.preventDefault();
+    } else if (e.key === " " && fcVP && !(a && a.tagName === "BUTTON")) {
+      e.preventDefault();
+      fcToggle();
+    }
+  });
+  addEventListener("beforeunload", (e) => {
+    if (
+      [...FCUP.values()].some((u) => u.state === "queued" || u.state === "up")
+    ) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+  /* za sajt (Luka): Firebase Storage umesto skladišta artefakta — vidi integracioni dokument */
+  window.SkeyloOS = Object.assign(window.SkeyloOS || {}, {
+    useStorage(a) {
+      STORE_EXT = a && typeof a.put === "function" ? a : null;
+      if (!$("#fc").hidden) renderFC();
+    },
+  });
+
+  /* =====================================================================
+   RASPORED ZA KLIJENTA (CRM → Organisation)
+   Kad Nina složi dan (entiteti sa datumom), OS za svakog klijenta tog dana sam
+   napravi/ažurira schedules/{id} sa samo onim što klijent i modeli treba da vide:
+   {clientId, date, start, end, items:[{k:"scene"|"pause"|"travel", start, end, dur, title, models[], location, props, lines[]}], models[], locations[], createdAt, updatedAt, order}
+   Telefoni i ostalo iz baze modela nikad ne idu u raspored (samo imena).
+   ===================================================================== */
+  var schTm = 0;
+  const schCanon = (v) =>
+    JSON.stringify(v, (k, x) =>
+      x && typeof x === "object" && !Array.isArray(x)
+        ? Object.keys(x)
+            .sort()
+            .reduce((o, q) => ((o[q] = x[q]), o), {})
+        : x,
+    );
+  const schSig = (p) =>
+    schCanon([
+      p.start || null,
+      p.end || null,
+      p.items || [],
+      p.models || [],
+      p.locations || [],
+    ]);
+  function schPayload(cid, d) {
+    const ents = S.entities.filter((e) => e.date === d && e.clientId === cid);
+    if (!ents.length) return null;
+    const timed = ents.filter((e) => e.start),
+      a = timed.length ? Math.min(...timed.map((e) => toMin(e.start))) : null,
+      b = timed.length
+        ? Math.max(...timed.map((e) => toMin(e.start) + (e.duration || 0)))
+        : null;
+    const items = [];
+    dayList(d).forEach((x) => {
+      if (x.t === "e") {
+        if (x.ref.clientId !== cid) return;
+        const e = x.ref,
+          s = S.scripts.find((y) => y.id === e.scriptId),
+          st = e.start ? toMin(e.start) : null;
+        items.push({
+          k: "scene",
+          start: e.start || null,
+          end: st != null ? hm(st + (e.duration || 0)) : null,
+          dur: e.duration || 0,
+          title: (s && s.title) || "Scena",
+          models: (e.models || []).map((v) => modelRef(v).name).filter(Boolean),
+          location: e.location || "",
+          props: e.props || "",
+          lines: (e.blockTexts || [])
+            .map((t) => String(t || "").trim())
+            .filter(Boolean)
+            .slice(0, 40)
+            .map((t) => t.slice(0, 600)),
+        });
+        return;
+      }
+      if (
+        (x.t === "pause" || x.t === "travel") &&
+        a != null &&
+        x.s != null &&
+        x.s >= a &&
+        x.s < b
+      )
+        items.push({
+          k: x.t,
+          start: hm(x.s),
+          end: hm(x.s + x.dur),
+          dur: x.dur || 0,
+        });
+    });
+    const sc = items.filter((i) => i.k === "scene");
+    return {
+      clientId: cid,
+      date: d,
+      start: a != null ? hm(a) : null,
+      end: b != null ? hm(b) : null,
+      items,
+      models: [...new Set(sc.flatMap((i) => i.models))],
+      locations: [...new Set(sc.map((i) => i.location).filter(Boolean))],
+    };
+  }
+  const schNewId = () =>
+    DB
+      ? DB.collection("schedules").doc().id
+      : "sch-" +
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2, 8);
+  const schKey = (c, d) => c + "|" + d;
+  function schFind(cid, d) {
+    return (
+      S.schedules
+        .filter((s) => s.clientId === cid && s.date === d)
+        .sort((x, y) => (x.createdAt || 0) - (y.createdAt || 0))[0] || null
+    );
+  }
+  async function schSyncOne(cid, d, p) {
+    const ex = S.schedules
+      .filter((s) => s.clientId === cid && s.date === d)
+      .sort((x, y) => (x.createdAt || 0) - (y.createdAt || 0));
+    if (!p) {
+      for (const s of ex) {
+        try {
+          await api.del("schedules", s.id);
+          if (!DB) S.schedules = S.schedules.filter((y) => y.id !== s.id);
+        } catch (e) {}
+      }
+      return null;
+    }
+    const now = Date.now(),
+      top = ex[0];
+    let id = top && top.id;
+    if (!top) {
+      id = schNewId();
+      await api.set(
+        "schedules",
+        id,
+        Object.assign({}, p, {
+          order: Number(d.replace(/-/g, "")) || 0,
+          createdAt: now,
+          updatedAt: now,
+        }),
+      );
+    } else if (schSig(top) !== schSig(p))
+      await api.upd(
+        "schedules",
+        top.id,
+        Object.assign({}, p, { updatedAt: now }),
+      );
+    for (const s of ex.slice(1)) {
+      try {
+        await api.del("schedules", s.id);
+        if (!DB) S.schedules = S.schedules.filter((y) => y.id !== s.id);
+      } catch (e) {}
+    }
+    return id;
+  }
+  function syncSchedules() {
+    clearTimeout(schTm);
+    schTm = setTimeout(async () => {
+      if (!S.ready || !me) return;
+      const want = new Map();
+      S.entities.forEach((e) => {
+        if (e.date && e.clientId) {
+          const k = schKey(e.clientId, e.date);
+          if (!want.has(k)) want.set(k, [e.clientId, e.date]);
+        }
+      });
+      S.schedules.forEach((s) => {
+        const k = schKey(s.clientId, s.date);
+        if (!want.has(k)) want.set(k, [s.clientId, s.date]);
+      });
+      for (const [, [c, d]] of want) {
+        try {
+          await schSyncOne(c, d, schPayload(c, d));
+        } catch (e) {}
+      }
+    }, 1500);
+  }
+  /* link za klijenta i modele (Nina ga šalje umesto slike na WhatsApp) */
+  async function schLink(cid, d, btn) {
+    const p = schPayload(cid, d);
+    if (!p) {
+      toast("Ovaj klijent nema ništa u rasporedu tog dana");
+      return;
+    }
+    if (btn) btn.disabled = true;
+    try {
+      clearTimeout(schTm);
+      const id = await schSyncOne(cid, d, p);
+      if (!id) return;
+      const c = S.clients.find((x) => x.id === cid) || {},
+        url =
+          String(c.crmUrl || CRM_BASE).replace(/#.*$/, "") +
+          "#raspored." +
+          encodeURIComponent(
+            id,
+          ); /* gost link: samo ovaj raspored, bez pristupa ostatku platforme */
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          ok = true;
+        }
+      } catch (e) {}
+      if (!ok) {
+        try {
+          const t = document.createElement("textarea");
+          t.value = url;
+          t.setAttribute("readonly", "");
+          t.style.cssText = "position:fixed;left:-9999px;top:0";
+          document.body.appendChild(t);
+          t.select();
+          ok = document.execCommand("copy");
+          t.remove();
+        } catch (e) {}
+      }
+      toast(
+        ok
+          ? `Link je kopiran. Otvara samo ovaj raspored (${c.name || "klijent"}), ništa drugo.`
+          : url,
+      );
+    } catch (e) {
+      toast(errMsg(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  function schButtons(d) {
+    const cids = [
+      ...new Set(
+        S.entities
+          .filter((e) => e.date === d && e.clientId)
+          .map((e) => e.clientId),
+      ),
+    ];
+    return cids
+      .map((cid) => {
+        const c = S.clients.find((x) => x.id === cid) || { name: cid };
+        return `<button class="pill solid dplink" data-dlink="${esc(cid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.2 1.2"/><path d="M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.2-1.2"/></svg>Link za ${esc(c.name)}</button>`;
+      })
+      .join("");
+  }
+  $("#dayp").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-dlink]");
+    if (b && dayOpen) schLink(b.dataset.dlink, dayOpen, b);
+  });
+
   /* ---------------- boot ---------------- */
   addEventListener("beforeunload", () => {
     flushSave();
+    if (NT) NT.flush();
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) flushSave();
+    if (document.hidden) {
+      flushSave();
+      if (NT) NT.flush();
+    }
   });
   async function start() {
     let slug = null;

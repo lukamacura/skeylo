@@ -44,7 +44,7 @@ const BLUE = "#2aa8ff";
 const WHATSAPP = `https://wa.me/381631012474?text=${encodeURIComponent(
   "Zdravo Luka, pogledao sam predlog za Pool Service. Hajde da razgovaramo.",
 )}`;
-const IMG = "/calculator/pool-service";
+const IMG = "/clients/pool-service";
 const CALC = "/calculator/bazen";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -1093,7 +1093,7 @@ function Results() {
               style={{ borderColor: AQUA }}
             >
               <Image
-                src="/ana.webp"
+                src="/site/testimonials/ana.webp"
                 alt="Ana Kasap"
                 fill
                 sizes="112px"

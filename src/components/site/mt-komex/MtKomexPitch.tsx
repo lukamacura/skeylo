@@ -30,7 +30,7 @@ const GOLD = "#f0b656";
 const ORANGE = "#d87928";
 const MT = "#fbae17";
 const LEAD_TYPE = "mt-komex-predlog";
-const MTI = "/calculator/mt-komex";
+const MTI = "/clients/mt-komex";
 
 const reveal = {
   initial: { opacity: 0, y: 26 },
@@ -332,7 +332,7 @@ export default function MtKomexPitch() {
           />
           <div className="col-span-2 grid gap-3">
             <Photo
-              src="/analiza.webp"
+              src="/site/analiza.webp"
               alt="Tim analizira kampanju"
               className="aspect-square"
               sizes="240px"
@@ -529,7 +529,7 @@ export default function MtKomexPitch() {
       >
         <div className="grid grid-cols-2 gap-3">
           <Photo
-            src="/meta.webp"
+            src="/site/meta.webp"
             alt="Media buyer vodi Meta kampanje"
             className="col-span-2 aspect-[16/9]"
             sizes="(min-width: 1024px) 600px, 100vw"
@@ -537,7 +537,7 @@ export default function MtKomexPitch() {
           />
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-white">
             <Image
-              src="/bento1/b5.webp"
+              src="/bento/b5.webp"
               alt="ROAS iz Meta kampanje"
               fill
               sizes="300px"
@@ -546,7 +546,7 @@ export default function MtKomexPitch() {
           </div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-white">
             <Image
-              src="/bento1/b4.webp"
+              src="/bento/b4.webp"
               alt="Cena po rezultatu iz Meta kampanje"
               fill
               sizes="300px"
@@ -652,7 +652,7 @@ export default function MtKomexPitch() {
             className="relative mt-10 aspect-[16/9] overflow-hidden rounded-3xl border border-border sm:aspect-[21/9]"
           >
             <Image
-              src="/skeylo_team.webp"
+              src="/site/skeylo_team.webp"
               alt="Skeylo tim"
               fill
               sizes="(min-width: 1280px) 1200px, 100vw"
@@ -691,7 +691,7 @@ export default function MtKomexPitch() {
               style={{ borderColor: GOLD }}
             >
               <Image
-                src="/ana.webp"
+                src="/site/testimonials/ana.webp"
                 alt="Ana Kasap"
                 fill
                 sizes="160px"

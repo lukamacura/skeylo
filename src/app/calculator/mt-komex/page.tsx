@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: "Vaš krov već može da plaća račun za struju",
     description:
       "Kalkulator uštede za firme sa velikim računom za struju. MT-Komex — 200+ solarnih elektrana, preko 150 MW.",
-    images: ["/calculator/mt-komex/krov-hala-montaza.jpg"],
+    images: ["/clients/mt-komex/krov-hala-montaza.jpg"],
   },
   robots: { index: false, follow: false },
 };

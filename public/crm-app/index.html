@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="sr" class="booting" data-client="ils">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Infinity Laser · Skeylo</title>
+<link rel="icon" href="/os-app/img/e20eeaf7f1.png">
+<meta name="theme-color" content="#140a0e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Kalam:wght@400;700&family=Poppins:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/crm-app/app.css">
+<link rel="stylesheet" href="/crm-app/shell.css">
+</head>
+<body>
+<!-- prijava klijenta (crm-db.js); gost link #raspored.… je ne prikazuje -->
+<div class="gate" id="gate" hidden>
+  <form class="gbox" id="gbox" novalidate autocomplete="on">
+    <div class="gmark"><img src="/crm-app/img/ils-knot.webp" alt="Infinity Laser Studio"></div>
+    <h1>Dobrodošli u <span class="em">Skeylo platformu</span></h1>
+    <p class="gsub">Infinity Laser Studio</p>
+    <label class="gfield"><span>Ime</span><input id="gName" name="username" autocomplete="username" autocapitalize="words" spellcheck="false" maxlength="40" placeholder="npr. Ana"></label>
+    <label class="gfield"><span>Šifra</span><input id="gPass" name="password" type="password" autocomplete="current-password"></label>
+    <div class="gerr" id="gErr" aria-live="polite"></div>
+    <button type="submit" class="gbtn" id="gGo">Uđi</button>
+    <i class="gfoot" aria-hidden="true"></i>
+  </form>
+</div>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="spot" id="spot" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="flashall" id="flashAll" aria-hidden="true"></div>
+
+<div class="page" id="dash">
+  <header class="top"><span class="wmk" role="img" aria-label="Skeylo"></span><span class="who"><img id="whoImg" alt=""><span id="whoName"></span></span></header>
+
+  <section class="hero">
+    <h1 class="hello" id="hello">
+      <span class="ln"><span class="ew" id="ew1"><span class="etch">Dobrodošli u<span class="hot" aria-hidden="true">Dobrodošli u</span></span><i class="lh" aria-hidden="true"></i></span></span>
+      <span class="ln"><span class="ew" id="ew2"><span class="etch em">Skeylo platformu<span class="hot" aria-hidden="true">Skeylo platformu</span></span><i class="lh" aria-hidden="true"></i></span></span>
+    </h1>
+    <div class="emb" id="emb" role="img" aria-label="Infinity Laser Studio × Skeylo">
+      <canvas id="ob"></canvas>
+      <div class="mark" id="mark">
+        <div class="halo"></div>
+        <div class="zp"></div>
+        <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+          <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe4df"/><stop offset=".45" stop-color="#d79aa2"/><stop offset=".7" stop-color="#a8646f"/><stop offset="1" stop-color="#f0c4c4"/></linearGradient></defs>
+          <circle class="r1" cx="50" cy="50" r="48" pathLength="302"/>
+          <circle class="r2" cx="50" cy="50" r="48" pathLength="302"/>
+          <circle class="r3" cx="50" cy="50" r="48"/>
+        </svg>
+        <div class="knot"><img id="knotImg" alt=""></div>
+        <div class="sheen"></div>
+      </div>
+      <canvas id="of"></canvas>
+      <div class="sk" id="sk"><i></i></div>
+      <div class="shock" id="sh1"></div><div class="shock b" id="sh2"></div><div class="shock c" id="sh3"></div>
+      <div class="bigflash"></div>
+    </div>
+  </section>
+
+  <main class="grid" id="grid">
+    <button class="card rep rv" data-page="reporting" data-title="Reporting Dashboard">
+      <div class="art" aria-hidden="true">
+        <div class="halo2"></div><div class="halo2 b"></div>
+        <svg class="chart" id="chart" viewBox="0 0 760 360" preserveAspectRatio="xMaxYMin meet">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a8646f" stop-opacity=".3"/><stop offset=".45" stop-color="#d79aa2"/><stop offset="1" stop-color="#fff1ec"/></linearGradient>
+            <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3a9ae" stop-opacity=".35"/><stop offset="1" stop-color="#e3a9ae" stop-opacity="0"/></linearGradient>
+          </defs>
+          <g class="gridl"><line x1="0" y1="70" x2="760" y2="70"/><line x1="0" y1="150" x2="760" y2="150"/><line x1="0" y1="230" x2="760" y2="230"/><line x1="0" y1="310" x2="760" y2="310"/></g>
+          <g class="bars" id="bars"></g>
+          <path class="area" id="area"/>
+          <path class="line" id="line"/>
+          <g class="xh"><line id="xv" y1="16" y2="352"/><circle class="xr" id="xr" r="16"/><circle class="xd" id="xd" r="6"/></g>
+          <circle class="orbring" id="orbRing" r="14"/>
+          <circle class="orb" id="orb" r="6"/>
+        </svg>
+      </div>
+      <span class="t"><span>Reporting</span><span class="em">Dashboard</span></span>
+      <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <button class="card ci rv" data-page="creative-inspection" data-title="Creative Inspection">
+      <div class="art" aria-hidden="true">
+        <div class="ciw"><div class="sheet" id="ciSheet"><i class="h"></i><i></i><i></i><i></i><i></i><i></i><div class="dots" id="ciDots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="stat"><b></b><span id="ciStat">Pisanje</span></div></div>
+      </div>
+      <span class="t">Creative Inspection</span>
+      <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <button class="card cr rv" data-page="creatives" data-title="Final Creatives">
+      <div class="art" aria-hidden="true">
+        <div class="fan"><div class="ph"><div class="bar"></div></div><div class="ph"><div class="bar"></div></div><div class="ph"><div class="vid"><b></b><b></b><b></b></div><span class="play"></span><div class="bar"></div></div></div>
+      </div>
+      <span class="t">Final Creatives</span>
+      <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <button class="card org rv" data-page="organisation" data-title="Organisation">
+      <div class="art" aria-hidden="true">
+        <div class="cal"><div class="hd"></div><div class="gd" id="calGd"></div></div>
+        <div class="pin"><svg viewBox="0 0 44 44"><line class="hh" x1="22" y1="22" x2="22" y2="12" stroke="#fbe4df" stroke-width="2.4" stroke-linecap="round"/><line class="mh" x1="22" y1="22" x2="30" y2="22" stroke="#d79aa2" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="22" r="2.4" fill="#fbe4df"/></svg></div>
+      </div>
+      <span class="t">Organisation</span>
+      <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <button class="card gen rv" data-page="general" data-title="General">
+      <div class="art" aria-hidden="true">
+        <div class="docs">
+          <div class="doc"><i class="h"></i><i></i><i></i><i></i></div>
+          <div class="doc"><i class="h"></i><i></i><i></i><i></i></div>
+          <div class="doc dtop"><i class="h"></i><i></i><i style="width:80%"></i><div class="chart2"><b></b><b></b><b></b><b></b></div></div>
+          <div class="doc fly"><i class="h"></i><i></i><i></i></div>
+        </div>
+      </div>
+      <span class="t">General</span>
+      <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <button class="card priv rv" data-page="privacy" data-title="Privacy" id="privCard">
+      <div class="fog" aria-hidden="true"></div>
+      <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="art" aria-hidden="true">
+        <div class="lockw">
+          <svg class="lock" viewBox="0 0 140 170">
+            <defs>
+              <linearGradient id="lb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9e8eb"/><stop offset=".45" stop-color="#8f8c90"/><stop offset=".7" stop-color="#c9c7ca"/><stop offset="1" stop-color="#5f5c60"/></linearGradient>
+              <linearGradient id="ls" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6c696d"/><stop offset=".5" stop-color="#d9d8db"/><stop offset="1" stop-color="#6c696d"/></linearGradient>
+            </defs>
+            <path class="sh" d="M36 74V52a34 34 0 0 1 68 0v22" fill="none" stroke="url(#ls)" stroke-width="13" stroke-linecap="round"/>
+            <rect x="16" y="70" width="108" height="92" rx="24" fill="url(#lb)"/>
+            <rect x="16.5" y="70.5" width="107" height="91" rx="23.5" fill="none" stroke="rgba(255,255,255,.35)"/>
+            <path class="kh" d="M70 100a10 10 0 0 1 6 18l3 20H61l3-20a10 10 0 0 1 6-18z" fill="#2a282b"/>
+          </svg>
+          <i class="scan"></i>
+        </div>
+      </div>
+      <span class="t">Privacy</span>
+      <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </button>
+  </main>
+
+  <footer class="foot"><div class="wm" role="img" aria-label="Skeylo"></div></footer>
+</div>
+
+<!-- ================= REPORTING DASHBOARD + CREATIVE INSPECTION (aplikacija) ================= -->
+<div class="rapp" id="rapp" hidden>
+  <header class="rtop" id="rtop">
+    <div class="rtop-in">
+      <button class="rback" id="rback" type="button"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span><span id="rbackLbl">Dashboard</span></button>
+      <div class="rsw" id="rsw" role="tablist" aria-label="Vrsta izveštaja" data-on="loom" hidden>
+        <i class="ind" aria-hidden="true"></i>
+        <button type="button" role="tab" id="swLoom" data-sw="loom" aria-selected="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg><span>Loom<span class="xl"> video</span></span></button>
+        <button type="button" role="tab" id="swDoc" data-sw="pisani" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Pisani<span class="xl"> izveštaj</span></span></button>
+      </div>
+      <span class="rsp"></span>
+      <div class="cnav" id="cnav" hidden>
+        <button type="button" id="cprev" aria-label="Prethodna skripta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button type="button" id="cnext" aria-label="Sledeća skripta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <span class="rwmk" id="rwmk" role="img" aria-label="Skeylo"></span>
+    </div>
+  </header>
+  <main class="rmain" id="rmain"></main>
+</div>
+
+<div class="lov" id="lov" hidden role="dialog" aria-modal="true" aria-labelledby="lovT">
+  <div class="lov-scrim" id="lovScrim"></div>
+  <div class="lov-box" id="lovBox">
+    <div class="lov-screen" id="lovScreen"></div>
+    <div class="lov-info">
+      <h2 id="lovT"></h2>
+      <div class="lov-acts" id="lovActs"></div>
+    </div>
+    <button class="lov-x" id="lovX" type="button" aria-label="Zatvori video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+</div>
+
+<!-- Creative Inspection: komentar na označeni tekst -->
+<button class="selbtn" id="selbtn" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5.1A8 8 0 1 1 21 12z"/><path d="M8.5 12h7M12 8.5v7"/></svg><span>Komentariši</span></button>
+<div class="csheet" id="csheet" hidden role="dialog" aria-modal="true" aria-label="Komentar">
+  <div class="cs-scrim" id="csScrim"></div>
+  <div class="cs-box" id="csBox">
+    <i class="cs-grab" aria-hidden="true"></i>
+    <form class="cform open" data-cform novalidate>
+      <div class="cq" data-cq hidden><span class="cqt" data-cqt></span><button type="button" class="cqx" data-cqx aria-label="Ukloni označeni tekst"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <textarea class="cta" data-cta rows="2" maxlength="2000" placeholder="Napiši komentar…" aria-label="Komentar"></textarea>
+      <div class="cfoot"><button type="button" class="cclose" data-csx>Otkaži</button><button type="button" class="csend" data-csend disabled><span>Pošalji</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Final Creatives: pozornica za jednu kreativu (pun kvalitet) + komentari -->
+<div class="th" id="th" hidden role="dialog" aria-modal="true" aria-labelledby="thT">
+  <div class="th-amb" aria-hidden="true"><canvas id="thAmb" width="8" height="8"></canvas></div>
+  <div class="th-scrim" id="thScrim"></div>
+  <div class="th-in" id="thIn" tabindex="-1">
+    <header class="th-top">
+      <span class="th-brand" aria-hidden="true"><img id="thKnot" alt=""><i class="th-x2"></i><span class="th-wm"></span></span>
+      <span class="th-pg"><button class="th-pb" id="thPrevM" type="button" aria-label="Prethodna kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="th-count" id="thCount" aria-hidden="true"></span><button class="th-pb" id="thNextM" type="button" aria-label="Sledeća kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></span>
+      <button class="th-close" id="thX" type="button" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </header>
+    <div class="th-body">
+      <div class="th-stage" id="thStage">
+        <button class="th-nav prev" id="thPrev" type="button" aria-label="Prethodna kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="th-media" id="thMedia"></div>
+        <button class="th-nav next" id="thNext" type="button" aria-label="Sledeća kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <aside class="th-side" id="thSide">
+        <h2 class="th-title" id="thT"></h2>
+        <div class="th-comp" id="thComp"></div>
+        <ol class="clist th-list" id="thList"></ol>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- Final Creatives: uvod kad klijent otvori link za kreative -->
+<div class="cintro" id="cintro" hidden aria-hidden="true">
+  <div class="ci-half ci-a"><img id="ciKnot" alt=""></div>
+  <div class="ci-half ci-b"><span class="ci-t" id="ciT">Final <span class="em">Creatives</span></span><span class="ci-p" id="ciP"></span></div>
+  <i class="ci-line"></i>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><i class="tdot" aria-hidden="true"></i><span id="toastMsg"></span><button type="button" id="toastGo">Pogledaj</button></div>
+
+
+<div class="take" id="take" aria-hidden="true"><div class="pane" id="pane"><i class="tr" aria-hidden="true"></i><i class="tr b" aria-hidden="true"></i><i class="tw" aria-hidden="true"></i><div class="in"><h2 id="takeT"></h2><p>Ova stranica stiže uskoro.</p><button class="back" id="takeBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Nazad</button></div></div></div>
+
+<div class="vault" id="vault" hidden role="dialog" aria-modal="true" aria-labelledby="vT">
+  <form class="vbox" id="vbox" novalidate>
+    <svg class="vl" viewBox="0 0 140 170" aria-hidden="true"><path class="sh" d="M36 74V52a34 34 0 0 1 68 0v22" fill="none" stroke="url(#ls)" stroke-width="13" stroke-linecap="round"/><rect x="16" y="70" width="108" height="92" rx="24" fill="url(#lb)"/><path d="M70 100a10 10 0 0 1 6 18l3 20H61l3-20a10 10 0 0 1 6-18z" fill="#2a282b"/></svg>
+    <h3 id="vT">Unesi šifru</h3>
+    <label class="vin"><span class="sr">Šifra</span><input id="vPass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <div class="err" id="vErr" aria-live="polite"></div>
+    <div class="vbtns"><button type="button" id="vNo">Otkaži</button><button type="button" class="ok" id="vOk">Otključaj</button></div>
+  </form>
+</div>
+
+<canvas id="fxf" aria-hidden="true"></canvas>
+<div class="cur" id="cur" aria-hidden="true"></div>
+
+<script src="/os-app/supabase.js"></script>
+<script src="/os/env.js"></script>
+<script src="/crm-app/crm-db.js"></script>
+</body>
+</html>

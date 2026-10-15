@@ -523,7 +523,7 @@ export default function ProfitZaTebeLanding() {
                     </span>
                   </div>
                   <Image
-                    src="/finances.webp"
+                    src="/site/finances.webp"
                     alt="Finansijski izveštaji — prihodi, rashodi i povrat na investiciju"
                     width={1900}
                     height={980}

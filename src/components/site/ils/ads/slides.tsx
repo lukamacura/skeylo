@@ -848,7 +848,7 @@ function Competition() {
         style={{ borderColor: LINE, background: "#202124" }}
       >
         <Image
-          src="/ils/konkurencija.webp"
+          src="/clients/ils/konkurencija.webp"
           alt="Google pretraga „laserska epilacija novi sad“: sponzorisani rezultati, Brana Estetic na prvom mestu"
           width={1000}
           height={1103}
@@ -974,7 +974,7 @@ function Speed() {
             style={{ borderColor: "#3a2c30" }}
           >
             <Image
-              src="/ils/brana-sajt.webp"
+              src="/clients/ils/brana-sajt.webp"
               alt="Sajt Brana Estetic na telefonu"
               width={262}
               height={525}
@@ -1058,7 +1058,7 @@ function Speed() {
       >
         <div className="aspect-[1110/190] w-full overflow-hidden bg-white">
           <Image
-            src="/ils/brana.webp"
+            src="/clients/ils/brana.webp"
             alt="Google PageSpeed analiza sajta Brana Estetic: Performance 40"
             width={1200}
             height={780}
@@ -1119,28 +1119,28 @@ function Speed() {
    procentima širine (margine u % uvek računaju od širine). */
 const SHOTS = [
   {
-    src: "/ils/setup1.webp",
+    src: "/clients/ils/setup1.webp",
     size: [1296, 1582],
     crop: [80, 500, 1050],
     title: "Oglas vodi na vaš sajt",
     note: "infinitylaserstudio.com",
   },
   {
-    src: "/ils/setup2.webp",
+    src: "/clients/ils/setup2.webp",
     size: [1374, 1622],
     crop: [165, 560, 1050],
     title: "10 naslova",
     note: "Google sam testira kombinacije",
   },
   {
-    src: "/ils/setup3.webp",
+    src: "/clients/ils/setup3.webp",
     size: [1322, 858],
     crop: [120, 60, 1050],
     title: "4 opisa",
     note: "Bez bola, cene online, zakazivanje",
   },
   {
-    src: "/ils/bid_strategy.webp",
+    src: "/clients/ils/bid_strategy.webp",
     size: [1526, 1094],
     crop: [125, 60, 1290],
     title: "Plaćamo samo klik",

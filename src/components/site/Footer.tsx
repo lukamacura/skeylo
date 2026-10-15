@@ -11,7 +11,7 @@ export default function Footer() {
           <div>
             <Link href="/" className="flex items-center gap-2">
               <Image
-                src="/logo.webp"
+                src="/brand/logo.webp"
                 alt="Skeylo"
                 width={44}
                 height={44}

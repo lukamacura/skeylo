@@ -151,7 +151,7 @@ export default function HeaderClient() {
           aria-label="Skeylo - Početna"
         >
           <Image
-            src="/logo.webp"
+            src="/brand/logo.webp"
             alt="Skeylo"
             width={48}
             height={48}

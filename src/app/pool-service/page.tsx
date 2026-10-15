@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: "Predlog za Pool Service | Skeylo",
     description:
       "Kalkulator bazena i kampanje koje donose upite — isprobajte uživo.",
-    images: [{ url: "/calculator/pool-service/result-desktop.jpg" }],
+    images: [{ url: "/clients/pool-service/result-desktop.jpg" }],
   },
   robots: { index: false, follow: false },
 };

@@ -49,7 +49,7 @@ import {
 
 /* ───────────── Pomoćne ───────────── */
 
-const IMG = "/calculator/mt-komex";
+const IMG = "/clients/mt-komex";
 
 const reveal = {
   initial: { opacity: 0, y: 24 },

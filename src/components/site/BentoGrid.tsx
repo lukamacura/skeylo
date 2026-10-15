@@ -41,7 +41,7 @@ type Shot = {
 /** Two rows, sizes tuned so the text inside every screenshot stays readable. */
 export const rowA: Shot[] = [
   {
-    src: "/bento1/b5.webp",
+    src: "/bento/b5.webp",
     w: 290,
     h: 196,
     cls: "w-[150px] sm:w-[175px]",
@@ -49,7 +49,7 @@ export const rowA: Shot[] = [
     alt: "Meta Ads: ROAS 11.19",
   },
   {
-    src: "/bento1/b11.webp",
+    src: "/bento/b11.webp",
     w: 1600,
     h: 389,
     cls: "w-[340px] sm:w-[400px]",
@@ -57,7 +57,7 @@ export const rowA: Shot[] = [
     alt: "Mesečni izveštaj: 3.611.950 RSD prihoda, 740.280 RSD profita, ROAS 4,51x",
   },
   {
-    src: "/bento1/b1.webp",
+    src: "/bento/b1.webp",
     w: 942,
     h: 692,
     cls: "w-[145px] sm:w-[170px]",
@@ -65,7 +65,7 @@ export const rowA: Shot[] = [
     alt: "Mejl klijenta: odobrena kreativa",
   },
   {
-    src: "/bento1/b13.webp",
+    src: "/bento/b13.webp",
     w: 1012,
     h: 94,
     cls: "w-[290px] sm:w-[340px]",
@@ -73,7 +73,7 @@ export const rowA: Shot[] = [
     alt: "Kampanja sa 6.304,85 $ vrednosti kupovina",
   },
   {
-    src: "/bento1/b7.webp",
+    src: "/bento/b7.webp",
     w: 550,
     h: 360,
     cls: "w-[155px] sm:w-[180px]",
@@ -81,7 +81,7 @@ export const rowA: Shot[] = [
     alt: "Prihod 1.660.370 RSD",
   },
   {
-    src: "/bento1/b6.webp",
+    src: "/bento/b6.webp",
     w: 1168,
     h: 194,
     cls: "w-[340px] sm:w-[400px]",
@@ -89,7 +89,7 @@ export const rowA: Shot[] = [
     alt: "8.206,85 $ potrošeno, 479 prodaja, 71.945,73 $ vrednosti",
   },
   {
-    src: "/bento1/b14.webp",
+    src: "/bento/b14.webp",
     w: 1520,
     h: 158,
     cls: "w-[340px] sm:w-[400px]",
@@ -97,7 +97,7 @@ export const rowA: Shot[] = [
     alt: "Skeylo Accelerator kampanja sa 75.681,78 $ vrednosti kupovina",
   },
   {
-    src: "/bento1/b19.webp",
+    src: "/bento/b19.webp",
     w: 844,
     h: 162,
     cls: "w-[240px] sm:w-[280px]",
@@ -105,7 +105,7 @@ export const rowA: Shot[] = [
     alt: "Static kreativa za DE i GR tržište sa 5.916,10 $ vrednosti kupovina",
   },
   {
-    src: "/bento1/b17.webp",
+    src: "/bento/b17.webp",
     w: 1090,
     h: 164,
     cls: "w-[290px] sm:w-[340px]",
@@ -113,7 +113,7 @@ export const rowA: Shot[] = [
     alt: "Kampanja „No Discount“: 956,38 $ potrošeno, 13.086,53 $ vrednosti, ROAS 13,68",
   },
   {
-    src: "/bento1/b16.webp",
+    src: "/bento/b16.webp",
     w: 904,
     h: 156,
     cls: "w-[250px] sm:w-[295px]",
@@ -124,7 +124,7 @@ export const rowA: Shot[] = [
 
 export const rowB: Shot[] = [
   {
-    src: "/bento1/b9.webp",
+    src: "/bento/b9.webp",
     w: 296,
     h: 182,
     cls: "w-[150px] sm:w-[175px]",
@@ -132,7 +132,7 @@ export const rowB: Shot[] = [
     alt: "Meta Ads: ROAS 8.77",
   },
   {
-    src: "/bento1/b4.webp",
+    src: "/bento/b4.webp",
     w: 1200,
     h: 396,
     cls: "w-[320px] sm:w-[380px]",
@@ -140,7 +140,7 @@ export const rowB: Shot[] = [
     alt: "4.494,81 $ potrošeno, 447 prodaja, 31.952,56 $ vrednosti",
   },
   {
-    src: "/bento1/b12.webp",
+    src: "/bento/b12.webp",
     w: 806,
     h: 170,
     cls: "w-[275px] sm:w-[320px]",
@@ -148,7 +148,7 @@ export const rowB: Shot[] = [
     alt: "Poruka klijenta: kada pojačavamo budžet reklame",
   },
   {
-    src: "/bento1/b2.webp",
+    src: "/bento/b2.webp",
     w: 1170,
     h: 657,
     cls: "w-[180px] sm:w-[210px]",
@@ -156,7 +156,7 @@ export const rowB: Shot[] = [
     alt: "Instagram poruka klijenta: super je",
   },
   {
-    src: "/bento1/b10.webp",
+    src: "/bento/b10.webp",
     w: 1600,
     h: 850,
     cls: "w-[190px] sm:w-[225px]",
@@ -164,7 +164,7 @@ export const rowB: Shot[] = [
     alt: "Popunjen kalendar termina za celu nedelju",
   },
   {
-    src: "/bento1/b3.webp",
+    src: "/bento/b3.webp",
     w: 1076,
     h: 160,
     cls: "w-[290px] sm:w-[340px]",
@@ -172,7 +172,7 @@ export const rowB: Shot[] = [
     alt: "Kampanja „Zamena & Reklamacija“ sa 30.908,41 $ vrednosti kupovina",
   },
   {
-    src: "/bento1/b15.webp",
+    src: "/bento/b15.webp",
     w: 1540,
     h: 158,
     cls: "w-[340px] sm:w-[400px]",
@@ -180,7 +180,7 @@ export const rowB: Shot[] = [
     alt: "Skeylo Accelerator kampanja sa 43.582,35 $ vrednosti kupovina",
   },
   {
-    src: "/bento1/b20.webp",
+    src: "/bento/b20.webp",
     w: 1630,
     h: 218,
     cls: "w-[320px] sm:w-[375px]",
@@ -188,7 +188,7 @@ export const rowB: Shot[] = [
     alt: "Kreativa „Avatar Callout“ sa 3.326,44 $ vrednosti kupovina",
   },
   {
-    src: "/bento1/b18.webp",
+    src: "/bento/b18.webp",
     w: 1398,
     h: 162,
     cls: "w-[330px] sm:w-[385px]",

@@ -165,7 +165,7 @@ export default function Plan({ fontClass = "" }: { fontClass?: string }) {
           <div className="brandrow fx" style={delay(".1s")}>
             <Image
               className="logo"
-              src="/logo.webp"
+              src="/brand/logo.webp"
               alt="Skeylo"
               width={2000}
               height={717}

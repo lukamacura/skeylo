@@ -37,7 +37,7 @@ export const GOALS: Goal[] = [
     subtitle: "Missing shingles, dents, leaks after a storm",
     insight:
       "Storm damage is usually covered by homeowner's insurance, so you often pay just your deductible. Most policies require the claim within a year of the storm.",
-    image: "/calculator/goal-storm.webp",
+    image: "/calculator/roofing/goal-storm.webp",
   },
   {
     id: "age",
@@ -45,7 +45,7 @@ export const GOALS: Goal[] = [
     subtitle: "20+ years old, curling shingles, granule loss",
     insight:
       "Replacing before leaks spread saves you the drywall, insulation and mold repairs that often add $3,000–$10,000 on top of the roof.",
-    image: "/calculator/goal-age.webp",
+    image: "/calculator/roofing/goal-age.webp",
   },
   {
     id: "new",
@@ -53,7 +53,7 @@ export const GOALS: Goal[] = [
     subtitle: "Fresh roof on new construction or an extension",
     insight:
       "New-build roofs skip the tear-off and disposal cost of a replacement, so your per-square price tends to land at the low end of the range.",
-    image: "/calculator/goal-new.webp",
+    image: "/calculator/roofing/goal-new.webp",
   },
 ];
 
@@ -71,7 +71,7 @@ export const MATERIALS: Material[] = [
     pricePerSquare: { low: 450, high: 600 },
     lifespanYears: { low: 25, high: 30 },
     perks: ["Best upfront value", "Wide color choice", "Fastest install"],
-    image: "/calculator/material-shingles.webp",
+    image: "/calculator/roofing/material-shingles.webp",
   },
   {
     id: "metal",
@@ -81,7 +81,7 @@ export const MATERIALS: Material[] = [
     pricePerSquare: { low: 1000, high: 1400 },
     lifespanYears: { low: 40, high: 70 },
     perks: ["Hail & wind resistant", "Cuts cooling bills", "Boosts resale"],
-    image: "/calculator/material-metal.webp",
+    image: "/calculator/roofing/material-metal.webp",
   },
   {
     id: "tile",
@@ -91,7 +91,7 @@ export const MATERIALS: Material[] = [
     pricePerSquare: { low: 1200, high: 1800 },
     lifespanYears: { low: 50, high: 100 },
     perks: ["Fire resistant", "Timeless look", "Lifetime material"],
-    image: "/calculator/material-tile.webp",
+    image: "/calculator/roofing/material-tile.webp",
   },
 ];
 

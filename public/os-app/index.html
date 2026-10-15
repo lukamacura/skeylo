@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600&family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <link rel="stylesheet" href="/os-app/app.css">
+<link rel="stylesheet" href="/os-app/notes.css">
 </head>
 <body>
 <div class="bg" aria-hidden="true"><canvas id="gridfx"></canvas></div>
@@ -25,8 +26,7 @@
       <h1>Ko radi danas?</h1>
       <div class="team" id="team" role="group" aria-label="Izaberi sebe"></div>
       <form id="lgForm" novalidate>
-        <div class="field"><label class="sr" for="email">Mejl</label><input id="email" type="email" autocomplete="username" placeholder="Mejl" required></div>
-        <div class="field"><label class="sr" for="pass">Lozinka</label><input id="pass" type="password" autocomplete="current-password" placeholder="Lozinka" required></div>
+        <div class="field"><label class="sr" for="pass">Lozinka</label><input id="pass" type="password" autocomplete="current-password" placeholder="Timska lozinka" required></div>
         <button class="btn" type="submit">Uđi</button>
         <p class="err" id="err" role="alert"></p>
       </form>
@@ -39,7 +39,7 @@
   <header class="top">
     <button class="home" data-go="" aria-label="Dashboard"><img src="/os-app/img/d5fd595e8e.png" alt="Skeylo"></button>
     <div class="top-r2"><button class="dwbtn" id="dwbtn"><span class="dwring"><svg class="r" viewBox="0 0 36 36"><circle class="trk" cx="18" cy="18" r="15.5"/><circle class="prg" cx="18" cy="18" r="15.5" stroke-dasharray="97.4" stroke-dashoffset="97.4"/></svg><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5M12 2v3"/></svg></span><span class="lbl" id="dwLbl">Deep Work</span><span class="t" id="dwT" hidden></span><span class="dwmates" id="dwMates"></span></button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button></div>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button></div>
   </header>
   <section class="hero">
     <div class="hero-l">
@@ -161,7 +161,7 @@
 <div id="pm" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
     <h1><span class="w"><span>Project</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Manager</span></span></h1>
@@ -174,7 +174,7 @@
 <div id="mh" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Projekti</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead"><div class="cm-id" id="mhId"></div></div>
   <div class="mods" id="mods"></div>
@@ -184,7 +184,7 @@
 <div id="cockpit" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <section class="ckhero" id="ckHero"></section>
   <div class="cksec"><h2>Za zakazivanje</h2><span class="cnt" id="ckCntS">0</span><span class="hint">Skripte u To Schedule statusu</span></div>
@@ -205,7 +205,7 @@
 <div id="lm" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead lmhead">
     <h1><span class="w"><span>Lead</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Manager</span></span></h1>
@@ -220,7 +220,7 @@
 <div id="ld" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go="leads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Lead Manager</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div id="ldBody"></div>
 </div>
@@ -229,7 +229,7 @@
 <div id="cal" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead"><h1><span class="w"><span>Skeylo</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Calendar</span></span></h1></div>
   <div class="ckcal" id="calMain"></div>
@@ -239,7 +239,7 @@
 <div id="build" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go="cockpit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Cockpit</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="bhead" id="bHead"></div>
   <div class="bents" id="bEnts"></div>
@@ -252,7 +252,7 @@
 <div id="cplat" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Projekti</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead"><div class="cm-id" id="cpId"></div><button class="pill solid" id="cpNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nova stranica</button></div>
   <div class="cpgrid" id="cpGrid"></div>
@@ -262,7 +262,7 @@
 <div id="angles" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" id="angBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Client Platform</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead"><div class="cm-id" id="angId"></div><button class="pill solid" id="angNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi ugao</button></div>
   <div id="angBody"></div>
@@ -272,17 +272,47 @@
 <div id="general" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
-  <div class="phead"><h1><span class="w"><span>General</span></span></h1></div>
+  <div class="phead">
+    <h1><span class="w"><span>General</span></span></h1>
+    <div class="tl-actions">
+      <label class="msearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="sr">Pretraga</span><input id="gq" type="search" placeholder="Pretraži stranice" autocomplete="off"></label>
+      <button class="pill solid" id="gNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nova stranica</button>
+    </div>
+  </div>
   <div class="gmods" id="gmods"></div>
+  <div id="gpages"></div>
+</div>
+
+<!-- GENERAL PAGE (Notion-style, Markdown) -->
+<div id="gp" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="gpBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="gpBackLbl">General</span></button>
+    <div class="ed-top-r"><span class="save" id="gpSave"><i></i><span>Sačuvano</span></span><button class="pill ed-del" id="gpMore" aria-label="Opcije stranice" title="Opcije stranice"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
+  </header>
+  <div class="doc gp-doc">
+    <div class="state" id="gpState" hidden></div>
+    <div id="gpMain">
+      <div class="gp-head" id="gpHead">
+        <nav class="gp-crumbs" id="gpCrumbs" aria-label="Putanja" hidden></nav>
+        <button type="button" class="gp-icon" id="gpIcon" aria-label="Promeni ikonicu stranice" hidden></button>
+        <button type="button" class="gp-addicon" id="gpAddIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></svg>Dodaj ikonicu</button>
+        <h1 class="ed-title gp-title" id="gpTitle" contenteditable="true" spellcheck="false" data-ph="Bez naslova"></h1>
+        <div class="gp-meta" id="gpMeta"></div>
+      </div>
+      <div class="nbroot" id="gpBody"></div>
+      <div class="gp-kids" id="gpKids" hidden></div>
+      <div class="gp-fill" id="gpFill" aria-hidden="true"></div>
+    </div>
+  </div>
 </div>
 
 <!-- MODELS -->
 <div id="models" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go="general"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>General</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
     <h1><span class="w"><span>Models</span></span></h1>
@@ -298,7 +328,7 @@
 <div id="tasks" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
     <h1><span class="w"><span>Task</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">List</span></span></h1>
@@ -314,7 +344,7 @@
 <div id="fin" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" id="finBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="finBackLbl">Nazad</span></button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
     <div class="cm-id" id="finId"></div>
@@ -327,7 +357,7 @@
 <div id="money" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div id="moneyBody"></div>
 </div>
@@ -336,7 +366,7 @@
 <div id="rp" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" id="rpBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="rpBackLbl">Nazad</span></button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
     <div class="cm-id" id="rpId"></div>
@@ -354,13 +384,31 @@
   </div>
   <div class="rv-frame" id="rvFrame"></div>
 </div>
+<!-- FINAL CREATIVES -->
+<div id="fc" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="fcBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="fcBackLbl">Nazad</span></button>
+    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <div class="cm-id" id="fcId"></div>
+    <div class="fc-acts" id="fcActs">
+      <button class="pill" id="fcLink" type="button" title="Link za klijenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.2 1.2"/><path d="M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.2-1.2"/></svg><span class="lbl">Link za klijenta</span></button>
+      <button class="pill" id="fcAdd" type="button" title="Dodaj kreative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">Dodaj</span></button>
+      <button class="pill solid" id="fcAll" type="button" title="Preuzmi sve kreative u punom kvalitetu"><i class="fcpr"></i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span class="lbl" id="fcAllLbl">Export All</span></button>
+    </div>
+  </div>
+  <div id="fcBody"></div>
+  <input type="file" id="fcFile" multiple accept="video/mp4,video/webm,video/quicktime,.mov,image/jpeg,image/png,image/webp,image/gif" hidden>
+  <input type="file" id="fcRep" multiple accept="video/mp4,video/webm,video/quicktime,.mov,image/jpeg,image/png,image/webp,image/gif" hidden>
+</div>
 <a class="vcta" id="vcta" target="_blank" rel="noopener" hidden><span class="pb"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></span>Pogledaj Video</a>
 
 <!-- CONTENT MANAGER -->
 <div id="cm" class="screen wrap" hidden>
   <header class="top">
     <button class="pill" id="cmBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="cmBackLbl">Nazad</span></button>
-    <button class="me" data-logout title="Odjavi se"><img class="meImg" alt=""><span class="meName"></span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
     <div class="cm-id" id="cmId"></div>
@@ -378,6 +426,7 @@
   <div class="doc">
     <h1 class="ed-title" id="edTitle" contenteditable="true" spellcheck="false" data-ph="Naziv skripte"></h1>
     <div class="props" id="props"></div>
+    <aside class="ccmt-rail" id="ccmtRail" hidden><section class="ccmt" id="ccmt" aria-label="Komentari klijenta"></section></aside>
     <div class="editor" id="editor" contenteditable="true" spellcheck="false"></div>
     <div class="ed-foot"><button class="pill danger" id="delScript"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span id="delLbl">Obriši skriptu</span></button></div>
   </div>
@@ -430,6 +479,9 @@
 
 <!-- DAY PLANNER -->
 <div class="dayp" id="dayp" hidden role="dialog" aria-modal="true" aria-label="Plan dana"><div class="dpp" id="dpp"></div></div>
+
+<!-- PROMENA OSOBE -->
+<div class="swp" id="swp" hidden role="menu" aria-label="Promeni osobu"></div>
 
 <!-- TIME PICKER -->
 <div class="tpk" id="tpk" hidden role="dialog" aria-modal="true" aria-label="Vreme snimanja"><div class="tpbox" id="tpbox"></div></div>
@@ -518,10 +570,53 @@
   </form>
 </div>
 
+<!-- Final Creatives: jedna kreativa u punom kvalitetu + komentari klijenta + beleške tima -->
+<div class="fcv" id="fcv" hidden role="dialog" aria-modal="true" aria-labelledby="fcvTitle">
+  <div class="fcv-bg"><canvas id="fcvAmb" width="8" height="8"></canvas></div>
+  <div class="fcv-in" id="fcvIn" tabindex="-1">
+    <div class="fcv-stage" id="fcvStage">
+      <button class="fcv-nav prev" id="fcvPrev" type="button" aria-label="Prethodna kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="fcv-media" id="fcvMedia"></div>
+      <button class="fcv-nav next" id="fcvNext" type="button" aria-label="Sledeća kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <aside class="fcv-side">
+      <div class="fcv-head">
+        <input class="fcv-title" id="fcvTitle" maxlength="90" autocomplete="off" spellcheck="false" aria-label="Naziv kreative">
+        <div class="fcv-pg"><button type="button" id="fcvPrevM" aria-label="Prethodna kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button type="button" id="fcvNextM" aria-label="Sledeća kreativa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></div>
+        <button class="fcv-x" id="fcvX" type="button" aria-label="Zatvori"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="fcv-meta" id="fcvMeta"></div>
+      <div class="fcv-tools">
+        <button class="pill" type="button" data-fcv="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Export</button>
+        <button class="pill" type="button" data-fcv="replace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><path d="M21 4v5h-5M3 20v-5h5"/></svg>Zameni</button>
+        <button class="pill del" type="button" data-fcv="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>Obriši</button>
+      </div>
+      <div class="fcv-scroll" id="fcvScroll"></div>
+    </aside>
+  </div>
+</div>
+
+<!-- Final Creatives: prevlačenje fajlova (portal) -->
+<div class="fcp" id="fcPortal" hidden aria-hidden="true">
+  <div class="fcp-o" id="fcPo"><i class="fcp-c"></i><i class="fcp-r"></i><i class="fcp-r b"></i><span class="fcp-t">Pusti.</span></div>
+</div>
+<i class="fcp-f" id="fcFlash" aria-hidden="true"></i>
+<div class="fcask" id="fcAsk" hidden role="dialog" aria-modal="true" aria-labelledby="fcAskT">
+  <div class="fca-b">
+    <h3 id="fcAskT"></h3>
+    <div class="fca-g">
+      <button class="fca-o" type="button" data-ask="carousel"><span class="ic car"><i></i><i></i><i></i></span>Jedan karusel</button>
+      <button class="fca-o" type="button" data-ask="separate"><span class="ic sep"><i></i><i></i><i></i><i></i></span>Posebne objave</button>
+    </div>
+    <button class="fca-x" type="button" data-ask="cancel">Otkaži</button>
+  </div>
+</div>
+<div class="fcyay" id="fcYay" hidden aria-live="polite"><canvas id="fcYayCv"></canvas><div class="fy"><div class="fy-t"><span>Bravo,</span> <span class="nm" id="fcYayName"></span></div><i class="fy-l"></i><div class="fy-s" id="fcYaySub"></div></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" hidden>Poništi</button></div>
 <script src="/os-app/supabase.js"></script>
 <script src="/os/env.js"></script>
 <script src="/os-app/os-db.js"></script>
+<script src="/os-app/notes.js"></script>
 <script src="/os-app/app.js"></script>
 </body>
 </html>

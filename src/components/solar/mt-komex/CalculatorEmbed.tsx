@@ -68,7 +68,7 @@ export function PhonePoster({
       aria-label={label}
     >
       <Image
-        src="/calculator/mt-komex/calc-mobile.jpg"
+        src="/clients/mt-komex/calc-mobile.jpg"
         alt="Kalkulator uštede na telefonu"
         width={780}
         height={1560}

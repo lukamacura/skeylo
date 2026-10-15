@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Predlog za MT-Komex | Skeylo",
     description: "Kalkulator uštede i landing za kampanje — isprobajte uživo.",
-    images: [{ url: "/calculator/mt-komex/calc-desktop.jpg" }],
+    images: [{ url: "/clients/mt-komex/calc-desktop.jpg" }],
   },
   robots: { index: false, follow: false },
 };

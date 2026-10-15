@@ -57,7 +57,7 @@ const T = { hub: 0.15, team: 0.6, crowd: 1.25, google: 2.1, b2b: 3.2 };
 const PEOPLE = {
   branka: {
     name: "Branka",
-    src: "/ils/ljudi/branka.webp",
+    src: "/clients/ils/ljudi/branka.webp",
     origin: "52% 42%",
     zoom: 1.3,
   },
@@ -87,19 +87,19 @@ const PEOPLE = {
   },
   mila: {
     name: "Mila",
-    src: "/ils/ljudi/mila.webp",
+    src: "/clients/ils/ljudi/mila.webp",
     origin: "52% 28%",
     zoom: 1.3,
   },
   tanja: {
     name: "Tanja",
-    src: "/ils/ljudi/tanja.webp",
+    src: "/clients/ils/ljudi/tanja.webp",
     origin: "48% 28%",
     zoom: 1.3,
   },
   ana: {
     name: "Ana",
-    src: "/ils/ljudi/ana.webp",
+    src: "/clients/ils/ljudi/ana.webp",
     origin: "49% 30%",
     zoom: 1.3,
   },
@@ -1137,7 +1137,7 @@ function Skeylo({ x, y, delay }: { x: number; y: number; delay: number }) {
           style={{ width: u(10.5), height: u(17) }}
         >
           <Image
-            src="/logo.webp"
+            src="/brand/logo.webp"
             alt="Skeylo"
             width={2000}
             height={717}
@@ -1511,7 +1511,7 @@ function Board({ k }: { k: number }) {
             style={{ width: u(27), height: u(27 * (580 / 640)) }}
           >
             <Image
-              src="/ils/google_ads.webp"
+              src="/clients/ils/google_ads.webp"
               alt="Google Ads"
               fill
               sizes="64px"
@@ -1603,7 +1603,7 @@ function Board({ k }: { k: number }) {
             style={{ background: "#fff", boxShadow: `0 0 0 ${u(2)} ${ROSE}` }}
           >
             <Image
-              src="/ils/logo.webp"
+              src="/clients/ils/logo.webp"
               alt="Infinity Laser Studio"
               fill
               sizes="80px"
@@ -1667,7 +1667,7 @@ function Board({ k }: { k: number }) {
         x={68}
         y={629}
         name="Novi Sad"
-        img="/ils/lokacije/novi_sad.webp"
+        img="/clients/ils/lokacije/novi_sad.webp"
         staff={["ana", "branka"]}
         delay={T.hub + 0.4}
       />
@@ -1675,7 +1675,7 @@ function Board({ k }: { k: number }) {
         x={200}
         y={620}
         name="Sombor"
-        img="/ils/lokacije/sombor.webp"
+        img="/clients/ils/lokacije/sombor.webp"
         staff={["ana", "mila", "tanja"]}
         delay={T.hub + 0.5}
       />
@@ -1683,7 +1683,7 @@ function Board({ k }: { k: number }) {
         x={332}
         y={632}
         name="Beograd"
-        img="/ils/lokacije/beograd.webp"
+        img="/clients/ils/lokacije/beograd.webp"
         soon
         delay={T.google + 1}
       />

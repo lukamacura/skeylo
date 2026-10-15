@@ -36,7 +36,7 @@ const testimonials: Testimonial[] = [
     role: "Vlasnik, Infinity Laser Studio",
     result: "1.600.000RSD u mesecu",
     initials: "AK",
-    img: "/ana.webp",
+    img: "/site/testimonials/ana.webp",
     imgPosition: "object-top",
   },
   {
@@ -46,7 +46,7 @@ const testimonials: Testimonial[] = [
     role: "Vlasnik, RealReselling",
     result: "+200% prodaje",
     initials: "DM",
-    img: "/rr.webp",
+    img: "/site/testimonials/rr.webp",
   },
 ];
 
