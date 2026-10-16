@@ -902,8 +902,16 @@
       show("general");
       firstGen = true;
       renderGEN();
+    } else if (h.startsWith("mg-")) {
+      view = { name: "general", id: h.slice(3) };
+      show("general");
+      firstGen = true;
+      renderGEN();
     } else if (h.startsWith("g-")) {
-      applyTheme(null);
+      const sp = (S.notes.find((n) => n.id === h.slice(2)) || {}).spaceId;
+      applyTheme(
+        (sp && (S.items.find((i) => i.id === sp) || {}).clientId) || null,
+      );
       view = { name: "gp", id: h.slice(2) };
       show("gp");
       if (NT) NT.open(view.id);
@@ -1526,7 +1534,7 @@
         ? `<div class="mh-cc">${IC.msg}<span>${n} ${ccWord(n)} klijenta</span></div>`
         : "";
     })()}</div></div>
-  </button>${creativesCard(it, c, anim, 0.18)}${reportCard(it, c, anim)}${financeCard(it, c, anim)}`;
+  </button>${creativesCard(it, c, anim, 0.18)}${reportCard(it, c, anim)}${financeCard(it, c, anim)}${generalCard(it, c, anim)}`;
     if (anim) countUp($("#mhTot"), scripts.length);
   }
 
@@ -1659,6 +1667,23 @@
     const f = finOf(it.id);
     return `<button class="mod" data-go="f-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.36s" : "animation:none"}">
     <div class="mod-l"><div class="mod-top"><span class="mi">${SV('<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3-1.6M12 6.5V8M12 16.8v1.7"/>')}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Finances</h2><div class="tot">${f && f.paid && f.paid.amount ? `<b>${esc(f.paid.cur === "EUR" ? "€" + nf2.format(f.paid.amount) : nf.format(f.paid.amount))}</b>${f.paid.cur === "EUR" ? "uplaćeno" : "RSD uplaćeno"}` : "Još nije upisano"}</div></div></div>
+  </button>`;
+  }
+
+  /* General projekta: stranice (notes) sa spaceId = id meseca/projekta */
+  function generalCard(it, c, anim) {
+    const ps = S.notes.filter((n) => n.spaceId === it.id),
+      n = ps.length,
+      top = ps
+        .filter((p) => !p.parentId)
+        .sort(
+          (a, b) =>
+            (b.updatedAt || b.createdAt || 0) -
+            (a.updatedAt || a.createdAt || 0),
+        )
+        .slice(0, 3);
+    return `<button class="mod" data-go="mg-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.42s" : "animation:none"}">
+    <div class="mod-l"><div class="mod-top"><span class="mi">${SV('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>')}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>General</h2><div class="tot">${n ? `<b>${n}</b>${n % 10 === 1 && n % 100 !== 11 ? "stranica" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "stranice" : "stranica"}` : "Marketing plan, optimizacije, CRO"}</div>${top.length ? `<div class="mh-gp">${top.map((p) => `<span>${esc(p.title || "Bez naslova")}</span>`).join("")}</div>` : ""}</div></div>
   </button>`;
   }
 
@@ -2416,13 +2441,48 @@
     if ($("#general").hidden) return;
     const anim = firstGen;
     firstGen = false;
+    /* view.id = mesec/projekat: General tog projekta (#mg-{id}), bez Models kartice */
+    const it = view.id && S.items.find((i) => i.id === view.id);
+    const c =
+      it &&
+      (S.clients.find((x) => x.id === it.clientId) || {
+        id: "",
+        name: "",
+        color: "#e1802c",
+      });
+    $("#genH").hidden = !!view.id;
+    $("#genId").hidden = !view.id;
+    $("#gmods").hidden = !!view.id;
+    $("#genBack").dataset.go = view.id ? "m-" + view.id : "";
+    $("#genBackLbl").textContent = view.id
+      ? it
+        ? it.title
+        : "Projekti"
+      : "Dashboard";
+    if (view.id) {
+      applyTheme(c ? c.id : null);
+      $("#genId").style.setProperty("--c", (c && c.color) || "#e1802c");
+      $("#genId").innerHTML = it
+        ? `${logo(c, "lg-ic")}<div><h1><span class="w"><span>General</span></span></h1><div class="sub">${esc(c.name)} · ${esc(it.title)}</div></div>`
+        : "";
+      if (!S.ready)
+        $("#gpages").innerHTML = '<div class="state">Učitavam…</div>';
+      else if (!it) {
+        $("#gpages").innerHTML =
+          '<div class="state"><b>Ovaj projekat ne postoji</b>Možda je obrisan.<button class="pill" data-go="projects">Nazad na projekte</button></div>';
+        return;
+      }
+      if (!anim && it) $("#genId .w>span").style.animation = "none";
+      if (NT && S.ready) NT.hub(anim, view.id);
+      return;
+    }
     if (!anim) $("#general .phead .w>span").style.animation = "none";
     $("#gmods").innerHTML =
       `<button class="gmod" data-go="models" style="${anim ? "animation-delay:.1s" : "animation:none"}">
     <div class="mod-top"><span class="mi">${SV('<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M16 4a4 4 0 0 1 0 8M22 21v-1a7 7 0 0 0-4-6.3"/>')}</span><span class="avstack">${S.ready ? avStack(4) : ""}</span></div>
     <div><h2>Models</h2><div class="tot"><b>${S.models.length}</b>${S.models.length % 10 === 1 && S.models.length % 100 !== 11 ? "model" : "modela"}</div></div>
   </button>`;
-    if (NT) NT.hub(anim);
+    if (NT) NT.hub(anim, null);
   }
   let firstModels = true,
     mq = "";
@@ -10107,6 +10167,11 @@
       IMG,
       nav,
       me: () => me,
+      /* natpis za "nazad" i putanju: glavni General ili General projekta */
+      spaceLabel: (sp) => {
+        const it = sp && S.items.find((i) => i.id === sp);
+        return it ? "General · " + it.title : "General";
+      },
       assets: () => ASSETS,
       scriptRendered: () => paintCcHl(),
     });

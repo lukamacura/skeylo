@@ -1,6 +1,7 @@
 /* Skeylo OS · General kao Notion.
-   Stranice (kolekcija "notes": title, icon, md, parentId, order) čuvaju sadržaj kao
-   Markdown u polju md. Editor isti Markdown prikazuje kao blokove: tekst, naslovi,
+   Stranice (kolekcija "notes": title, icon, md, parentId, spaceId, order) čuvaju sadržaj kao
+   Markdown u polju md. spaceId = mesec/projekat (items) čiji je to General (#mg-{id});
+   bez njega stranica pripada glavnom Generalu. Podstranice nasleđuju spaceId roditelja. Editor isti Markdown prikazuje kao blokove: tekst, naslovi,
    liste, zadaci, citat, napomena, kod, razdelnik, slika, fajl i podstranica.
    "/" otvara blokove i iOS emoji. app.js zove window.SKNotes(most) i dobija
    { hub, open, sync, leave, flush, focusTop }.
@@ -20,9 +21,14 @@ window.SKNotes = function (X) {
   const me = () => X.me();
   const notes = () => S.notes || [];
   const noteOf = (id) => notes().find((n) => n.id === id);
+  const spaceOf = (n) => (n && n.spaceId) || null;
+  let hubSpace = null;
+  /* id === null: koreni stranice trenutnog huba (glavni General ili General projekta) */
   const kidsOf = (id) =>
     notes()
-      .filter((n) => (n.parentId || null) === (id || null))
+      .filter((n) =>
+        id ? n.parentId === id : !n.parentId && spaceOf(n) === hubSpace,
+      )
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   const plural = (n, one, few, many) => {
     const a = n % 10,
@@ -1383,6 +1389,7 @@ window.SKNotes = function (X) {
 
   /* ---------------- hub (General) ---------------- */
   let hq = "";
+  const homeOf = (sp) => (sp ? "mg-" + sp : "general");
   const byUpd = (a, b) =>
     (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
   const who = (id) => X.TEAM.find((u) => u.id === id);
@@ -1418,16 +1425,22 @@ window.SKNotes = function (X) {
       <div class="meta2">${u ? `<img src="${esc(X.IMG[u.id])}" alt="">` : ""}<span>${ts ? esc(rel(ts)) : ""}${k ? ` · ${k} ${plural(k, "podstranica", "podstranice", "podstranica")}` : ""}</span></div></div>
     </div>`;
   }
-  function hub(anim) {
+  function hub(anim, space) {
     const box = $("#gpages");
     if (!box) return;
+    if (space !== undefined && (space || null) !== hubSpace) {
+      hubSpace = space || null;
+      hq = "";
+      $("#gq").value = "";
+    }
     if (!S.ready) {
       box.innerHTML = "";
       return;
     }
     const f = fold(hq.trim());
+    const mine = notes().filter((n) => spaceOf(n) === hubSpace);
     const list = f
-      ? notes()
+      ? mine
           .filter(
             (n) => fold(n.title).includes(f) || fold(plainOf(n.md)).includes(f),
           )
@@ -1437,9 +1450,9 @@ window.SKNotes = function (X) {
       anim
         ? `animation-delay:${(0.16 + i * 0.05).toFixed(2)}s`
         : "animation:none";
-    const all = notes().length;
+    const all = mine.length;
     box.innerHTML =
-      `<div class="gsec" style="${anim ? "" : "animation:none"}"><h2>Stranice</h2><span>${all ? all + " " + plural(all, "stranica", "stranice", "stranica") : "Beleške, procesi, ideje"}</span></div>` +
+      `<div class="gsec" style="${anim ? "" : "animation:none"}"><h2>Stranice</h2><span>${all ? all + " " + plural(all, "stranica", "stranice", "stranica") : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje"}</span></div>` +
       (f && !list.length
         ? `<div class="state">Nema stranica za „${esc(hq.trim())}“.</div>`
         : `<div class="cpgrid gpgrid">${list.map((n, i) => tile(n, d(i + 1), !!f)).join("")}${f ? "" : `<button class="cptile add" data-gnew style="${d(list.length + 1)}"><span class="ci">${I.plus}</span>Nova stranica</button>`}</div>`);
@@ -1451,6 +1464,7 @@ window.SKNotes = function (X) {
       icon: "",
       md: "",
       parentId: parentId || null,
+      spaceId: parentId ? spaceOf(noteOf(parentId)) : hubSpace,
       order: now,
       createdAt: now,
       createdBy: me() ? me().id : null,
@@ -1474,8 +1488,10 @@ window.SKNotes = function (X) {
   let backTo = "general";
   function head(p) {
     const par = p.parentId && noteOf(p.parentId);
-    backTo = par ? "g-" + par.id : "general";
-    $("#gpBackLbl").textContent = par ? par.title || "Bez naslova" : "General";
+    const home = homeOf(spaceOf(p)),
+      homeLbl = X.spaceLabel(spaceOf(p));
+    backTo = par ? "g-" + par.id : home;
+    $("#gpBackLbl").textContent = par ? par.title || "Bez naslova" : homeLbl;
     const chain = [];
     let q = par,
       g = 0;
@@ -1486,7 +1502,7 @@ window.SKNotes = function (X) {
     const cr = $("#gpCrumbs");
     cr.hidden = !chain.length;
     cr.innerHTML = chain.length
-      ? `<button type="button" data-go="general">General</button>` +
+      ? `<button type="button" data-go="${esc(home)}">${esc(homeLbl)}</button>` +
         chain
           .map(
             (n) =>
@@ -1661,7 +1677,7 @@ window.SKNotes = function (X) {
     try {
       for (const d of docs) await api.del("notes", d.id);
       if (parMd !== null) await api.upd("notes", par.id, { md: newParMd });
-      X.nav(par ? "g-" + par.id : "general");
+      X.nav(par ? "g-" + par.id : homeOf(spaceOf(p)));
       const more = docs.length - 1;
       toast(
         `Obrisano: ${p.title || "Bez naslova"}${more ? ` (+${more} ${plural(more, "podstranica", "podstranice", "podstranica")})` : ""}`,
@@ -2235,7 +2251,10 @@ window.SKNotes = function (X) {
     if (f && !isScript())
       notes()
         .filter(
-          (n) => n.id !== cur && fold(n.title || "Bez naslova").includes(f),
+          (n) =>
+            n.id !== cur &&
+            spaceOf(n) === spaceOf(docOf(cur)) &&
+            fold(n.title || "Bez naslova").includes(f),
         )
         .slice(0, 4)
         .forEach((n) => items.push({ k: "link", n }));
