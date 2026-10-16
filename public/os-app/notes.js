@@ -72,6 +72,11 @@ window.SKNotes = function (X) {
     ),
     code: SV('<path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 4l-4 16"/>'),
     hr: SV('<path d="M3 12h18"/>'),
+    embed: SV(
+      '<rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 9h20M10 12.5 7.5 15l2.5 2.5M14 12.5l2.5 2.5-2.5 2.5"/>',
+    ),
+    expand: SV('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'),
+    shrink: SV('<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>'),
     img: SV(
       '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
     ),
@@ -504,7 +509,9 @@ window.SKNotes = function (X) {
   function plainOf(md) {
     return String(md || "")
       .split("\n")
-      .filter((l) => !/^\s*(```|~~~|([-*_])( *\2){2,}\s*$|!\[)/.test(l))
+      .filter(
+        (l) => !/^\s*(```|~~~|([-*_])( *\2){2,}\s*$|!\[|::embed\[)/.test(l),
+      )
       .map((l) =>
         l.replace(
           /^\s*(#{1,6}\s+|[-*+]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+|>\s?(\[![A-Za-z]+\][^\n]*$)?)/,
@@ -657,6 +664,16 @@ window.SKNotes = function (X) {
         add({ t: "img", alt: unesc(m[1]), src: m[2] });
         continue;
       }
+      /* HTML fajl ugrađen u stranicu: ::embed[ime](/_blob/id) */
+      const ek = ln.startsWith("::embed[") ? linkAt(ln, 7) : null;
+      if (
+        ek &&
+        ek.end === ln.replace(/\s+$/, "").length &&
+        /^(\/_blob\/|blob:|https:\/\/)/i.test(ek.href)
+      ) {
+        add({ t: "embed", src: ek.href, name: unesc(ek.text) });
+        continue;
+      }
       const lk = ln[0] === "[" ? linkAt(ln, 0) : null;
       if (lk && lk.end === ln.replace(/\s+$/, "").length) {
         if (/^#g-/.test(lk.href)) {
@@ -684,7 +701,7 @@ window.SKNotes = function (X) {
     return out;
   }
   function escLead(s) {
-    if (/^(#{1,6}(\s|$)|[-*+](\s|$)|>|([-*_])( *\3){2,} *$)/.test(s))
+    if (/^(#{1,6}(\s|$)|[-*+](\s|$)|>|::embed\[|([-*_])( *\3){2,} *$)/.test(s))
       return "\\" + s;
     const m = s.match(/^(\d{1,9})([.)])(\s|$)/);
     return m ? m[1] + "\\" + s.slice(m[1].length) : s;
@@ -731,6 +748,8 @@ window.SKNotes = function (X) {
         return [`![${escPlain(b.alt || "")}](${b.src})`];
       case "file":
         return [`[${escPlain(b.name || "Fajl")}](${b.src})`];
+      case "embed":
+        return [`::embed[${escPlain(b.name || "HTML")}](${b.src})`];
       case "page":
         return [`[${escPlain(b.name || "Stranica")}](#g-${b.ref})`];
       default: {
@@ -818,7 +837,7 @@ window.SKNotes = function (X) {
       else if (b.t === "hr") h += "<hr>";
       else if (b.t === "img" && OKSRC.test(b.src || ""))
         h += `<p><img src="${esc(b.src)}" alt=""></p>`;
-      else if (b.t === "file" && OKSRC.test(b.src || ""))
+      else if ((b.t === "file" || b.t === "embed") && OKSRC.test(b.src || ""))
         h += `<p><a class="file" href="${esc(b.src)}" data-name="${esc(b.name || "Fajl")}">${esc(b.name || "Fajl")}</a></p>`;
       else if (b.t === "page") h += "<p>" + esc(b.name || "Stranica") + "</p>";
     }
@@ -930,6 +949,8 @@ window.SKNotes = function (X) {
       h += `<figure class="nb-x nb-img">${b.src ? `<img src="${esc(b.src)}" alt="${esc(b.alt || "")}" loading="lazy" draggable="false">` : `<span class="nb-up">Otpremam sliku…</span>`}</figure>`;
     else if (t === "file")
       h += `<a class="nb-x nb-file"${b.src ? ` href="${esc(b.src)}" target="_blank" rel="noopener"` : ""} draggable="false"><span class="nb-fi">${I.file}</span><span class="nb-fn">${esc(b.name || "Fajl")}</span>${b.src ? `<span class="nb-fo">${I.open}</span>` : `<span class="nb-fo">Otpremam…</span>`}</a>`;
+    else if (t === "embed")
+      h += `<div class="nb-x nb-emb"><div class="nb-eb"><span class="nb-fi">${I.embed}</span><span class="nb-fn">${esc(b.name || "HTML")}</span>${b.src ? `<button type="button" class="nb-ex" tabindex="-1" aria-label="Preko celog ekrana" title="Preko celog ekrana">${I.expand}</button>` : `<span class="nb-fo">Otpremam…</span>`}</div>${b.src ? `<iframe class="nb-ef" sandbox="${EMB_SB}" title="${esc(b.name || "HTML")}"></iframe>` : ""}</div>`;
     else if (t === "page")
       h += `<a class="nb-x nb-page" href="#g-${esc(b.ref || "")}" draggable="false"></a>`;
     el.innerHTML = h;
@@ -942,11 +963,12 @@ window.SKNotes = function (X) {
       el.dataset.i = b.i || "";
     }
     if (t === "code") el.dataset.lang = b.lang || "";
-    if (t === "img" || t === "file") {
+    if (t === "img" || t === "file" || t === "embed") {
       el.dataset.src = b.src || "";
       el.dataset.alt = b.alt || "";
       el.dataset.name = b.name || "";
     }
+    if (t === "embed" && b.src) loadEmbed(el);
     if (t === "page") {
       el.dataset.ref = b.ref || "";
       el.dataset.name = b.name || "";
@@ -959,6 +981,75 @@ window.SKNotes = function (X) {
     }
     return el;
   }
+  /* HTML fajl ide u sandbox iframe bez allow-same-origin: njegove skripte rade,
+     ali ne vide OS (sesiju, kolačiće). Visinu javlja ubačena skripta. */
+  const embCache = new Map();
+  function embText(src) {
+    let p = embCache.get(src);
+    if (!p) {
+      p = fetch(src).then((r) => {
+        if (!r.ok) throw r.status;
+        return r.text();
+      });
+      embCache.set(src, p);
+      p.catch(() => embCache.delete(src));
+    }
+    return p;
+  }
+  const EMB_JS =
+    '<script>(function(){var l=0;function s(){var d=document.documentElement,b=document.body,h=Math.max(d.scrollHeight,b?b.scrollHeight:0);if(h!==l){l=h;parent.postMessage({skEmbH:h},"*")}}addEventListener("load",s);addEventListener("DOMContentLoaded",s);if(window.ResizeObserver)new ResizeObserver(s).observe(document.documentElement);setTimeout(s,60)})()<\/script>';
+  function withEmbJs(html) {
+    /* skripta mora posle <!doctype>, inače stranica pada u quirks mode */
+    if (/<head[^>]*>/i.test(html))
+      return html.replace(/<head[^>]*>/i, (m) => m + EMB_JS);
+    const d = html.match(/^\s*<!doctype[^>]*>/i);
+    return d ? d[0] + EMB_JS + html.slice(d[0].length) : EMB_JS + html;
+  }
+  const EMB_SB =
+    "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox";
+  function loadInto(f, src) {
+    embText(src).then(
+      (html) => (f.srcdoc = withEmbJs(html)),
+      () =>
+        (f.srcdoc =
+          '<p style="font:14px system-ui;color:#999;text-align:center;margin-top:40px">HTML fajl nije mogao da se učita.</p>'),
+    );
+  }
+  function loadEmbed(el) {
+    const f = el.querySelector(".nb-ef");
+    if (f) loadInto(f, el.dataset.src);
+  }
+  addEventListener("message", (e) => {
+    const h = e.data && e.data.skEmbH;
+    if (typeof h !== "number") return;
+    for (const f of document.querySelectorAll("iframe.nb-ef"))
+      if (f.contentWindow === e.source) {
+        f.style.height = Math.min(2000, Math.max(120, Math.ceil(h))) + "px";
+        break;
+      }
+  });
+  /* preko celog ekrana: zaseban sloj u body-ju (ekrani imaju transform, pa
+     position: fixed unutar editora ne bi pokrio ceo ekran) */
+  let embOv = null;
+  function embClose() {
+    if (embOv) embOv.remove();
+    embOv = null;
+  }
+  function embFull(box) {
+    const el = box && box.closest(".nb");
+    if (!el || !el.dataset.src) return;
+    embClose();
+    const ov = (embOv = document.createElement("div"));
+    ov.className = "nb-emb nb-embov";
+    ov.innerHTML = `<div class="nb-eb"><span class="nb-fi">${I.embed}</span><span class="nb-fn">${esc(el.dataset.name || "HTML")}</span><button type="button" class="nb-ex" aria-label="Zatvori" title="Zatvori (Esc)">${I.shrink}</button></div><iframe class="nb-ef" sandbox="${EMB_SB}" title="${esc(el.dataset.name || "HTML")}"></iframe>`;
+    ov.querySelector(".nb-ex").addEventListener("click", embClose);
+    document.body.appendChild(ov);
+    loadInto(ov.querySelector(".nb-ef"), el.dataset.src);
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && embOv) embClose();
+  });
+  addEventListener("hashchange", embClose);
   function codeText(t) {
     let s = "";
     const w = (x) => {
@@ -990,7 +1081,7 @@ window.SKNotes = function (X) {
       b.i = el.dataset.i || "";
     }
     if (t === "code") b.lang = el.dataset.lang || "";
-    if (t === "img" || t === "file") {
+    if (t === "img" || t === "file" || t === "embed") {
       b.src = el.dataset.src || "";
       b.alt = el.dataset.alt || "";
       b.name = el.dataset.name || "";
@@ -2035,8 +2126,11 @@ window.SKNotes = function (X) {
     changed();
     return true;
   }
+  /* iOS/macOS pametne crtice od "--" prave "—", pa "—-" i "-—" isto znače "---" */
   function hrShortcut(el, t) {
-    if (el.dataset.t !== "p" || t.textContent !== "---") return false;
+    if (el.dataset.t !== "p") return false;
+    const v = t.textContent.replace(/​/g, "").trim().replace(/[—–]/g, "--");
+    if (v !== "---") return false;
     pushUndo();
     placeBlock(el, true, { t: "hr" });
     return true;
@@ -2188,6 +2282,13 @@ window.SKNotes = function (X) {
       ic: I.img,
       hint: "",
       kw: "slika image foto fotografija",
+    },
+    {
+      id: "embed",
+      label: "HTML fajl",
+      ic: I.embed,
+      hint: "",
+      kw: "html embed ugradi ugradjeni iframe sajt stranica web",
     },
     {
       id: "file",
@@ -2377,6 +2478,8 @@ window.SKNotes = function (X) {
       return;
     }
     if (id === "hr") placeBlock(el, empty, { t: "hr" });
+    else if (id === "embed")
+      pickFiles(".html,.htm,text/html", (fs) => uploadInto(fs, el, empty));
     else if (id === "img" || id === "file")
       pickFiles(id === "img" ? "image/*" : "", (fs) =>
         uploadInto(fs, el, empty),
@@ -3494,10 +3597,15 @@ window.SKNotes = function (X) {
       return kind === "img" ? readURL(f) : URL.createObjectURL(f);
     throw { code: "not_granted" };
   }
+  const isHtml = (f) => f.type === "text/html" || /\.html?$/i.test(f.name);
   function uploadInto(files, after, replace) {
     let anchor = after;
     files.forEach((f, k) => {
-      const kind = f.type.startsWith("image/") ? "img" : "file";
+      const kind = f.type.startsWith("image/")
+        ? "img"
+        : isHtml(f)
+          ? "embed"
+          : "file";
       const nb = make({ t: kind, src: "", name: f.name });
       nb.classList.add("up");
       if (replace && k === 0) after.replaceWith(nb);
@@ -3584,7 +3692,7 @@ window.SKNotes = function (X) {
     ) {
       if (e.data === " " && blockShortcut(el, t)) return;
       if (e.data === "`" && fenceShortcut(el, t)) return;
-      if (e.data === "-" && hrShortcut(el, t)) return;
+      if (/[-—–]/.test(e.data) && hrShortcut(el, t)) return;
       if ("*_~`".includes(e.data)) inlineShortcut(t, e.data);
       if (e.data === "/" && !SL) openSlash(t);
       else if (SL) updateSlash();
@@ -3773,6 +3881,12 @@ window.SKNotes = function (X) {
       const ref = pg.parentElement.dataset.ref;
       if (noteOf(ref)) X.nav("g-" + ref);
       else selectBlocks([pg.parentElement]);
+      return;
+    }
+    const ex = e.target.closest(".nb-ex");
+    if (ex) {
+      e.preventDefault();
+      embFull(ex.closest(".nb-emb"));
       return;
     }
     const fl = e.target.closest(".nb-file");

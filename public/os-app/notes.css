@@ -1258,3 +1258,83 @@ body.nb-dragging * {
     animation: none;
   }
 }
+
+/* HTML fajl ugrađen u stranicu */
+.nb[data-t="embed"] {
+  padding: 6px 0;
+}
+.nb-emb {
+  flex: 1;
+  min-width: 0;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  overflow: hidden;
+}
+.nb-eb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--cream);
+  font-weight: 500;
+  cursor: pointer;
+}
+.nb-eb .nb-fn {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nb.up .nb-eb {
+  animation: beat 1s infinite;
+}
+.nb-ex {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.nb-ex:hover {
+  background: rgba(225, 128, 44, 0.12);
+  color: var(--gold);
+}
+.nb-ex svg {
+  width: 16px;
+  height: 16px;
+}
+.nb-ef {
+  display: block;
+  width: 100%;
+  height: 360px;
+  border: 0;
+  background: #fff;
+}
+.nb-embov {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 0;
+  padding-top: env(safe-area-inset-top);
+}
+.nb-embov .nb-eb {
+  cursor: default;
+}
+.nb-embov .nb-ef {
+  flex: 1;
+  height: auto !important;
+}
