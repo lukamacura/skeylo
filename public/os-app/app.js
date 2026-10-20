@@ -1262,10 +1262,12 @@
     skeylo: { src: ICON, cls: "sk" },
     ils: { src: "/os-app/img/125767882c.jpg", cls: "" },
   };
+  /* logo otpremljen pri dodavanju klijenta (c.logo) ima prednost nad ugrađenim */
+  const logoOf = (c) => (c.logo ? { src: c.logo, cls: "" } : LOGOS[c.id]);
   function logo(c, cls) {
-    const L = LOGOS[c.id];
+    const L = logoOf(c);
     return L
-      ? `<span class="${cls} ${L.cls}"><img src="${L.src}" alt=""></span>`
+      ? `<span class="${cls} ${L.cls}"><img src="${esc(L.src)}" alt=""></span>`
       : `<span class="${cls}">${esc((c.name || "?").trim().charAt(0).toUpperCase())}</span>`;
   }
   function monthIndex(it) {
@@ -1381,7 +1383,7 @@
         return `<section class="col" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${(0.05 + ci * 0.1).toFixed(2)}s` : "animation:none"}">
       <div class="col-h"><button class="cplat" data-plat="${esc(c.id)}" title="Client Platform">${logo(c, "lg-ic")}<h2>${esc(c.name)}</h2></button><span class="n">${list.length}</span><button class="plus" data-add="${esc(c.id)}" aria-label="${addLbl}">${IC.plus}</button></div>
       <div class="rows">${rows || `<div class="tnone">Klikni + gore da dodaš ${c.kind === "internal" ? "projekat" : "mesec"}</div>`}</div>
-      ${c.kind === "internal" ? "" : `<button class="cdel" data-cdel="${esc(c.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši klijenta</button>`}
+      ${c.kind === "internal" ? "" : `<div class="cfoot"><button class="cdel clogo" data-clogo="${esc(c.id)}">${SV('<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>')}${logoOf(c) ? "Promeni logo" : "Dodaj logo"}</button><button class="cdel" data-cdel="${esc(c.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši klijenta</button></div>`}
     </section>`;
       })
       .join("");
@@ -1392,6 +1394,12 @@
     if (cd) {
       const c = S.clients.find((x) => x.id === cd.dataset.cdel);
       if (c) openSheet("delclient", c);
+      return;
+    }
+    const cl = e.target.closest("[data-clogo]");
+    if (cl) {
+      const c = S.clients.find((x) => x.id === cl.dataset.clogo);
+      if (c) openSheet("logo", c);
       return;
     }
     const pl = e.target.closest("[data-plat]");
@@ -1713,12 +1721,15 @@
     applyTheme(c.id);
     const anim = firstFIN;
     firstFIN = false;
+    const f = finOf(it.id);
+    // ciklus/projekat nema svoj mesec: pokaži u koji mesec se zarada računa
+    const perLbl =
+      f && f.year && it.type !== "month" ? " · " + ymName(f.year, f.month) : "";
     $("#finId").style.setProperty("--c", c.color || "#e1802c");
     $("#finId").innerHTML =
-      `${logo(c, "lg-ic")}<div><h1><span class="w"><span>Finances</span></span></h1><div class="sub">${esc(c.name)} · ${esc(it.title)}</div></div>`;
+      `${logo(c, "lg-ic")}<div><h1><span class="w"><span>Finances</span></span></h1><div class="sub">${esc(c.name)} · ${esc(it.title)}${esc(perLbl)}</div></div>`;
     if (!anim) $("#finId .w>span").style.animation = "none";
     $("#finBackLbl").textContent = it.title;
-    const f = finOf(it.id);
     const btn = $("#finAdd");
     btn.hidden = false;
     btn.innerHTML = f
@@ -1811,6 +1822,13 @@
       c,
       step: 0,
       vals: { paid: f && f.paid ? { ...f.paid } : { amount: 0, cur: defCur } },
+      // ciklus/projekat: mesec se bira u poslednjem koraku; izmena zadržava sačuvani mesec
+      per:
+        it.type === "month" && it.year
+          ? null
+          : f && f.year
+            ? { year: f.year, month: f.month }
+            : periodOf(it),
     };
     MEMBERS.forEach(
       (mb) =>
@@ -1853,13 +1871,14 @@
           return `<div class="r" style="animation-delay:${(0.1 + i * 0.06).toFixed(2)}s"><img src="${IMG[u.id]}" alt=""><span>${u.name}</span><b>${moneyV(W.vals[m.id])}</b></div>`;
         }).join("")}
         <div class="r" style="animation-delay:.4s"><span class="lg-ic sk"><img src="${ICON}" alt=""></span><span>Ostaje Skeylu</span><b>${nf.format(Math.round(paidR - sumR))} RSD</b></div>
+        ${W.per ? `<div class="r wper" style="animation-delay:.46s"><span>Mesec zarade</span><div class="mswitch"><button type="button" data-wper="-1" aria-label="Prethodni mesec">${SV('<path d="m15 18-6-6 6-6"/>', 2.4)}</button><span id="wperT">${ymName(W.per.year, W.per.month)}</span><button type="button" data-wper="1" aria-label="Sledeći mesec">${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}</button></div></div>` : ""}
       </div>`;
     }
     const v = W.vals[k];
     let ph, q;
     if (k === "paid") {
-      const L = LOGOS[W.c.id];
-      ph = `<div class="wph logo ${(L && L.cls) || ""}" style="--m:${esc(W.c.color || "var(--orange)")}"><span class="glowb"></span>${L ? `<img src="${L.src}" alt="">` : `<span class="lg-ic" style="position:relative;z-index:2;width:100%;height:100%;font-size:60px;border-radius:34px">${esc(W.c.name.charAt(0))}</span>`}</div>`;
+      const L = logoOf(W.c);
+      ph = `<div class="wph logo ${(L && L.cls) || ""}" style="--m:${esc(W.c.color || "var(--orange)")}"><span class="glowb"></span>${L ? `<img src="${esc(L.src)}" alt="">` : `<span class="lg-ic" style="position:relative;z-index:2;width:100%;height:100%;font-size:60px;border-radius:34px">${esc(W.c.name.charAt(0))}</span>`}</div>`;
       q = `How much did <span class="nmg">the client</span> pay?`;
     } else {
       const u = TEAM.find((t) => t.id === k),
@@ -1927,6 +1946,16 @@
     }
   });
   $("#wstage").addEventListener("click", (e) => {
+    const pb = e.target.closest("[data-wper]");
+    if (pb && W && W.per) {
+      const k = ymKey(W.per.year, W.per.month) + +pb.dataset.wper;
+      W.per = { year: Math.floor(k / 12), month: (k % 12) + 1 };
+      pb.closest(".mswitch").querySelector("span").textContent = ymName(
+        W.per.year,
+        W.per.month,
+      );
+      return;
+    }
     const b = e.target.closest("#wseg [data-cur]");
     if (!b) return;
     const k = W.steps[W.step];
@@ -1988,7 +2017,7 @@
     const btn = $("#wnext");
     btn.disabled = true;
     btn.textContent = "Čuvam…";
-    const per = periodOf(W.it);
+    const per = W.per || periodOf(W.it);
     const shares = {};
     MEMBERS.forEach((m) => {
       const v = W.vals[m.id];
@@ -2645,6 +2674,38 @@
         h = img.height * r;
       x.drawImage(img, (W - w) / 2, Math.min(0, (H - h) * 0.3), w, h);
       return c.toDataURL("image/jpeg", 0.78);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+  /* logo klijenta: kvadrat 256px; skoro kvadratan logo popuni polje, širok ili visok stane ceo (providnost ostaje) */
+  async function fileToLogo(f) {
+    const url = URL.createObjectURL(f);
+    try {
+      const img = await new Promise((res, rej) => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = rej;
+        i.src = url;
+      });
+      const N = 256,
+        iw = img.naturalWidth || N,
+        ih = img.naturalHeight || N,
+        c = document.createElement("canvas");
+      c.width = N;
+      c.height = N;
+      const x = c.getContext("2d");
+      const a = iw / ih,
+        r =
+          a > 0.8 && a < 1.25
+            ? Math.max(N / iw, N / ih)
+            : (N * 0.84) / Math.max(iw, ih),
+        w = iw * r,
+        h = ih * r;
+      x.drawImage(img, (N - w) / 2, (N - h) / 2, w, h);
+      return f.type === "image/jpeg"
+        ? c.toDataURL("image/jpeg", 0.86)
+        : c.toDataURL("image/png");
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -3731,7 +3792,7 @@
       .sort((a, b) => b.rsd - a.rsd);
     const monthExp = exps
       .filter((r) => r.key === key)
-      .sort((a, b) => (b.x.createdAt || 0) - (a.x.createdAt || 0));
+      .sort((a, b) => xWhen(b.x) - xWhen(a.x));
     body.innerHTML = `
     <div class="mhead" style="${d(0)}"><span class="av"><img src="${IMG[me.id]}" alt=""></span><h1><span class="w"><span>Finance Panel</span></span></h1>
       <div class="mswitch"><button data-mm="-1" ${idx <= 0 ? "disabled" : ""} aria-label="Prethodni mesec">${SV('<path d="m15 18-6-6 6-6"/>', 2.4)}</button><span>${ymName(y, m)}</span><button data-mm="1" ${idx >= sorted.length - 1 ? "disabled" : ""} aria-label="Sledeći mesec">${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}</button></div></div>
@@ -3746,7 +3807,7 @@
         ${monthEarn.length ? monthEarn.map((r, i) => `<div class="mrow" style="--c:${esc(r.c.color || "#e1802c")};${d(0.3 + i * 0.05)}">${logo(r.c, "lg-ic")}<div><div class="t">${esc(r.c.name)}</div><div class="s">${esc(r.it ? r.it.title : ymName(r.year, r.month))}</div></div><div class="a">${moneyV(r.v)}${r.v.cur === "EUR" ? `<small>≈ ${nf.format(Math.round(r.rsd))} RSD</small>` : ""}</div></div>`).join("") : `<div class="mnone">Još nema upisane zarade za ${MONTHS[m - 1]}.</div>`}
       </section>
       <section class="mcard" style="${d(0.28)}"><div class="mcard-h"><h2>Troškovi</h2><button class="pill" data-exp-add>${IC.plus}Dodaj trošak</button></div>
-        ${monthExp.length ? monthExp.map((r, i) => `<div class="mrow exp" style="${d(0.35 + i * 0.05)}"><span class="ei">${SV('<path d="M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6"/>')}</span><div><div class="t">${esc(r.x.note || "Trošak")}</div><div class="s">${r.x.createdAt ? fmtDay.format(new Date(r.x.createdAt)) : ""}</div></div><div class="a neg">−${moneyV(r.x)}</div><button class="x" data-exp-del="${esc(r.x.id)}" aria-label="Obriši trošak">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}</button></div>`).join("") : `<div class="mnone">Nema troškova za ${MONTHS[m - 1]}.</div>`}
+        ${monthExp.length ? monthExp.map((r, i) => `<div class="mrow exp" style="${d(0.35 + i * 0.05)}"><span class="ei">${SV('<path d="M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6"/>')}</span><div><div class="t">${esc(r.x.note || "Trošak")}</div><div class="s">${xWhen(r.x) ? fmtDay.format(new Date(xWhen(r.x))) : ""}</div></div><div class="a neg">−${moneyV(r.x)}</div><button class="x" data-exp-del="${esc(r.x.id)}" aria-label="Obriši trošak">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}</button></div>`).join("") : `<div class="mnone">Nema troškova za ${MONTHS[m - 1]}.</div>`}
       </section>
     </div>`;
     if (!anim) $("#moneyBody .w>span").style.animation = "none";
@@ -3811,10 +3872,21 @@
   });
   /* expense sheet */
   let xCur = "RSD";
+  /* datum troška (x.date "YYYY-MM-DD"); stariji troškovi imaju samo createdAt */
+  function xWhen(x) {
+    return x.date ? new Date(x.date + "T12:00").getTime() : x.createdAt || 0;
+  }
   function openExpense() {
     xCur = "RSD";
     $("#xamt").value = "";
     $("#xnote").value = "";
+    // predlog: današnji dan u mesecu koji je otvoren u panelu
+    const key = moneyYM ?? thisKey(),
+      y = Math.floor(key / 12),
+      m = (key % 12) + 1,
+      day = Math.min(new Date().getDate(), new Date(y, m, 0).getDate());
+    $("#xdate").value =
+      `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     $("#xerr").textContent = "";
     setSeg($("#xseg"), "RSD");
     const s = $("#xscrim");
@@ -3852,21 +3924,30 @@
       shake($("#xsheet"));
       return;
     }
-    const key = moneyYM ?? thisKey();
-    const y = Math.floor(key / 12),
-      m = (key % 12) + 1;
+    const date = $("#xdate").value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      $("#xerr").textContent = "Izaberi datum troška.";
+      shake($("#xsheet"));
+      return;
+    }
+    const y = +date.slice(0, 4),
+      m = +date.slice(5, 7);
     try {
       const id = await api.add("expenses", {
         member: me.id,
         amount,
         cur: xCur,
         note: $("#xnote").value.trim(),
+        date,
         year: y,
         month: m,
         order: Date.now(),
         createdAt: Date.now(),
       });
       closeExpense();
+      // panel prelazi na mesec u koji je trošak upisan
+      moneyYM = ymKey(y, m);
+      firstMoney = true;
       refresh();
       toast("Trošak dodat");
     } catch (err) {
@@ -6263,6 +6344,47 @@
     };
     sw.appendChild(b);
   });
+  /* logo klijenta: pregled u sheet-u, otprema se tek na "Dodaj"/"Sačuvaj"; csCur = trenutni logo pri izmeni */
+  let csLogo = null,
+    csCur = null;
+  function setLgUp() {
+    const u = $("#lgup");
+    u.querySelector("img")?.remove();
+    if (csLogo || csCur) {
+      const i = document.createElement("img");
+      i.src = csLogo || csCur;
+      i.alt = "";
+      u.insertBefore(i, u.firstChild);
+      $("#lgupT").hidden = true;
+    } else $("#lgupT").hidden = false;
+  }
+  $("#clogo").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      toast("Izaberi sliku.");
+      return;
+    }
+    try {
+      csLogo = await fileToLogo(f);
+      setLgUp();
+    } catch (err) {
+      toast("Ova slika ne može da se učita.");
+    }
+  });
+  /* data URL -> "/_blob/<id>" (lokalni režim čuva data URL); null ako otpremanje ne uspe */
+  async function uploadLogo(dataUrl) {
+    if (ASSETS) {
+      try {
+        const r = await ASSETS.upload(await (await fetch(dataUrl)).blob());
+        return "/_blob/" + r.id;
+      } catch (err) {
+        return null;
+      }
+    }
+    return S.mode === "local" ? dataUrl : null;
+  }
   function clientFootprint(cid) {
     const items = S.items.filter((i) => i.clientId === cid);
     const ids = new Set(items.map((i) => i.id));
@@ -6298,11 +6420,30 @@
     sheetMode = mode;
     sheetClient = client || null;
     const pw = mode === "delclient";
+    csLogo = null;
+    csCur = mode === "logo" ? (logoOf(client) || {}).src || null : null;
+    setLgUp();
+    $("#lgup").hidden = mode !== "client" && mode !== "logo";
     $("#sheetText").style.color = "";
     $("#sheetOk").disabled = false;
     $("#sheetList").hidden = !pw;
     $("#sheetInput").type = pw ? "password" : "text";
     $("#sheetInput").autocomplete = pw ? "current-password" : "off";
+    if (mode === "logo") {
+      $("#sheetTitle").textContent = `Logo za ${client.name}`;
+      $("#sheetText").hidden = false;
+      $("#sheetText").textContent = csCur
+        ? "Dodirni logo da izabereš novu sliku."
+        : "Dodirni polje da izabereš sliku.";
+      $("#sheetInput").hidden = true;
+      sw.hidden = true;
+      $("#sheetOk").textContent = "Sačuvaj";
+      $("#sheetOk").classList.remove("danger");
+      const s = $("#scrim");
+      s.hidden = false;
+      requestAnimationFrame(() => s.classList.add("open"));
+      return;
+    }
     if (pw) {
       const f = clientFootprint(client.id);
       $("#sheetTitle").textContent = `Obriši ${client.name}?`;
@@ -6456,6 +6597,8 @@
         for (const x of f.schedules) await api.del("schedules", x.id);
         for (const x of f.items) await api.del("items", x.id);
         await api.del("clients", c.id);
+        if (ASSETS && (c.logo || "").startsWith("/_blob/"))
+          ASSETS.delete(c.logo.slice(7)).catch(() => {});
         if (!DB) {
           const ids = (k) => new Set(f[k].map((x) => x.id));
           for (const k of [
@@ -6488,6 +6631,32 @@
         btn.textContent = "Obriši zauvek";
         toast(errMsg(err));
         refresh();
+      }
+      return;
+    }
+    if (sheetMode === "logo") {
+      const c = sheetClient;
+      if (!c || !csLogo) return closeSheet();
+      const btn = $("#sheetOk");
+      btn.disabled = true;
+      btn.textContent = "Čuvam…";
+      const url = await uploadLogo(csLogo);
+      btn.disabled = false;
+      btn.textContent = "Sačuvaj";
+      if (!url) {
+        toast("Logo nije otpremljen. Probaj ponovo.");
+        return;
+      }
+      const old = c.logo;
+      try {
+        await api.upd("clients", c.id, { logo: url });
+        if (ASSETS && (old || "").startsWith("/_blob/"))
+          ASSETS.delete(old.slice(7)).catch(() => {});
+        closeSheet();
+        refresh();
+        toast(`Logo za ${c.name} sačuvan`);
+      } catch (err) {
+        toast(errMsg(err));
       }
       return;
     }
@@ -6565,10 +6734,17 @@
     if (sheetMode === "client") {
       const order =
         S.clients.reduce((a, c) => Math.max(a, c.order || 0), 0) + 1;
+      const data = { name, kind: "client", color: pickColor, order };
+      if (csLogo) {
+        const url = await uploadLogo(csLogo);
+        if (url) data.logo = url;
+      }
       const cid = await create(
         "clients",
-        { name, kind: "client", color: pickColor, order },
-        `${name} dodat`,
+        data,
+        csLogo && !data.logo
+          ? `${name} dodat, logo nije otpremljen`
+          : `${name} dodat`,
       );
       if (cid) {
         const d = new Date();

@@ -1166,6 +1166,20 @@ form {
   color: var(--bad);
   background: rgba(255, 122, 107, 0.08);
 }
+/* dno kolone klijenta: logo + brisanje */
+.cfoot {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.cfoot .cdel {
+  margin-top: 0;
+  white-space: nowrap;
+}
+.cdel.clogo:hover {
+  color: var(--cream);
+  background: color-mix(in srgb, var(--cream) 6%, transparent);
+}
 .sheet .dl {
   display: grid;
   gap: 6px;
@@ -2813,6 +2827,7 @@ form {
 .wph.logo img {
   border-radius: 34px;
   object-fit: cover;
+  background: var(--surface);
 }
 .wph.logo.sk img {
   object-fit: contain;
@@ -3020,6 +3035,27 @@ form {
 .wsum .r.tot {
   background: color-mix(in srgb, var(--orange) 14%, var(--surface));
   border-color: color-mix(in srgb, var(--orange) 40%, transparent);
+}
+/* ciklus/projekat: mesec u koji se zarada računa */
+.wsum .r.wper {
+  grid-template-columns: 1fr auto;
+  padding: 8px 8px 8px 16px;
+}
+.wsum .r.wper .mswitch {
+  margin-left: 0;
+  padding: 3px;
+  background: var(--ink);
+}
+.wsum .r.wper .mswitch button {
+  width: 36px;
+  height: 36px;
+}
+.wsum .r.wper .mswitch button:hover {
+  background: var(--surface);
+}
+.wsum .r.wper .mswitch span {
+  min-width: 118px;
+  font-size: 15px;
 }
 .burst {
   position: fixed;
@@ -4503,6 +4539,34 @@ form {
   inset: 0;
   opacity: 0;
   cursor: pointer;
+}
+/* logo u sheet-u "Novi klijent" */
+.phup.lgup {
+  width: 96px;
+  aspect-ratio: 1;
+  border-radius: 26px;
+}
+.phup.lgup img {
+  object-position: 50% 50%;
+}
+.phup.lgup .ph-t {
+  gap: 4px;
+  font-size: 13px;
+  padding: 6px;
+}
+.phup.lgup .ph-t svg {
+  width: 24px;
+  height: 24px;
+}
+/* datum troška: iOS centrira i skuplja prazan date input */
+.sheet input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 54px;
+  text-align: left;
+}
+.sheet input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
 }
 /* who will be modeling */
 .mpick {

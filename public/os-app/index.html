@@ -7,6 +7,8 @@
 <title>Skeylo OS</title>
 <meta name="theme-color" content="#0b0806">
 <link rel="icon" href="/os-app/img/e20eeaf7f1.png">
+<link rel="apple-touch-icon" href="/os-app/img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Skeylo OS">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600&family=DM+Serif+Display&family=Poppins:wght@400;500;600&display=swap">
@@ -447,6 +449,7 @@
     <h3 id="sheetTitle">Novi klijent</h3>
     <p id="sheetText" hidden></p>
     <ul class="dl" id="sheetList" hidden></ul>
+    <label class="phup lgup" id="lgup" hidden><input type="file" id="clogo" accept="image/*"><span class="ph-t" id="lgupT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>Dodaj logo</span></label>
     <label class="sr" for="sheetInput">Naziv</label>
     <input id="sheetInput" type="text" autocomplete="off" maxlength="60">
     <div class="swatches" id="swatches" role="group" aria-label="Boja"></div>
@@ -550,6 +553,8 @@
     <div class="seg" id="xseg"><span class="knob"></span><button type="button" class="on" data-cur="RSD">RSD</button><button type="button" data-cur="EUR">EUR</button></div>
     <div class="lbl">Za šta</div>
     <input id="xnote" type="text" autocomplete="off" maxlength="60" placeholder="npr. gorivo, oprema">
+    <div class="lbl">Datum</div>
+    <input id="xdate" type="date">
     <p class="serr" id="xerr"></p>
     <div class="row2"><button type="button" class="pill" id="xcancel">Otkaži</button><button type="submit" class="pill solid">Dodaj trošak</button></div>
   </form>
