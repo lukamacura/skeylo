@@ -6,8 +6,12 @@
     nina: "/os-app/img/f8e39d5612.jpg",
   };
   const ICON = "/os-app/img/e20eeaf7f1.png";
-  // Pozadina Start kartice po osobi (ostali: podrazumevana iz index.html)
-  const START_BG = { luka: "/os-app/img/edc_luka.webp" };
+  // Pozadina Start kartice po osobi (Filip: podrazumevana iz index.html)
+  const START_BG = {
+    luka: "/os-app/img/start_luka.webp",
+    mihajlo: "/os-app/img/start_mihajlo.webp",
+    nina: "/os-app/img/start_nina.webp",
+  };
   const TEAM = [
     { id: "filip", name: "Filip", voc: "Filipe", email: "filip@skeylo.com" },
     {
