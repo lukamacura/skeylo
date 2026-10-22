@@ -460,3 +460,137 @@ html.gated body > :not(.gate) {
     animation-duration: 2.4s;
   }
 }
+
+/* ---------- kućica: sa bilo koje stranice pravo na Dashboard ---------- */
+.rhome {
+  order: 2;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--cream);
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    transform 0.1s ease-out;
+}
+.rhome svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.45s var(--spring);
+}
+.rhome:hover {
+  background: rgba(240, 190, 198, 0.07);
+  border-color: rgba(240, 190, 198, 0.28);
+}
+.rhome:hover svg {
+  transform: translateY(-2px);
+}
+.rhome:active {
+  transform: scale(0.94);
+}
+.rapp.guest .rhome {
+  display: none !important;
+}
+
+/* ---------- kartica: Informacioni sistem ---------- */
+.sys {
+  grid-column: 1/-1;
+  min-height: clamp(200px, 18vw, 230px);
+  --mx: 78%;
+}
+.sys .t span {
+  display: block;
+}
+.sys .net {
+  position: absolute;
+  right: clamp(56px, 8vw, 110px);
+  top: 50%;
+  width: min(46%, 420px);
+  height: auto;
+  overflow: visible;
+  transform: translateY(-50%);
+}
+.sys .lk path,
+.sys .pl path {
+  fill: none;
+}
+.sys .lk path {
+  stroke: rgba(240, 190, 198, 0.2);
+  stroke-width: 1.4;
+}
+/* puls putuje od čvora ka centru (pathLength 100, period 200: samo jedan na liniji) */
+.sys .pl path {
+  stroke: #fbe4df;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 5 195;
+  stroke-dashoffset: 5;
+  animation: sysflow 2.8s cubic-bezier(0.45, 0, 0.25, 1) var(--d, 0s) infinite;
+  filter: drop-shadow(0 0 4px rgba(251, 228, 223, 0.8));
+}
+@keyframes sysflow {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+.sys .nd circle {
+  fill: #241219;
+  stroke: rgba(240, 190, 198, 0.5);
+  stroke-width: 1.4;
+}
+.sys .hub {
+  fill: url(#sysHub);
+  stroke: rgba(251, 228, 223, 0.45);
+  stroke-width: 1.2;
+}
+.sys .orb {
+  fill: none;
+  stroke: rgba(240, 190, 198, 0.28);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sysorb 30s linear infinite;
+}
+@keyframes sysorb {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sys:hover .nd circle {
+  stroke: rgba(251, 228, 223, 0.85);
+}
+
+/* stranica: mapa dobija ceo okvir, bez bele pozadine dok se učitava */
+.rapp.sys .vframe iframe {
+  background: #150e10;
+}
+
+@media (max-width: 760px) {
+  .rhome {
+    width: 42px;
+    height: 42px;
+  }
+  .sys {
+    min-height: 250px;
+  }
+  .sys .net {
+    right: 18px;
+    top: 22px;
+    width: min(72%, 300px);
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sys .pl {
+    display: none;
+  }
+  .sys .orb {
+    animation: none;
+  }
+}

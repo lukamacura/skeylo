@@ -4,8 +4,63 @@
    - izvor podataka za app.js (subscribe/html/putComment/delComment/putVault/delVault) uz realtime
    - gost link #raspored.{id}: bez prijave, samo taj jedan raspored (os.schedule_get)
    Šta klijent sme da čita i piše čuvaju RLS pravila i funkcije u bazi, ne ovaj fajl. */
+
+/* Tempo animacija: koliko puta brže od dizajna (app.css/app.js ostaju netaknuti).
+   Svaka jednokratna CSS animacija i prelaz dobija trajanje i kašnjenje podeljeno sa
+   CRM_TEMPO, pa redosled i preklapanja ostaju isti, samo brži. Beskonačne petlje
+   (ambijent) zadržavaju ritam; skraćuje im se samo početno kašnjenje. app.js istim
+   brojem deli tajmere koji čekaju animacije (uvod, prelazi među stranicama). */
+window.CRM_TEMPO = 1.5;
+(() => {
+  const TEMPO = window.CRM_TEMPO;
+  if (
+    TEMPO === 1 ||
+    !document.getAnimations ||
+    !window.CSSAnimation ||
+    !window.CSSTransition
+  )
+    return;
+  const seen = new WeakSet();
+  let queued = false;
+  function retime() {
+    queued = false;
+    for (const a of document.getAnimations()) {
+      if (seen.has(a)) continue;
+      seen.add(a);
+      if (!(a instanceof CSSAnimation || a instanceof CSSTransition)) continue;
+      // animacija koja je već krenula se ne dira, da ne skoči
+      if (a.currentTime > 34) continue;
+      const t = a.effect.getTiming(),
+        delay = t.delay || 0;
+      if (t.iterations === Infinity) {
+        if (delay) a.effect.updateTiming({ delay: delay / TEMPO });
+      } else if (typeof t.duration === "number")
+        a.effect.updateTiming({
+          duration: t.duration / TEMPO,
+          delay: delay / TEMPO,
+        });
+    }
+  }
+  const soon = () => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(retime);
+  };
+  // klasa/novi elementi pokreću animacije; prelaze (i :hover) javlja transitionrun
+  new MutationObserver(soon).observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  addEventListener("transitionrun", soon, true);
+  addEventListener("animationstart", soon, true);
+  soon();
+})();
+
 (() => {
   const E = window.OS_ENV || {};
+  const TEMPO = window.CRM_TEMPO || 1;
   /* klijenti u izboru na ulazu; novi klijent = novi red ovde + njegov CLIENT i boje u app.js */
   const CLIENTS = [
     {
@@ -220,6 +275,16 @@
       delComment: (id, col) => del(col || "comments", id),
       putVault: (id, c) => set("vault", id, c),
       delVault: (id) => del("vault", id),
+      /* stranice sa sajta iza ILS lozinke (/ils/...): prijava u CRM ih otključava */
+      async unlock() {
+        const { data } = await sb.auth.getSession();
+        const t = data.session && data.session.access_token;
+        if (!t) return;
+        await fetch("/crm/unlock", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + t },
+        });
+      },
     };
   }
 
@@ -414,7 +479,16 @@
   function flight(card) {
     const L = [],
       add = (el, kf, o) =>
-        el && L.push(el.animate(kf, { easing: EZ, fill: "both", ...o }));
+        el &&
+        L.push(
+          el.animate(kf, {
+            easing: EZ,
+            fill: "both",
+            ...o,
+            duration: o.duration / TEMPO,
+            delay: (o.delay || 0) / TEMPO,
+          }),
+        );
     const logo = card.querySelector(".gci"),
       A = logo.getBoundingClientRect(),
       B = mark.getBoundingClientRect();
@@ -632,8 +706,8 @@
             { opacity: 0, transform: reduce ? "none" : "translateY(-10px)" },
           ],
           {
-            duration: 260,
-            delay: i * 12,
+            duration: 260 / TEMPO,
+            delay: (i * 12) / TEMPO,
             easing: "cubic-bezier(.4,0,1,1)",
             fill: "forwards",
           },
@@ -660,14 +734,14 @@
     gate.classList.add("out");
     if (!reduce && box.style.visibility === "visible")
       mark.animate([{ transform: "none" }, { transform: "scale(1.12)" }], {
-        duration: 550,
+        duration: 550 / TEMPO,
         easing: EZ,
         fill: "forwards",
       });
     try {
       if (onDash()) EMB.pause(false);
     } catch (e) {}
-    setTimeout(() => (gate.hidden = true), 600);
+    setTimeout(() => (gate.hidden = true), 600 / TEMPO);
   }
 
   async function start() {

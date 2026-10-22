@@ -1,0 +1,56 @@
+/* Informacioni sistem: stalni tok po vezama (tačkice ili crtice koje teku
+   u smeru veze) i okretni prsten oko Infinity-ja. Udare struje pomera
+   SistemMap iz JS-a, ovde je samo ono što stalno teče. */
+
+.sys-march {
+  stroke-dasharray: 0.1 10;
+  animation: sys-march 0.9s linear infinite;
+}
+.sys-march.trig {
+  stroke-dasharray: 5 7;
+  animation-name: sys-march-t;
+  animation-duration: 0.7s;
+}
+/* druga boja: iste tačkice, pomerene za pola razmaka */
+.sys-march.alt {
+  animation-delay: -0.45s;
+}
+.sys-march.trig.alt {
+  animation-delay: -0.35s;
+}
+@keyframes sys-march {
+  to {
+    stroke-dashoffset: -10.1;
+  }
+}
+@keyframes sys-march-t {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+.sys-spin {
+  transform-origin: 50% 50%;
+  animation: sys-spin 22s linear infinite;
+}
+.sys-spin.ccw {
+  animation-direction: reverse;
+}
+@keyframes sys-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* pregled je pokriven zumiranim delom: sve miruje */
+.sys-idle .sys-march,
+.sys-idle .sys-spin {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sys-march,
+  .sys-spin {
+    animation: none;
+  }
+}

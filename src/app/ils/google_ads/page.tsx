@@ -1,36 +1,47 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, Playfair_Display, Urbanist } from "next/font/google";
+import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import Gate from "@/components/site/ils/Gate";
 import AdsDeck from "@/components/site/ils/ads/AdsDeck";
 import { ILS_COOKIE, isIlsUnlocked } from "@/lib/ils-gate";
 import "@/components/site/ils/plan.css";
 
-/* Isti Infinity fontovi kao marketing plan, samo za ovu stranicu. */
-const serif = Playfair_Display({
-  subsets: ["latin", "latin-ext"],
-  weight: ["600", "700"],
-  style: ["normal", "italic"],
+/* Isti Infinity fontovi kao marketing plan, samo za ovu stranicu. Fajlovi su u
+   ../fonts (varijabilni, latin + latin-ext), pa build ne zavisi od Google Fonts-a. */
+const playfair = localFont({
+  src: [
+    {
+      path: "../fonts/PlayfairDisplay.woff2",
+      weight: "400 900",
+      style: "normal",
+    },
+    {
+      path: "../fonts/PlayfairDisplay-Italic.woff2",
+      weight: "400 900",
+      style: "italic",
+    },
+  ],
   variable: "--font-ils-serif",
   display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
 
-const sans = Urbanist({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700", "800"],
+const urbanist = localFont({
+  src: "../fonts/Urbanist.woff2",
+  weight: "100 900",
   variable: "--font-ils-sans",
   display: "swap",
 });
 
 /* Rukopis za računicu na papiru (slajd 04). */
-const hand = Caveat({
-  subsets: ["latin", "latin-ext"],
-  weight: ["500", "700"],
+const caveat = localFont({
+  src: "../fonts/Caveat.woff2",
+  weight: "400 700",
   variable: "--font-ils-hand",
   display: "swap",
 });
 
-const FONTS = `${serif.variable} ${sans.variable} ${hand.variable}`;
+const FONTS = `${playfair.variable} ${urbanist.variable} ${caveat.variable}`;
 
 async function unlocked() {
   return isIlsUnlocked((await cookies()).get(ILS_COOKIE)?.value);

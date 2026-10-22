@@ -11,7 +11,7 @@ const CLIENT = {
   user: null, // ko piše komentare; postavlja ga SkeyloCRM.connect posle prijave
   loomEmbed: true, // Loom se pušta u stranici
   pages: {
-    // "reporting", "creative-inspection", "creatives", "organisation" i "privacy" su ugrađeni ispod; ostalo: link ka stranici kad bude gotova (null = "stiže uskoro")
+    // "reporting", "creative-inspection", "creatives", "organisation", "privacy" i "sistem" su ugrađeni ispod; ostalo: link ka stranici kad bude gotova (null = "stiže uskoro")
     reporting: null,
     "creative-inspection": null,
     creatives: null,
@@ -28,6 +28,8 @@ const CRM_MEDIA = {}; // samo demo kreative u pregledu (ime fajla → adresa); p
 const $ = (s) => document.querySelector(s),
   $$ = (s) => [...document.querySelectorAll(s)];
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* tempo animacija (crm-db.js): tajmeri koji čekaju animacije dele se istim brojem */
+const TEMPO = window.CRM_TEMPO || 1;
 const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
 const esc = (s) =>
   String(s).replace(
@@ -505,8 +507,8 @@ const EMB = (function () {
     mark.classList.add("zap");
   }
   function fire() {
-    beam = { t: performance.now(), d: 480 };
-    setTimeout(zap, 130);
+    beam = { t: performance.now(), d: 480 / TEMPO };
+    setTimeout(zap, 130 / TEMPO);
   }
   function flashAll() {
     const r = emb.getBoundingClientRect(),
@@ -526,7 +528,7 @@ const EMB = (function () {
     zap();
     flashAll();
     document.body.classList.add("jolt");
-    setTimeout(() => document.body.classList.remove("jolt"), 560);
+    setTimeout(() => document.body.classList.remove("jolt"), 560 / TEMPO);
     try {
       if (
         navigator.vibrate &&
@@ -623,7 +625,7 @@ const EMB = (function () {
     }
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    const t = now - t0;
+    const t = (now - t0) * TEMPO;
     bx.clearRect(0, 0, C, C);
     fx.clearRect(0, 0, C, C);
     const prog = reduce ? 1 : Math.min(1, Math.max(0, (t - 900) / 700));
@@ -730,7 +732,7 @@ if (reduce) {
     setTimeout(async () => {
       await FX.etch($("#ew1"), 760, true);
       await FX.etch($("#ew2"), 960, true);
-    }, 140);
+    }, 140 / TEMPO);
 
 /* ---------- cards: laser trace outline, reveal, tilt + parallax + magnetic arrow ---------- */
 const NS = "http://www.w3.org/2000/svg";
@@ -817,7 +819,7 @@ $$(".card").forEach(armCard);
 /* reveal: on first load cards come in one after another while the emblem intro plays */
 const dashWake = (function () {
   const T0 = performance.now(),
-    INTRO = reduce ? 0 : 800,
+    INTRO = reduce ? 0 : 800 / TEMPO,
     away = () => $("#dash").classList.contains("away");
   let k = 0,
     fb = 0;
@@ -825,7 +827,7 @@ const dashWake = (function () {
     if (el.classList.contains("on")) return;
     el.classList.add("on");
     if (el.classList.contains("rep"))
-      setTimeout(() => el.classList.add("live"), 3200);
+      setTimeout(() => el.classList.add("live"), 3200 / TEMPO);
   };
   const io = new IntersectionObserver(
     (es) =>
@@ -834,7 +836,9 @@ const dashWake = (function () {
         const el = e.target;
         io.unobserve(el);
         const wait = Math.max(0, INTRO - (performance.now() - T0)),
-          d = wait ? wait + +el.dataset.i * 130 : (k++ % 2) * 100;
+          d = wait
+            ? wait + (+el.dataset.i * 130) / TEMPO
+            : ((k++ % 2) * 100) / TEMPO;
         setTimeout(() => show(el), d);
       }),
     { threshold: 0.12 },
@@ -848,7 +852,7 @@ const dashWake = (function () {
     clearTimeout(fb);
     fb = setTimeout(() => {
       if (!away()) cards.forEach(show);
-    }, 3400);
+    }, 3400 / TEMPO);
   };
   arm();
   return () => {
@@ -1058,7 +1062,10 @@ function openPage(card) {
         () => {
           take.classList.add("full");
           softTitle($("#takeT .ew"));
-          setTimeout(() => $("#takeBack").focus({ preventScroll: true }), 300);
+          setTimeout(
+            () => $("#takeBack").focus({ preventScroll: true }),
+            300 / TEMPO,
+          );
         },
         reduce ? 0 : 620,
       );
@@ -1171,9 +1178,9 @@ async function tryUnlock() {
     setTimeout(
       () => {
         closeVault();
-        setTimeout(() => RP.openPV($("#privCard")), reduce ? 0 : 260);
+        setTimeout(() => RP.openPV($("#privCard")), reduce ? 0 : 260 / TEMPO);
       },
-      reduce ? 0 : 760,
+      reduce ? 0 : 760 / TEMPO,
     );
   } else {
     vbox.classList.remove("bad");
@@ -1211,6 +1218,10 @@ $$("#dash .card").forEach((c) =>
     if (c.dataset.page === "privacy") {
       if (unlocked) RP.openPV(c);
       else openVault();
+      return;
+    }
+    if (c.dataset.page === "sistem") {
+      RP.openSYS(c);
       return;
     }
     openPage(c);
@@ -1295,6 +1306,10 @@ const RP = (function () {
   const okLink = (u) => /^https:\/\/\S+$/i.test(u || "");
   const hasLoom = (r) => okLink(r.loom);
   const hasDoc = (r) => (r.chunks || 0) > 0;
+  /* izveštaj može biti i stranica sa sajta (href: "/ils/marketing_plan");
+     chunks tada nosi rezervni HTML sa linkom, za stariji kod */
+  const pageOf = (r) =>
+    /^\/[a-z0-9_\/-]+$/i.test(r.href || "") ? r.href : null;
   const fmtD = (ts) => {
     if (!ts) return "";
     const d = new Date(ts);
@@ -2897,6 +2912,8 @@ p{line-height:1.65;margin:0}
     if (INTRO) INTRO.setP();
     if (rapp.hidden) return;
     if (kind === "update") {
+      /* Informacioni sistem ne zavisi od podataka: okvir ostaje, mapa se ne pokreće ponovo */
+      if (cur.sec === "sys" && rmain.querySelector("#vframe")) return;
       if (isViewer(cur) && ST.R.get(cur.rid)) {
         updViewerHead();
         return;
@@ -2966,6 +2983,7 @@ p{line-height:1.65;margin:0}
     if (r.sec === "cr")
       return ["creatives", r.pid, r.cid].filter(Boolean).join(".");
     if (r.sec === "pv") return "privacy";
+    if (r.sec === "sys") return "sistem";
     if (r.sec === "org")
       return ["organisation", r.v === "day" ? r.oid : null]
         .filter(Boolean)
@@ -2983,6 +3001,7 @@ p{line-height:1.65;margin:0}
     if (GUEST) return { sec: "org", v: "day", oid: GUEST, guest: true };
     const p = location.hash.replace(/^#/, "").split(".");
     if (p[0] === "privacy") return { sec: "pv", v: "list" };
+    if (p[0] === "sistem") return { sec: "sys", v: "list" };
     if (p[0] === "organisation")
       return p[1]
         ? { sec: "org", v: "day", oid: p.slice(1).join(".") }
@@ -3018,27 +3037,29 @@ p{line-height:1.65;margin:0}
       ? "d"
       : r.sec === "pv"
         ? "pv"
-        : r.sec === "org"
-          ? r.v === "day"
-            ? "o:" + r.oid
-            : "o"
-          : r.v === "periods"
-            ? "p:" + r.sec
-            : r.v === "gallery"
-              ? "g:" + r.pid
-              : r.v === "types"
-                ? "t:" + r.pid
-                : r.v === "scripts"
-                  ? "s:" + r.pid
-                  : r.v === "script"
-                    ? "c:" + r.pid + ":" + r.sid
-                    : isViewer(r)
-                      ? "v:" + r.pid + ":" + r.rid
-                      : "l:" + r.pid + ":" + r.type;
+        : r.sec === "sys"
+          ? "sys"
+          : r.sec === "org"
+            ? r.v === "day"
+              ? "o:" + r.oid
+              : "o"
+            : r.v === "periods"
+              ? "p:" + r.sec
+              : r.v === "gallery"
+                ? "g:" + r.pid
+                : r.v === "types"
+                  ? "t:" + r.pid
+                  : r.v === "scripts"
+                    ? "s:" + r.pid
+                    : r.v === "script"
+                      ? "c:" + r.pid + ":" + r.sid
+                      : isViewer(r)
+                        ? "v:" + r.pid + ":" + r.rid
+                        : "l:" + r.pid + ":" + r.type;
   const pdep = (r) =>
     r.v === "dash"
       ? 0
-      : r.sec === "pv"
+      : r.sec === "pv" || r.sec === "sys"
         ? 1
         : r.sec === "org"
           ? r.v === "day"
@@ -3053,7 +3074,7 @@ p{line-height:1.65;margin:0}
                 : 3;
   function parentOf(r) {
     if (GUEST) return r;
-    if (r.sec === "pv") return { v: "dash" };
+    if (r.sec === "pv" || r.sec === "sys") return { v: "dash" };
     if (r.sec === "org")
       return r.v === "day" ? { sec: "org", v: "list" } : { v: "dash" };
     if (r.sec === "ci")
@@ -3099,7 +3120,7 @@ p{line-height:1.65;margin:0}
     if (next.sec === "pv" && !unlocked) {
       pending = null;
       if (location.hash.replace(/^#/, "")) location.hash = "";
-      setTimeout(openVault, cur.v === "dash" ? 0 : 700);
+      setTimeout(openVault, cur.v === "dash" ? 0 : 700 / TEMPO);
       return;
     }
     pending = null;
@@ -3189,13 +3210,15 @@ p{line-height:1.65;margin:0}
     if (next.v === "dash")
       return prev.sec === "pv"
         ? "#dash .card.priv"
-        : prev.sec === "org"
-          ? "#dash .card.org"
-          : prev.sec === "ci"
-            ? "#dash .card.ci"
-            : prev.sec === "cr"
-              ? "#dash .card.cr"
-              : "#dash .card.rep";
+        : prev.sec === "sys"
+          ? "#dash .card.sys"
+          : prev.sec === "org"
+            ? "#dash .card.org"
+            : prev.sec === "ci"
+              ? "#dash .card.ci"
+              : prev.sec === "cr"
+                ? "#dash .card.cr"
+                : "#dash .card.rep";
     if (prev.sec === "org")
       return prev.v === "day" && next.v === "list"
         ? `#rmain [data-oid="${cssq(prev.oid)}"]`
@@ -3288,9 +3311,9 @@ p{line-height:1.65;margin:0}
             pane.style.opacity = "0";
             setTimeout(() => {
               if (tok === tTok) paneOff();
-            }, 520);
+            }, 520 / TEMPO);
           });
-        }, 600);
+        }, 600 / TEMPO);
       }),
     );
   }
@@ -3330,7 +3353,7 @@ p{line-height:1.65;margin:0}
             pane.style.opacity = "0";
             setTimeout(() => {
               if (tok === tTok) paneOff();
-            }, 360);
+            }, 360 / TEMPO);
             return;
           }
           const look = paneLook(el);
@@ -3349,15 +3372,15 @@ p{line-height:1.65;margin:0}
             el.classList.remove("land");
             void el.offsetWidth;
             el.classList.add("land");
-            setTimeout(() => el.classList.remove("land"), 1000);
+            setTimeout(() => el.classList.remove("land"), 1000 / TEMPO);
             pane.style.transition = "opacity .22s";
             pane.style.opacity = "0";
             setTimeout(() => {
               if (tok === tTok) paneOff();
-            }, 240);
-          }, 560);
+            }, 240 / TEMPO);
+          }, 560 / TEMPO);
         });
-      }, 210);
+      }, 210 / TEMPO);
     });
   }
   function fadeTo(mid) {
@@ -3377,8 +3400,8 @@ p{line-height:1.65;margin:0}
       b.classList.remove("fadein");
       void b.offsetWidth;
       b.classList.add("fadein");
-      setTimeout(() => b.classList.remove("fadein"), 420);
-    }, 170);
+      setTimeout(() => b.classList.remove("fadein"), 420 / TEMPO);
+    }, 170 / TEMPO);
   }
   function wipeSwap(mid) {
     const tok = ++tTok;
@@ -3391,7 +3414,7 @@ p{line-height:1.65;margin:0}
     if (l) l.classList.add("out");
     setTimeout(() => {
       if (tok === tTok) mid();
-    }, 250);
+    }, 250 / TEMPO);
   }
   function showApp() {
     if (!rapp.hidden) return;
@@ -3474,22 +3497,24 @@ p{line-height:1.65;margin:0}
     }
     showApp();
     resetCompose(true);
-    document.title = `${r.sec === "pv" ? "Privacy" : r.sec === "org" ? "Raspored snimanja" : r.sec === "ci" ? "Creative Inspection" : r.sec === "cr" ? "Final Creatives" : "Reporting Dashboard"} · ${CLIENT.short || CLIENT.name}`;
+    document.title = `${r.sec === "pv" ? "Privacy" : r.sec === "sys" ? "Informacioni sistem" : r.sec === "org" ? "Raspored snimanja" : r.sec === "ci" ? "Creative Inspection" : r.sec === "cr" ? "Final Creatives" : "Reporting Dashboard"} · ${CLIENT.short || CLIENT.name}`;
     rmain.querySelectorAll(".card").forEach(disarmCard);
     etchTok++;
-    rapp.classList.toggle("viewing", isViewer(r));
+    rapp.classList.toggle("viewing", isViewer(r) || r.sec === "sys");
     rapp.classList.toggle("ci", r.sec === "ci");
     rapp.classList.toggle("ci-script", r.v === "script");
     rapp.classList.toggle("cr", r.sec === "cr");
     rapp.classList.toggle("cr-gal", r.v === "gallery");
     rapp.classList.toggle("org", r.sec === "org");
     rapp.classList.toggle("pv", r.sec === "pv");
+    rapp.classList.toggle("sys", r.sec === "sys");
     if (r.sec !== "pv") {
       pvShow.clear();
       pvClose();
     }
     setTop(r);
-    if (r.sec === "pv") {
+    if (r.sec === "sys") vSys(mode);
+    else if (r.sec === "pv") {
       if (ST.pvErr)
         rmain.innerHTML = stateHTML("Šifre trenutno nisu dostupne.");
       else if (!ST.pvReady) rmain.innerHTML = stateHTML("Učitavam…", true);
@@ -3556,7 +3581,7 @@ p{line-height:1.65;margin:0}
   function setTop(r) {
     const P = r.pid && ST.P.get(r.pid);
     $("#rbackLbl").textContent =
-      r.sec === "pv"
+      r.sec === "pv" || r.sec === "sys"
         ? "Dashboard"
         : r.sec === "org"
           ? r.v === "day"
@@ -3613,7 +3638,7 @@ p{line-height:1.65;margin:0}
     if (h) h.style.setProperty("--pw", h.offsetWidth + "px");
     if (mode === "enter")
       [...rmain.querySelectorAll(".rv")].forEach((el, i) =>
-        setTimeout(() => el.classList.add("on"), 200 + i * 150),
+        setTimeout(() => el.classList.add("on"), (200 + i * 150) / TEMPO),
       );
     if (mode === "enter" || mode === "swap") {
       const tok = etchTok;
@@ -3621,7 +3646,7 @@ p{line-height:1.65;margin:0}
         () => {
           if (tok === etchTok) etchHead(mode, tok);
         },
-        mode === "swap" ? 60 : 260,
+        (mode === "swap" ? 60 : 260) / TEMPO,
       );
     }
   }
@@ -3745,13 +3770,37 @@ p{line-height:1.65;margin:0}
       rmain.innerHTML = stateHTML("Izveštaj ne postoji.", false, true);
       return;
     }
-    rmain.innerHTML = `<section class="v-view${mode === "enter" ? " enter" : ""}"><div class="vhead"><h1 class="vh1" tabindex="-1">${esc(r.title || "Izveštaj")}</h1>${hasLoom(r) ? `<button class="pill" type="button" data-loom-of="${esc(r.id)}">${I_PLAY}Loom video</button>` : ""}</div><div class="vframe" id="vframe"><div class="vload"><i class="lscanbar" aria-hidden="true"></i></div></div></section>`;
+    const page = pageOf(r);
+    rmain.innerHTML = `<section class="v-view${mode === "enter" ? " enter" : ""}"><div class="vhead"><h1 class="vh1" tabindex="-1">${esc(r.title || "Izveštaj")}</h1>${hasLoom(r) ? `<button class="pill" type="button" data-loom-of="${esc(r.id)}">${I_PLAY}Loom video</button>` : ""}${page ? `<a class="pill" href="${esc(page)}" target="_blank" rel="noopener">Otvori preko celog ekrana${I_EXT}</a>` : ""}</div><div class="vframe" id="vframe"><div class="vload"><i class="lscanbar" aria-hidden="true"></i></div></div></section>`;
     loadDoc(r);
+  }
+  function framed(box, f) {
+    f.addEventListener("load", () => {
+      f.classList.add("ready");
+      const l = box.querySelector(".vload");
+      if (l) setTimeout(() => l.remove(), 450 / TEMPO);
+    });
+    box.appendChild(f);
   }
   function loadDoc(r) {
     const tok = ++docTok,
       box = $("#vframe");
     if (!box) return;
+    const page = pageOf(r);
+    if (page) {
+      /* naša stranica, isti origin: bez sandbox-a, da stigne kolačić za /ils */
+      Promise.resolve()
+        .then(() => SRC.unlock && SRC.unlock())
+        .catch(() => {})
+        .then(() => {
+          if (tok !== docTok || !box.isConnected) return;
+          const f = document.createElement("iframe");
+          f.setAttribute("title", r.title || "Stranica");
+          f.src = page;
+          framed(box, f);
+        });
+      return;
+    }
     const got = htmlCache.has(r.id)
       ? Promise.resolve(htmlCache.get(r.id))
       : Promise.resolve()
@@ -3770,15 +3819,10 @@ p{line-height:1.65;margin:0}
         );
         f.setAttribute("title", r.title || "Pisani izveštaj");
         f.setAttribute("referrerpolicy", "no-referrer");
-        f.addEventListener("load", () => {
-          f.classList.add("ready");
-          const l = box.querySelector(".vload");
-          if (l) setTimeout(() => l.remove(), 450);
-        });
         f.srcdoc =
           html ||
           '<p style="font-family:sans-serif;padding:40px">Izveštaj je prazan.</p>';
-        box.appendChild(f);
+        framed(box, f);
       })
       .catch(() => {
         if (tok !== docTok || !box.isConnected) return;
@@ -3790,6 +3834,13 @@ p{line-height:1.65;margin:0}
     const r = ST.R.get(cur.rid),
       h = rmain.querySelector(".vh1");
     if (r && h) h.textContent = r.title || "Izveštaj";
+  }
+
+  /* Informacioni sistem: mapa kako Infinity radi, stranica /ils/sistem u okviru */
+  const SYS_PAGE = "/ils/sistem";
+  function vSys(mode) {
+    rmain.innerHTML = `<section class="v-view${mode === "enter" ? " enter" : ""}"><div class="vhead"><h1 class="vh1" tabindex="-1">Informacioni sistem</h1><a class="pill" href="${SYS_PAGE}" target="_blank" rel="noopener">Otvori preko celog ekrana${I_EXT}</a></div><div class="vframe" id="vframe"><div class="vload"><i class="lscanbar" aria-hidden="true"></i></div></div></section>`;
+    loadDoc({ href: SYS_PAGE, title: "Informacioni sistem" });
   }
 
   /* Loom video */
@@ -3888,7 +3939,7 @@ p{line-height:1.65;margin:0}
       done();
       const t = rowThumb(rid);
       if (t) t.closest("button").focus({ preventScroll: true });
-    }, 560);
+    }, 560 / TEMPO);
   }
 
   /* =========================================================
@@ -4331,7 +4382,7 @@ p{line-height:1.65;margin:0}
     clearTimeout(selbtn._t);
     selbtn._t = setTimeout(() => {
       if (!selbtn.classList.contains("on")) selbtn.hidden = true;
-    }, 260);
+    }, 260 / TEMPO);
   }
   document.addEventListener("selectionchange", () => {
     if (rapp.hidden || cur.v !== "script") return;
@@ -4569,7 +4620,7 @@ p{line-height:1.65;margin:0}
           : thList.querySelector(`.cc[data-ccid="${cssq(cid)}"]`);
     if (el && !reduce) {
       el.classList.add("gone");
-      await new Promise((r) => setTimeout(r, 260));
+      await new Promise((r) => setTimeout(r, 260 / TEMPO));
     }
     try {
       await SRC.delComment(id, col);
@@ -4862,13 +4913,13 @@ p{line-height:1.65;margin:0}
           card.classList.remove("land");
           void card.offsetWidth;
           card.classList.add("land");
-          setTimeout(() => card.classList.remove("land"), 900);
+          setTimeout(() => card.classList.remove("land"), 900 / TEMPO);
         },
         "cubic-bezier(.45,0,.2,1)",
       );
     } else {
       thMedia.classList.remove("in");
-      setTimeout(done, 380);
+      setTimeout(done, 380 / TEMPO);
     }
   }
   function switchTheater(cid, dir) {
@@ -4907,10 +4958,11 @@ p{line-height:1.65;margin:0}
         $(".th-amb").classList.remove("swap");
         startMedia();
       });
-    }, 230);
+    }, 230 / TEMPO);
   }
   /* kartica "izraste" u kreativu (i vrati se nazad) */
   function ghost(a, b, img, r1, r2, D, cb, E) {
+    D /= TEMPO;
     const g = document.createElement("div");
     g.className = "th-ghost";
     const A = {
@@ -4941,7 +4993,7 @@ p{line-height:1.65;margin:0}
       requestAnimationFrame(() => {
         g.style.transition = "opacity .28s";
         g.style.opacity = "0";
-        setTimeout(() => g.remove(), 320);
+        setTimeout(() => g.remove(), 320 / TEMPO);
       });
     };
     /* Web Animations: ceo let se uvek vidi, i kad prvi kadar zakasni */
@@ -5584,12 +5636,12 @@ p{line-height:1.65;margin:0}
       setP();
       cb();
       ci.classList.add("open");
-    }, 1800);
+    }, 1800 / TEMPO);
     setTimeout(() => {
       ci.hidden = true;
       ci.classList.remove("go", "open");
       INTRO = null;
-    }, 2900);
+    }, 2900 / TEMPO);
   }
 
   /* =========================================================
@@ -5988,7 +6040,7 @@ p{line-height:1.65;margin:0}
         const q = $("#pvQ");
         if (q && !rmain.querySelector(".pv-sheet"))
           q.focus({ preventScroll: true });
-      }, 700);
+      }, 700 / TEMPO);
   }
   function pvBody() {
     if (!ST.V.length)
@@ -6136,7 +6188,7 @@ p{line-height:1.65;margin:0}
     if (!sh) return;
     sh.classList.remove("on");
     document.documentElement.classList.remove("noscroll");
-    setTimeout(() => sh.remove(), reduce ? 0 : 280);
+    setTimeout(() => sh.remove(), reduce ? 0 : 280 / TEMPO);
     pvEdit = null;
   }
   async function pvSave(sh, btn) {
@@ -6520,6 +6572,7 @@ p{line-height:1.65;margin:0}
   $("#cprev").addEventListener("click", () => stepScript(-1));
   $("#cnext").addEventListener("click", () => stepScript(1));
   $("#rback").addEventListener("click", goBack);
+  $("#rhome").addEventListener("click", () => go({ v: "dash" }, {}));
   $("#lovX").addEventListener("click", goBack);
   $("#lovScrim").addEventListener("click", goBack);
   $("#lovActs").addEventListener("click", (e) => {
@@ -6565,7 +6618,7 @@ p{line-height:1.65;margin:0}
     try {
       location.hash = "";
     } catch (e) {}
-    setTimeout(openVault, 900);
+    setTimeout(openVault, 900 / TEMPO);
   }
   curKey = keyOf(cur);
   if (cur.v !== "dash") {
@@ -6629,6 +6682,7 @@ p{line-height:1.65;margin:0}
     openCR: (card) => navTo({ sec: "cr", v: "periods" }, card),
     openOR: (card) => navTo({ sec: "org", v: "list" }, card),
     openPV: (card) => navTo({ sec: "pv", v: "list" }, card),
+    openSYS: (card) => navTo({ sec: "sys", v: "list" }, card),
     back: goBack,
     esc: onEsc,
     overlayOpen: () => !lov.hidden || !th.hidden,

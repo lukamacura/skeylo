@@ -8,7 +8,7 @@ export type GateState = { wrong: number };
 
 // Stranice iza istog gate-a; posle otključavanja vraćamo korisnika na onu
 // sa koje je došao, nikad na proizvoljan URL.
-const PAGES = ["/ils/marketing_plan", "/ils/google_ads"];
+const PAGES = ["/ils/marketing_plan", "/ils/google_ads", "/ils/sistem"];
 
 export async function unlock(
   prev: GateState,
