@@ -6362,6 +6362,19 @@ form {
   color: var(--muted);
   font-size: 15px;
   margin-bottom: 16px;
+  /* ostaje gore dok Nina bira redove dugačke skripte */
+  position: sticky;
+  top: calc(
+    env(safe-area-inset-top, 0px) + 86px
+  ); /* ispod lepljivog zaglavlja */
+  z-index: 5;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.bhelp #bAll {
+  margin-left: auto;
+  flex: none;
+  padding: 9px 16px;
 }
 .bhelp svg {
   width: 20px;

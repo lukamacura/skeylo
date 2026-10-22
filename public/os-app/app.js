@@ -7506,9 +7506,13 @@
       : '<div class="ckempty">Skripta je prazna. Filip još nije napisao tekst.</div>';
     updBar();
   }
+  /* redovi koji još nisu ni u jednom entitetu */
+  const freeBlks = () => $$("#bBlocks [data-blk]:not(.asg)");
   function updBar() {
     const n = buildSel.size;
     $("#bCount").textContent = n;
+    $("#bAll").hidden =
+      !n || freeBlks().every((el) => buildSel.has(+el.dataset.blk));
     $("#bBar").classList.toggle(
       "show",
       n > 0 && !$("#build").hidden && $("#ewiz").hidden,
@@ -7531,6 +7535,13 @@
     } catch (err) {}
     updBar();
   });
+  $("#bAll").onclick = () => {
+    freeBlks().forEach((el) => {
+      buildSel.add(+el.dataset.blk);
+      el.classList.add("sel");
+    });
+    updBar();
+  };
   $("#bClear").onclick = () => {
     buildSel.clear();
     $$("#bBlocks .sel").forEach((el) => el.classList.remove("sel"));
