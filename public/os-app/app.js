@@ -1171,8 +1171,6 @@
     const sbg = $(".card.start .sbg img");
     sbg.dataset.def ||= sbg.getAttribute("src");
     sbg.src = START_BG[u.id] || sbg.dataset.def;
-    // Luka: Start vodi na njegove taskove umesto na Projects
-    $(".card.start").dataset.go = u.id === "luka" ? "tasks" : "projects";
     renderGreeting(u);
     earnShown = -1;
     updateDashCal();
@@ -1180,9 +1178,6 @@
     route();
     dwLoad();
   }
-  $(".card.start").addEventListener("click", () => {
-    if (me && me.id === "luka") tView = "member";
-  });
   /* prijava, prva registracija i nova lozinka: auth.js */
   const auth = OSAuth({
     team: TEAM,

@@ -899,6 +899,7 @@ window.SKNotes = function (X) {
     },
   };
   let H = HOSTS.page,
+    SP = false, // tekst označen preko više blokova (vidi spanOn)
     root = H.root,
     titleEl = H.title;
   const onRoot = (type, fn, opt) =>
@@ -1349,7 +1350,7 @@ window.SKNotes = function (X) {
   function caretPos() {
     const bs = blocks();
     if (sel.length) return { sel: sel.map((e) => bs.indexOf(e)) };
-    const a = document.activeElement,
+    const a = SP ? getSelection().anchorNode : document.activeElement,
       el = a && root.contains(a) && blockOf(a);
     return el ? { i: bs.indexOf(el), off: caretOff(tOf(el)) } : null;
   }
@@ -3038,6 +3039,7 @@ window.SKNotes = function (X) {
   /* ---------------- block selection ---------------- */
   let sel = [];
   function selectBlocks(els) {
+    spanOff();
     clearSel();
     sel = els.filter(Boolean);
     if (!sel.length) return;
@@ -3369,46 +3371,301 @@ window.SKNotes = function (X) {
     changed();
   });
 
-  /* ---------------- drag-select across blocks (mouse) ---------------- */
+  /* ---------------- tekst preko više blokova ----------------
+     svaki blok je zaseban contenteditable i browser ne pušta selekciju van njega;
+     kad selekcija pređe u drugi blok, ceo root privremeno postaje jedan editor
+     (SP), pa rade obično označavanje, kopiranje i bold preko više redova */
   let DS = null,
     justSel = false;
+  function spanOn(an, ao, fn, fo) {
+    if (!SP) {
+      SP = true;
+      root.contentEditable = "true";
+      root.classList.add("span");
+      root.focus({ preventScroll: true });
+    }
+    getSelection().setBaseAndExtent(an, ao, fn, fo);
+  }
+  function spanOff() {
+    if (!SP) return;
+    SP = false;
+    root.removeAttribute("contenteditable");
+    root.classList.remove("span");
+  }
+  const tAt = (n) => {
+    const e = n && (n.nodeType === 1 ? n : n.parentElement);
+    return e && root.contains(e) ? e.closest(".nb-t") : null;
+  };
+  /* izlaz iz SP kad je selekcija opet u jednom bloku */
+  function spanCheck(force) {
+    if (!SP || DS) return;
+    const s = getSelection();
+    if (!s.rangeCount || !root.contains(s.anchorNode)) return spanOff();
+    const t = tAt(s.anchorNode);
+    /* na telefonu tek na tap (click), da fokus ne zatvori tastaturu */
+    if (t !== tAt(s.focusNode) || (touch() && !force)) return;
+    const an = s.anchorNode,
+      ao = s.anchorOffset,
+      fn = s.focusNode,
+      fo = s.focusOffset;
+    spanOff();
+    if (t) {
+      t.focus({ preventScroll: true });
+      s.setBaseAndExtent(an, ao, fn, fo);
+    } else if (s.isCollapsed && tOf(blockOf(an))) focusBlock(blockOf(an), 0); // kursor na oznaci liste
+  }
+  /* deo selekcije u svakom tekstualnom bloku: [{ el, t, r }] */
+  function spanParts() {
+    const s = getSelection();
+    if (!s.rangeCount) return [];
+    const r = s.getRangeAt(0),
+      out = [];
+    for (const el of blocks()) {
+      const t = tOf(el);
+      if (!t || !r.intersectsNode(t)) continue;
+      const q = document.createRange();
+      q.selectNodeContents(t);
+      if (q.compareBoundaryPoints(Range.START_TO_START, r) < 0)
+        q.setStart(r.startContainer, r.startOffset);
+      if (q.compareBoundaryPoints(Range.END_TO_END, r) > 0)
+        q.setEnd(r.endContainer, r.endOffset);
+      out.push({ el, t, r: q });
+    }
+    return out;
+  }
+  /* briše označeno: prvi blok zadržava početak, poslednji daje kraj, sve između nestaje */
+  function spanDel() {
+    const ps = spanParts();
+    spanOff();
+    if (!ps.length) return null;
+    const a = ps[0],
+      z = ps[ps.length - 1];
+    a.r.deleteContents();
+    if (z !== a) {
+      z.r.deleteContents();
+      const bs = blocks();
+      bs.slice(bs.indexOf(a.el) + 1, bs.indexOf(z.el)).forEach((e) =>
+        e.remove(),
+      );
+      merge(a.el, z.el);
+    } else {
+      a.t.focus({ preventScroll: true });
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(a.r);
+    }
+    if (isEmpty(a.t)) a.t.replaceChildren();
+    renum();
+    changed();
+    return a.t;
+  }
+  /* bold/italic/precrtano po blokovima, da ne dira oznake lista i dugmad */
+  function spanMark(cmd) {
+    const ps = spanParts().filter(
+      (p) => !p.r.collapsed && p.el.dataset.t !== "code",
+    );
+    if (!ps.length) return;
+    pushUndo();
+    const s = getSelection();
+    const pick = (r) => {
+      s.removeAllRanges();
+      s.addRange(r);
+    };
+    try {
+      document.execCommand("styleWithCSS", false, false);
+    } catch (e) {}
+    const want = ps.some((p) => {
+      pick(p.r);
+      return !document.queryCommandState(cmd);
+    });
+    const done = ps.map((p) => {
+      pick(p.r);
+      if (document.queryCommandState(cmd) !== want) document.execCommand(cmd);
+      return s.getRangeAt(0).cloneRange();
+    });
+    const a = done[0],
+      z = done[done.length - 1];
+    s.setBaseAndExtent(
+      a.startContainer,
+      a.startOffset,
+      z.endContainer,
+      z.endOffset,
+    );
+    changed();
+  }
+  const SPTAG = {
+    h1: "h1",
+    h2: "h2",
+    h3: "h3",
+    quote: "blockquote",
+    code: "pre",
+  };
+  function spanCopy(e) {
+    const ps = spanParts().filter(
+      (p, i, a) => !p.r.collapsed || (i > 0 && i < a.length - 1),
+    );
+    if (!ps.length || !e.clipboardData) return false;
+    e.preventDefault();
+    e.clipboardData.setData(
+      "text/plain",
+      ps.map((p) => p.r.toString().replace(/​/g, "")).join("\n"),
+    );
+    const box = document.createElement("div");
+    e.clipboardData.setData(
+      "text/html",
+      ps
+        .map((p) => {
+          const g = SPTAG[p.el.dataset.t] || "p";
+          box.replaceChildren(p.r.cloneContents());
+          return `<${g}>${box.innerHTML}</${g}>`;
+        })
+        .join(""),
+    );
+    return true;
+  }
+  /* tačka u tekstu ispod pokazivača; van teksta: početak/kraj najbližeg bloka */
+  function pointFrom(x, y) {
+    let n = null,
+      o = 0;
+    if (document.caretPositionFromPoint) {
+      const p = document.caretPositionFromPoint(x, y);
+      if (p) ((n = p.offsetNode), (o = p.offset));
+    } else if (document.caretRangeFromPoint) {
+      const q = document.caretRangeFromPoint(x, y);
+      if (q) ((n = q.startContainer), (o = q.startOffset));
+    }
+    if (tAt(n)) return [n, o];
+    const b = blockAtY(y),
+      t = b && (tOf(b) || tOf(sibText(b, 1) || sibText(b, -1)));
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    return pointAt(
+      t,
+      y < r.top || (y <= r.bottom && x < r.left) ? 0 : Infinity,
+    );
+  }
+  function spanTo(x, y) {
+    const s = getSelection(),
+      p = pointFrom(x, y);
+    if (!p || !s.rangeCount || !root.contains(s.anchorNode)) return false;
+    spanOn(s.anchorNode, s.anchorOffset, p[0], p[1]);
+    return true;
+  }
   onRoot("pointerdown", (e) => {
+    justSel = false;
     if (e.pointerType !== "mouse" || e.button !== 0) return;
-    if (e.target.closest(".nb-g,.nb-ck,.nb-ci,.nb-cbar")) return;
-    const b = blockAtY(e.clientY);
-    if (!b) return;
-    const a = document.activeElement,
-      fb = a && root.contains(a) && blockOf(a);
-    if (e.shiftKey && (fb || sel.length)) {
-      const bs = blocks(),
-        from = fb ? bs.indexOf(fb) : bs.indexOf(sel[0]),
-        to = bs.indexOf(b);
+    if (e.target.closest(".nb-g,.nb-ck,.nb-ci,.nb-cbar,.nb-x")) return;
+    if (e.shiftKey && spanTo(e.clientX, e.clientY)) {
       e.preventDefault();
-      selectBlocks(bs.slice(Math.min(from, to), Math.max(from, to) + 1));
       justSel = true;
       return;
     }
-    DS = { a: b, on: false };
+    DS = { a: blockAtY(e.clientY), on: false };
   });
   document.addEventListener("pointermove", (e) => {
     if (!DS || !(e.buttons & 1)) return;
-    const b = blockAtY(e.clientY);
     if (!DS.on) {
-      if (b === DS.a) return;
+      if (blockAtY(e.clientY) === DS.a) return;
       DS.on = true;
-      root.classList.add("bsel");
     }
-    const bs = blocks(),
-      i = bs.indexOf(DS.a),
-      j = bs.indexOf(b);
-    const r = bs.slice(Math.min(i, j), Math.max(i, j) + 1);
-    if (r.length !== sel.length || r[0] !== sel[0]) selectBlocks(r);
+    spanTo(e.clientX, e.clientY);
   });
   document.addEventListener("pointerup", () => {
-    if (DS && DS.on) justSel = true;
+    if (!DS) return;
+    if (DS.on) justSel = true;
     DS = null;
-    root.classList.remove("bsel");
+    spanCheck();
   });
+  /* Shift+strelica sa ivice bloka nastavlja u susedni blok */
+  function spanLine(t, up) {
+    const s = getSelection(),
+      nx = sibText(t.parentElement, up ? -1 : 1);
+    if (!s.rangeCount || !nx) return false;
+    const f = document.createRange();
+    f.setStart(s.focusNode, s.focusOffset);
+    const rc = f.getClientRects()[0],
+      b = textBox(t);
+    if (
+      rc &&
+      (up ? rc.top - b.top >= b.lh * 0.7 : b.bottom - rc.bottom >= b.lh * 0.7)
+    )
+      return false;
+    /* tačka na istoj visini x u prvom/poslednjem redu suseda (modify("line") ne prelazi blok pouzdano) */
+    nx.scrollIntoView({ block: "nearest" });
+    const n = textBox(tOf(nx)),
+      half = Math.min(n.lh, n.bottom - n.top) / 2,
+      p = pointFrom(
+        rc ? rc.left : t.getBoundingClientRect().left,
+        up ? n.bottom - half : n.top + half,
+      );
+    if (!p) return false;
+    spanOn(s.anchorNode, s.anchorOffset, p[0], p[1]);
+    return true;
+  }
+  function spanAll() {
+    const ts = blocks().map(tOf).filter(Boolean),
+      z = ts[ts.length - 1];
+    if (ts.length) spanOn(ts[0], 0, z, z.childNodes.length);
+  }
+  onRoot("keydown", (e) => {
+    if (!SP || e.isComposing || e.keyCode === 229) return;
+    const k = e.key,
+      mod = e.metaKey || e.ctrlKey,
+      low = k.length === 1 ? k.toLowerCase() : k;
+    if (k === "Escape") {
+      e.preventDefault();
+      getSelection().collapseToEnd();
+    } else if (k === "Tab") e.preventDefault();
+    else if (mod && !e.altKey) {
+      if (!e.shiftKey && (low === "b" || low === "i")) {
+        e.preventDefault();
+        spanMark(low === "b" ? "bold" : "italic");
+      } else if (e.shiftKey && (low === "s" || low === "x")) {
+        e.preventDefault();
+        spanMark("strikeThrough");
+      } else if (low === "z") {
+        e.preventDefault();
+        e.shiftKey ? redo() : undo();
+      } else if (low === "y") {
+        e.preventDefault();
+        redo();
+      } else if (low === "a") {
+        e.preventDefault();
+        spanAll();
+      } else if ("uek".includes(low) || low === "d") e.preventDefault();
+    }
+  });
+  onRoot("copy", (e) => SP && spanCopy(e));
+  onRoot("cut", (e) => {
+    if (!SP || !spanCopy(e)) return;
+    pushUndo();
+    spanDel();
+  });
+  onRoot("dragstart", (e) => SP && e.preventDefault());
+  /* kucanje, brisanje i Enter preko više blokova */
+  function spanInput(e) {
+    const it = e.inputType,
+      fmt = {
+        formatBold: "bold",
+        formatItalic: "italic",
+        formatStrikeThrough: "strikeThrough",
+      };
+    e.preventDefault();
+    if (/^format/.test(it)) {
+      if (fmt[it]) spanMark(fmt[it]);
+      return;
+    }
+    if (/^history/.test(it)) return;
+    pushUndo();
+    const t = spanDel();
+    if (!t) return;
+    if (it === "insertParagraph") enter(t.parentElement, t);
+    else if (/^insert/.test(it)) {
+      const x =
+        e.data || (e.dataTransfer && e.dataTransfer.getData("text/plain"));
+      if (x) document.execCommand("insertText", false, x);
+    }
+  }
 
   /* ---------------- format bar (desktop) + link ---------------- */
   const FBX = document.createElement("div");
@@ -3436,6 +3693,7 @@ window.SKNotes = function (X) {
     const r = s.getRangeAt(0),
       a = blockOf(r.startContainer),
       b = blockOf(r.endContainer);
+    if (SP) return a && b && r.toString().trim() ? r : null;
     if (
       !a ||
       a !== b ||
@@ -3459,6 +3717,10 @@ window.SKNotes = function (X) {
       fbHide();
       return;
     }
+    FBX.classList.toggle(
+      "span",
+      SP && blockOf(r.startContainer) !== blockOf(r.endContainer),
+    );
     if (!fbShown) {
       FBX.hidden = false;
       FBX.classList.remove("show");
@@ -3513,6 +3775,7 @@ window.SKNotes = function (X) {
     requestAnimationFrame(fbPlace);
   });
   function mark(cmd) {
+    if (SP) return spanMark(cmd);
     const t = document.activeElement;
     if (!t || !t.classList || !t.classList.contains("nb-t")) return;
     pushUndo();
@@ -3523,6 +3786,8 @@ window.SKNotes = function (X) {
     changed();
   }
   function markCode() {
+    spanCheck(true);
+    if (SP) return;
     const s = getSelection();
     if (!s.rangeCount) return;
     const r = s.getRangeAt(0),
@@ -3567,6 +3832,8 @@ window.SKNotes = function (X) {
     return "https://" + v.replace(/^\/+/, "");
   }
   function linkPrompt() {
+    spanCheck(true);
+    if (SP) return;
     const s = getSelection();
     if (!s.rangeCount) return;
     const r = s.getRangeAt(0),
@@ -3680,8 +3947,10 @@ window.SKNotes = function (X) {
       ? a.parentElement
       : null;
   };
+  const spanBlock = () =>
+    SP ? blockOf(getSelection().anchorNode) : activeBlock();
   function mbarSync() {
-    const el = touch() && live() ? activeBlock() : null;
+    const el = touch() && live() ? spanBlock() : null;
     if (!el) {
       MB.hidden = true;
       return;
@@ -3690,19 +3959,22 @@ window.SKNotes = function (X) {
       s = getSelection(),
       ranged = !s.isCollapsed && !!selBlockRange();
     const a = s.rangeCount ? inTag(s.anchorNode, "a") : null;
-    const show = {
-      add: true,
-      menu: true,
-      emo: tp !== "code",
-      out: LISTY.has(tp) && lvl(el) > 0,
-      in: LISTY.has(tp),
-      todo: tp === "todo",
-      b: ranged,
-      i: ranged,
-      link: ranged || !!a,
-      open: !!a,
-      done: true,
-    };
+    const multi = SP && el !== blockOf(s.focusNode);
+    const show = SP
+      ? { b: ranged, i: ranged, link: ranged && !multi, done: true }
+      : {
+          add: true,
+          menu: true,
+          emo: tp !== "code",
+          out: LISTY.has(tp) && lvl(el) > 0,
+          in: LISTY.has(tp),
+          todo: tp === "todo",
+          b: ranged,
+          i: ranged,
+          link: ranged || !!a,
+          open: !!a,
+          done: true,
+        };
     MB.querySelectorAll("[data-m]").forEach(
       (b) => (b.hidden = !show[b.dataset.m]),
     );
@@ -3715,7 +3987,7 @@ window.SKNotes = function (X) {
   MB.addEventListener("pointerdown", (e) => e.preventDefault());
   MB.addEventListener("click", (e) => {
     const b = e.target.closest("[data-m]");
-    const el = activeBlock();
+    const el = spanBlock();
     if (!b || !el) return;
     const t = tOf(el),
       k = b.dataset.m;
@@ -3912,8 +4184,13 @@ window.SKNotes = function (X) {
     changed();
   }
   onRoot("paste", (e) => {
-    const t = e.target.closest && e.target.closest(".nb-t");
     const cd = e.clipboardData;
+    let st = null;
+    if (SP && cd) {
+      pushUndo();
+      st = spanDel();
+    }
+    const t = st || (e.target.closest && e.target.closest(".nb-t"));
     if (!t || !cd) return;
     const el = t.parentElement;
     const files = [...(cd.files || [])];
@@ -4042,7 +4319,13 @@ window.SKNotes = function (X) {
   }
 
   /* ---------------- editor events ---------------- */
-  onRoot("compositionstart", () => (composing = true));
+  onRoot("compositionstart", () => {
+    if (SP) {
+      pushUndo();
+      spanDel();
+    }
+    composing = true;
+  });
   onRoot("compositionend", () => {
     composing = false;
     changed();
@@ -4051,6 +4334,10 @@ window.SKNotes = function (X) {
     if (e.inputType === "historyUndo" || e.inputType === "historyRedo") {
       e.preventDefault();
       e.inputType === "historyUndo" ? undo() : redo();
+      return;
+    }
+    if (SP) {
+      spanInput(e);
       return;
     }
     const t = e.target.closest && e.target.closest(".nb-t");
@@ -4171,7 +4458,7 @@ window.SKNotes = function (X) {
           s.toString().length >= t.textContent.replace(/​/g, "").length
         ) {
           e.preventDefault();
-          selectBlocks(blocks());
+          spanAll();
         }
       }
       return;
@@ -4213,6 +4500,16 @@ window.SKNotes = function (X) {
       selectBlocks([el]);
       return;
     }
+    if (
+      (k === "ArrowUp" || k === "ArrowDown") &&
+      e.shiftKey &&
+      !mod &&
+      !e.altKey &&
+      spanLine(t, k === "ArrowUp")
+    ) {
+      e.preventDefault();
+      return;
+    }
     if ((k === "ArrowUp" || k === "ArrowDown") && !e.shiftKey && !e.altKey) {
       const up = k === "ArrowUp";
       if (!getSelection().isCollapsed || !lineEdge(t, up)) return;
@@ -4243,6 +4540,7 @@ window.SKNotes = function (X) {
     }
   });
   onRoot("click", (e) => {
+    if (SP) spanCheck(true);
     if (justSel) {
       justSel = false;
       return;
@@ -4347,6 +4645,11 @@ window.SKNotes = function (X) {
   });
   document.addEventListener("selectionchange", () => {
     if (!live()) return;
+    spanCheck();
+    /* telefon: ručke selekcije moraju moći da pređu u drugi blok, pa SP od prvog označavanja */
+    const s = getSelection();
+    if (touch() && !SP && !composing && !s.isCollapsed && activeBlock())
+      spanOn(s.anchorNode, s.anchorOffset, s.focusNode, s.focusOffset);
     if (SL && slashQ() === null) closeSlash();
     cancelAnimationFrame(fbRaf);
     fbRaf = requestAnimationFrame(() => {

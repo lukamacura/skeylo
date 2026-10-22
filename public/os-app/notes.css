@@ -845,10 +845,17 @@ img.emo {
 .nb.drag {
   opacity: 0.35;
 }
-.nbroot.bsel,
-.nbroot.bsel * {
+.nbroot.span {
+  outline: none;
+}
+.nbroot.span .nb-ck,
+.nbroot.span .nb-ci {
   user-select: none;
   -webkit-user-select: none;
+}
+.nfbar.span [data-nf="code"],
+.nfbar.span [data-nf="link"] {
+  display: none;
 }
 body.nb-dragging,
 body.nb-dragging * {
