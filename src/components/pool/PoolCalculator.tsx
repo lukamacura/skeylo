@@ -50,6 +50,7 @@ import {
   type PoolResult,
   type PoolType,
 } from "@/lib/pool";
+import PoolFilm from "./PoolFilm";
 import PoolScene, { type PoolFocus } from "./PoolScene";
 
 /* ------------------------------------------------------------------ */
@@ -381,6 +382,9 @@ export default function PoolCalculator() {
                 scanning={calculating}
               />
             </div>
+
+            {/* Za sada isti snimak (skimerski) za svaki tip bazena. */}
+            <PoolFilm armed={step >= RESULT - 2} play={atResult} />
 
             <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-2 p-3 lg:p-6">
               <SceneChip

@@ -262,6 +262,20 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
 .frame-shot .go span { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 999px; background: rgba(0, 0, 0, 0.7); padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 700; color: #fff; opacity: 0; transition: opacity 0.2s; }
 .frame:hover .go { background: rgba(0, 0, 0, 0.3); }
 .frame:hover .go span { opacity: 1; }
+/* snimak gradnje u prozoru scene; poslednji kadar je isti kao slika ispod, oznake stoje iznad */
+.frame-shot { container-type: inline-size; }
+.film, .frame-shot .film-marks { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.6s var(--ease); }
+.frame-shot.film-on .film, .frame-shot.film-on .film-marks { opacity: 1; }
+.film { left: 1.7361%; top: 2.7778%; width: 53.5556%; height: 94.4444%; display: grid; place-items: center; overflow: hidden; border-radius: 1.875cqw; container-type: size; }
+.film canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scale(1.25); filter: blur(5.2cqw) brightness(0.55) saturate(1.15); }
+.film video {
+  position: relative; width: min(100cqw, calc(100cqh * 16 / 9)); aspect-ratio: 16 / 9; object-fit: cover;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent), linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent), linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  mask-composite: intersect;
+}
+.frame-shot .film-marks { inset: 0; width: 100%; height: 100%; }
 
 /* ---------- vrhunac ---------- */
 .climax { position: relative; isolation: isolate; overflow: hidden; padding: 16rem 0 3.5rem; }
@@ -286,8 +300,8 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
 .case { margin-top: 2.5rem; display: grid; gap: 1rem; border-radius: 1.5rem; border: 1px solid var(--border); background: var(--card); padding: 1.25rem; }
 @media (min-width: 768px) { .case { grid-template-columns: auto 1fr; align-items: center; gap: 2rem; padding: 1.5rem 2rem; } }
 .case-id { display: flex; align-items: center; gap: 1rem; }
-.case-logo { display: flex; width: 3.5rem; height: 3.5rem; flex-shrink: 0; align-items: center; justify-content: center; overflow: hidden; border-radius: 1rem; background: #fff; }
-.case-logo img { width: 80%; height: 80%; object-fit: contain; }
+.case-logo { display: flex; width: 3.5rem; height: 3.5rem; flex-shrink: 0; align-items: center; justify-content: center; overflow: hidden; border-radius: 1rem; background: #2a1219; }
+.case-logo img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.3); }
 .case-id p { font-family: var(--display); font-size: 1.25rem; font-weight: 800; line-height: 1.15; }
 .case-id small { display: block; font-size: 0.875rem; color: var(--muted); }
 .shift { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
@@ -350,7 +364,7 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
 @media (min-width: 768px) { .ana-who { flex-shrink: 0; } }
 .ana-pic { position: relative; width: 5rem; height: 5rem; flex-shrink: 0; overflow: hidden; border-radius: 999px; border: 2px solid var(--aqua); }
 @media (min-width: 640px) { .ana-pic { width: 7rem; height: 7rem; } }
-.ana-pic img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.ana-pic img { width: 100%; height: 100%; object-fit: cover; object-position: top; transform: scale(1.7); transform-origin: 50% 26%; }
 .ana-who b { display: block; font-family: var(--display); font-size: 34px; font-weight: 800; line-height: 1; }
 @media (min-width: 640px) { .ana-who b { font-size: 2.75rem; } }
 .ana-who p { margin-top: 0.375rem; font-size: 0.9375rem; font-weight: 600; }
@@ -528,7 +542,7 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
     <div class="ch-grid">
       <div class="ch-text">
         <p class="when rv"><b>03</b><span></span>22:11</p>
-        <h2 class="rt" data-accent="Za minut zna: 17.500 – 22.500 €.">Klikne.</h2>
+        <h2 class="rt" data-accent="Za minut zna okvirnu cenu.">Klikne.</h2>
         <p class="ch-line rv">Četiri koraka: tip, dimenzije, oprema, teren. Bazen se crta dok bira. Na kraju raspon cene, rok izvođenja i sezona kupanja.</p>
         <ul class="chips st" aria-label="Šta mi radimo">
           <li style="--i:0"><span><svg class="ic"><use href="#i-code-xml"/></svg></span>Dizajn i razvoj</li>
@@ -541,7 +555,9 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
         <a class="frame" href="https://www.skeylo.com/calculator/bazen" target="_blank" rel="noopener" aria-label="Otvori kalkulator bazena">
           <div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url"><svg class="ic" style="width:.75rem;height:.75rem"><use href="#i-lock"/></svg>Kalkulator bazena</span><span class="sp"></span></div>
           <div class="frame-shot">
-            <img src="https://www.skeylo.com/clients/pool-service/result-desktop.jpg" alt="Kalkulator bazena sa procenom 17.500 – 22.500 €" width="1920" height="1200" loading="lazy">
+            <img src="https://genqnvmmykoztpkzrkbo.supabase.co/storage/v1/object/public/os-assets/DzVgvkqdmwX4CN5htBtb8NZyGLjH" alt="Kalkulator bazena sa procenom 17.500 – 22.500 €" width="1920" height="1200" loading="lazy">
+            <div class="film" aria-hidden="true"><canvas width="32" height="18"></canvas><video muted playsinline disablepictureinpicture preload="none" data-src="https://genqnvmmykoztpkzrkbo.supabase.co/storage/v1/object/public/os-assets/erdYs7UraYB5KEBTLvur6346OACC"></video></div>
+            <img class="film-marks" src="https://genqnvmmykoztpkzrkbo.supabase.co/storage/v1/object/public/os-assets/nJim2ECrogSmp27FCfQebSME4v6s" alt="" width="1920" height="1200" loading="lazy" aria-hidden="true">
             <span class="go"><span><svg class="ic fill"><use href="#i-play"/></svg> Pokreni</span></span>
           </div>
         </a>
@@ -565,7 +581,7 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
     <div class="ch-grid">
       <div class="ch-text">
         <p class="when rv"><b>04</b><span></span>22:14</p>
-        <h2 class="rt" data-accent="Hoće PDF ponudu sa troškovnikom.">Ostavlja broj.</h2>
+        <h2 class="rt" data-accent="Hoće PDF ponudu sa troškovnikom.">Ostavlja broj i email.</h2>
         <p class="ch-line rv">Upit stiže sa svim što je izabrao: dimenzije, opremu, fazu gradnje i lokaciju. Znate sve pre prvog poziva.</p>
       </div>
       <div class="ch-vis">
@@ -664,7 +680,7 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
 
     <div class="case rv">
       <div class="case-id">
-        <span class="case-logo"><img src="https://www.skeylo.com/logos/ils-logo.webp" alt="Infinity Laser Studio"></span>
+        <span class="case-logo"><img src="https://www.skeylo.com/clients/ils/logo.webp" alt="Infinity Laser Studio"></span>
         <div><p>Infinity Laser Studio</p><small>Laserska epilacija · Novi Sad</small></div>
       </div>
       <div class="shift">
@@ -713,7 +729,7 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
 
     <div class="ana rv">
       <div class="ana-who">
-        <span class="ana-pic"><img src="https://www.skeylo.com/site/testimonials/ana.webp" alt="Ana Kasap" loading="lazy"></span>
+        <span class="ana-pic"><img src="https://www.skeylo.com/clients/ils/ljudi/ana.webp" alt="Ana Kasap, vlasnica Infinity Laser Studija" loading="lazy"></span>
         <div><b class="grad"><span class="num" data-count="3500000" data-step="10000" data-dur="2">3.500.000</span></b><p>RSD prihoda u jednom mesecu</p></div>
       </div>
       <div>
@@ -899,6 +915,44 @@ h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", onScroll);
   frame();
+
+  /* ---- kalkulator: snimak gradnje u prozoru scene ----
+     Blizu ekrana se učita i pokaže travnjak, u ekranu se bazen izgradi i stane
+     na kadru koji je isti kao slika ispod. Van ekrana se vraća na početak. */
+  var shot = document.querySelector(".frame-shot");
+  var film = shot && shot.querySelector(".film video");
+  if (film && !reduce && "IntersectionObserver" in window) {
+    var blur = shot.querySelector(".film canvas"), bctx = blur.getContext("2d");
+    var paint = function () { if (film.readyState >= 2) bctx.drawImage(film, 0, 0, blur.width, blur.height); };
+    if (film.requestVideoFrameCallback) {
+      var tick = function () { paint(); film.requestVideoFrameCallback(tick); };
+      film.requestVideoFrameCallback(tick);
+    } else {
+      film.addEventListener("timeupdate", paint);
+    }
+    var inView = false;
+    var roll = function () {
+      if (!inView || film.ended || film.readyState < 2) return;
+      var p = film.play();
+      if (p && p.catch) p.catch(function () { shot.classList.remove("film-on"); });
+    };
+    film.addEventListener("loadeddata", function () { paint(); shot.classList.add("film-on"); roll(); });
+    film.addEventListener("seeked", paint);
+    new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) {
+        if (!film.getAttribute("src")) { film.preload = "auto"; film.src = film.dataset.src; }
+        else if (film.readyState >= 2) shot.classList.add("film-on");
+      } else if (film.getAttribute("src")) {
+        film.pause();
+        shot.classList.remove("film-on");
+        film.currentTime = 0;
+      }
+    }, { rootMargin: "50% 0px" }).observe(shot);
+    new IntersectionObserver(function (es) {
+      inView = es[0].intersectionRatio >= 0.6;
+      roll();
+    }, { threshold: 0.6 }).observe(shot);
+  }
 
   /* ---- sidra: u OS-u je stranica srcdoc, pa "#..." ne sme da navigira ---- */
   document.addEventListener("click", function (e) {

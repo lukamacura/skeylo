@@ -1093,11 +1093,11 @@ function Results() {
               style={{ borderColor: AQUA }}
             >
               <Image
-                src="/site/testimonials/ana.webp"
+                src="/clients/ils/ljudi/ana.webp"
                 alt="Ana Kasap"
                 fill
-                sizes="112px"
-                className="object-cover object-top"
+                sizes="192px"
+                className="origin-[50%_26%] scale-[1.7] object-cover object-top"
               />
             </div>
             <div className="min-w-0">
@@ -1111,7 +1111,7 @@ function Results() {
                 RSD prihoda u jednom mesecu
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Ana Kasap · Infinity Laser Studio
+                Ana Kasap · vlasnica, Infinity Laser Studio
               </p>
             </div>
           </motion.div>
@@ -1344,7 +1344,7 @@ export default function PoolServiceLanding() {
             n={3}
             when="22:11"
             title="Klikne."
-            accent="Za minut zna: 17.500 – 22.500 €."
+            accent="Za minut zna okvirnu cenu."
             line="Četiri koraka: tip, dimenzije, oprema, teren. Bazen se crta dok bira. Na kraju raspon cene, rok izvođenja i sezona kupanja."
             work={[
               { icon: CodeXml, t: "Dizajn i razvoj" },
@@ -1397,7 +1397,7 @@ export default function PoolServiceLanding() {
           <Chapter
             n={4}
             when="22:14"
-            title="Ostavlja broj."
+            title="Ostavlja broj i email."
             accent="Hoće PDF ponudu sa troškovnikom."
             line="Upit stiže sa svim što je izabrao: dimenzije, opremu, fazu gradnje i lokaciju. Znate sve pre prvog poziva."
             scene={
