@@ -1,0 +1,168 @@
+/* Prijava (auth.js): tri koraka u jednoj kartici. Isti tokeni kao app.css. */
+.au {
+  overflow: hidden;
+}
+.au:not([data-mode="new"]) [data-only="new"],
+.au:not([data-mode="reset"]) [data-only="reset"] {
+  display: none;
+}
+.au-p {
+  gap: 14px;
+}
+.au-step {
+  margin: 0 0 -6px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+.au-sub {
+  margin: -4px 0 4px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.au-sub b {
+  color: var(--cream);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.au .field {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+.au .field label {
+  padding-left: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.au-pw input {
+  padding-right: 56px;
+}
+.au-eye {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+.au-eye:hover {
+  color: var(--cream);
+}
+.au-eye svg {
+  width: 20px;
+  height: 20px;
+}
+.au-eye:not([aria-pressed="true"]) .off {
+  display: none;
+}
+.au-code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 24px !important;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+.au-code::placeholder {
+  color: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+.au-hint {
+  margin: -6px 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.au-link {
+  padding: 4px 6px;
+  border-radius: 8px;
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.au-link:hover {
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+.au-link:disabled {
+  color: var(--muted);
+  background: none;
+  cursor: default;
+}
+.au-link.pulse {
+  animation: auPulse 0.9s 2 var(--ease);
+}
+@keyframes auPulse {
+  50% {
+    background: color-mix(in srgb, var(--gold) 22%, transparent);
+    transform: scale(1.06);
+  }
+}
+.au-forgot {
+  justify-self: end;
+  margin: -6px -6px 0 0;
+}
+.au-alt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 15px;
+}
+.au-alt i {
+  font-style: normal;
+  opacity: 0.5;
+}
+.au .err.ok {
+  color: var(--muted);
+}
+.au-who {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 4px;
+}
+.au-who .tp {
+  width: 72px;
+}
+.au .btn {
+  position: relative;
+}
+.au .btn.wait {
+  color: transparent;
+  pointer-events: none;
+}
+.au .btn.wait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 20px;
+  margin: auto;
+  border-radius: 50%;
+  border: 2.5px solid var(--on-accent);
+  border-right-color: transparent;
+  animation: auSpin 0.7s linear infinite;
+}
+@keyframes auSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (max-width: 420px) {
+  .lg-card.au {
+    padding: 26px 22px;
+  }
+}

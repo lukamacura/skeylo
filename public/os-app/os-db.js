@@ -14,80 +14,109 @@
   });
 
   /* ---------- auth ---------- */
+  /* Svako ima svoj email + lozinku. Prva registracija i zaboravljena lozinka:
+     /os/code šalje kod na email, ovde ga potvrđujemo i postavljamo lozinku. */
   let markAuthed;
   const authed = new Promise((r) => (markAuthed = r));
   let mySlug = null;
-  const PASS_KEY = "skeylo-os-pass";
+  try {
+    localStorage.removeItem("skeylo-os-pass"); // stara timska lozinka
+  } catch (e) {}
 
-  async function slugOf() {
+  const fail = (code, extra) => ({ code, ...extra });
+  const netOr = (code) => (navigator.onLine === false ? "network" : code);
+
+  /* Sesija važi samo za člana tima (os.people); inače je odmah gasimo. */
+  async function member() {
     const { data, error } = await sb.rpc("my_slug");
-    if (error) throw error;
-    return data || null;
+    if (error) throw fail(netOr("failed"));
+    mySlug = data || null;
+    if (!mySlug) {
+      await sb.auth.signOut({ scope: "local" });
+      throw fail("not_member");
+    }
+    markAuthed();
+    return mySlug;
   }
 
   const OS = {
     async session() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return null;
-      mySlug = await slugOf();
-      if (!mySlug) return null;
-      markAuthed();
-      return mySlug;
+      return member().catch(() => null);
     },
-    /* Osoba + zajednička timska lozinka; /os/login vraća sesiju za tu osobu. */
-    async signIn(slug, password) {
+    async signIn(email, password) {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error)
+        throw fail(
+          error.code === "invalid_credentials"
+            ? "bad_login"
+            : netOr(error.status === 429 ? "too_many" : "failed"),
+        );
+      return member();
+    },
+    /* kind: "new" (prva registracija) ili "reset" (zaboravljena lozinka) */
+    async sendCode(email, kind) {
       let r;
       try {
-        r = await fetch("/os/login", {
+        r = await fetch("/os/code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug, password }),
+          body: JSON.stringify({ email, kind }),
         });
       } catch (e) {
-        throw { code: "network" };
+        throw fail("network");
       }
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw { code: j.error || "bad_login" };
-      const { error } = await sb.auth.setSession(j);
-      if (error) throw { code: "bad_login" };
-      try {
-        localStorage.setItem(PASS_KEY, password);
-      } catch (e) {}
-      mySlug = await slugOf();
-      if (!mySlug) {
-        await sb.auth.signOut();
-        throw { code: "not_member" };
+      if (!r.ok) throw fail(j.error || "failed", { wait: j.wait });
+      return j;
+    },
+    async setPassword(email, code, password) {
+      /* kod važi jednom: ako je potvrđen a lozinka odbijena, ponovni pokušaj
+         koristi već otvorenu sesiju */
+      if ((await OS.email()) !== email) {
+        const v = await sb.auth.verifyOtp({
+          email,
+          token: code,
+          type: "recovery",
+        });
+        if (v.error)
+          throw fail(
+            v.error.code === "otp_expired"
+              ? "bad_code"
+              : netOr(v.error.status === 429 ? "too_many" : "failed"),
+          );
       }
-      markAuthed();
-      return mySlug;
+      const { error } = await sb.auth.updateUser({ password });
+      if (error && error.code !== "same_password")
+        throw fail(error.code === "weak_password" ? "weak" : netOr("failed"));
+      return member();
+    },
+    async email() {
+      const { data } = await sb.auth.getSession();
+      return (data.session && data.session.user.email) || "";
     },
     async signOut() {
-      try {
-        localStorage.removeItem(PASS_KEY);
-      } catch (e) {}
-      await sb.auth.signOut();
+      await sb.auth.signOut({ scope: "local" });
     },
-    /* Timska lozinka zapamćena na ovom uređaju (za brzu promenu osobe). */
-    savedPass() {
-      try {
-        return localStorage.getItem(PASS_KEY) || "";
-      } catch (e) {
-        return "";
-      }
-    },
-    /* Potvrda opasne radnje: ponovo proverava timsku lozinku. */
+    /* Potvrda opasne radnje: tvoja lozinka, proverena u zasebnoj sesiji
+       koja se odmah gasi (ne dira prijavu na ovom uređaju). */
     async verify(password) {
-      if (!password || !mySlug) return false;
-      try {
-        const r = await fetch("/os/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug: mySlug, password }),
-        });
-        return r.ok;
-      } catch (e) {
-        return false;
-      }
+      const email = password && mySlug && (await OS.email());
+      if (!email) return false;
+      const probe = supabase.createClient(E.url, E.key, {
+        auth: {
+          storageKey: "skeylo-os-verify",
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      });
+      const { error } = await probe.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (!error) probe.auth.signOut({ scope: "local" }).catch(() => {});
+      return !error;
     },
   };
   window.OS = OS;
@@ -96,6 +125,7 @@
   const cols = new Map(); // col -> {docs: Map<id,data>, listeners:Set, loaded}
   const known = new Map(); // "col/id" -> poslednja primenjena verzija
   const pending = new Map(); // "col/id" -> broj upisa u toku
+  const late = new Map(); // "col/id" -> tuđa izmena stigla dok je naš upis bio u toku
   const tomb = new Map(); // "col/id" -> verzija u trenutku brisanja
 
   const key = (c, id) => c + "/" + id;
@@ -157,7 +187,10 @@
     const s = cols.get(row.col);
     if (!s) return;
     const k = key(row.col, row.id);
-    if (pending.get(k)) return;
+    if (pending.get(k)) {
+      late.set(k, row);
+      return;
+    }
     if ((known.get(k) || 0) >= row.v) return;
     if (tomb.has(k) && tomb.get(k) >= row.v) return;
     known.set(k, row.v);
@@ -170,20 +203,42 @@
     if (!s) return;
     const k = key(old.col, old.id);
     tomb.set(k, Math.max(tomb.get(k) || 0, known.get(k) || 0));
-    if (pending.get(k)) return;
+    if (pending.get(k)) {
+      late.set(k, { del: old });
+      return;
+    }
     if (s.docs.delete(old.id)) emit(old.col);
   }
+  /* posle našeg upisa primeni ono što je u međuvremenu stiglo (inače bi se izgubilo) */
+  function replayLate(k) {
+    const r = late.get(k);
+    if (!r) return;
+    late.delete(k);
+    if (!r.del) return remoteRow(r);
+    if ((known.get(k) || 0) > (tomb.get(k) || 0)) return; // naš upis je noviji od brisanja
+    const s = cols.get(r.del.col);
+    if (s && s.docs.delete(r.del.id)) emit(r.del.col);
+  }
 
-  let channel = null;
+  /* Jedan Realtime kanal za sve kolekcije. Kolekcija pretplaćena posle pravljenja
+     kanala (npr. "focus" stigne tik pre ostalih) pravi nov kanal sa svima, pa se
+     stari gasi tek kad je novi povezan. Posle povezivanja se dopuni sve što se
+     upisalo dok kanal nije slušao (redovi sa v većim od poznatog). */
+  let channel = null,
+    chanN = 0,
+    chanQ = false;
   const subscribed = new Set();
   function listen(c) {
+    if (subscribed.has(c)) return;
     subscribed.add(c);
-    if (channel) return;
-    // Svi onSnapshot pozivi u app.js idu u istom tick-u, pa jedan kanal pokriva sve kolekcije.
+    if (chanQ) return;
+    chanQ = true;
     queueMicrotask(() => {
-      channel = sb.channel("os-docs");
+      chanQ = false;
+      const old = channel,
+        ch = (channel = sb.channel("os-docs-" + ++chanN));
       subscribed.forEach((col) => {
-        channel.on(
+        ch.on(
           "postgres_changes",
           {
             event: "INSERT",
@@ -193,7 +248,7 @@
           },
           (p) => remoteRow(p.new),
         );
-        channel.on(
+        ch.on(
           "postgres_changes",
           {
             event: "UPDATE",
@@ -205,18 +260,41 @@
         );
       });
       // DELETE se ne može filtrirati; old nosi primarni ključ (col, id).
-      channel.on(
+      ch.on(
         "postgres_changes",
         { event: "DELETE", schema: "os", table: "docs" },
         (p) => remoteDelete(p.old),
       );
-      channel.subscribe((status) => {
-        // Posle prekida veze povuci sve iznova da ništa ne promakne.
-        if (status === "SUBSCRIBED" && channel._osWasUp)
+      let up = false;
+      ch.subscribe((status) => {
+        if (status !== "SUBSCRIBED" || channel !== ch) return;
+        if (up) {
+          // posle prekida veze povuci sve iznova da ništa ne promakne
           subscribed.forEach(load);
-        if (status === "SUBSCRIBED") channel._osWasUp = true;
+          return;
+        }
+        up = true;
+        if (old) sb.removeChannel(old);
+        subscribed.forEach((col) =>
+          (colState(col).loadP || Promise.resolve()).then(() => catchUp(col)),
+        );
       });
     });
+  }
+  /* izmene posle učitavanja, a pre nego što je kanal počeo da sluša */
+  async function catchUp(c) {
+    let max = 0;
+    const pre = c + "/";
+    known.forEach((v, k) => {
+      if (k.startsWith(pre) && v > max) max = v;
+    });
+    const { data, error } = await sb
+      .from("docs")
+      .select("id,data,v")
+      .eq("col", c)
+      .gt("v", max);
+    if (error || !data) return;
+    data.forEach((r) => remoteRow({ col: c, ...r }));
   }
 
   async function fetchAll(c) {
@@ -291,7 +369,11 @@
       };
     } finally {
       const n = pending.get(k) - 1;
-      n ? pending.set(k, n) : pending.delete(k);
+      if (n) pending.set(k, n);
+      else {
+        pending.delete(k);
+        replayLate(k);
+      }
     }
   }
 
@@ -317,6 +399,44 @@
           (s) => s.docs.has(id) && s.docs.set(id, { ...s.docs.get(id), ...p }),
           () => sb.rpc("doc_update", { p_col: c, p_id: id, p_patch: p }),
         );
+      },
+      /* Upis samo ako je polje `field` u bazi i dalje `expect`; inače vraća
+         { conflict: true, data } sa trenutnim dokumentom da pozivalac spoji izmene. */
+      async updateIf(patch, field, expect) {
+        const p = plain(patch),
+          k = key(c, id);
+        let out = {};
+        await write(
+          c,
+          id,
+          (s) => s.docs.has(id) && s.docs.set(id, { ...s.docs.get(id), ...p }),
+          async () => {
+            const r = await sb.rpc("doc_update_if", {
+              p_col: c,
+              p_id: id,
+              p_patch: p,
+              p_key: field,
+              p_expect: expect == null ? "" : String(expect),
+            });
+            // baza još bez doc_update_if: običan upis kao ranije
+            if (r.error && r.error.code === "PGRST202")
+              return sb.rpc("doc_update", { p_col: c, p_id: id, p_patch: p });
+            if (r.error) return r;
+            out = r.data || {};
+            return { data: out.conflict ? null : out.v };
+          },
+        );
+        if (!out.conflict) return { conflict: false };
+        const s = cols.get(c);
+        if ((known.get(k) || 0) <= out.v) {
+          known.set(k, out.v);
+          if (s && s.loaded) {
+            s.docs.set(id, out.data || {});
+            emit(c);
+          }
+        }
+        const d = s && s.loaded && s.docs.has(id) ? s.docs.get(id) : out.data;
+        return { conflict: true, data: clone(d || {}) };
       },
       delete() {
         return write(
@@ -363,7 +483,7 @@
         else if (!s.loading) {
           s.loading = true;
           listen(c);
-          load(c);
+          s.loadP = load(c);
         }
         return () => s.listeners.delete(fn);
       },
@@ -502,12 +622,30 @@
       }
     }
   }
+  const maxLbl =
+    MAX_MB >= 1024
+      ? (MAX_MB / 1024).toFixed(1).replace(".0", "").replace(".", ",") + " GB"
+      : MAX_MB + " MB";
   const storage = {
+    maxBytes: MAX_MB * 1024 * 1024,
+    maxLabel: maxLbl,
+    /* koliko je zauzeto: { total, creatives, files, quota } u bajtovima
+       (kvota plana: OS_STORAGE_GB, Supabase Pro = 100 GB) */
+    async usage() {
+      const { data, error } = await sb.rpc("storage_usage");
+      if (error || !data) return null;
+      return {
+        total: Number(data.total) || 0,
+        creatives: Number(data.creatives) || 0,
+        files: Number(data.files) || 0,
+        quota: (Number(E.storageGB) || 100) * 1073741824,
+      };
+    },
     async put(file, { type, path, onProgress }) {
       if (file.size > MAX_MB * 1024 * 1024)
         throw {
           code: "too_large",
-          msg: `„${file.name || "Fajl"}“ je veći od ${MAX_MB} MB. Smanji ga ili podigni granicu (Supabase Pro).`,
+          msg: `„${file.name || "Fajl"}“ je veći od ${maxLbl}. Smanji ga pa probaj ponovo.`,
         };
       const key = objKey(path),
         onP = (p) => onProgress && onProgress(Math.min(1, Math.max(0, p)));
@@ -528,6 +666,68 @@
     if (window.SkeyloOS && window.SkeyloOS.useStorage)
       window.SkeyloOS.useStorage(storage);
   });
+
+  /* Jednom dnevno (po uređaju) obriši fajlove kreativa koje nijedan dokument ne
+     pominje: prekinut upload, zatvoren tab. Baza vraća samo starije od 2 dana. */
+  const SWEEP_KEY = "skeylo-os-sweep";
+  authed.then(() =>
+    setTimeout(async () => {
+      try {
+        if (Date.now() - (Number(localStorage.getItem(SWEEP_KEY)) || 0) < 864e5)
+          return;
+        localStorage.setItem(SWEEP_KEY, String(Date.now()));
+      } catch (e) {
+        return;
+      }
+      const { data, error } = await sb.rpc("creative_orphans", { p_days: 2 });
+      if (error || !Array.isArray(data) || !data.length) return;
+      const names = data.filter((n) => typeof n === "string" && n);
+      for (let i = 0; i < names.length; i += 100)
+        await sb.storage.from(BUCKET).remove(names.slice(i, i + 100));
+      console.info("[os] obrisano fajlova bez kreative:", names.length);
+    }, 20000),
+  );
+
+  /* ---------- prisustvo: ko je na kojoj stranici (Realtime Presence) ---------- */
+  let here = null,
+    hereAt = null;
+  const hereFns = new Set();
+  function hereChan() {
+    if (here || !mySlug) return here;
+    here = sb.channel("os-here", {
+      config: { private: true, presence: { key: mySlug } },
+    });
+    here.on("presence", { event: "sync" }, () => {
+      const st = here.presenceState(),
+        out = {};
+      for (const slug in st)
+        out[slug] = [...new Set(st[slug].map((m) => m.at).filter(Boolean))];
+      hereFns.forEach((fn) => {
+        try {
+          fn(out, mySlug);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    });
+    here.subscribe((s) => {
+      if (s === "SUBSCRIBED") here.track({ at: hereAt });
+    });
+    return here;
+  }
+  /* at = "notes/<id>" ili null; fn(mapa slug -> [at...], moj slug) */
+  OS.here = (at) => {
+    hereAt = at || null;
+    authed.then(() => {
+      const ch = hereChan();
+      if (ch && ch.state === "joined") ch.track({ at: hereAt });
+    });
+  };
+  OS.onHere = (fn) => {
+    hereFns.add(fn);
+    authed.then(hereChan);
+    return () => hereFns.delete(fn);
+  };
 
   window.claude = {
     async use(name) {

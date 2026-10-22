@@ -200,6 +200,48 @@
   object-fit: cover;
   object-position: 50% 18%;
 }
+/* ko je još na stranici: desno u redu sa "Izmenio …" */
+.gp-head {
+  position: relative;
+}
+.gp-here {
+  position: absolute;
+  right: 0;
+  bottom: 26px;
+  display: flex;
+  align-items: center;
+  height: 22px;
+  color: var(--muted);
+  font-size: 13px;
+  animation: gpHereIn 0.35s var(--ease, ease) both;
+}
+.gp-here img {
+  width: 22px;
+  height: 22px;
+  margin-left: -6px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  box-shadow: 0 0 0 2px var(--ink, #0b0806);
+}
+.gp-here img:first-child {
+  margin-left: 0;
+}
+.gp-here span {
+  margin-left: 8px;
+  white-space: nowrap;
+}
+@keyframes gpHereIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (max-width: 560px) {
+  .gp-here span {
+    display: none;
+  }
+}
 .gp-kids {
   display: grid;
   gap: 2px;
@@ -1337,4 +1379,108 @@ body.nb-dragging * {
 .nb-embov .nb-ef {
   flex: 1;
   height: auto !important;
+}
+
+/* ---------- privatne stranice (privateTo) ---------- */
+.gsec-me span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gsec-me span svg,
+.gp-priv svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.glock {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: var(--gold);
+}
+.glock svg {
+  width: 15px;
+  height: 15px;
+}
+.gp-meta {
+  flex-wrap: wrap;
+}
+.gp-priv {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ---------- slika: veličina (notes.js) ---------- */
+.nb-iw {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+}
+.nb-iw[style] img {
+  width: 100%;
+}
+.nb-rz {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 26px;
+  display: grid;
+  place-items: center;
+  cursor: ew-resize;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.nb-rz::before {
+  content: "";
+  width: 6px;
+  height: min(46px, 36%);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.nb-iw:hover .nb-rz,
+.nb-iw.rz .nb-rz {
+  opacity: 1;
+}
+@media (hover: none) {
+  .nb-rz {
+    opacity: 0.75;
+  }
+}
+.nb-iw.rz {
+  user-select: none;
+}
+.nb-iw.rz::after {
+  content: attr(data-pct);
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }

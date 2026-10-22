@@ -11356,6 +11356,43 @@ body.lgrab * {
   pointer-events: none;
   box-shadow: none;
 }
+/* zauzeće skladišta */
+.fcspace {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -6px 0 22px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.fcs-t {
+  white-space: nowrap;
+}
+.fcs-bar {
+  position: relative;
+  flex: 0 1 220px;
+  min-width: 60px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--line);
+  overflow: hidden;
+}
+.fcs-bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--grad);
+  transform-origin: left;
+  transform: scaleX(var(--p, 0));
+  transition: transform 0.4s var(--ease);
+}
+.fcspace.warn .fcs-bar i {
+  background: var(--bad);
+}
+.fcspace.warn .fcs-t {
+  color: var(--bad);
+}
 .fcgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr));

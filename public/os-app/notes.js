@@ -48,6 +48,12 @@ window.SKNotes = function (X) {
 
   const I = {
     plus: SV('<path d="M12 5v14M5 12h14"/>', 2.2),
+    lock: SV(
+      '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    ),
+    unlock: SV(
+      '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 7.6-1.8"/>',
+    ),
     grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
     check: SV('<path d="m5 12 5 5L20 7"/>', 3),
     doc: SV(
@@ -546,6 +552,11 @@ window.SKNotes = function (X) {
     / {2,}$/.test(s) ? s.replace(/ +$/, "") : s.slice(0, -1);
   const isBlockStart = (l) =>
     /^(#{1,6}(\s|$)|[-*+](\s|$)|\d{1,9}[.)](\s|$)|>|```|~~~|!\[)/.test(l);
+  /* širina slike u % kolone (10–100); 0 = prirodna veličina */
+  const imgW = (v) => {
+    const n = Math.round(+v);
+    return n >= 10 && n <= 100 ? n : 0;
+  };
   function parseMd(md) {
     const L = String(md || "")
       .replace(/\r\n?/g, "\n")
@@ -656,12 +667,13 @@ window.SKNotes = function (X) {
         continue;
       }
       st = [];
+      /* slika; širina posle resize-a: ![alt](src){width=60%} */
       if (
         (m = ln.match(
-          /^!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)\s*$/,
+          /^!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)(?:\{width=(\d{1,3})%\})?\s*$/,
         ))
       ) {
-        add({ t: "img", alt: unesc(m[1]), src: m[2] });
+        add({ t: "img", alt: unesc(m[1]), src: m[2], w: imgW(m[3]) });
         continue;
       }
       /* HTML fajl ugrađen u stranicu: ::embed[ime](/_blob/id) */
@@ -745,7 +757,10 @@ window.SKNotes = function (X) {
       case "hr":
         return ["---"];
       case "img":
-        return [`![${escPlain(b.alt || "")}](${b.src})`];
+        return [
+          `![${escPlain(b.alt || "")}](${b.src})` +
+            (b.w ? `{width=${b.w}%}` : ""),
+        ];
       case "file":
         return [`[${escPlain(b.name || "Fajl")}](${b.src})`];
       case "embed":
@@ -946,7 +961,7 @@ window.SKNotes = function (X) {
       h += `<div class="nb-t" contenteditable="true" spellcheck="false" data-ph="${PH[t]}"></div>`;
     else if (t === "hr") h += `<div class="nb-x nb-hr"><hr></div>`;
     else if (t === "img")
-      h += `<figure class="nb-x nb-img">${b.src ? `<img src="${esc(b.src)}" alt="${esc(b.alt || "")}" loading="lazy" draggable="false">` : `<span class="nb-up">Otpremam sliku…</span>`}</figure>`;
+      h += `<figure class="nb-x nb-img">${b.src ? `<span class="nb-iw"${b.w ? ` style="width:${b.w}%"` : ""}><img src="${esc(b.src)}" alt="${esc(b.alt || "")}" loading="lazy" draggable="false"><span class="nb-rz" aria-hidden="true" title="Prevuci za veličinu · dupli klik vraća original"></span></span>` : `<span class="nb-up">Otpremam sliku…</span>`}</figure>`;
     else if (t === "file")
       h += `<a class="nb-x nb-file"${b.src ? ` href="${esc(b.src)}" target="_blank" rel="noopener"` : ""} draggable="false"><span class="nb-fi">${I.file}</span><span class="nb-fn">${esc(b.name || "Fajl")}</span>${b.src ? `<span class="nb-fo">${I.open}</span>` : `<span class="nb-fo">Otpremam…</span>`}</a>`;
     else if (t === "embed")
@@ -968,6 +983,7 @@ window.SKNotes = function (X) {
       el.dataset.alt = b.alt || "";
       el.dataset.name = b.name || "";
     }
+    if (t === "img" && b.w) el.dataset.w = b.w;
     if (t === "embed" && b.src) loadEmbed(el);
     if (t === "page") {
       el.dataset.ref = b.ref || "";
@@ -1086,6 +1102,7 @@ window.SKNotes = function (X) {
       b.alt = el.dataset.alt || "";
       b.name = el.dataset.name || "";
     }
+    if (t === "img") b.w = imgW(el.dataset.w);
     if (t === "page") {
       b.ref = el.dataset.ref;
       const n = noteOf(b.ref);
@@ -1346,10 +1363,18 @@ window.SKNotes = function (X) {
     const el = bs[Math.max(0, Math.min(p.i, bs.length - 1))];
     if (el) focusBlock(el, p.off < 0 ? Infinity : p.off);
   }
+  /* tuđe izmene primenjene posle nekog undo koraka: [pre, posle]; undo ih ne briše */
+  const rb = [];
+  function rebased(s) {
+    let md = s.md;
+    for (let k = s.ri || 0; k < rb.length; k++)
+      md = merge3(rb[k][0], md, rb[k][1], true);
+    return md;
+  }
   function pushUndo() {
     typedIn = null;
-    const s = { md: serialize(), pos: caretPos() };
-    if (undoS.length && undoS[undoS.length - 1].md === s.md) return;
+    const s = { md: serialize(), pos: caretPos(), ri: rb.length };
+    if (undoS.length && rebased(undoS[undoS.length - 1]) === s.md) return;
     undoS.push(s);
     if (undoS.length > 150) undoS.shift();
     redoS = [];
@@ -1363,7 +1388,7 @@ window.SKNotes = function (X) {
     typedAt = now;
   }
   function restore(s) {
-    renderBlocks(s.md);
+    patchBlocks(rebased(s));
     setPos(s.pos);
     changed();
   }
@@ -1371,9 +1396,9 @@ window.SKNotes = function (X) {
     closeSlash();
     const now = serialize();
     let s = undoS.pop();
-    while (s && s.md === now) s = undoS.pop();
+    while (s && rebased(s) === now) s = undoS.pop();
     if (!s) return;
-    redoS.push({ md: now, pos: caretPos() });
+    redoS.push({ md: now, pos: caretPos(), ri: rb.length });
     typedIn = null;
     restore(s);
   }
@@ -1381,32 +1406,180 @@ window.SKNotes = function (X) {
     closeSlash();
     const s = redoS.pop();
     if (!s) return;
-    undoS.push({ md: serialize(), pos: caretPos() });
+    undoS.push({ md: serialize(), pos: caretPos(), ri: rb.length });
     typedIn = null;
     restore(s);
   }
 
-  /* ---------------- page state + saving ---------------- */
+  /* ---------------- spajanje izmena (dvoje piše istu stranicu) ----------------
+     Jedinica je blok, kao u Notionu: blok koji je menjao samo jedan ostaje njegov;
+     ako su oba menjala isti blok, ostaju obe verzije (ništa se ne gubi). */
+  const ukey = (b) => (b.l || 0) + "|" + toMd([b]);
+  const umemo = new Map();
+  function units(md) {
+    let u = umemo.get(md);
+    if (!u) {
+      const bs = parseMd(md);
+      u = { bs, ks: bs.map(ukey) };
+      if (umemo.size > 40) umemo.delete(umemo.keys().next().value);
+      umemo.set(md, u);
+    }
+    return u;
+  }
+  /* najduži zajednički podniz: za svaki a[i] indeks istog elementa u b ili -1 */
+  function lcsMap(a, b) {
+    const n = a.length,
+      m = b.length,
+      map = new Int32Array(n).fill(-1);
+    let s = 0,
+      ea = n,
+      eb = m;
+    while (s < n && s < m && a[s] === b[s]) map[s] = s++;
+    while (ea > s && eb > s && a[ea - 1] === b[eb - 1]) map[--ea] = --eb;
+    const N = ea - s,
+      M = eb - s;
+    if (!N || !M) return map;
+    const W = M + 1,
+      L = new Uint32Array((N + 1) * W);
+    for (let i = N - 1; i >= 0; i--)
+      for (let j = M - 1; j >= 0; j--)
+        L[i * W + j] =
+          a[s + i] === b[s + j]
+            ? L[(i + 1) * W + j + 1] + 1
+            : Math.max(L[(i + 1) * W + j], L[i * W + j + 1]);
+    for (let i = 0, j = 0; i < N && j < M; )
+      if (a[s + i] === b[s + j]) map[s + i++] = s + j++;
+      else if (L[(i + 1) * W + j] >= L[i * W + j + 1]) i++;
+      else j++;
+    return map;
+  }
+  /* base -> ours i base -> theirs spojeni u jedno; oursWins: u sukobu samo naše */
+  function merge3(base, ours, theirs, oursWins) {
+    if (ours === theirs || theirs === base) return ours;
+    if (ours === base) return theirs;
+    const B = units(base),
+      O = units(ours),
+      T = units(theirs),
+      mo = lcsMap(B.ks, O.ks),
+      mt = lcsMap(B.ks, T.ks),
+      out = [];
+    const same = (x, y) =>
+      x.length === y.length && x.every((k, i) => k === y[i]);
+    let pb = 0,
+      po = 0,
+      pt = 0;
+    const chunk = (eb, eo, et) => {
+      const bk = B.ks.slice(pb, eb),
+        ok = O.ks.slice(po, eo),
+        tk = T.ks.slice(pt, et);
+      if (same(ok, bk)) out.push(...T.bs.slice(pt, et));
+      else if (same(tk, bk) || same(ok, tk)) out.push(...O.bs.slice(po, eo));
+      else if (ok.length === bk.length && tk.length === bk.length)
+        /* susedni blokovi: svaki je menjao svoj, spoji blok po blok */
+        bk.forEach((k, i) => {
+          if (ok[i] === k) out.push(T.bs[pt + i]);
+          else {
+            out.push(O.bs[po + i]);
+            if (tk[i] !== k && tk[i] !== ok[i] && !oursWins)
+              out.push(T.bs[pt + i]);
+          }
+        });
+      else {
+        /* pravi sukob: naše, pa njihovi novi blokovi (ništa se ne gubi) */
+        out.push(...O.bs.slice(po, eo));
+        if (!oursWins)
+          tk.forEach(
+            (k, i) =>
+              ok.includes(k) || bk.includes(k) || out.push(T.bs[pt + i]),
+          );
+      }
+    };
+    for (let i = 0; i < B.ks.length; i++) {
+      if (mo[i] < 0 || mt[i] < 0) continue;
+      chunk(i, mo[i], mt[i]);
+      out.push(O.bs[mo[i]]);
+      pb = i + 1;
+      po = mo[i] + 1;
+      pt = mt[i] + 1;
+    }
+    chunk(B.ks.length, O.ks.length, T.ks.length);
+    return toMd(out);
+  }
+  /* DOM na novi md, ali menja samo blokove koji su drugačiji: kursor, fokus i
+     IME u bloku koji niko drugi nije dirao ostaju netaknuti (nema treptanja) */
+  function patchBlocks(md) {
+    const bs = parseMd(md);
+    if (!bs.length || !TEXTY.has(bs[bs.length - 1].t))
+      bs.push({ t: "p", x: "" });
+    const els = blocks(),
+      pos = caretPos(),
+      act = pos && !pos.sel ? els[pos.i] : null,
+      map = lcsMap(
+        bs.map(ukey),
+        els.map((el) => ukey(readBlock(el))),
+      ),
+      keep = new Set(),
+      list = bs.map((b, i) => {
+        if (map[i] < 0) return make(b);
+        keep.add(els[map[i]]);
+        return els[map[i]];
+      });
+    if (sel.some((e) => !keep.has(e))) clearSel();
+    els.forEach((el) => keep.has(el) || el.remove());
+    let prev = null;
+    for (const el of list) {
+      const want = prev ? prev.nextSibling : root.firstChild;
+      if (el !== want) root.insertBefore(el, want);
+      prev = el;
+    }
+    renum();
+    solo();
+    if (isScript() && X.scriptRendered) X.scriptRendered();
+    if (act && !keep.has(act)) setPos(pos);
+  }
+
+  /* ---------------- page state + saving ----------------
+     D = stanje dokumenta u bazi: srv je poslednji md za koji znamo da je upisan,
+     srvRaw sirovo polje md (po njemu baza proverava da niko nije upisao između).
+     domBase = md od kog se razlikuju još neposlate izmene u editoru.
+     Snimanje ide redom (jedno po jedno). Ako je neko u međuvremenu upisao,
+     baza vrati njegovu verziju, izmene se spoje (merge3) i šalje se ponovo. */
   let cur = null,
     rendered = null,
     saveT = 0,
-    lastMd = "",
+    D = null,
+    domBase = "",
     lastTitle = "",
     dirtyMd = false,
     dirtyTitle = false,
     pendingRemote = false,
     composing = false,
     kidsT = 0;
+  const DOCS = new Map(), // "col/id" -> D
+    queued = new Map(); // D -> posao koji još nije poslat
+  let running = null,
+    saveFail = false,
+    jobs = 0,
+    chain = Promise.resolve();
   function setSave(busy, sel = H.save) {
     const el = $(sel);
     el.classList.toggle("busy", busy);
     el.querySelector("span").textContent = busy ? "Čuvam…" : "Sačuvano";
   }
-  const docMd = (p) => (isScript() ? scriptMd(p) : p.md || "");
-  const curMd = () => {
-    const p = docOf(cur);
-    return p ? docMd(p) : "";
-  };
+  const docMdOf = (col, p) => (col === "scripts" ? scriptMd(p) : p.md || "");
+  const rawOf = (p) => (typeof p.md === "string" ? p.md : "");
+  const docMd = (p) => docMdOf(H.col, p);
+  const busyD = (d) => !!d && (running === d || queued.has(d));
+  function docState(p) {
+    const k = H.col + "/" + cur;
+    let d = DOCS.get(k);
+    if (!d) DOCS.set(k, (d = { col: H.col, id: cur }));
+    if (!busyD(d)) {
+      d.srv = docMd(p);
+      d.srvRaw = rawOf(p);
+    }
+    return d;
+  }
   function changed() {
     dirtyMd = true;
     setSave(true);
@@ -1422,44 +1595,135 @@ window.SKNotes = function (X) {
     clearTimeout(saveT);
     saveT = setTimeout(flush, 700);
   }
-  async function flush() {
+  /* uzima izmene iz editora odmah (sinhrono), a šalje ih kad dođu na red */
+  function flush() {
     clearTimeout(saveT);
-    if (!cur || rendered !== cur) return;
-    const id = cur,
-      col = H.col,
-      sv = H.save,
-      script = isScript(),
-      patch = {};
+    if (!cur || rendered !== cur || !D) return chain;
+    const job = { D, from: domBase, sv: H.save };
     if (dirtyMd) {
       dirtyMd = false;
       const md = serialize();
-      if (md !== lastMd) {
-        patch.md = lastMd = md;
-        if (script) {
-          patch.body = htmlOf(md);
-          patch.mdSig = sig(patch.body);
-        }
-      }
+      if (md !== domBase) job.md = domBase = md;
     }
     if (dirtyTitle) {
       dirtyTitle = false;
       const t = titleEl.textContent.replace(/\s+/g, " ").trim();
-      if (t !== lastTitle) patch.title = lastTitle = t;
+      if (t !== lastTitle) job.title = lastTitle = t;
     }
-    if (!Object.keys(patch).length) {
-      setSave(false, sv);
+    if (job.md === undefined && job.title === undefined) {
+      if (!busyD(D)) setSave(false, job.sv);
+      return chain;
+    }
+    const q = queued.get(D);
+    if (q) {
+      /* novi snimak obuhvata i prethodni neposlati; from ostaje stari */
+      if (job.md !== undefined) q.md = job.md;
+      if (job.title !== undefined) q.title = job.title;
+      return chain;
+    }
+    queued.set(D, job);
+    jobs++;
+    chain = chain
+      .then(() => {
+        queued.delete(D);
+        return send(job);
+      })
+      .finally(() => {
+        jobs--;
+        afterSend(job);
+      });
+    return chain;
+  }
+  async function retry(fn) {
+    for (let n = 0; ; n++)
+      try {
+        return await fn();
+      } catch (e) {
+        if (n >= 3 || !e || e.code !== "failed") throw e;
+        await new Promise((r) => setTimeout(r, 800 * 2 ** n));
+      }
+  }
+  async function send(job) {
+    const d = job.D;
+    running = d;
+    try {
+      const patch = {
+        updatedAt: Date.now(),
+        updatedBy: me() ? me().id : null,
+      };
+      if (job.title !== undefined) patch.title = job.title;
+      let md = job.md;
+      if (md !== undefined && job.from !== d.srv)
+        md = merge3(job.from, md, d.srv);
+      if (md === undefined || md === d.srv) {
+        if (job.title !== undefined)
+          await retry(() => api.upd(d.col, d.id, patch));
+        return;
+      }
+      for (let n = 0; ; n++) {
+        patch.md = md;
+        if (d.col === "scripts") {
+          patch.body = htmlOf(md);
+          patch.mdSig = sig(patch.body);
+        }
+        const r = await retry(() =>
+          api.updIf(d.col, d.id, patch, "md", d.srvRaw),
+        );
+        if (!r.conflict) {
+          d.srv = d.srvRaw = md;
+          return;
+        }
+        if (n >= 5) throw { code: "failed" };
+        const remote = docMdOf(d.col, r.data || {});
+        md = merge3(d.srv, md, remote);
+        d.srv = remote;
+        d.srvRaw = rawOf(r.data || {});
+        if (md === remote) return;
+      }
+    } catch (e) {
+      job.err = e;
+    } finally {
+      running = null;
+    }
+  }
+  function afterSend(job) {
+    const d = job.D,
+      isCur = d === D && rendered === cur;
+    if (job.err) {
+      if (job.err.code === "not_found") return;
+      if (!saveFail) toast(errMsg(job.err));
+      saveFail = true;
+      /* izmene su i dalje u editoru: vrati ih u neposlate i probaj ponovo */
+      const q = queued.get(d);
+      if (q) {
+        q.from = job.from;
+        if (q.md === undefined) q.md = job.md;
+        if (q.title === undefined) q.title = job.title;
+      } else if (isCur && job.md !== undefined && domBase === job.md) {
+        domBase = job.from;
+        dirtyMd = true;
+      }
+      if (isCur && job.title !== undefined && !q) {
+        lastTitle = null;
+        dirtyTitle = true;
+      }
+      if (isCur) {
+        clearTimeout(saveT);
+        saveT = setTimeout(flush, 5000);
+      }
       return;
     }
-    patch.updatedAt = Date.now();
-    patch.updatedBy = me() ? me().id : null;
-    try {
-      await api.upd(col, id, patch);
-    } catch (e) {
-      toast(errMsg(e));
+    saveFail = false;
+    if (!isCur) return;
+    if (!busyD(d) && !dirtyMd && !dirtyTitle) setSave(false, job.sv);
+    if (!busyD(d)) {
+      const p = docOf(cur);
+      if (p && !isScript()) head(p);
+      if (p && docMd(p) !== domBase) {
+        if (busy()) pendingRemote = true;
+        else applyRemote();
+      }
     }
-    if (!dirtyMd && !dirtyTitle) setSave(false, sv);
-    const p = !script && noteOf(id);
-    if (p && id === cur && !isScript()) head(p);
   }
   const busy = () =>
     composing ||
@@ -1469,12 +1733,32 @@ window.SKNotes = function (X) {
     !EP.hidden ||
     !!menuEl ||
     !LK.hidden;
-  function applyRemote(md) {
-    const pos = caretPos();
-    lastMd = md;
-    renderBlocks(md);
-    if (pos) setPos(pos);
+  /* tuđa izmena: spoji je sa onim što je u editoru, a još nije poslato */
+  function applyRemote() {
     pendingRemote = false;
+    const p = docOf(cur);
+    if (!p || !D || rendered !== cur) return;
+    if (busyD(D)) {
+      pendingRemote = true;
+      return;
+    }
+    const remote = docMd(p);
+    if (remote !== domBase) {
+      const local = serialize(),
+        merged = merge3(domBase, local, remote);
+      if (merged !== local) {
+        patchBlocks(merged);
+        rb.push([local, merged]);
+      }
+      domBase = D.srv = remote;
+      D.srvRaw = rawOf(p);
+      if (merged !== remote) {
+        dirtyMd = true;
+        setSave(true);
+        clearTimeout(saveT);
+        saveT = setTimeout(flush, 700);
+      }
+    }
     paintKids();
   }
 
@@ -1511,7 +1795,7 @@ window.SKNotes = function (X) {
     const ts = n.updatedAt || n.createdAt;
     const ex = plainOf(n.md).slice(0, 140);
     return `<div class="cptile gtile${S.fresh.has(n.id) ? " new" : ""}" role="button" tabindex="0" data-go="g-${esc(n.id)}" style="${style}">
-      <span class="ci">${n.icon ? emo(n.icon) : I.doc}</span>
+      <span class="ci">${n.icon ? emo(n.icon) : I.doc}</span>${n.privateTo ? `<span class="glock" title="Samo ti vidiš ovu stranicu">${I.lock}</span>` : ""}
       <div class="gt-b">${withPath && n.parentId ? `<div class="gpath">${esc(pathOf(n))}</div>` : ""}<h3>${esc(n.title || "Bez naslova")}</h3>${ex ? `<p class="gex">${esc(ex)}</p>` : ""}
       <div class="meta2">${u ? `<img src="${esc(X.IMG[u.id])}" alt="">` : ""}<span>${ts ? esc(rel(ts)) : ""}${k ? ` · ${k} ${plural(k, "podstranica", "podstranice", "podstranica")}` : ""}</span></div></div>
     </div>`;
@@ -1536,26 +1820,36 @@ window.SKNotes = function (X) {
             (n) => fold(n.title).includes(f) || fold(plainOf(n.md)).includes(f),
           )
           .sort(byUpd)
-      : kidsOf(null);
+      : kidsOf(null).filter((n) => !n.privateTo);
+    /* privatne stranice (privateTo) su u svojoj sekciji; tuđe baza ni ne šalje */
+    const own = f ? [] : kidsOf(null).filter((n) => n.privateTo);
     const d = (i) =>
       anim
         ? `animation-delay:${(0.16 + i * 0.05).toFixed(2)}s`
         : "animation:none";
-    const all = mine.length;
+    const all = mine.filter((n) => !n.privateTo).length,
+      sec = anim ? "" : "animation:none";
     box.innerHTML =
-      `<div class="gsec" style="${anim ? "" : "animation:none"}"><h2>Stranice</h2><span>${all ? all + " " + plural(all, "stranica", "stranice", "stranica") : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje"}</span></div>` +
+      `<div class="gsec" style="${sec}"><h2>Stranice</h2><span>${all ? all + " " + plural(all, "stranica", "stranice", "stranica") : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje"}</span></div>` +
       (f && !list.length
         ? `<div class="state">Nema stranica za „${esc(hq.trim())}“.</div>`
-        : `<div class="cpgrid gpgrid">${list.map((n, i) => tile(n, d(i + 1), !!f)).join("")}${f ? "" : `<button class="cptile add" data-gnew style="${d(list.length + 1)}"><span class="ci">${I.plus}</span>Nova stranica</button>`}</div>`);
+        : `<div class="cpgrid gpgrid">${list.map((n, i) => tile(n, d(i + 1), !!f)).join("")}${f ? "" : `<button class="cptile add" data-gnew style="${d(list.length + 1)}"><span class="ci">${I.plus}</span>Nova stranica</button>`}</div>`) +
+      (f
+        ? ""
+        : `<div class="gsec gsec-me" style="${sec}"><h2>Samo za tebe</h2><span>${I.lock}Niko drugi ne vidi ove stranice</span></div>` +
+          `<div class="cpgrid gpgrid">${own.map((n, i) => tile(n, d(list.length + i + 2))).join("")}<button class="cptile add" data-gnew="me" style="${d(list.length + own.length + 2)}"><span class="ci">${I.lock}</span>Privatna stranica</button></div>`);
   }
-  async function newPage(parentId) {
-    const now = Date.now();
+  /* priv: nova stranica u "Samo za tebe"; podstranica nasleđuje privatnost roditelja */
+  async function newPage(parentId, priv) {
+    const now = Date.now(),
+      par = parentId && noteOf(parentId);
     const id = await api.add("notes", {
       title: "",
       icon: "",
       md: "",
       parentId: parentId || null,
-      spaceId: parentId ? spaceOf(noteOf(parentId)) : hubSpace,
+      spaceId: parentId ? spaceOf(par) : hubSpace,
+      privateTo: par ? par.privateTo || null : priv && me() ? me().id : null,
       order: now,
       createdAt: now,
       createdBy: me() ? me().id : null,
@@ -1565,9 +1859,9 @@ window.SKNotes = function (X) {
     X.markFresh(id);
     return id;
   }
-  async function createAndOpen(parentId) {
+  async function createAndOpen(parentId, priv) {
     try {
-      const id = await newPage(parentId);
+      const id = await newPage(parentId, priv);
       X.nav("g-" + id);
       setTimeout(() => titleEl.focus(), 120);
     } catch (e) {
@@ -1610,9 +1904,19 @@ window.SKNotes = function (X) {
     $("#gpAddIcon").hidden = !!p.icon;
     const u = who(p.updatedBy || p.createdBy),
       ts = p.updatedAt || p.createdAt;
-    $("#gpMeta").innerHTML = ts
-      ? `${u ? `<img src="${esc(X.IMG[u.id])}" alt="">` : ""}<span>${u ? "Izmenio " + esc(u.name) + " · " : ""}${esc(rel(ts))}</span>`
-      : "";
+    $("#gpMeta").innerHTML =
+      (ts
+        ? `${u ? `<img src="${esc(X.IMG[u.id])}" alt="">` : ""}<span>${u ? "Izmenio " + esc(u.name) + " · " : ""}${esc(rel(ts))}</span>`
+        : "") +
+      (p.privateTo
+        ? `<span class="gp-priv">${I.lock}Samo ti vidiš ovu stranicu</span>`
+        : "");
+  }
+  /* md za prikaz: ako je stranica i dalje u redu za slanje, njen poslednji snimak */
+  function startMd(p) {
+    D = docState(p);
+    const q = queued.get(D);
+    return q && q.md !== undefined ? q.md : docMd(p);
   }
   function paint() {
     const p = docOf(cur),
@@ -1621,10 +1925,10 @@ window.SKNotes = function (X) {
       /* naslov, polja i stanje "skripta ne postoji" crta app.js */
       rendered = null;
       if (!ok) return;
-      lastMd = scriptMd(p);
+      domBase = startMd(p);
       dirtyMd = pendingRemote = false;
       clearTimeout(saveT);
-      renderBlocks(lastMd);
+      renderBlocks(domBase);
       rendered = cur;
       return;
     }
@@ -1642,19 +1946,55 @@ window.SKNotes = function (X) {
     head(p);
     titleEl.textContent = p.title || "";
     lastTitle = p.title || "";
-    lastMd = p.md || "";
+    domBase = startMd(p);
     dirtyMd = dirtyTitle = pendingRemote = false;
     clearTimeout(saveT);
-    setSave(false);
-    renderBlocks(lastMd);
+    setSave(busyD(D));
+    renderBlocks(domBase);
     rendered = cur;
     paintKids();
+    here();
     [$("#gpHead"), root].forEach((el) => {
       el.style.animation = "none";
       el.offsetHeight;
       el.style.animation = "";
     });
   }
+  /* ---------------- ko je još na ovoj stranici (Realtime Presence) ---------------- */
+  let hereMap = {},
+    hereMe = null;
+  function here() {
+    if (!window.OS || !OS.here) return;
+    OS.here(rendered ? H.col + "/" + rendered : null);
+    paintHere();
+  }
+  function paintHere() {
+    const box = $("#gpHere");
+    if (!box) return;
+    const at = rendered && !isScript() ? "notes/" + rendered : null,
+      ppl = at
+        ? Object.keys(hereMap)
+            .filter((s) => s !== hereMe && hereMap[s].includes(at))
+            .map(who)
+            .filter(Boolean)
+        : [];
+    box.hidden = !ppl.length;
+    box.innerHTML = ppl.length
+      ? ppl
+          .map(
+            (u) =>
+              `<img src="${esc(X.IMG[u.id])}" alt="" title="${esc(u.name)} je na ovoj stranici">`,
+          )
+          .join("") +
+        `<span>${ppl.length === 1 ? esc(ppl[0].name) + " je ovde" : ppl.length + " osobe su ovde"}</span>`
+      : "";
+  }
+  if (window.OS && OS.onHere)
+    OS.onHere((m, slug) => {
+      hereMap = m;
+      hereMe = slug;
+      paintHere();
+    });
   function paintKids() {
     const box = $("#gpKids");
     if (!cur || isScript()) return;
@@ -1686,6 +2026,7 @@ window.SKNotes = function (X) {
     if (cur !== id || H !== h) {
       undoS = [];
       redoS = [];
+      rb.length = 0;
     }
     closeAll();
     clearSel();
@@ -1713,10 +2054,9 @@ window.SKNotes = function (X) {
         lastTitle = p.title || "";
       }
     }
-    const md = docMd(p);
-    if (md !== lastMd && !dirtyMd) {
-      if (busy()) pendingRemote = true;
-      else applyRemote(md);
+    if (docMd(p) !== domBase) {
+      if (busy() || busyD(D)) pendingRemote = true;
+      else applyRemote();
     }
     blocks()
       .filter((b) => b.dataset.t === "page")
@@ -1729,6 +2069,7 @@ window.SKNotes = function (X) {
     closeAll();
     clearSel();
     rendered = null;
+    here();
   }
   function closeAll() {
     closeSlash();
@@ -2970,6 +3311,64 @@ window.SKNotes = function (X) {
   });
   onRoot("pointercancel", () => dragEnd(false));
 
+  /* ---------------- slika: veličina (ručka na desnoj ivici) ---------------- */
+  /* širina se pamti u % kolone, pa slika ostaje srazmerna i na telefonu */
+  onRoot(
+    "pointerdown",
+    (e) => {
+      const h = e.target.closest(".nb-rz");
+      if (!h || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const el = h.closest(".nb"),
+        w = h.parentElement,
+        col = w.parentElement.getBoundingClientRect().width,
+        x0 = e.clientX,
+        w0 = w.getBoundingClientRect().width;
+      let pct = 0;
+      pushUndo();
+      try {
+        h.setPointerCapture(e.pointerId);
+      } catch (err) {}
+      w.classList.add("rz");
+      const move = (ev) => {
+        pct = Math.round(
+          Math.min(100, Math.max(10, ((w0 + ev.clientX - x0) / col) * 100)),
+        );
+        w.style.width = pct + "%";
+        w.dataset.pct = pct + "%";
+      };
+      const up = () => {
+        h.removeEventListener("pointermove", move);
+        h.removeEventListener("pointerup", up);
+        h.removeEventListener("pointercancel", up);
+        w.classList.remove("rz");
+        if (!pct || String(pct) === el.dataset.w) return;
+        el.dataset.w = pct;
+        changed();
+      };
+      h.addEventListener("pointermove", move);
+      h.addEventListener("pointerup", up);
+      h.addEventListener("pointercancel", up);
+    },
+    true,
+  );
+  /* klik na ručku ne bira blok; dupli klik vraća prirodnu veličinu */
+  onRoot(
+    "click",
+    (e) => e.target.closest(".nb-rz") && e.stopPropagation(),
+    true,
+  );
+  onRoot("dblclick", (e) => {
+    const h = e.target.closest(".nb-rz"),
+      el = h && h.closest(".nb");
+    if (!el || !el.dataset.w) return;
+    pushUndo();
+    delete el.dataset.w;
+    h.parentElement.style.width = "";
+    changed();
+  });
+
   /* ---------------- drag-select across blocks (mouse) ---------------- */
   let DS = null,
     justSel = false;
@@ -3616,7 +4015,7 @@ window.SKNotes = function (X) {
           if (!nb.isConnected) return;
           nb.replaceWith(make({ t: kind, src: url, name: f.name, alt: "" }));
           changed();
-          if (pendingRemote && !busy()) applyRemote(curMd());
+          if (pendingRemote && !busy()) applyRemote();
         },
         (e) => {
           nb.remove();
@@ -3942,7 +4341,7 @@ window.SKNotes = function (X) {
       if (!root.contains(document.activeElement)) {
         if (SL && !slashEl.contains(document.activeElement)) closeSlash();
         flush();
-        if (pendingRemote && !busy()) applyRemote(curMd());
+        if (pendingRemote && !busy()) applyRemote();
       }
     }, 150);
   });
@@ -4138,7 +4537,11 @@ window.SKNotes = function (X) {
     const M = (pmenu = document.createElement("div"));
     M.className = "pop nmenu gpmenu";
     M.setAttribute("role", "menu");
-    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button><button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
+    /* privatnost bira autor glavne stranice; podstranice je nasleđuju */
+    const p = noteOf(cur),
+      canPriv =
+        p && !p.parentId && (p.privateTo || (me() && p.createdBy === me().id));
+    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
     document.body.appendChild(M);
     const W = Math.min(260, innerWidth - 16);
     M.style.width = W + "px";
@@ -4164,7 +4567,28 @@ window.SKNotes = function (X) {
       copyText(pageMd(), "Stranica kopirana kao Markdown");
     else if (a === "dl") download();
     else if (a === "del") delPage(cur);
+    else if (a === "priv" || a === "share") setPrivate(cur, a === "priv");
   });
+  /* privatna stranica: samo autor je vidi (RLS u bazi), zajedno sa podstranicama */
+  async function setPrivate(id, on) {
+    if (!noteOf(id) || !me()) return;
+    const ids = [id];
+    for (let k = 0; k < ids.length; k++)
+      kidsOf(ids[k]).forEach((n) => ids.push(n.id));
+    try {
+      for (const i of ids)
+        await api.upd("notes", i, { privateTo: on ? me().id : null });
+      if (id === cur) head(noteOf(id));
+      toast(
+        on
+          ? "Sada samo ti vidiš ovu stranicu"
+          : "Stranica je sada vidljiva timu",
+        () => setPrivate(id, !on),
+      );
+    } catch (e) {
+      toast(errMsg(e));
+    }
+  }
 
   /* ---------------- hub controls ---------------- */
   $("#gNew").addEventListener("click", () => createAndOpen(null));
@@ -4173,7 +4597,8 @@ window.SKNotes = function (X) {
     hub(false);
   });
   $("#gpages").addEventListener("click", (e) => {
-    if (e.target.closest("[data-gnew]")) createAndOpen(null);
+    const g = e.target.closest("[data-gnew]");
+    if (g) createAndOpen(null, g.dataset.gnew === "me");
   });
   $("#gpages").addEventListener("keydown", (e) => {
     const t = e.key === "Enter" && e.target.closest("[data-go]");

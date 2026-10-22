@@ -651,6 +651,21 @@
       if (loc) Object.assign(loc, data);
       if (DB) await DB.doc(col + "/" + id).update(data);
     },
+    /* upis samo ako je polje `field` u bazi i dalje `expect`;
+       inače { conflict: true, data } sa trenutnim dokumentom (Notes spaja izmene) */
+    async updIf(col, id, data, field, expect) {
+      const ref = DB && DB.doc(col + "/" + id);
+      if (!ref || !ref.updateIf) {
+        await api.upd(col, id, data);
+        return { conflict: false };
+      }
+      const r = await ref.updateIf(data, field, expect);
+      if (!r.conflict) {
+        const loc = S[col].find((x) => x.id === id);
+        if (loc) Object.assign(loc, data);
+      }
+      return r;
+    },
     async set(col, id, data) {
       if (DB) {
         await DB.doc(col + "/" + id).set(data);
@@ -1075,14 +1090,7 @@
       return;
     }
     if (e.target.closest("[data-signout]")) {
-      closeSwitch();
-      me = null;
-      store.del();
-      DW = null;
-      clearInterval(dwTick);
-      dwRender();
-      applyTheme(null);
-      OS.signOut().finally(() => location.replace(location.pathname));
+      signOut();
       return;
     }
     const lo = e.target.closest("[data-logout]");
@@ -1129,36 +1137,29 @@
       '<svg class="mecv" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
     );
   });
-  let switching = false;
-  async function switchTo(u) {
+  /* druga osoba ulazi svojom lozinkom: odjava, pa login sa njenim emailom */
+  function switchTo(u) {
     closeSwitch();
-    if (!u || switching || (me && me.id === u.id)) return;
-    const pass = OS.savedPass();
-    if (!pass) {
-      toast("Odjavi se pa izaberi osobu");
-      return;
-    }
-    switching = true;
+    if (!u || (me && me.id === u.id)) return;
+    auth.next(u.id);
+    signOut();
+  }
+  let signingOut = false;
+  async function signOut() {
+    closeSwitch();
+    if (signingOut) return;
+    signingOut = true;
     try {
       await flushSave();
       if (NT) await NT.flush();
     } catch (e) {}
-    let slug;
-    try {
-      slug = await OS.signIn(u.id, pass);
-    } catch (x) {
-      switching = false;
-      toast("Promena nije uspela");
-      return;
-    }
-    switching = false;
-    const n = TEAM.find((t) => t.id === slug);
-    if (!n) return;
+    me = null;
+    store.del();
+    DW = null;
     clearInterval(dwTick);
+    dwRender();
     applyTheme(null);
-    store.set(n.id);
-    login(n);
-    toast("Sada si " + n.name);
+    OS.signOut().finally(() => location.replace(location.pathname));
   }
   function login(u) {
     me = u;
@@ -1182,70 +1183,26 @@
   $(".card.start").addEventListener("click", () => {
     if (me && me.id === "luka") tView = "member";
   });
-  const team = $("#team");
-  TEAM.forEach((u) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "tp";
-    b.dataset.id = u.id;
-    b.setAttribute("aria-pressed", "false");
-    b.innerHTML = `<span class="av"><img src="${IMG[u.id]}" alt=""></span>${u.name}`;
-    b.onclick = () => {
-      team
-        .querySelectorAll(".tp")
-        .forEach((x) => x.setAttribute("aria-pressed", "false"));
-      b.setAttribute("aria-pressed", "true");
-      $("#err").textContent = "";
-      const saved = OS.savedPass();
-      if (saved) {
-        $("#pass").value = saved;
-        $("#lgForm").requestSubmit();
-      } else $("#pass").focus();
-    };
-    team.appendChild(b);
-  });
-  $("#lgForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const pick = team.querySelector('.tp[aria-pressed="true"]'),
-      pass = $("#pass").value,
-      err = $("#err");
-    if (!pick) {
-      err.textContent = "Izaberi sebe.";
-      return shake($("#lgCard"));
-    }
-    if (!pass) {
-      err.textContent = "Unesi lozinku.";
-      return shake($("#lgCard"));
-    }
-    const btn = $("#lgForm .btn");
-    btn.disabled = true;
-    let slug;
-    try {
-      slug = await OS.signIn(pick.dataset.id, pass);
-    } catch (x) {
-      btn.disabled = false;
-      err.textContent =
-        x && x.code === "not_member"
-          ? "Ova osoba nije u timu."
-          : x && x.code === "not_configured"
-            ? "Lozinka nije podešena na serveru (OS_TEAM_PASSWORD)."
-            : x && x.code === "network"
-              ? "Nema veze. Probaj ponovo."
-              : "Pogrešna lozinka.";
-      $("#pass").select();
-      return shake($("#lgCard"));
-    }
-    btn.disabled = false;
-    const u = TEAM.find((t) => t.id === slug);
-    if (!u) {
-      err.textContent = "Ova osoba nije u timu.";
-      return shake($("#lgCard"));
-    }
-    err.textContent = "";
-    store.set(u.id);
-    $("#pass").value = "";
-    $("#login").classList.add("leave");
-    setTimeout(() => login(u), reduce ? 0 : 380);
+  /* prijava, prva registracija i nova lozinka: auth.js */
+  const auth = OSAuth({
+    team: TEAM,
+    img: IMG,
+    shake,
+    done(slug, how) {
+      const u = TEAM.find((t) => t.id === slug);
+      if (!u) return false;
+      store.set(u.id);
+      $("#login").classList.add("leave");
+      setTimeout(
+        () => {
+          login(u);
+          if (how === "new") toast(`Nalog je spreman. Ćao, ${u.voc}!`);
+          if (how === "reset") toast("Nova lozinka je sačuvana");
+        },
+        reduce ? 0 : 380,
+      );
+      return true;
+    },
   });
   function shake(el) {
     el.classList.remove("shake");
@@ -10617,6 +10574,7 @@
           }
       } else if (x.url && x.url.startsWith("blob:")) URL.revokeObjectURL(x.url);
     } catch (e) {}
+    fcUsageSoon();
   }
   function fcDropAll(c, later) {
     const refs = [...(c.files || []), c.poster].filter(Boolean);
@@ -10765,6 +10723,7 @@
   /* ---------- stranica ---------- */
   function renderFC() {
     if ($("#fc").hidden) return;
+    fcUsage();
     const it = S.items.find((i) => i.id === view.id),
       body = $("#fcBody");
     if (!S.ready) {
@@ -10871,7 +10830,58 @@
     <div class="fcc-b"><span class="fcc-n">${fcNN(i)}</span><span class="fcc-t">${esc(u.title)}</span></div>
   </article>`;
   }
+  /* ---------- zauzeće skladišta (traka ispod naslova Final Creatives) ---------- */
+  let fcUse = null,
+    fcUseAt = 0,
+    fcUseT = 0;
+  async function fcUsage(force) {
+    if (!STORE_EXT || !STORE_EXT.usage) return;
+    if (!force && fcUse && Date.now() - fcUseAt < 60e3) return fcPaintSpace();
+    fcUseAt = Date.now();
+    try {
+      const u = await STORE_EXT.usage();
+      if (u) fcUse = u;
+    } catch (e) {}
+    fcPaintSpace();
+  }
+  const fcUsageSoon = () => {
+    clearTimeout(fcUseT);
+    fcUseT = setTimeout(() => fcUsage(true), 800);
+  };
+  /* bajtovi koji su upravo u otpremanju (baza ih još ne broji) */
+  function fcLive() {
+    let b = 0;
+    for (const u of FCUP.values())
+      if (u.state === "up" || u.state === "done")
+        b += (u.bytes || 0) * (u.prog || 0);
+    return b;
+  }
+  const fcLeft = () =>
+    fcUse ? Math.max(0, fcUse.quota - fcUse.total - fcLive()) : null;
+  function fcPaintSpace() {
+    const el = $("#fcSpace");
+    if (!el) return;
+    if (!fcUse || $("#fc").hidden || !fcCanUp()) {
+      el.hidden = true;
+      return;
+    }
+    const q = fcUse.quota,
+      used = fcUse.total + fcLive(),
+      p = Math.min(1, used / q);
+    el.hidden = false;
+    el.classList.toggle("warn", p >= 0.85);
+    el.style.setProperty("--p", p.toFixed(4));
+    const gb = (b) =>
+      String(+(b / 1073741824).toFixed(b >= 107374182400 ? 0 : 1)).replace(
+        ".",
+        ",",
+      );
+    el.querySelector(".fcs-t").textContent =
+      `${gb(used)} / ${gb(q)} GB · ostalo ${fcSize(Math.max(0, q - used))}`;
+    el.title = `Skladište: ${fcSize(used)} od ${fcSize(q)} (Supabase)`;
+  }
   function fcPaintUp(u) {
+    fcPaintSpace();
     const el = document.querySelector(`.fcc[data-fcup="${CSS.escape(u.id)}"]`);
     if (!el) return;
     const img = el.querySelector(".fcc-pos");
@@ -10986,29 +10996,52 @@
         numeric: true,
         sensitivity: "base",
       });
-    const files = [...list].filter((f) => f && f.size > 0),
-      vids = [],
+    let files = [...list].filter((f) => f && f.size > 0);
+    const vids = [],
       imgs = [],
-      bad = [];
+      bad = [],
+      lim = STORE_EXT && STORE_EXT.maxBytes,
+      big = lim ? files.filter((f) => f.size > lim) : [];
+    /* prevelik fajl se odbija odmah, ne tek posle čitanja videa */
+    if (big.length) files = files.filter((f) => !big.includes(f));
+    let mov = 0;
     for (const f of files) {
       const t = fcType(f);
       if (FC_V.test(t)) {
         if (t === "video/quicktime" && fcMode() === "assets")
           bad.push([f, "mov"]);
-        else vids.push(f);
+        else {
+          if (t === "video/quicktime") mov++;
+          vids.push(f);
+        }
       } else if (FC_I.test(t)) imgs.push(f);
       else bad.push([f, "type"]);
     }
-    if (bad.length) {
-      const mov = bad.find((b) => b[1] === "mov");
+    const need = [...vids, ...imgs].reduce((a, f) => a + f.size, 0),
+      left = fcLeft();
+    if (big.length)
       toast(
-        mov
-          ? `„${mov[0].name}“ izvezi kao MP4 (H.264) pa ga ubaci ponovo`
+        big.length === 1
+          ? `„${big[0].name}“ je veći od ${STORE_EXT.maxLabel}. Smanji ga pa probaj ponovo.`
+          : `${big.length} fajla su veća od ${STORE_EXT.maxLabel} i nisu otpremljena`,
+      );
+    else if (bad.length) {
+      const mv = bad.find((b) => b[1] === "mov");
+      toast(
+        mv
+          ? `„${mv[0].name}“ izvezi kao MP4 (H.264) pa ga ubaci ponovo`
           : bad.length === 1
             ? `„${bad[0][0].name}“ nije video ni slika (MP4, WebM, JPG, PNG, WebP, GIF)`
             : `${bad.length} fajla preskočena (MP4, WebM, JPG, PNG, WebP, GIF)`,
       );
-    }
+    } else if (left !== null && need > left)
+      toast(
+        `Prostor je pun: ovo je ${fcSize(need)}, ostalo ${fcSize(left)}. Preko kvote se plaća dodatno.`,
+      );
+    else if (mov)
+      toast(
+        "MOV sa iPhone-a često ne radi klijentu u Chrome-u. Najsigurnije je MP4 (H.264).",
+      );
     if (!vids.length && !imgs.length) return;
     vids.sort(nat);
     imgs.sort(nat);
@@ -11063,14 +11096,19 @@
     fcQueue = true;
     fcRunOk = 0;
     fcRunErr = 0;
-    try {
+    /* dva otpremanja u isto vreme: brže od jednog, a ne guši vezu */
+    const worker = async () => {
       let u;
       while ((u = [...FCUP.values()].find((x) => x.state === "queued"))) {
         if (await fcProcess(u)) fcRunOk++;
         else fcRunErr++;
       }
+    };
+    try {
+      await Promise.all([worker(), worker()]);
     } finally {
       fcQueue = false;
+      fcUsage(true);
     }
     const ok = fcRunOk,
       er = fcRunErr;
@@ -11104,6 +11142,7 @@
       const pb =
           u.kind === "video" ? metas[0].poster : metas[0] && metas[0].thumb,
         total = u.files.reduce((a, f) => a + f.size, 0) + (pb ? pb.size : 0);
+      u.bytes = total;
       let at = 0;
       const base = `creatives/${u.clientId}/${u.monthId}/${u.id}/`,
         files = [];
@@ -13137,7 +13176,11 @@
     const u = TEAM.find((t) => t.id === slug);
     if (u) store.set(u.id);
     else store.del();
-    u ? login(u) : show("login");
+    if (u) login(u);
+    else {
+      show("login");
+      auth.show();
+    }
   }
   setTimeout(
     () => {
