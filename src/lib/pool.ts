@@ -157,6 +157,8 @@ export interface PoolResult {
   lights: number;
   season: string;
   seasonMonths: number;
+  /** Prvi i poslednji mesec sezone kupanja (0 = januar). */
+  months: [number, number];
   weeks: [number, number];
 }
 
@@ -200,14 +202,14 @@ export function calculate(i: PoolInput): PoolResult {
   const low = round500(mid * 0.88);
   const high = round500(mid * 1.14 * (i.access === "nesiguran" ? 1.05 : 1));
 
-  const [season, seasonMonths] =
+  const [season, months]: [string, [number, number]] =
     i.type === "unutrasnji"
       ? i.heat
-        ? ["cele godine", 12]
-        : ["maj – septembar", 5]
+        ? ["cele godine", [0, 11]]
+        : ["maj – septembar", [4, 8]]
       : i.heat
-        ? ["april – oktobar", 7]
-        : ["jun – avgust", 3];
+        ? ["april – oktobar", [3, 9]]
+        : ["jun – avgust", [5, 7]];
 
   const base: [number, number] =
     i.type === "skimer" ? [6, 8] : i.type === "preliv" ? [8, 10] : [10, 14];
@@ -224,8 +226,9 @@ export function calculate(i: PoolInput): PoolResult {
     low,
     high,
     lights,
-    season: season as string,
-    seasonMonths: seasonMonths as number,
+    season,
+    seasonMonths: months[1] - months[0] + 1,
+    months,
     weeks: [base[0] + extra, base[1] + extra],
   };
 }
@@ -233,6 +236,22 @@ export function calculate(i: PoolInput): PoolResult {
 export function lightCount(length: number) {
   return length <= 7 ? 2 : length <= 10 ? 3 : 4;
 }
+
+/** Visina odrasle osobe za figuru u preseku. */
+export const PERSON_HEIGHT = 1.8;
+
+/** Dokle voda dopire odrasloj osobi od 180 cm; null = ne dodiruje dno. */
+export function bodyLevel(depth: number) {
+  if (depth < 1.05) return "do kukova";
+  if (depth <= 1.2) return "do pojasa";
+  if (depth <= 1.38) return "do grudi";
+  if (depth <= 1.53) return "do ramena";
+  if (depth <= 1.62) return "do brade";
+  return null;
+}
+
+/** Koliko punih kada (≈ 150 l) stane u bazen. */
+export const bathtubs = (volume: number) => Math.round((volume * 1000) / 150);
 
 /* ------------------------------ Format ------------------------------ */
 

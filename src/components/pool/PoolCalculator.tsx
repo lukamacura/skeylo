@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AnimatePresence,
   MotionConfig,
@@ -23,6 +23,7 @@ import {
   Loader2,
   Lock,
   MapPin,
+  PersonStanding,
   Ruler,
   RotateCcw,
   Sparkles,
@@ -41,6 +42,8 @@ import {
   SIZE_PRESETS,
   STANDARD_DEPTH,
   WIDTH_RANGE,
+  bathtubs,
+  bodyLevel,
   calculate,
   eur,
   meters,
@@ -51,7 +54,7 @@ import {
   type PoolType,
 } from "@/lib/pool";
 import PoolFilm from "./PoolFilm";
-import PoolScene, { type PoolFocus } from "./PoolScene";
+import PoolScene, { type PoolFocus, type PoolResize } from "./PoolScene";
 
 /* ------------------------------------------------------------------ */
 /*  Pomoćne                                                             */
@@ -63,6 +66,16 @@ const FOCUS: PoolFocus[] = ["type", "dims", "equip", "site"];
 
 function cn(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
+}
+
+/** Kratak trzaj na Android telefonima uz svaki izbor; iOS ga ignoriše. */
+const tick = () => navigator.vibrate?.(8);
+
+/** 1 mesec, 2–4 meseca, 5+ meseci (11–14 su uvek "meseci"). */
+function months(n: number) {
+  const d = n % 10;
+  const teen = n % 100 >= 11 && n % 100 <= 14;
+  return `${n} ${d === 1 && !teen ? "mesec" : d >= 2 && d <= 4 && !teen ? "meseca" : "meseci"}`;
 }
 
 /** "16,5–21 hilj. €" za uski čip ispod scene. */
@@ -180,7 +193,10 @@ function Segmented<T extends string | number>({
             type="button"
             role="radio"
             aria-checked={on}
-            onClick={() => onChange(o.id)}
+            onClick={() => {
+              if (!on) tick();
+              onChange(o.id);
+            }}
             className={cn(
               "relative min-h-10 min-w-0 rounded-lg px-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#4fd8eb]",
               on ? "text-[#04161c]" : "text-[#aeb8c6] hover:text-white",
@@ -221,7 +237,10 @@ function Choice({
       type="button"
       role={multi ? "checkbox" : "radio"}
       aria-checked={on}
-      onClick={onClick}
+      onClick={() => {
+        tick();
+        onClick();
+      }}
       whileTap={{ scale: 0.985 }}
       className={cn(
         "group flex w-full items-center gap-4 rounded-2xl border p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#4fd8eb]",
@@ -233,7 +252,9 @@ function Choice({
       <span
         className={cn(
           "grid size-11 shrink-0 place-items-center rounded-xl transition-colors",
-          on ? "bg-[#4fd8eb] text-[#04161c]" : "bg-white/[0.06] text-[#4fd8eb]",
+          on
+            ? "pl-pop bg-[#4fd8eb] text-[#04161c]"
+            : "bg-white/[0.06] text-[#4fd8eb]",
         )}
       >
         {icon}
@@ -258,7 +279,7 @@ function Tick({ on, multi }: { on: boolean; multi?: boolean }) {
         "grid size-6 shrink-0 place-items-center border transition-colors",
         multi ? "rounded-md" : "rounded-full",
         on
-          ? "border-[#4fd8eb] bg-[#4fd8eb] text-[#04161c]"
+          ? "pl-pop border-[#4fd8eb] bg-[#4fd8eb] text-[#04161c]"
           : "border-white/20 text-transparent",
       )}
     >
@@ -309,6 +330,11 @@ export default function PoolCalculator() {
 
   const set = <K extends keyof PoolInput>(key: K, value: PoolInput[K]) =>
     setInput((s) => ({ ...s, [key]: value }));
+  // Ručice na sceni: povučena dužina otvara polja za ručni unos mera.
+  const resize = useCallback((patch: PoolResize) => {
+    if (patch.length !== undefined) setCustom(true);
+    setInput((s) => ({ ...s, ...patch }));
+  }, []);
 
   const result = useMemo(() => calculate(input), [input]);
   const [calculating, setCalculating] = useState(false);
@@ -377,6 +403,8 @@ export default function PoolCalculator() {
                 attractions={input.attractions}
                 light={input.light}
                 access={input.access}
+                city={input.city}
+                onResize={resize}
                 focus={FOCUS[Math.min(step, FOCUS.length - 1)]}
                 solved={solved}
                 scanning={calculating}
@@ -471,7 +499,7 @@ export default function PoolCalculator() {
                       title="Kakav bazen želite?"
                       lead="Izaberite tip. Od njega zavise konstrukcija, filtracija i cena."
                     >
-                      <div role="radiogroup" className="grid gap-3">
+                      <div role="radiogroup" className="pl-stagger grid gap-3">
                         {POOL_TYPES.map((p) => (
                           <TypeCard
                             key={p.id}
@@ -492,7 +520,10 @@ export default function PoolCalculator() {
                       title="Koje dimenzije planirate?"
                       lead="Izaberite standardnu veličinu ili unesite svoju."
                     >
-                      <div role="radiogroup" className="grid gap-2.5">
+                      <div
+                        role="radiogroup"
+                        className="pl-stagger grid gap-2.5"
+                      >
                         {SIZE_PRESETS.map((p) => (
                           <Choice
                             key={p.id}
@@ -573,6 +604,25 @@ export default function PoolCalculator() {
                               ? "Plići bazen: idealan za decu i rekreaciju, jeftiniji iskop."
                               : "Dublji bazen: više vode za grejanje i filtraciju, skuplji iskop."}
                         </p>
+                        <p className="mt-3 flex items-start gap-2 border-t border-white/10 pt-3 text-sm leading-snug text-[#c6cfdb]">
+                          <PersonStanding className="mt-px size-4 shrink-0 text-[#4fd8eb]" />
+                          <span>
+                            Odrasla osoba (180 cm) ovde{" "}
+                            {bodyLevel(input.depth) ? (
+                              <>
+                                stoji u vodi{" "}
+                                <b className="font-semibold text-[#f2f5f9]">
+                                  {bodyLevel(input.depth)}
+                                </b>
+                              </>
+                            ) : (
+                              <b className="font-semibold text-[#f2f5f9]">
+                                ne dodiruje dno
+                              </b>
+                            )}
+                            .
+                          </span>
+                        </p>
                       </div>
                       <p className="mt-3 text-sm tabular-nums text-[#8b97a8]">
                         Površina vode{" "}
@@ -586,7 +636,8 @@ export default function PoolCalculator() {
                         · zapremina{" "}
                         <span className="font-semibold text-[#f2f5f9]">
                           {num(result.volume, 1)} m³
-                        </span>
+                        </span>{" "}
+                        (≈ {num(bathtubs(result.volume))} punih kada)
                       </p>
                     </Step>
                   )}
@@ -698,7 +749,10 @@ export default function PoolCalculator() {
 
                       <div className="mt-6">
                         <FieldLabel>U kojoj je fazi projekat?</FieldLabel>
-                        <div role="radiogroup" className="grid gap-2.5">
+                        <div
+                          role="radiogroup"
+                          className="pl-stagger grid gap-2.5"
+                        >
                           {PHASES.map((p) => (
                             <Choice
                               key={p.id}
@@ -854,11 +908,15 @@ function Step({
 }) {
   return (
     <div>
-      <h1 className="font-display text-[28px] font-semibold leading-[1.12] tracking-tight text-balance lg:text-4xl">
-        {title}
-      </h1>
-      <p className="mt-2.5 text-base leading-relaxed text-[#8b97a8]">{lead}</p>
-      <div className="mt-7">{children}</div>
+      <div className="pl-stagger">
+        <h1 className="font-display text-[28px] font-semibold leading-[1.12] tracking-tight text-balance lg:text-4xl">
+          {title}
+        </h1>
+        <p className="mt-2.5 text-base leading-relaxed text-[#8b97a8]">
+          {lead}
+        </p>
+      </div>
+      <div className="pl-stagger mt-7 [--pl-base:90ms]">{children}</div>
     </div>
   );
 }
@@ -945,7 +1003,10 @@ function TypeCard({
       type="button"
       role="radio"
       aria-checked={on}
-      onClick={onClick}
+      onClick={() => {
+        tick();
+        onClick();
+      }}
       whileTap={{ scale: 0.985 }}
       className={cn(
         "flex w-full items-center gap-4 rounded-2xl border p-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#4fd8eb]",
@@ -1262,6 +1323,9 @@ function Results({
         className="text-sm font-semibold uppercase tracking-[0.12em] text-[#4fd8eb]"
       >
         Vaša procena
+        {input.city.trim() && (
+          <span className="text-[#8b97a8]"> · {input.city.trim()}</span>
+        )}
       </motion.p>
       <motion.h1
         {...reveal(1)}
@@ -1363,10 +1427,19 @@ function Results({
           sub={
             result.seasonMonths === 12
               ? "grejana voda, kupanje bez pauze"
-              : `≈ ${result.seasonMonths} meseci godišnje`
+              : `≈ ${months(result.seasonMonths)} godišnje`
           }
           icon={<CalendarDays className="size-4 text-[#4fd8eb]" />}
-        />
+        >
+          <SeasonStrip
+            months={result.months}
+            heated={
+              input.heat
+                ? undefined
+                : calculate({ ...input, heat: true }).months
+            }
+          />
+        </Stat>
         <Stat
           {...reveal(8)}
           label="Izvođenje"
@@ -1414,6 +1487,7 @@ function Stat({
   sub,
   tone,
   icon,
+  children,
   ...motionProps
 }: {
   label: string;
@@ -1421,7 +1495,8 @@ function Stat({
   sub: string;
   tone?: "accent";
   icon?: React.ReactNode;
-} & React.ComponentProps<typeof motion.div>) {
+  children?: React.ReactNode;
+} & Omit<React.ComponentProps<typeof motion.div>, "children">) {
   return (
     <motion.div
       {...motionProps}
@@ -1442,7 +1517,64 @@ function Stat({
       <div className="mt-1 text-xs leading-snug tabular-nums text-[#8b97a8]">
         {sub}
       </div>
+      {children}
     </motion.div>
+  );
+}
+
+const MONTH_INITIALS = "JFMAMJJASOND";
+
+/**
+ * Godina u 12 stubića: puni su meseci kupanja, isprekidani su meseci koje
+ * bi dodala toplotna pumpa.
+ */
+function SeasonStrip({
+  months: [from, to],
+  heated,
+}: {
+  months: [number, number];
+  heated?: [number, number];
+}) {
+  const extra = heated ? heated[1] - heated[0] - (to - from) : 0;
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-12 gap-[3px]" aria-hidden>
+        {[...MONTH_INITIALS].map((m, i) => {
+          const on = i >= from && i <= to;
+          const plus = !on && heated && i >= heated[0] && i <= heated[1];
+          return (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <motion.span
+                className={cn(
+                  "block h-5 w-full origin-bottom rounded-[3px]",
+                  on
+                    ? "bg-[#4fd8eb]"
+                    : plus
+                      ? "border border-dashed border-[#4fd8eb]/70"
+                      : "bg-white/[0.08]",
+                )}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{
+                  delay: 1 + i * 0.045,
+                  duration: 0.45,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+              />
+              <span className="text-[9px] font-medium leading-none text-[#6f7a8a]">
+                {m}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {extra > 0 && (
+        <p className="mt-2 text-[11px] leading-snug text-[#8b97a8]">
+          <span className="font-semibold text-[#4fd8eb]">+{months(extra)}</span>{" "}
+          uz toplotnu pumpu
+        </p>
+      )}
+    </div>
   );
 }
 

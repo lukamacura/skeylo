@@ -1,8 +1,16 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+} from "framer-motion";
+import {
+  DEPTH_RANGE,
+  LENGTH_RANGE,
   lightCount,
   meters,
   type AccessId,
@@ -11,7 +19,7 @@ import {
   type LightId,
   type PoolType,
 } from "@/lib/pool";
-import { clamp01, smooth } from "@/components/solar/scene/geometry";
+import { clamp01, lerp, smooth } from "@/components/solar/scene/geometry";
 import {
   ambient,
   css,
@@ -22,8 +30,11 @@ import {
   tri3,
   useSprung,
   type Frame,
+  type RGB,
 } from "@/components/solar/scene/light";
 import Sky from "@/components/solar/scene/Sky";
+import { ScaleFigure, Swimmer } from "./scene/figures";
+import { Callout, CityPin, Handle, Hint, type Px } from "./scene/Overlay";
 
 /* ------------------------------------------------------------------ */
 /*  Scena bazena: dvorište presečeno po prednjoj ivici bazena           */
@@ -32,6 +43,10 @@ import Sky from "@/components/solar/scene/Sky";
 /*  dubinu slike), a ispod linije tla je presek: zemlja, betonska       */
 /*  školjka, voda i dubina. Zato dubina sa klizača odmah "potone".      */
 /*  Mere su na oprugama, kao kod solarne scene, pa bazen raste meko.    */
+/*                                                                      */
+/*  Voda je živa: bazen se napuni pri prvom prikazu, zaljulja se kad se */
+/*  promeni oblik, a dodir pravi talasiće. Na koraku dimenzija mere se  */
+/*  vuku direktno na bazenu, a osoba od 180 cm pokazuje stvarnu dubinu. */
 /* ------------------------------------------------------------------ */
 
 const G = 372;
@@ -46,8 +61,11 @@ const WS = 7;
 const VANISH = 520;
 const MAX_ZOOM = 2.2;
 const Q = 0.2;
+/** Punjenje pri prvom prikazu: sporo i bez odskakanja. */
+const FILL_SPRING = { stiffness: 22, damping: 10, mass: 1 };
 
 export type PoolFocus = "type" | "dims" | "equip" | "site";
+export type PoolResize = { length?: number; depth?: number };
 
 export interface PoolSceneProps {
   type: PoolType;
@@ -60,14 +78,23 @@ export interface PoolSceneProps {
   attractions: AttractionId[];
   light: LightId;
   access: AccessId;
+  city?: string;
   focus: PoolFocus;
   scanning?: boolean;
   solved: boolean;
   topPad?: number;
   bottomPad?: number;
+  /** Mera povučena ručicom na sceni (korak dimenzija). */
+  onResize?: (patch: PoolResize) => void;
 }
 
 type Pt = [number, number];
+type Grip = "length" | "depth";
+/** Kamera: zum, sredina kadra po x i donja ivica kadra po y (jedinice crteža). */
+type Cam = { zoom: number; cx: number; by: number };
+type Note = PoolType | "heat" | "salt" | "cover" | "jets" | "counter" | "light";
+type Ripple = { id: number; x: number; y: number; deep: boolean };
+
 const pts = (p: Pt[]) =>
   "M" + p.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L") + "Z";
 
@@ -80,18 +107,90 @@ function wavy(xa: number, xb: number, y: number, amp: number, period: number) {
   );
 }
 
+const triRgb = (day: string, dusk: string, night: string, t: number): RGB =>
+  t < 0.5
+    ? mixRgb(rgb(day), rgb(dusk), t * 2)
+    : mixRgb(rgb(dusk), rgb(night), (t - 0.5) * 2);
+
+const snap = (v: number, r: { min: number; max: number; step: number }) =>
+  Math.round(
+    Math.min(r.max, Math.max(r.min, Math.round(v / r.step) * r.step)) * 10,
+  ) / 10;
+
+function noteText(kind: Note, cover: CoverId, light: LightId) {
+  switch (kind) {
+    case "skimer":
+      return "Voda 10–15 cm ispod ivice";
+    case "preliv":
+      return "Voda se preliva u kanal";
+    case "unutrasnji":
+      return "Zaštićen od vetra i lišća";
+    case "heat":
+      return "Voda do 28 °C";
+    case "salt":
+      return "Slana voda, bez mirisa hlora";
+    case "cover":
+      return cover === "roletna"
+        ? "Zatvara se jednim dugmetom"
+        : "Čuva toplotu preko noći";
+    case "jets":
+      return "Masaža leđa iz zida bazena";
+    case "counter":
+      return "Plivate u mestu, protiv struje";
+    case "light":
+      return light === "rgb" ? "Svetlo menja boje" : "Kupanje i posle zalaska";
+  }
+}
+
 function PoolScene(props: PoolSceneProps) {
   const { type, cover, light, attractions, heat, salt, solved, focus } = props;
+  const { length, width, depth, onResize } = props;
   const scanning = props.scanning ?? false;
   const still = useReducedMotion() ?? false;
   const indoor = type === "unutrasnji";
   const overflow = type === "preliv";
+  const jets = attractions.includes("hidromasaza");
+  const counter = attractions.includes("protivstrujno");
 
-  const Lp = useSprung(props.length * S, still, SPRING, Q);
-  const Wp = useSprung(props.width * WS, still, SPRING, Q);
-  const Dp = useSprung(props.depth * DS, still, SPRING, Q);
+  const Lp = useSprung(length * S, still, SPRING, Q);
+  const Wp = useSprung(width * WS, still, SPRING, Q);
+  const Dp = useSprung(depth * DS, still, SPRING, Q);
   const gap = useSprung(overflow ? 0 : 6, still, SPRING, 0.05);
   const gutter = useSprung(overflow ? 1 : 0, still, SPRING, 0.01);
+
+  // Bazen se napuni vodom pri prvom prikazu.
+  const [filled, setFilled] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setFilled(true), still ? 0 : 450);
+    return () => clearTimeout(id);
+  }, [still]);
+  const fill = useSprung(filled ? 1 : 0, still, FILL_SPRING, 0.004);
+
+  // Voda se zaljulja kad se bazen promeni ili kad je neko dodirne.
+  const tilt = useMotionValue(0);
+  const slosh = useCallback(
+    (push: number) => {
+      if (still) return;
+      const velocity = Math.max(-40, Math.min(40, tilt.getVelocity() + push));
+      animate(tilt, 0, {
+        type: "spring",
+        stiffness: 110,
+        damping: 4,
+        velocity,
+      });
+    },
+    [still, tilt],
+  );
+  const shape = useRef({ length, width, depth, type });
+  useEffect(() => {
+    const p = shape.current;
+    shape.current = { length, width, depth, type };
+    const dir =
+      Math.sign(length - p.length) ||
+      Math.sign(width - p.width) ||
+      (depth !== p.depth || type !== p.type ? 1 : 0);
+    if (dir) slosh(dir * 16);
+  }, [length, width, depth, type, slosh]);
 
   // Prekrivka se na rezultatu povuče da se vidi voda; vrsta ostaje dok se ne skupi.
   const lastCover = useRef<Exclude<CoverId, "nema">>("termo");
@@ -154,7 +253,7 @@ function PoolScene(props: PoolSceneProps) {
     Q,
   );
   const bottom = G + Dp + dimRoom;
-  const zoom = Math.max(
+  const fitZoom = Math.max(
     0.25,
     Math.min(
       MAX_ZOOM,
@@ -162,10 +261,31 @@ function PoolScene(props: PoolSceneProps) {
       (box.h - topPad - bottomPad) / (bottom - top),
     ),
   );
+  const fit: Cam = {
+    zoom: fitZoom,
+    cx: (left + right) / 2,
+    by: bottom + bottomPad / fitZoom,
+  };
+
+  // Dok se vuče ručica, kamera stoji pa mera tačno prati prst; posle
+  // povlačenja kadar se meko prilagodi novoj veličini bazena.
+  const [grip, setGrip] = useState<Grip | null>(null);
+  const hold = useSprung(grip ? 1 : 0, still || grip !== null, SPRING, 0.002);
+  const frozen = useRef(fit);
+  const cam: Cam =
+    hold > 0
+      ? {
+          zoom: lerp(fit.zoom, frozen.current.zoom, hold),
+          cx: lerp(fit.cx, frozen.current.cx, hold),
+          by: lerp(fit.by, frozen.current.by, hold),
+        }
+      : fit;
+
+  const zoom = cam.zoom;
   const vbW = box.w / zoom;
   const vbH = box.h / zoom;
-  const vbX = (left + right) / 2 - vbW / 2;
-  const vbY = bottom + bottomPad / zoom - vbH;
+  const vbX = cam.cx - vbW / 2;
+  const vbY = cam.by - vbH;
   const viewBox = `${vbX.toFixed(2)} ${vbY.toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}`;
   const ks = Math.max(0.6, Math.min(1.25, box.w / 640, box.h / 420));
   const frame: Frame = useMemo(
@@ -180,6 +300,16 @@ function PoolScene(props: PoolSceneProps) {
     }),
     [box.w, box.h, zoom, ks, topPad, vbY],
   );
+  /** Tačka crteža u pikselima kadra, za HTML sloj. */
+  const toPx = (x: number, y: number): Px => [
+    (x - vbX) * zoom,
+    (y - vbY) * zoom,
+  ];
+  /** Piksel kadra u jedinicama crteža, za datu kameru. */
+  const toScene = (px: number, py: number, c: Cam): Pt => [
+    c.cx + (px - box.w / 2) / c.zoom,
+    c.by + (py - box.h) / c.zoom,
+  ];
 
   /* ------------------------------ Svetlo ---------------------------- */
 
@@ -196,6 +326,12 @@ function PoolScene(props: PoolSceneProps) {
   };
   const lightHex = light === "rgb" ? "#7f9bff" : "#9feaff";
   const waterLit = lit ? n * 0.55 : 0;
+  // Daleki deo površine ogleda nebo: plavo danju, narandžasto u sumrak.
+  const skyMirror = mixRgb(
+    triRgb("#a9e4f3", "#eaa184", "#15233b", t),
+    rgb(lightHex),
+    waterLit * 0.6,
+  );
 
   /* ---------------------------- Geometrija -------------------------- */
 
@@ -231,6 +367,11 @@ function PoolScene(props: PoolSceneProps) {
 
   const waterY = G + gap;
   const waterH = Math.max(0, Dp - gap);
+  /** Trenutni nivo vode: pri punjenju raste od dna do pune visine. */
+  const levelY = G + Dp - waterH * fill;
+  const floorY = G + Dp;
+  const surfaceOn = smooth(0.7, 1, fill);
+  const day = (1 - n) * surfaceOn;
   const sh = Math.min(0.25 * DS, (Dp - 10) / 4);
   const sw = 0.42 * S;
   const stairs = pts([
@@ -240,13 +381,13 @@ function PoolScene(props: PoolSceneProps) {
     [x0 + 2 * sw, G + 2 * sh],
     [x0 + 2 * sw, G + 3 * sh],
     [x0 + 3 * sw, G + 3 * sh],
-    [x0 + 3 * sw, G + Dp],
-    [x0, G + Dp],
+    [x0 + 3 * sw, floorY],
+    [x0, floorY],
   ]);
 
-  const nLights = lit ? lightCount(props.length) : 0;
-  const jets = attractions.includes("hidromasaza");
-  const counter = attractions.includes("protivstrujno");
+  const nLights = lit ? lightCount(length) : 0;
+  const lampY = G + Math.max(10, Dp * 0.4);
+  const jetY = G + Math.max(8, Dp * 0.28);
 
   // šaht sa filtracijom levo od bazena
   const shX = x0 - 84;
@@ -261,6 +402,134 @@ function PoolScene(props: PoolSceneProps) {
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 160, damping: 18 };
 
+  /* --------------------------- Interakcija -------------------------- */
+
+  // Dodir vode: talasići na površini, ispod vode mehurići koji izađu gore.
+  const [ripples, setRipples] = useState<Ripple[]>([]);
+  /** Brojač za ključeve talasića i natpisa. */
+  const seq = useRef(0);
+  const splash = (e: React.MouseEvent<SVGElement>, deep: boolean) => {
+    const m = e.currentTarget.ownerSVGElement?.getScreenCTM();
+    if (still || !m) return;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    const id = ++seq.current;
+    setRipples((r) => [...r.slice(-4), { id, x: p.x, y: p.y, deep }]);
+    slosh(p.x < CX ? -10 : 10);
+  };
+  const dry = (id: number) => setRipples((r) => r.filter((w) => w.id !== id));
+
+  // Ručice za dužinu i dubinu na koraku dimenzija. Dubina se hvata za dno,
+  // levo od sredine, da ne pokrije kotu dužine ni osobu.
+  const editable = !!onResize && focus === "dims" && !scanning && !solved;
+  const depthGripX = x0 + Lp * 0.3;
+  const [touched, setTouched] = useState(false);
+  const drag = useRef<{
+    kind: Grip;
+    rect: DOMRect;
+    off: number;
+    last: number;
+  } | null>(null);
+  const release = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    setGrip(null);
+  };
+  const grab = (kind: Grip) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      const el = holder.current;
+      if (!el || e.button !== 0) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const rect = el.getBoundingClientRect();
+      const [sx, sy] = toScene(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+        cam,
+      );
+      frozen.current = cam;
+      drag.current = {
+        kind,
+        rect,
+        off: kind === "length" ? x1 - sx : floorY - sy,
+        last: kind === "length" ? length : depth,
+      };
+      setGrip(kind);
+      setTouched(true);
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      const d = drag.current;
+      if (!d || !onResize) return;
+      const [sx, sy] = toScene(
+        e.clientX - d.rect.left,
+        e.clientY - d.rect.top,
+        frozen.current,
+      );
+      const v =
+        d.kind === "length"
+          ? snap((2 * (sx + d.off - CX)) / S, LENGTH_RANGE)
+          : snap((sy + d.off - G) / DS, DEPTH_RANGE);
+      if (v === d.last) return;
+      d.last = v;
+      onResize({ [d.kind]: v });
+      navigator.vibrate?.(4);
+    },
+    onPointerUp: release,
+    onPointerCancel: release,
+    onLostPointerCapture: release,
+  });
+
+  // Izabrana stavka dobije kratak natpis tamo gde se pojavila u sceni.
+  const [note, setNote] = useState<{
+    id: number;
+    kind: Note;
+    focus: PoolFocus;
+  } | null>(null);
+  const gear = useRef({ type, heat, salt, cover, jets, counter, light });
+  useEffect(() => {
+    const p = gear.current;
+    gear.current = { type, heat, salt, cover, jets, counter, light };
+    const added: [boolean, Note][] = [
+      [type !== p.type, type],
+      [heat && !p.heat, "heat"],
+      [salt && !p.salt, "salt"],
+      [cover !== "nema" && cover !== p.cover, "cover"],
+      [jets && !p.jets, "jets"],
+      [counter && !p.counter, "counter"],
+      [light !== "nema" && light !== p.light, "light"],
+    ];
+    const kind = added.find(([on]) => on)?.[1];
+    if (kind) setNote({ id: ++seq.current, kind, focus });
+  }, [type, heat, salt, cover, jets, counter, light, focus]);
+  const noteAt = (kind: Note): Pt => {
+    switch (kind) {
+      case "skimer":
+        return [x1 - 18, waterY];
+      case "preliv":
+        return [x1 + 11, G + 2];
+      case "unutrasnji":
+        return [CX, G - Wp - 34];
+      case "heat":
+        return [x0 - 62, G - 48];
+      case "salt":
+        return [shX + 50, shY + 12];
+      case "cover":
+        return P((cu + half) / 2, Wp, gap);
+      case "jets":
+        return [x0 + Lp * 0.72, G + Dp * 0.62 - 6];
+      case "counter":
+        return [x1 - 26, levelY - 4];
+      case "light":
+        return [x0 + (0.5 * Lp) / Math.max(1, nLights), lampY - 5];
+    }
+  };
+  const callout =
+    note && note.focus === focus && !scanning && !solved
+      ? { ...note, pos: toPx(...noteAt(note.kind)) }
+      : null;
+
+  const city = props.city?.trim();
+  const pin = focus === "site" && !scanning && !solved && city;
+
   return (
     <div ref={holder} className="relative h-full w-full">
       <Sky timeTarget={timeTarget} frame={frame} sunLevel={0.7} still={still} />
@@ -269,7 +538,7 @@ function PoolScene(props: PoolSceneProps) {
         viewBox={viewBox}
         className="absolute inset-0 block h-full w-full"
         role="img"
-        aria-label={`Ilustracija bazena ${meters(props.length)} × ${meters(props.width)} m, dubine ${meters(props.depth)} m`}
+        aria-label={`Ilustracija bazena ${meters(length)} × ${meters(width)} m, dubine ${meters(depth)} m`}
       >
         <defs>
           <linearGradient
@@ -315,16 +584,29 @@ function PoolScene(props: PoolSceneProps) {
               stopOpacity={0.94}
             />
           </linearGradient>
-          <linearGradient id="pl-surface" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stopColor={glow("#57cde6", lightHex, waterLit)} />
+          {/* Površina odozgo: blizu se vidi dno kroz vodu, dalje se ogleda nebo */}
+          <linearGradient
+            id="pl-surface"
+            gradientUnits="userSpaceOnUse"
+            x1={0}
+            y1={G + gap}
+            x2={0}
+            y2={G - Wp + gap}
+          >
+            <stop offset="0" stopColor={glow("#2fb3d8", lightHex, waterLit)} />
             <stop
-              offset="1"
-              stopColor={glow("#2f9fd0", lightHex, waterLit * 0.7)}
+              offset="0.55"
+              stopColor={glow("#4cc8e4", lightHex, waterLit * 0.8)}
             />
+            <stop offset="1" stopColor={css(skyMirror)} />
           </linearGradient>
           <linearGradient id="pl-sheen" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#fff" stopOpacity={0} />
             <stop offset="0.5" stopColor="#fff" stopOpacity={0.16} />
+            <stop offset="1" stopColor="#fff" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="pl-ray" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity={0.3} />
             <stop offset="1" stopColor="#fff" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="pl-scan" x1="0" y1="0" x2="1" y2="0">
@@ -335,13 +617,13 @@ function PoolScene(props: PoolSceneProps) {
           <radialGradient id="pl-lamp">
             <stop
               offset="0"
-              className={light === "rgb" && !still ? "pl-rgb-stop" : undefined}
+              className={light === "rgb" ? "pl-rgb-stop" : undefined}
               stopColor={light === "rgb" ? "#7f9bff" : "#fff6d8"}
               stopOpacity={0.95}
             />
             <stop
               offset="1"
-              className={light === "rgb" && !still ? "pl-rgb-stop" : undefined}
+              className={light === "rgb" ? "pl-rgb-stop" : undefined}
               stopColor={light === "rgb" ? "#7f9bff" : "#bff3ff"}
               stopOpacity={0}
             />
@@ -367,6 +649,78 @@ function PoolScene(props: PoolSceneProps) {
             />
           </pattern>
           <pattern
+            id="pl-mosaic"
+            patternUnits="userSpaceOnUse"
+            width={3}
+            height={3}
+            x={x0}
+            y={G}
+          >
+            <path
+              d="M3 0V3M0 3H3"
+              stroke="#fff"
+              strokeOpacity={0.3}
+              strokeWidth={0.35}
+              fill="none"
+            />
+          </pattern>
+          {/* Kaustike: mreža svetla koju talasi bacaju na zidove i dno */}
+          <pattern
+            id="pl-caus-a"
+            patternUnits="userSpaceOnUse"
+            width={56}
+            height={34}
+          >
+            <path
+              d={CAUSTIC_A}
+              fill="none"
+              stroke="#fff"
+              strokeOpacity={0.3}
+              strokeWidth={1}
+              strokeLinecap="round"
+            />
+          </pattern>
+          <pattern
+            id="pl-caus-b"
+            patternUnits="userSpaceOnUse"
+            width={44}
+            height={26}
+          >
+            <path
+              d={CAUSTIC_B}
+              fill="none"
+              stroke="#fff"
+              strokeOpacity={0.17}
+              strokeWidth={0.8}
+              strokeLinecap="round"
+            />
+          </pattern>
+          {/* Šrafura armiranog betona i šljunak, kao na građevinskom preseku */}
+          <pattern
+            id="pl-hatch"
+            patternUnits="userSpaceOnUse"
+            width={5}
+            height={5}
+            patternTransform="rotate(45)"
+          >
+            <path
+              d="M0 0V5"
+              stroke="#000"
+              strokeOpacity={0.16}
+              strokeWidth={0.7}
+            />
+          </pattern>
+          <pattern
+            id="pl-gravel"
+            patternUnits="userSpaceOnUse"
+            width={7}
+            height={5}
+          >
+            <circle cx={1.5} cy={1.4} r={0.9} fill="#fff" fillOpacity={0.18} />
+            <circle cx={4.8} cy={3.4} r={1.1} fill="#000" fillOpacity={0.2} />
+            <circle cx={5.6} cy={0.9} r={0.6} fill="#fff" fillOpacity={0.12} />
+          </pattern>
+          <pattern
             id="pl-bubblewrap"
             patternUnits="userSpaceOnUse"
             width={5}
@@ -375,7 +729,18 @@ function PoolScene(props: PoolSceneProps) {
             <circle cx={2.5} cy={2} r={1.1} fill="#fff" fillOpacity={0.22} />
           </pattern>
           <clipPath id="pl-water-clip">
-            <rect x={x0} y={waterY} width={Lp} height={waterH} />
+            <rect x={x0} y={levelY} width={Lp} height={floorY - levelY} />
+          </clipPath>
+          <clipPath id="pl-air-clip">
+            <rect
+              x={x0 - 40}
+              y={G - 200}
+              width={Lp + 80}
+              height={levelY - G + 200}
+            />
+          </clipPath>
+          <clipPath id="pl-shell-clip">
+            <rect x={x0} y={G} width={Lp} height={Dp} />
           </clipPath>
           <clipPath id="pl-top-clip">
             <path d={pts(waterTop)} />
@@ -508,54 +873,122 @@ function PoolScene(props: PoolSceneProps) {
           </g>
         )}
 
-        {/* Otvor bazena, vodena površina, talasići */}
+        {/* Otvor bazena: prazan pre punjenja, zatim vodena površina */}
         <path d={pts(opening)} fill={c("#bfeaf3")} />
-        <path d={pts(waterTop)} fill="url(#pl-surface)" />
-        <g clipPath="url(#pl-top-clip)">
-          <g
-            className={still ? undefined : "pl-wave"}
-            style={{ ["--pl-period" as string]: "24px" }}
-          >
-            {[0.2, 0.45, 0.7, 0.9].map((k) => (
+        <g opacity={surfaceOn}>
+          <path d={pts(waterTop)} fill="url(#pl-surface)" />
+          <g clipPath="url(#pl-top-clip)">
+            {/* stepenice koje se naziru kroz vodu */}
+            {[0.2, 0.13, 0.06].map((o, i) => (
               <path
-                key={k}
-                d={wavy(x0 - 48, x1 + 24, G - Wp * k + gap, 1.1, 24)}
-                fill="none"
-                stroke="#fff"
-                strokeOpacity={0.35 - n * 0.15}
-                strokeWidth={0.8}
+                key={i}
+                d={pts([
+                  P(-half + i * sw, 0, gap),
+                  P(-half + (i + 1) * sw, 0, gap),
+                  P(-half + (i + 1) * sw, Wp, gap),
+                  P(-half + i * sw, Wp, gap),
+                ])}
+                fill="#fff"
+                fillOpacity={o}
               />
             ))}
-          </g>
-          {counter && (
             <g
-              className={still ? undefined : "pl-flow"}
-              stroke="#fff"
-              strokeOpacity={0.55}
-              strokeWidth={0.9}
-              strokeDasharray="7 5"
-              fill="none"
+              className="pl-wave"
+              style={{ ["--pl-period" as string]: "24px" }}
             >
-              {[0.35, 0.5, 0.65].map((k) => {
-                const a = P(half - 2, Wp * k, gap);
-                const b = P(
-                  half - Lp * 0.55,
-                  Wp * (0.5 + (k - 0.5) * 2.2),
-                  gap,
-                );
-                return <path key={k} d={`M${a[0]} ${a[1]}L${b[0]} ${b[1]}`} />;
-              })}
+              {[0.2, 0.45, 0.7, 0.9].map((k) => (
+                <path
+                  key={k}
+                  d={wavy(x0 - 48, x1 + 24, G - Wp * k + gap, 1.1, 24)}
+                  fill="none"
+                  stroke="#fff"
+                  strokeOpacity={0.35 - n * 0.15}
+                  strokeWidth={0.8}
+                />
+              ))}
             </g>
+            {/* odsjaji sunca na talasima */}
+            {day > 0.02 && (
+              <g opacity={day} fill="#fff">
+                {GLINTS.map(([u, v, delay]) => {
+                  const [gx, gy] = P(-half + Lp * u, Wp * v, gap);
+                  return (
+                    <ellipse
+                      key={u}
+                      className="pl-glint"
+                      cx={gx}
+                      cy={gy}
+                      rx={2.4}
+                      ry={0.55}
+                      style={{ animationDelay: `${delay}s` }}
+                    />
+                  );
+                })}
+              </g>
+            )}
+            {counter && (
+              <g
+                className="pl-flow"
+                stroke="#fff"
+                strokeOpacity={0.55}
+                strokeWidth={0.9}
+                strokeDasharray="7 5"
+                fill="none"
+              >
+                {[0.35, 0.5, 0.65].map((k) => {
+                  const a = P(half - 2, Wp * k, gap);
+                  const b = P(
+                    half - Lp * 0.55,
+                    Wp * (0.5 + (k - 0.5) * 2.2),
+                    gap,
+                  );
+                  return (
+                    <path key={k} d={`M${a[0]} ${a[1]}L${b[0]} ${b[1]}`} />
+                  );
+                })}
+              </g>
+            )}
+            {/* talasići na dodir (i iznad mehurića koji su izašli) */}
+            {ripples.map((r) => {
+              const [rx, ry] = r.deep
+                ? P(r.x - CX, Wp * 0.15, gap)
+                : [r.x, r.y];
+              return (
+                <g
+                  key={r.id}
+                  className="pl-life"
+                  fill="none"
+                  stroke="#fff"
+                  onAnimationEnd={(e) =>
+                    e.target === e.currentTarget && dry(r.id)
+                  }
+                >
+                  {[0, 0.16, 0.32].map((d, i) => (
+                    <ellipse
+                      key={d}
+                      className="pl-ripple"
+                      cx={rx}
+                      cy={ry}
+                      rx={46 - i * 6}
+                      ry={(46 - i * 6) * (WS / S)}
+                      strokeWidth={2 - i * 0.4}
+                      vectorEffect="non-scaling-stroke"
+                      style={{ animationDelay: `${d + (r.deep ? 0.55 : 0)}s` }}
+                    />
+                  ))}
+                </g>
+              );
+            })}
+          </g>
+          {nLights > 0 && (
+            <path
+              d={pts(waterTop)}
+              fill="url(#pl-lamp)"
+              opacity={n * 0.55}
+              style={{ mixBlendMode: "screen" }}
+            />
           )}
         </g>
-        {nLights > 0 && (
-          <path
-            d={pts(waterTop)}
-            fill="url(#pl-lamp)"
-            opacity={n * 0.55}
-            style={{ mixBlendMode: "screen" }}
-          />
-        )}
 
         {/* Prekrivka */}
         {coverK > 0.01 &&
@@ -612,7 +1045,7 @@ function PoolScene(props: PoolSceneProps) {
                 return (
                   <path
                     key={k}
-                    className={still ? undefined : "pl-steam"}
+                    className="pl-steam"
                     style={{ animationDelay: `${i * 1.3}s` }}
                     d={`M${sx} ${sy}c-5 -6 5 -10 0 -16s5 -10 0 -16`}
                     fill="none"
@@ -637,7 +1070,7 @@ function PoolScene(props: PoolSceneProps) {
               exit={{ opacity: 0, y: -14 }}
               transition={transition}
             >
-              <HeatPump x={x0 - 62} y={G - 12} c={c} still={still} n={n} />
+              <HeatPump x={x0 - 62} y={G - 12} c={c} n={n} />
             </motion.g>
           )}
         </AnimatePresence>
@@ -789,7 +1222,7 @@ function PoolScene(props: PoolSceneProps) {
             strokeLinejoin="round"
           />
           <path
-            d={`M${shX + 40} ${shY + 36}H${shX + 53}V${G + Dp + 3}H${x0 + Lp * 0.5}`}
+            d={`M${shX + 40} ${shY + 36}H${shX + 53}V${floorY + 3}H${x0 + Lp * 0.5}`}
             fill="none"
             stroke={c("#aeb8c3")}
             strokeWidth={2.4}
@@ -819,7 +1252,7 @@ function PoolScene(props: PoolSceneProps) {
                   cy={shY + 19}
                   r={1.8}
                   fill="#3ddc97"
-                  className={still ? undefined : "hs-twinkle"}
+                  className="hs-twinkle"
                 />
               </motion.g>
             )}
@@ -864,13 +1297,34 @@ function PoolScene(props: PoolSceneProps) {
           </g>
         )}
 
-        {/* Betonska školjka i kanal u preseku */}
+        {/* Šljunčana posteljica, betonska školjka i kanal u preseku */}
+        <rect
+          x={x0 - 13}
+          y={floorY + 9}
+          width={Lp + 26}
+          height={5}
+          fill={c("#7b7466")}
+        />
+        <rect
+          x={x0 - 13}
+          y={floorY + 9}
+          width={Lp + 26}
+          height={5}
+          fill="url(#pl-gravel)"
+        />
         <rect
           x={x0 - 7}
           y={G}
           width={Lp + 14}
           height={Dp + 9}
           fill={c("#8d969f")}
+        />
+        <rect
+          x={x0 - 7}
+          y={G}
+          width={Lp + 14}
+          height={Dp + 9}
+          fill="url(#pl-hatch)"
         />
         {gutter > 0.01 && (
           <g opacity={gutter}>
@@ -893,26 +1347,44 @@ function PoolScene(props: PoolSceneProps) {
                 />
               </g>
             ))}
+            {/* voda se preliva preko ivice u kanal */}
+            {fill > 0.95 && (
+              <g
+                className="pl-flow"
+                stroke="#e9fbff"
+                strokeOpacity={0.8}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                fill="none"
+              >
+                <path
+                  d={`M${x0 + 3} ${G + 0.5}Q${x0 - 5} ${G - 0.5} ${x0 - 11} ${G + 7}`}
+                />
+                <path
+                  d={`M${x1 - 3} ${G + 0.5}Q${x1 + 5} ${G - 0.5} ${x1 + 11} ${G + 7}`}
+                />
+              </g>
+            )}
           </g>
         )}
         <rect x={x0} y={G} width={Lp} height={Dp} fill={c("#c4ecf4")} />
         <rect x={x0} y={G} width={Lp} height={Dp} fill="url(#pl-tiles)" />
+        {/* tamnija traka mozaika na liniji vode */}
+        <rect x={x0} y={G} width={Lp} height={9} fill={c("#2b78b2")} />
+        <rect x={x0} y={G} width={Lp} height={9} fill="url(#pl-mosaic)" />
         <path d={stairs} fill={c("#eef7fa")} />
 
         {/* Svetla na zadnjem zidu */}
         {Array.from({ length: nLights }, (_, i) => {
           const lx = x0 + ((i + 0.5) * Lp) / nLights;
-          const ly = G + Math.max(10, Dp * 0.4);
           return (
             <g key={i}>
-              <circle cx={lx} cy={ly} r={3} fill={c("#dfe6ec")} />
+              <circle cx={lx} cy={lampY} r={3} fill={c("#dfe6ec")} />
               <circle
                 cx={lx}
-                cy={ly}
+                cy={lampY}
                 r={1.8}
-                className={
-                  light === "rgb" && !still ? "pl-rgb-fill" : undefined
-                }
+                className={light === "rgb" ? "pl-rgb-fill" : undefined}
                 fill={light === "rgb" ? "#7f9bff" : "#fff6d8"}
                 opacity={0.5 + n * 0.5}
               />
@@ -920,45 +1392,92 @@ function PoolScene(props: PoolSceneProps) {
           );
         })}
 
-        {/* Voda */}
-        <rect
-          x={x0}
-          y={waterY}
-          width={Lp}
-          height={waterH}
-          fill="url(#pl-water)"
-        />
-        <g clipPath="url(#pl-water-clip)">
-          {Array.from({ length: nLights }, (_, i) => {
-            const lx = x0 + ((i + 0.5) * Lp) / nLights;
-            const ly = G + Math.max(10, Dp * 0.4);
-            return (
-              <ellipse
-                key={i}
-                cx={lx}
-                cy={ly}
-                rx={Math.min(46, Lp / nLights / 1.4)}
-                ry={Math.min(30, Dp * 0.6)}
-                fill="url(#pl-lamp)"
-                opacity={0.25 + n * 0.75}
-              />
-            );
-          })}
-          <g
-            className={still ? undefined : "pl-caustic"}
-            style={{ ["--pl-period" as string]: "32px" }}
+        {/* Voda: telo vode se ljulja oko sredine, višak ispod dna je skriven */}
+        <g clipPath="url(#pl-shell-clip)">
+          <motion.g
+            style={{
+              skewY: tilt,
+              transformBox: "fill-box",
+              transformOrigin: "50% 50%",
+            }}
           >
-            {[0.18, 0.4, 0.62, 0.84].map((k) => (
+            <rect
+              x={x0}
+              y={levelY}
+              width={Lp}
+              height={floorY + 12 - levelY}
+              fill="url(#pl-water)"
+            />
+            <g
+              className="pl-wave"
+              style={{ ["--pl-period" as string]: "16px" }}
+            >
               <path
-                key={k}
-                d={wavy(x0 - 64, x1 + 32, G + Dp * k, 2.2, 32)}
+                d={wavy(x0 - 16, x1 + 16, levelY, 0.8, 16)}
                 fill="none"
                 stroke="#fff"
-                strokeOpacity={0.14}
+                strokeOpacity={0.7 * Math.min(1, fill * 8)}
                 strokeWidth={1}
               />
-            ))}
+            </g>
+          </motion.g>
+        </g>
+        <g clipPath="url(#pl-water-clip)">
+          {Array.from({ length: nLights }, (_, i) => (
+            <ellipse
+              key={i}
+              cx={x0 + ((i + 0.5) * Lp) / nLights}
+              cy={lampY}
+              rx={Math.min(46, Lp / nLights / 1.4)}
+              ry={Math.min(30, Dp * 0.6)}
+              fill="url(#pl-lamp)"
+              opacity={0.25 + n * 0.75}
+            />
+          ))}
+          {/* kaustike: dve mreže koje klize u različitim pravcima */}
+          <g opacity={0.3 + 0.6 * (1 - n)}>
+            <g className="pl-drift-a">
+              <rect
+                x={x0 - 4}
+                y={levelY - 2}
+                width={Lp + 64}
+                height={floorY - levelY + 4}
+                fill="url(#pl-caus-a)"
+              />
+            </g>
+            <g className="pl-drift-b">
+              <rect
+                x={x0 - 48}
+                y={levelY - 2}
+                width={Lp + 52}
+                height={floorY - levelY + 32}
+                fill="url(#pl-caus-b)"
+              />
+            </g>
           </g>
+          {/* sunčevi zraci kroz vodu */}
+          {day > 0.02 && (
+            <g opacity={day}>
+              {RAYS.map(([u, w, phase]) => {
+                const xa = x0 + Lp * u;
+                const lean = (floorY - levelY) * 0.42;
+                return (
+                  <path
+                    key={u}
+                    className="pl-ray"
+                    style={{ animationDelay: `${-phase}s` }}
+                    d={pts([
+                      [xa, levelY],
+                      [xa + w, levelY],
+                      [xa + w - lean, floorY],
+                      [xa - lean, floorY],
+                    ])}
+                    fill="url(#pl-ray)"
+                  />
+                );
+              })}
+            </g>
+          )}
           {/* Hidromasaža: mehurići iz mlaznica */}
           {jets &&
             [0.58, 0.72, 0.86].map((k) => {
@@ -975,9 +1494,9 @@ function PoolScene(props: PoolSceneProps) {
                       r={1 + (b % 3) * 0.5}
                       fill="#fff"
                       fillOpacity={0.75}
-                      className={still ? undefined : "pl-bubble"}
+                      className="pl-bubble"
                       style={{
-                        ["--pl-rise" as string]: Math.max(4, jy - waterY - 4),
+                        ["--pl-rise" as string]: Math.max(4, jy - levelY - 4),
                         animationDelay: `${b * 0.55 + k}s`,
                       }}
                     />
@@ -990,29 +1509,26 @@ function PoolScene(props: PoolSceneProps) {
             <g>
               <rect
                 x={x1 - 4}
-                y={G + Math.max(8, Dp * 0.28) - 3}
+                y={jetY - 3}
                 width={4}
                 height={6}
                 rx={1}
                 fill={c("#e6edf3")}
               />
               <g
-                className={still ? undefined : "pl-flow"}
+                className="pl-flow"
                 stroke="#fff"
                 strokeOpacity={0.7}
                 strokeWidth={1.2}
                 strokeDasharray="7 5"
                 fill="none"
               >
-                {[-3, 0, 3].map((o) => {
-                  const y = G + Math.max(8, Dp * 0.28) + o;
-                  return (
-                    <path
-                      key={o}
-                      d={`M${x1 - 4} ${y}L${x1 - Lp * 0.5} ${y + o * 2.5}`}
-                    />
-                  );
-                })}
+                {[-3, 0, 3].map((o) => (
+                  <path
+                    key={o}
+                    d={`M${x1 - 4} ${jetY + o}L${x1 - Lp * 0.5} ${jetY + o * 3.5}`}
+                  />
+                ))}
               </g>
             </g>
           )}
@@ -1022,47 +1538,78 @@ function PoolScene(props: PoolSceneProps) {
               <circle
                 key={i}
                 cx={x0 + Lp * u}
-                cy={waterY + waterH * v}
+                cy={levelY + (floorY - levelY) * v}
                 r={0.9}
                 fill="#fff"
-                className={still ? undefined : "hs-twinkle"}
+                className="hs-twinkle"
                 style={{ animationDelay: `${i * 0.4}s` }}
               />
             ))}
+          {/* mehurići sa mesta dodira */}
+          {ripples.map(
+            (r) =>
+              r.deep &&
+              BURST.map(([dx, br, delay], i) => (
+                <circle
+                  key={`${r.id}-${i}`}
+                  className="pl-rise"
+                  cx={r.x + dx}
+                  cy={r.y}
+                  r={br}
+                  fill="#fff"
+                  fillOpacity={0.85}
+                  style={{
+                    ["--pl-rise" as string]: Math.max(4, r.y - levelY),
+                    animationDelay: `${delay}s`,
+                  }}
+                />
+              )),
+          )}
           <rect
             x={x0}
-            y={waterY}
+            y={levelY}
             width={Lp * 0.3}
-            height={waterH}
+            height={floorY - levelY}
             fill="url(#pl-sheen)"
           />
         </g>
-        {/* površina vode u preseku */}
-        <path
-          d={wavy(x0, x1, waterY, 0.8, 16)}
-          fill="none"
-          stroke="#fff"
-          strokeOpacity={0.7}
-          strokeWidth={1}
-          clipPath="url(#pl-pool-clip)"
-        />
+
+        {/* Punjenje: mlaz iz povratne mlaznice dok se bazen ne napuni */}
+        {fill > 0.01 && fill < 0.97 && (
+          <g
+            className="pl-flow"
+            opacity={1 - smooth(0.75, 0.97, fill)}
+            stroke="#e6fbff"
+            strokeWidth={1.4}
+            strokeDasharray="6 5"
+            strokeLinecap="round"
+            fill="none"
+          >
+            {[-2, 0, 2].map((o) => (
+              <path
+                key={o}
+                d={`M${x0 + 1} ${pipeY + o * 0.6}q18 ${o * 0.6} 34 ${o * 2 + 6}`}
+              />
+            ))}
+          </g>
+        )}
 
         {/* Podvodna roletna: valjak u niši na desnom kraju */}
         {coverK > 0.01 && lastCover.current === "roletna" && (
           <g opacity={clamp01(coverK * 4)}>
             <rect
               x={x1 - 22}
-              y={waterY + 4}
+              y={levelY + 4}
               width={18}
               height={18}
               rx={2}
               fill={c("#5d6a78")}
               fillOpacity={0.55}
             />
-            <circle cx={x1 - 13} cy={waterY + 13} r={6.5} fill={c("#cfd8e2")} />
+            <circle cx={x1 - 13} cy={levelY + 13} r={6.5} fill={c("#cfd8e2")} />
             <circle
               cx={x1 - 13}
-              cy={waterY + 13}
+              cy={levelY + 13}
               r={4}
               fill="none"
               stroke={c("#8e9bab")}
@@ -1070,6 +1617,42 @@ function PoolScene(props: PoolSceneProps) {
             />
           </g>
         )}
+
+        {/* Osoba od 180 cm: dubina u odnosu na čoveka */}
+        <AnimatePresence>
+          {focus === "dims" && !scanning && !solved && (
+            <motion.g
+              key="person"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <ScaleFigure
+                x={x0 + Lp * 0.68}
+                feet={Math.min(floorY, levelY + 1.56 * DS)}
+                k={DS}
+                fs={fs}
+                sw={dimStroke}
+              />
+            </motion.g>
+          )}
+        </AnimatePresence>
+
+        {/* Protivstrujno: plivač pliva u mestu, glavom ka mlazu */}
+        <AnimatePresence>
+          {counter && !solved && fill > 0.95 && (
+            <motion.g
+              key="swimmer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Swimmer x={x1 - 26} y={levelY} k={DS * 0.8} />
+            </motion.g>
+          )}
+        </AnimatePresence>
 
         {/* Unutrašnji bazen: stubovi i krovna greda ispred svega */}
         <AnimatePresence>
@@ -1100,17 +1683,17 @@ function PoolScene(props: PoolSceneProps) {
               fill="#e9fbff"
             >
               <Dim
-                a={[x0, G + Dp + 18]}
-                b={[x1, G + Dp + 18]}
-                label={`${meters(props.length)} m`}
+                a={[x0, floorY + 18]}
+                b={[x1, floorY + 18]}
+                label={`${meters(length)} m`}
                 sw={dimStroke}
                 fs={fs}
                 below
               />
               <Dim
                 a={[x1 + 14, G]}
-                b={[x1 + 14, G + Dp]}
-                label={`${meters(props.depth)} m`}
+                b={[x1 + 14, floorY]}
+                label={`${meters(depth)} m`}
                 sw={dimStroke}
                 fs={fs}
                 side
@@ -1118,7 +1701,7 @@ function PoolScene(props: PoolSceneProps) {
               <Dim
                 a={P(half + 34, 0)}
                 b={P(half + 34, Wp)}
-                label={`${meters(props.width)} m`}
+                label={`${meters(width)} m`}
                 sw={dimStroke}
                 fs={fs}
                 side
@@ -1154,7 +1737,63 @@ function PoolScene(props: PoolSceneProps) {
             </motion.g>
           )}
         </AnimatePresence>
+
+        {/* Dodir vode: nevidljive površine iznad svega */}
+        {!still && !scanning && !solved && fill > 0.6 && (
+          <g fill="transparent" className="cursor-pointer">
+            <path d={pts(waterTop)} onClick={(e) => splash(e, false)} />
+            <rect
+              x={x0}
+              y={levelY}
+              width={Lp}
+              height={floorY - levelY}
+              onClick={(e) => splash(e, true)}
+            />
+          </g>
+        )}
       </svg>
+
+      {editable && (
+        <>
+          <Handle
+            pos={toPx(x1, floorY + 18)}
+            axis="x"
+            active={grip === "length"}
+            ping={!touched}
+            {...grab("length")}
+          />
+          <Handle
+            pos={toPx(depthGripX, floorY)}
+            axis="y"
+            active={grip === "depth"}
+            ping={!touched}
+            {...grab("depth")}
+          />
+          {!touched && (
+            <Hint pos={toPx(depthGripX, floorY)} text="Povucite ručice" />
+          )}
+        </>
+      )}
+      {callout && (
+        <Callout
+          key={callout.id}
+          pos={callout.pos}
+          shift={
+            Math.min(box.w - 96, Math.max(96, callout.pos[0])) - callout.pos[0]
+          }
+          text={noteText(callout.kind, cover, light)}
+          onDone={() => setNote(null)}
+        />
+      )}
+      <AnimatePresence>
+        {pin && (
+          <CityPin
+            key="pin"
+            pos={toPx(...P(-0.2 * (Lp + 120), Wp + 28))}
+            label={pin}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1218,13 +1857,11 @@ function HeatPump({
   x,
   y,
   c,
-  still,
   n,
 }: {
   x: number;
   y: number;
   c: Paint;
-  still: boolean;
   n: number;
 }) {
   return (
@@ -1233,10 +1870,7 @@ function HeatPump({
       <rect x={-24} y={-32} width={48} height={32} rx={3} fill={c("#eef1f4")} />
       <rect x={-24} y={-32} width={48} height={5} rx={2} fill={c("#cfd6dd")} />
       <circle cx={-6} cy={-14} r={11} fill={c("#3a4048")} />
-      <g
-        className={still ? undefined : "pl-fan"}
-        style={{ transformOrigin: "-6px -14px" }}
-      >
+      <g className="pl-fan" style={{ transformOrigin: "-6px -14px" }}>
         {[0, 120, 240].map((r) => (
           <path
             key={r}
@@ -1576,3 +2210,45 @@ const SPARKS: [number, number][] = [
   [0.3, 0.82],
   [0.88, 0.7],
 ];
+
+/** Odsjaji sunca na površini: položaj (dužina, širina) i pomak u ciklusu. */
+const GLINTS: [number, number, number][] = [
+  [0.16, 0.3, 0],
+  [0.3, 0.72, 1.1],
+  [0.44, 0.42, 2.3],
+  [0.58, 0.18, 0.6],
+  [0.7, 0.6, 1.8],
+  [0.84, 0.34, 2.9],
+  [0.37, 0.12, 3.1],
+];
+
+/** Zraci kroz vodu: položaj po dužini, širina i pomak u ciklusu. */
+const RAYS: [number, number, number][] = [
+  [0.14, 14, 0],
+  [0.33, 9, 1.7],
+  [0.52, 18, 3.1],
+  [0.74, 11, 4.4],
+  [0.92, 8, 2.3],
+];
+
+/** Mehurići sa mesta dodira: pomak, veličina, kašnjenje. */
+const BURST: [number, number, number][] = [
+  [-3, 1.4, 0],
+  [2, 1, 0.08],
+  [0, 1.8, 0.15],
+  [4, 0.8, 0.22],
+  [-2, 1.1, 0.3],
+];
+
+/* Pločice kaustika: linije koje izađu kroz ivicu ulaze na suprotnoj strani,
+   pa se obrazac nastavlja bez šava. */
+const CAUSTIC_A =
+  "M0 9C7 3 15 14 24 8C31 4 38 13 47 10C51 8.5 54 8 56 9" +
+  "M0 25C6 29 13 20 22 25C29 29 36 21 44 26C49 29 53 25 56 25" +
+  "M11 6C8 13 16 18 13 25M33 7C38 12 31 19 37 24M47 10C44 16 50 20 48 26" +
+  "M22 25C19 29 26 31 24 34M24 0C22 3 26 5 24 8";
+const CAUSTIC_B =
+  "M0 6C6 10 12 2 20 6C27 10 33 3 44 6" +
+  "M0 18C8 14 14 22 23 18C30 15 37 21 44 18" +
+  "M8 8C5 12 11 15 8 18M30 6C34 10 27 14 31 18" +
+  "M18 19C15 22 20 24 18 26M18 0C16 2 20 4 20 6";
