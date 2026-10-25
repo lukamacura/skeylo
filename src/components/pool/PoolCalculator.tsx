@@ -1578,7 +1578,14 @@ function SeasonStrip({
   );
 }
 
-/** Stavke iz troškovnika koje dobijaju tek u PDF-u; ovde su zamagljene. */
+/** Ostale strane detaljne procene, posle cene po stavkama. */
+const PDF_PAGES = [
+  "Oprema za vaš bazen i zašto baš ta",
+  "Održavanje: koliko bazen košta godišnje",
+  "Plan izgradnje, od iskopa do prvog kupanja",
+];
+
+/** Stavke čije cene dobijaju tek u detaljnoj proceni; ovde su zamagljene. */
 function specLines(i: PoolInput) {
   const l = [
     "Iskop i odvoz zemlje",
@@ -1654,52 +1661,61 @@ function LeadForm({
           </span>
           <div>
             <h2 className="font-display text-lg font-semibold">
-              Hvala, ponuda stiže u roku od 24h
+              Hvala, detaljna procena stiže na vaš mejl
             </h2>
             <p className="mt-0.5 text-sm text-[#aeb8c6]">
-              Pripremamo tehničku specifikaciju i troškovnik za bazen{" "}
-              {meters(input.length)}×{meters(input.width)} m. Javićemo vam se i
-              telefonom.
+              Šaljemo je na {email.trim()}. Inženjer će vas pozvati da zakaže
+              besplatan obilazak placa.
             </p>
           </div>
         </div>
       ) : (
         <>
-          {/* Pregled PDF-a: vidi se šta dobijaju, brojke tek posle forme */}
+          {/* Pregled PDF-a: vide se sve 4 strane, cene tek posle forme */}
           <div className="border-b border-white/10 bg-black/20 p-4 lg:p-5">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b97a8]">
               <FileText className="size-4 text-[#4fd8eb]" />
-              Predkalkulacija · troškovnik materijala
+              Detaljna procena · PDF, 4 strane
             </div>
-            <ul className="mt-3 space-y-1.5">
-              {specLines(input).map((l, i) => (
-                <li
-                  key={l}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <span className="text-[#aeb8c6]">{l}</span>
-                  <span
-                    aria-hidden
-                    className="select-none tabular-nums text-[#e3e9f1] blur-[5px]"
-                  >
-                    {num(1200 + ((i * 1733) % 4100))} €
-                  </span>
+            <ol className="mt-3 space-y-2.5">
+              <li>
+                <PdfPage n={1}>Cena stavku po stavku</PdfPage>
+                <ul className="mt-1.5 space-y-1.5 pl-7">
+                  {specLines(input).map((l, i) => (
+                    <li
+                      key={l}
+                      className="flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="text-[#aeb8c6]">{l}</span>
+                      <span
+                        aria-hidden
+                        className="select-none tabular-nums text-[#e3e9f1] blur-[5px]"
+                      >
+                        {num(1200 + ((i * 1733) % 4100))} €
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+              {PDF_PAGES.map((t, i) => (
+                <li key={t}>
+                  <PdfPage n={i + 2}>{t}</PdfPage>
                 </li>
               ))}
-            </ul>
+            </ol>
             <div className="mt-3 flex items-center gap-1.5 text-xs text-[#8b97a8]">
               <Lock className="size-3.5" />
-              Kompletan troškovnik dobijate u PDF ponudi
+              Cene po stavkama otključavate unosom podataka
             </div>
           </div>
 
           <form onSubmit={submit} className="p-4 lg:p-5">
             <h2 className="font-display text-lg font-semibold leading-snug">
-              Želite kompletnu tehničku specifikaciju opreme i preciznu
-              predkalkulaciju sa troškovnikom materijala?
+              Hoćete cenu stavku po stavku?
             </h2>
             <p className="mb-4 mt-1 text-sm text-[#aeb8c6]">
-              Unesite podatke i šaljemo vam PDF ponudu u roku od 24h.
+              Šaljemo vam detaljnu procenu za bazen {meters(input.length)}×
+              {meters(input.width)} m na mejl. Besplatno.
             </p>
             <div className="grid gap-2.5">
               <input
@@ -1716,8 +1732,8 @@ function LeadForm({
                   required
                   type="tel"
                   inputMode="tel"
-                  aria-label="Broj telefona (obavezno)"
-                  placeholder="Broj telefona *"
+                  aria-label="Broj telefona"
+                  placeholder="Broj telefona"
                   autoComplete="tel"
                   pattern="[0-9+ /\-]{6,}"
                   value={phone}
@@ -1725,6 +1741,7 @@ function LeadForm({
                   className={field}
                 />
                 <input
+                  required
                   type="email"
                   inputMode="email"
                   aria-label="Email adresa"
@@ -1746,8 +1763,11 @@ function LeadForm({
               ) : (
                 <Layers className="size-4" />
               )}
-              Pošaljite mi PDF ponudu
+              Pošalji mi detaljnu procenu
             </button>
+            <p className="mt-2 text-center text-xs text-[#8b97a8]">
+              Inženjer vas zove samo da zakaže besplatan obilazak placa.
+            </p>
             {state === "error" && (
               <p role="alert" className="mt-2 text-sm text-[#ff8f7a]">
                 Slanje nije uspelo. Pokušajte ponovo.
@@ -1757,5 +1777,16 @@ function LeadForm({
         </>
       )}
     </motion.div>
+  );
+}
+
+function PdfPage({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-medium text-[#e3e9f1]">
+      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#4fd8eb]/15 text-[11px] font-semibold tabular-nums text-[#4fd8eb]">
+        {n}
+      </span>
+      {children}
+    </div>
   );
 }

@@ -16,21 +16,26 @@ import {
   ArrowDown,
   ArrowRight,
   CalendarCheck,
+  CalendarRange,
   Clapperboard,
   CodeXml,
   FileSignature,
+  FileText,
   FlaskConical,
   Mic,
   PhoneCall,
   Play,
+  ReceiptText,
   Scissors,
   Search,
+  Settings2,
   Shapes,
   Smartphone,
   Target,
   TrendingUp,
   Video,
   Waves,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -476,7 +481,7 @@ function LeadCard() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-white">Novi upit · Nikola M.</p>
           <p className="text-xs text-[#9aa4b4]">
-            upravo sada · traži PDF ponudu
+            upravo sada · dobio detaljnu procenu
           </p>
         </div>
         <span className="relative flex size-2.5">
@@ -521,6 +526,73 @@ function LeadCard() {
           </motion.div>
         ))}
       </motion.div>
+    </motion.div>
+  );
+}
+
+/** Šta Nikola dobija za ime, broj i email: četiri strane detaljne procene. */
+function ProcenaCard() {
+  const pages = [
+    {
+      icon: ReceiptText,
+      t: "Cena stavku po stavku",
+      d: "iskop, školjka, filtracija, oprema",
+    },
+    {
+      icon: Settings2,
+      t: "Oprema za njegov bazen",
+      d: "šta ugrađujete i zašto",
+    },
+    { icon: Wrench, t: "Održavanje", d: "koliko bazen košta godišnje" },
+    {
+      icon: CalendarRange,
+      t: "Plan izgradnje",
+      d: "od iskopa do prvog kupanja",
+    },
+  ];
+  return (
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      whileInView="shown"
+      viewport={VIEW}
+      className="mt-8 max-w-md rounded-2xl border border-border bg-foreground/[0.03] p-4"
+    >
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <FileText className="size-4" style={{ color: AQUA }} />
+        Detaljna procena · 4 strane
+      </p>
+      <motion.ol
+        initial="hidden"
+        whileInView="shown"
+        viewport={VIEW}
+        variants={{
+          hidden: {},
+          shown: { transition: { staggerChildren: 0.08, delayChildren: 0.25 } },
+        }}
+        className="mt-3 grid grid-cols-2 gap-2"
+      >
+        {pages.map((p) => (
+          <motion.li
+            key={p.t}
+            variants={{
+              hidden: { opacity: 0, y: 8 },
+              shown: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.45, ease: EASE },
+              },
+            }}
+            className="rounded-xl bg-foreground/[0.04] p-3"
+          >
+            <p.icon className="size-5" style={{ color: AQUA }} />
+            <p className="mt-2 text-[13px] font-bold leading-tight">{p.t}</p>
+            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+              {p.d}
+            </p>
+          </motion.li>
+        ))}
+      </motion.ol>
     </motion.div>
   );
 }
@@ -616,7 +688,8 @@ function CloseCard() {
         transition={{ duration: 0.45, delay: steps.length * STEP }}
         className="mt-4 rounded-xl bg-white/[0.05] px-3.5 py-2.5 text-sm text-[#d6dde6]"
       >
-        „Video sam procenu, to je otprilike moj budžet. Kad možete da dođete?”
+        „Pročitao sam detaljnu procenu, to je otprilike moj budžet. Kad možete
+        da dođete?”
       </motion.p>
     </motion.div>
   );
@@ -1398,8 +1471,9 @@ export default function PoolServiceLanding() {
             n={4}
             when="22:14"
             title="Ostavlja broj i email."
-            accent="Hoće PDF ponudu sa troškovnikom."
-            line="Upit stiže sa svim što je izabrao: dimenzije, opremu, fazu gradnje i lokaciju. Znate sve pre prvog poziva."
+            accent="Hoće cenu stavku po stavku."
+            line="Za to dobija detaljnu procenu: PDF od četiri strane sa vašim logom. Vama stiže upit sa svim što je izabrao, pa znate sve pre prvog poziva."
+            aside={<ProcenaCard />}
             scene={
               <Scene
                 src={`${IMG}/upit-stize.webp`}
@@ -1414,7 +1488,7 @@ export default function PoolServiceLanding() {
             when="Sreda ujutru"
             title="Vi ga zovete."
             accent="Razgovor počinje od brojke, ne od nule."
-            line="Nikola zna okvir i hoće obilazak placa. Vi radite ono što najbolje znate: teren, ponuda, ugovor."
+            line="Nikola je video svaku stavku i hoće obilazak placa. Vi radite ono što najbolje znate: teren, tačna ponuda, ugovor."
             aside={
               <motion.p
                 variants={fadeUp}
