@@ -1491,3 +1491,102 @@ body.nb-dragging * {
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
+
+/* ---------- folderi (noteFolders) ----------
+   Fascikla, zaglavlje otvorenog foldera i dijalog su isti kao u Final Creatives (app.css);
+   ovde su samo listovi stranica koji vire iz fascikle i delovi specifični za General. */
+.fcf-th .gsh {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 9px 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--cream) 94%, var(--fc));
+  color: var(--ink);
+}
+.gsh-i {
+  display: block;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  line-height: 16px;
+  color: color-mix(in srgb, var(--fc) 65%, #000);
+}
+.gsh-i svg,
+.gsh-i img.emo {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+.gsh b {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.gsh i {
+  display: block;
+  flex: none;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.gsh i:last-child {
+  width: 60%;
+}
+.gfh {
+  margin-top: clamp(28px, 4vw, 44px);
+}
+.gfsec,
+.gf-empty {
+  animation: fade 0.6s 0.2s var(--ease) backwards;
+}
+.gf-empty {
+  max-width: 560px;
+  margin: 18px 4px 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+/* prevlačenje stranice na folder */
+.gtile[draggable="true"] {
+  -webkit-user-drag: element;
+}
+.gtile.drag {
+  opacity: 0.35;
+  transform: scale(0.96);
+  transition:
+    opacity 0.2s,
+    transform 0.3s var(--ease);
+}
+/* meni stranice i putanja */
+.gpmenu .gm-fold > svg:first-child,
+.gp-cf svg {
+  color: var(--fc, var(--muted));
+}
+.gpmenu button > span:not(.check) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gpmenu .check svg {
+  color: inherit;
+}
+.gp-cf svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+@media (max-width: 640px) {
+  #gNewF .lbl {
+    display: none;
+  }
+  #gNewF {
+    padding: 12px 14px;
+  }
+}

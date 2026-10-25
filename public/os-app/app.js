@@ -358,6 +358,7 @@
     days: [],
     leads: [],
     notes: [],
+    noteFolders: [],
     comments: [],
     creatives: [],
     creativeComments: [],
@@ -549,6 +550,7 @@
   FALLBACK.creativeComments = [];
   FALLBACK.creativeNotes = [];
   FALLBACK.schedules = [];
+  FALLBACK.noteFolders = [];
   FALLBACK.reports = [];
   FALLBACK.finances = [];
   FALLBACK.expenses = [];
@@ -711,6 +713,7 @@
       "days",
       "leads",
       "notes",
+      "noteFolders",
       "comments",
       "creatives",
       "creativeComments",
@@ -773,6 +776,7 @@
                 "days",
                 "leads",
                 "notes",
+                "noteFolders",
                 "comments",
                 "creatives",
                 "creativeComments",
@@ -803,6 +807,7 @@
     sub("days");
     sub("leads");
     sub("notes");
+    sub("noteFolders");
     sub("comments");
     sub("creatives");
     sub("creativeComments");
@@ -938,14 +943,22 @@
       show("pm");
       firstPM = true;
       renderPM();
-    } else if (h === "general") {
+    } else if (h === "general" || h.startsWith("general~")) {
+      /* general, general~{folder} */
       applyTheme(null);
-      view = { name: "general" };
+      view = { name: "general", fid: h.slice(8) || null };
       show("general");
       firstGen = true;
       renderGEN();
     } else if (h.startsWith("mg-")) {
-      view = { name: "general", id: h.slice(3) };
+      /* mg-{projekat}, mg-{projekat}~{folder} */
+      const x = h.slice(3),
+        q = x.indexOf("~");
+      view = {
+        name: "general",
+        id: q < 0 ? x : x.slice(0, q),
+        fid: q < 0 ? null : x.slice(q + 1) || null,
+      };
       show("general");
       firstGen = true;
       renderGEN();
@@ -2459,6 +2472,19 @@
     if ($("#general").hidden) return;
     const anim = firstGen;
     firstGen = false;
+    /* otvoren folder je obrisan (npr. neko drugi ga je obrisao): nazad u glavni prikaz */
+    if (
+      view.fid &&
+      S.ready &&
+      !S.noteFolders.some(
+        (f) => f.id === view.fid && (f.spaceId || null) === (view.id || null),
+      )
+    ) {
+      view.fid = null;
+      curHash = view.id ? "mg-" + view.id : "general";
+      history.replaceState(null, "", "#" + curHash);
+    }
+    $("#gNewF").hidden = !!view.fid;
     /* view.id = mesec/projekat: General tog projekta (#mg-{id}), bez Models kartice */
     const it = view.id && S.items.find((i) => i.id === view.id);
     const c =
@@ -2470,7 +2496,7 @@
       });
     $("#genH").hidden = !!view.id;
     $("#genId").hidden = !view.id;
-    $("#gmods").hidden = !!view.id;
+    $("#gmods").hidden = !!view.id || !!view.fid;
     $("#genBack").dataset.go = view.id ? "m-" + view.id : "";
     $("#genBackLbl").textContent = view.id
       ? it
@@ -2491,7 +2517,7 @@
         return;
       }
       if (!anim && it) $("#genId .w>span").style.animation = "none";
-      if (NT && S.ready) NT.hub(anim, view.id);
+      if (NT && S.ready) NT.hub(anim, view.id, view.fid);
       return;
     }
     if (!anim) $("#general .phead .w>span").style.animation = "none";
@@ -2500,7 +2526,7 @@
     <div class="mod-top"><span class="mi">${SV('<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M16 4a4 4 0 0 1 0 8M22 21v-1a7 7 0 0 0-4-6.3"/>')}</span><span class="avstack">${S.ready ? avStack(4) : ""}</span></div>
     <div><h2>Models</h2><div class="tot"><b>${S.models.length}</b>${S.models.length % 10 === 1 && S.models.length % 100 !== 11 ? "model" : "modela"}</div></div>
   </button>`;
-    if (NT) NT.hub(anim, null);
+    if (NT) NT.hub(anim, null, view.fid);
   }
   let firstModels = true,
     mq = "";
@@ -10386,6 +10412,9 @@
       },
       assets: () => ASSETS,
       scriptRendered: () => paintCcHl(),
+      /* folderi Generala: isti dijalog i boje kao folderi u Final Creatives */
+      foldDlg: (o) => foldDlg(o),
+      foldCols: () => FC_FCOL,
     });
   /* =====================================================================
    FINAL CREATIVES
@@ -12978,16 +13007,64 @@
         ),
     );
   }
-  /* dijalog: novi folder / uredi folder (naziv, boja, brisanje) */
+  /* dijalog: novi folder / uredi folder (naziv, boja, brisanje).
+     Isti dijalog koristi i General (notes.js): o = {F, color, save(name, color), del()} */
   let fcFD = null;
   function fcOpenFold(F, move) {
     const mid = view.id;
-    fcFD = {
-      mid,
+    foldDlg({
       F,
-      move: move || null,
-      color: F ? fcFCol(F) : FC_FCOL[fcFolders(mid).length % FC_FCOL.length],
-    };
+      color: FC_FCOL[fcFolders(mid).length % FC_FCOL.length],
+      save: async (name, color) => {
+        if (F) {
+          await fcSaveFolders(mid, (fs) =>
+            fs.map((f) => (f.id === F.id ? { ...f, name, color } : f)),
+          );
+          return;
+        }
+        const id = "f" + Math.random().toString(36).slice(2, 11);
+        const ok = await fcSaveFolders(mid, (fs) => [
+          ...fs,
+          {
+            id,
+            name,
+            color,
+            order: Math.max(0, ...fs.map((f) => f.order || 0)) + 1,
+            createdBy: me ? me.id : null,
+          },
+        ]);
+        if (!ok) return;
+        if (move)
+          fcMoveTo(
+            S.creatives.find((x) => x.id === move.id),
+            id,
+          );
+        else toast(`Folder „${name}“ je spreman. Prevuci kreative na njega.`);
+      },
+      del: async () => {
+        const n = creativesIn(mid, F.id).length;
+        if (view.name === "fc" && view.fid === F.id && !view.cid)
+          nav("fc-" + mid);
+        /* kreative zadržavaju folderId, pa ih „Poništi“ vraća baš u ovaj folder */
+        const ok = await fcSaveFolders(mid, (fs) =>
+          fs.filter((f) => f.id !== F.id),
+        );
+        if (ok)
+          toast(
+            n
+              ? `Folder obrisan. ${n} ${fcWord(n)} ${fcJe(n)} sad u svim kreativama.`
+              : "Folder obrisan",
+            () =>
+              fcSaveFolders(mid, (fs) =>
+                fs.some((f) => f.id === F.id) ? fs : [...fs, F],
+              ),
+          );
+      },
+    });
+  }
+  function foldDlg(o) {
+    const F = o.F || null;
+    fcFD = { ...o, F, color: F ? fcFCol(F) : o.color || FC_FCOL[0] };
     const a = $("#fcFold");
     $("#fcFoldT").textContent = F ? "Uredi folder" : "Novi folder";
     $("#fcFoldOk").textContent = F ? "Sačuvaj" : "Napravi";
@@ -13075,32 +13152,9 @@
       return;
     }
     fcCloseFold();
-    if (D.F) {
-      await fcSaveFolders(D.mid, (fs) =>
-        fs.map((f) => (f.id === D.F.id ? { ...f, name, color: D.color } : f)),
-      );
-      return;
-    }
-    const id = "f" + Math.random().toString(36).slice(2, 11);
-    const ok = await fcSaveFolders(D.mid, (fs) => [
-      ...fs,
-      {
-        id,
-        name,
-        color: D.color,
-        order: Math.max(0, ...fs.map((f) => f.order || 0)) + 1,
-        createdBy: me ? me.id : null,
-      },
-    ]);
-    if (!ok) return;
-    if (D.move)
-      fcMoveTo(
-        S.creatives.find((x) => x.id === D.move.id),
-        id,
-      );
-    else toast(`Folder „${name}“ je spreman. Prevuci kreative na njega.`);
+    D.save(name, D.color);
   });
-  $("#fcFoldDel").onclick = async () => {
+  $("#fcFoldDel").onclick = () => {
     const D = fcFD,
       b = $("#fcFoldDel");
     if (!D || !D.F) return;
@@ -13110,24 +13164,7 @@
       return;
     }
     fcCloseFold();
-    const F = D.F,
-      n = creativesIn(D.mid, F.id).length;
-    if (view.name === "fc" && view.fid === F.id && !view.cid)
-      nav("fc-" + D.mid);
-    /* kreative zadržavaju folderId, pa ih „Poništi“ vraća baš u ovaj folder */
-    const ok = await fcSaveFolders(D.mid, (fs) =>
-      fs.filter((f) => f.id !== F.id),
-    );
-    if (ok)
-      toast(
-        n
-          ? `Folder obrisan. ${n} ${fcWord(n)} ${fcJe(n)} sad u svim kreativama.`
-          : "Folder obrisan",
-        () =>
-          fcSaveFolders(D.mid, (fs) =>
-            fs.some((f) => f.id === F.id) ? fs : [...fs, F],
-          ),
-      );
+    D.del();
   };
   /* pregled kreative: izbor foldera */
   $("#fcvFoldS").addEventListener("change", (e) => {

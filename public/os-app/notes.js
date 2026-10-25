@@ -23,7 +23,8 @@ window.SKNotes = function (X) {
   const notes = () => S.notes || [];
   const noteOf = (id) => notes().find((n) => n.id === id);
   const spaceOf = (n) => (n && n.spaceId) || null;
-  let hubSpace = null;
+  let hubSpace = null,
+    hubFid = null; // otvoren folder u hubu (#general~{id}, #mg-{id}~{folder})
   /* id === null: koreni stranice trenutnog huba (glavni General ili General projekta) */
   const kidsOf = (id) =>
     notes()
@@ -57,6 +58,9 @@ window.SKNotes = function (X) {
     ),
     grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
     check: SV('<path d="m5 12 5 5L20 7"/>', 3),
+    fold: SV(
+      '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2.2 2.4h7.2A2.5 2.5 0 0 1 21 9.9v7.6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/>',
+    ),
     doc: SV(
       '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
       1.9,
@@ -1810,6 +1814,34 @@ window.SKNotes = function (X) {
     if (new Date(ts).toDateString() === y.toDateString()) return "juče";
     return X.fmtEdit.format(new Date(ts));
   }
+  /* ---------------- folderi ----------------
+     noteFolders/{id} = {name, color, order, spaceId, createdAt, createdBy}; glavna stranica
+     ima folderId. Podstranica, privatna stranica i stranica čiji folder više ne postoji su
+     van foldera (brisanje foldera ne dira stranice, pa ih „Poništi“ vraća baš u taj folder). */
+  const foldersOf = (sp) =>
+    (S.noteFolders || [])
+      .filter((f) => (f.spaceId || null) === (sp || null))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const folderOf = (fid, sp) =>
+    (fid && foldersOf(sp).find((f) => f.id === fid)) || null;
+  const fidOf = (n) =>
+    n && !n.parentId && !n.privateTo && folderOf(n.folderId, spaceOf(n))
+      ? n.folderId
+      : null;
+  const fcol = (F) => (F && F.color) || X.foldCols()[0];
+  const pagesWord = (n) => plural(n, "stranica", "stranice", "stranica");
+  /* glavna stranica (koren) kojoj pripada n */
+  function rootOf(n) {
+    let q = n,
+      g = 0;
+    while (q.parentId && noteOf(q.parentId) && g++ < 20) q = noteOf(q.parentId);
+    return q;
+  }
+  /* hub u koji se stranica vraća: General, General projekta ili folder u njemu */
+  function hubOf(n) {
+    const f = fidOf(rootOf(n));
+    return homeOf(spaceOf(n)) + (f ? "~" + f : "");
+  }
   function pathOf(n) {
     const out = [];
     let q = n.parentId && noteOf(n.parentId),
@@ -1818,6 +1850,8 @@ window.SKNotes = function (X) {
       out.unshift(q.title || "Bez naslova");
       q = q.parentId && noteOf(q.parentId);
     }
+    const F = folderOf(fidOf(rootOf(n)), spaceOf(n));
+    if (F) out.unshift(F.name || "Folder");
     return out.join(" / ");
   }
   function tile(n, style, withPath) {
@@ -1825,13 +1859,40 @@ window.SKNotes = function (X) {
     const u = who(n.updatedBy || n.createdBy);
     const ts = n.updatedAt || n.createdAt;
     const ex = plainOf(n.md).slice(0, 140);
-    return `<div class="cptile gtile${S.fresh.has(n.id) ? " new" : ""}" role="button" tabindex="0" data-go="g-${esc(n.id)}" style="${style}">
+    const path = withPath ? pathOf(n) : "";
+    /* mišem se glavna stranica prevlači na folder */
+    const drag = !touch() && !n.parentId && !n.privateTo;
+    return `<div class="cptile gtile${S.fresh.has(n.id) ? " new" : ""}" role="button" tabindex="0" data-go="g-${esc(n.id)}" data-gid="${esc(n.id)}"${drag ? ' draggable="true"' : ""} style="${style}">
       <span class="ci">${n.icon ? emo(n.icon) : I.doc}</span>${n.privateTo ? `<span class="glock" title="Samo ti vidiš ovu stranicu">${I.lock}</span>` : ""}
-      <div class="gt-b">${withPath && n.parentId ? `<div class="gpath">${esc(pathOf(n))}</div>` : ""}<h3>${esc(n.title || "Bez naslova")}</h3>${ex ? `<p class="gex">${esc(ex)}</p>` : ""}
-      <div class="meta2">${u ? `<img src="${esc(X.IMG[u.id])}" alt="">` : ""}<span>${ts ? esc(rel(ts)) : ""}${k ? ` · ${k} ${plural(k, "podstranica", "podstranice", "podstranica")}` : ""}</span></div></div>
+      <div class="gt-b">${path ? `<div class="gpath">${esc(path)}</div>` : ""}<h3>${esc(n.title || "Bez naslova")}</h3>${ex ? `<p class="gex">${esc(ex)}</p>` : ""}
+      <div class="meta2">${u ? `<img src="${esc(X.IMG[u.id])}" alt="" draggable="false">` : ""}<span>${ts ? esc(rel(ts)) : ""}${k ? ` · ${k} ${plural(k, "podstranica", "podstranice", "podstranica")}` : ""}</span></div></div>
     </div>`;
   }
-  function hub(anim, space) {
+  /* red foldera iznad stranica: fascikla iz koje vire listovi poslednjih stranica */
+  function folderRow(FS, roots, anim) {
+    const home = homeOf(hubSpace);
+    return `<div class="fcfolders${anim ? " enter" : ""}">${FS.map((F, i) => {
+      const L = roots.filter((n) => fidOf(n) === F.id),
+        th = [...L].sort(byUpd).slice(0, 3);
+      return `<button class="fcf" type="button" data-go="${esc(home + "~" + F.id)}" data-gf="${esc(F.id)}" style="--fc:${esc(fcol(F))};--i:${i}" aria-label="Folder ${esc(F.name || "Folder")}, ${L.length} ${pagesWord(L.length)}">
+      <span class="fcf-back" aria-hidden="true"></span>
+      <span class="fcf-th" aria-hidden="true">${th.map((n, k) => `<span class="gsh" style="--k:${k};--n:${th.length}"><span class="gsh-i">${n.icon ? emo(n.icon) : I.doc}</span><b>${esc(n.title || "Bez naslova")}</b><i></i><i></i><i></i></span>`).join("")}</span>
+      <span class="fcf-front"><span class="fcf-ic">${I.fold}</span><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${L.length} ${pagesWord(L.length)}</span></span></span>
+    </button>`;
+    }).join("")}</div>`;
+  }
+  function folderHead(F, n, anim) {
+    return `<div class="fcfh gfh${anim ? " enter" : ""}" style="--fc:${esc(fcol(F))}">
+      <button class="fcfh-up" type="button" data-go="${esc(homeOf(hubSpace))}" data-gf-up title="Nazad na sve stranice · prevuci stranicu ovde da je izvadiš iz foldera">${SV('<path d="M19 12H5M11 18l-6-6 6-6"/>', 2.2)}<span>Sve stranice</span></button>
+      <span class="fcfh-sl" aria-hidden="true">/</span>
+      <span class="fcfh-ic" aria-hidden="true">${I.fold}</span>
+      <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
+      <span class="fcfh-c">${n} ${pagesWord(n)}</span>
+      <button class="fcfh-ed" type="button" data-gf-edit="${esc(F.id)}" aria-label="Uredi folder" title="Naziv, boja, brisanje">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
+    </div>`;
+  }
+  let hubHtml = "";
+  function hub(anim, space, fid) {
     const box = $("#gpages");
     if (!box) return;
     if (space !== undefined && (space || null) !== hubSpace) {
@@ -1839,39 +1900,58 @@ window.SKNotes = function (X) {
       hq = "";
       $("#gq").value = "";
     }
+    if (fid !== undefined) hubFid = fid || null;
     if (!S.ready) {
-      box.innerHTML = "";
+      box.innerHTML = hubHtml = "";
       return;
     }
+    const F = folderOf(hubFid, hubSpace),
+      FS = F ? [] : foldersOf(hubSpace);
     const f = fold(hq.trim());
-    const mine = notes().filter((n) => spaceOf(n) === hubSpace);
+    const mine = notes().filter((n) => spaceOf(n) === hubSpace),
+      roots = kidsOf(null).filter((n) => !n.privateTo);
     const list = f
       ? mine
           .filter(
             (n) => fold(n.title).includes(f) || fold(plainOf(n.md)).includes(f),
           )
           .sort(byUpd)
-      : kidsOf(null).filter((n) => !n.privateTo);
+      : roots.filter((n) => fidOf(n) === (F ? F.id : null));
     /* privatne stranice (privateTo) su u svojoj sekciji; tuđe baza ni ne šalje */
-    const own = f ? [] : kidsOf(null).filter((n) => n.privateTo);
+    const own = f || F ? [] : kidsOf(null).filter((n) => n.privateTo);
     const d = (i) =>
       anim ? `animation-delay:${adl(0.16 + i * 0.05)}s` : "animation:none";
     const all = mine.filter((n) => !n.privateTo).length,
-      sec = anim ? "" : "animation:none";
-    box.innerHTML =
-      `<div class="gsec" style="${sec}"><h2>Stranice</h2><span>${all ? all + " " + plural(all, "stranica", "stranice", "stranica") : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje"}</span></div>` +
+      sec = anim ? "" : "animation:none",
+      row = f || !FS.length ? "" : folderRow(FS, roots, anim);
+    const html =
+      (F && !f
+        ? folderHead(F, list.length, anim)
+        : `<div class="gsec" style="${sec}"><h2>Stranice</h2><span>${all ? all + " " + pagesWord(all) : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje"}</span></div>`) +
+      row +
+      (row
+        ? `<div class="fcsec gfsec" style="${sec}"><span>Ostale stranice</span><i></i></div>`
+        : "") +
       (f && !list.length
         ? `<div class="state">Nema stranica za „${esc(hq.trim())}“.</div>`
         : `<div class="cpgrid gpgrid">${list.map((n, i) => tile(n, d(i + 1), !!f)).join("")}${f ? "" : `<button class="cptile add" data-gnew style="${d(list.length + 1)}"><span class="ci">${I.plus}</span>Nova stranica</button>`}</div>`) +
-      (f
+      (F && !f && !list.length
+        ? `<p class="gf-empty" style="${sec}">Folder je prazan. Napravi stranicu ovde ili premesti postojeću: ${touch() ? "" : "prevuci je na folder u svim stranicama ili "}izaberi folder u meniju stranice (⋯).</p>`
+        : "") +
+      (f || F
         ? ""
         : `<div class="gsec gsec-me" style="${sec}"><h2>Samo za tebe</h2><span>${I.lock}Niko drugi ne vidi ove stranice</span></div>` +
           `<div class="cpgrid gpgrid">${own.map((n, i) => tile(n, d(list.length + i + 2))).join("")}<button class="cptile add" data-gnew="me" style="${d(list.length + own.length + 2)}"><span class="ci">${I.lock}</span>Privatna stranica</button></div>`);
+    /* isti sadržaj se ne crta ponovo: hover, prevlačenje i animacija foldera ostaju */
+    if (html === hubHtml && box.firstChild) return;
+    box.innerHTML = hubHtml = html;
   }
-  /* priv: nova stranica u "Samo za tebe"; podstranica nasleđuje privatnost roditelja */
+  /* priv: nova stranica u "Samo za tebe"; podstranica nasleđuje privatnost roditelja;
+     glavna stranica napravljena u otvorenom folderu ide u taj folder */
   async function newPage(parentId, priv) {
     const now = Date.now(),
-      par = parentId && noteOf(parentId);
+      par = parentId && noteOf(parentId),
+      fid = !par && !priv && folderOf(hubFid, hubSpace) ? hubFid : null;
     const id = await api.add("notes", {
       title: "",
       icon: "",
@@ -1879,6 +1959,7 @@ window.SKNotes = function (X) {
       parentId: parentId || null,
       spaceId: parentId ? spaceOf(par) : hubSpace,
       privateTo: par ? par.privateTo || null : priv && me() ? me().id : null,
+      ...(fid ? { folderId: fid } : {}),
       order: now,
       createdAt: now,
       createdBy: me() ? me().id : null,
@@ -1904,8 +1985,6 @@ window.SKNotes = function (X) {
     const par = p.parentId && noteOf(p.parentId);
     const home = homeOf(spaceOf(p)),
       homeLbl = X.spaceLabel(spaceOf(p));
-    backTo = par ? "g-" + par.id : home;
-    $("#gpBackLbl").textContent = par ? par.title || "Bez naslova" : homeLbl;
     const chain = [];
     let q = par,
       g = 0;
@@ -1913,17 +1992,30 @@ window.SKNotes = function (X) {
       chain.unshift(q);
       q = q.parentId && noteOf(q.parentId);
     }
+    /* glavna stranica u folderu: folder je u putanji, a „nazad“ vodi u njega */
+    const F = folderOf(fidOf(chain[0] || p), spaceOf(p)),
+      fhome = F ? home + "~" + F.id : home;
+    backTo = par ? "g-" + par.id : fhome;
+    $("#gpBackLbl").textContent = par
+      ? par.title || "Bez naslova"
+      : F
+        ? F.name || "Folder"
+        : homeLbl;
     const cr = $("#gpCrumbs");
-    cr.hidden = !chain.length;
-    cr.innerHTML = chain.length
-      ? `<button type="button" data-go="${esc(home)}">${esc(homeLbl)}</button>` +
-        chain
-          .map(
-            (n) =>
-              `<i aria-hidden="true">/</i><button type="button" data-go="g-${esc(n.id)}">${n.icon ? emo(n.icon) : ""}<span>${esc(n.title || "Bez naslova")}</span></button>`,
-          )
-          .join("")
-      : "";
+    cr.hidden = !chain.length && !F;
+    cr.innerHTML =
+      chain.length || F
+        ? `<button type="button" data-go="${esc(home)}">${esc(homeLbl)}</button>` +
+          (F
+            ? `<i aria-hidden="true">/</i><button type="button" class="gp-cf" data-go="${esc(fhome)}" style="--fc:${esc(fcol(F))}">${I.fold}<span>${esc(F.name || "Folder")}</span></button>`
+            : "") +
+          chain
+            .map(
+              (n) =>
+                `<i aria-hidden="true">/</i><button type="button" data-go="g-${esc(n.id)}">${n.icon ? emo(n.icon) : ""}<span>${esc(n.title || "Bez naslova")}</span></button>`,
+            )
+            .join("")
+        : "";
     const ic = $("#gpIcon");
     ic.hidden = !p.icon;
     if (p.icon && ic.dataset.ch !== p.icon) {
@@ -2121,7 +2213,8 @@ window.SKNotes = function (X) {
         id,
         data: JSON.parse(JSON.stringify(data)),
       }));
-    const par = p.parentId && noteOf(p.parentId);
+    const par = p.parentId && noteOf(p.parentId),
+      back = par ? "g-" + par.id : hubOf(p);
     let parMd = null,
       newParMd = null;
     if (par && String(par.md || "").includes("(#g-" + id + ")")) {
@@ -2138,7 +2231,7 @@ window.SKNotes = function (X) {
     try {
       for (const d of docs) await api.del("notes", d.id);
       if (parMd !== null) await api.upd("notes", par.id, { md: newParMd });
-      X.nav(par ? "g-" + par.id : homeOf(spaceOf(p)));
+      X.nav(back);
       const more = docs.length - 1;
       toast(
         `Obrisano: ${p.title || "Bez naslova"}${more ? ` (+${more} ${plural(more, "podstranica", "podstranice", "podstranica")})` : ""}`,
@@ -4877,8 +4970,10 @@ window.SKNotes = function (X) {
     /* privatnost bira autor glavne stranice; podstranice je nasleđuju */
     const p = noteOf(cur),
       canPriv =
-        p && !p.parentId && (p.privateTo || (me() && p.createdBy === me().id));
-    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
+        p && !p.parentId && (p.privateTo || (me() && p.createdBy === me().id)),
+      F = p && folderOf(fidOf(p), spaceOf(p));
+    /* folder biraju samo glavne stranice vidljive timu */
+    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${p && !p.parentId && !p.privateTo ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
     document.body.appendChild(M);
     const W = Math.min(260, innerWidth - 16);
     M.style.width = W + "px";
@@ -4894,10 +4989,17 @@ window.SKNotes = function (X) {
   document.addEventListener("click", (e) => {
     const b = pmenu && e.target.closest("[data-pm]");
     if (!b) return;
+    const a = b.dataset.pm;
+    /* „Premesti u folder“: isti meni prikaže spisak foldera */
+    if (a === "fold") {
+      foldMenu(pmenu, noteOf(cur));
+      return;
+    }
     pmenu.remove();
     pmenu = null;
-    const a = b.dataset.pm;
-    if (a === "sub") {
+    if (a === "mv") moveTo(noteOf(cur), b.dataset.f || null);
+    else if (a === "mvnew") newFolder(noteOf(cur));
+    else if (a === "sub") {
       flush();
       createAndOpen(cur);
     } else if (a === "copy")
@@ -4927,8 +5029,119 @@ window.SKNotes = function (X) {
     }
   }
 
+  /* ---------------- folderi: pravljenje, uređivanje, premeštanje ---------------- */
+  function foldUI() {
+    if (!$("#general").hidden) hub(false);
+    const p = rendered && !isScript() && noteOf(rendered);
+    if (p) head(p);
+  }
+  function foldMenu(M, p) {
+    if (!p) return;
+    const cf = fidOf(p),
+      ck = `<span class="check">${I.check}</span>`;
+    M.innerHTML =
+      `<div class="nm-h">Premesti u folder</div>` +
+      `<button type="button" data-pm="mv" data-f="">${I.doc}<span>Bez foldera</span>${cf ? "" : ck}</button>` +
+      foldersOf(spaceOf(p))
+        .map(
+          (F) =>
+            `<button type="button" data-pm="mv" data-f="${esc(F.id)}" class="gm-fold" style="--fc:${esc(fcol(F))}">${I.fold}<span>${esc(F.name || "Folder")}</span>${F.id === cf ? ck : ""}</button>`,
+        )
+        .join("") +
+      `<div class="nm-sep"></div><button type="button" data-pm="mvnew">${I.plus}<span>Novi folder…</span></button>`;
+  }
+  async function moveTo(n, fid, quiet) {
+    if (!n || n.parentId || n.privateTo) return;
+    const to = folderOf(fid, spaceOf(n)) ? fid : null,
+      from = fidOf(n);
+    if (from === to) return;
+    const p = api.upd("notes", n.id, { folderId: to });
+    foldUI();
+    const tile = to && $(`#gpages .fcf[data-gf="${CSS.escape(to)}"]`);
+    if (tile) {
+      tile.classList.add("got");
+      setTimeout(() => tile.classList.remove("got"), 700);
+    }
+    try {
+      await p;
+    } catch (e) {
+      n.folderId = from;
+      foldUI();
+      toast(errMsg(e));
+      return;
+    }
+    if (quiet) return;
+    const F = folderOf(to, spaceOf(n));
+    toast(
+      F ? `Premešteno u „${F.name || "Folder"}“` : "Premešteno u sve stranice",
+      () => moveTo(noteOf(n.id), from, true),
+    );
+  }
+  /* move: stranica koja odmah ide u novi folder (meni stranice) */
+  function newFolder(move) {
+    const sp = move ? spaceOf(move) : hubSpace,
+      cols = X.foldCols();
+    X.foldDlg({
+      color: cols[foldersOf(sp).length % cols.length],
+      save: async (name, color) => {
+        const id = "f" + Math.random().toString(36).slice(2, 11),
+          now = Date.now();
+        try {
+          await api.set("noteFolders", id, {
+            name,
+            color,
+            spaceId: sp,
+            order: now,
+            createdAt: now,
+            createdBy: me() ? me().id : null,
+          });
+        } catch (e) {
+          toast(errMsg(e));
+          return;
+        }
+        foldUI();
+        if (move) moveTo(noteOf(move.id), id);
+        else toast(`Folder „${name}“ je spreman. Prevuci stranice na njega.`);
+      },
+    });
+  }
+  function editFolder(F) {
+    X.foldDlg({
+      F,
+      save: async (name, color) => {
+        const p = api.upd("noteFolders", F.id, { name, color });
+        foldUI();
+        try {
+          await p;
+        } catch (e) {
+          toast(errMsg(e));
+        }
+      },
+      del: async () => {
+        const { id, ...data } = F,
+          n = notes().filter((x) => fidOf(x) === id).length;
+        if (hubFid === id && !$("#general").hidden)
+          X.nav(homeOf(F.spaceId || null));
+        /* stranice zadržavaju folderId, pa ih „Poništi“ vraća baš u ovaj folder */
+        try {
+          await api.del("noteFolders", id);
+        } catch (e) {
+          toast(errMsg(e));
+          return;
+        }
+        toast(
+          n
+            ? `Folder obrisan. ${n} ${plural(n, "stranica je", "stranice su", "stranica je")} sad u svim stranicama.`
+            : "Folder obrisan",
+          () => api.set("noteFolders", id, data).catch((e) => toast(errMsg(e))),
+        );
+      },
+    });
+  }
+
   /* ---------------- hub controls ---------------- */
   $("#gNew").addEventListener("click", () => createAndOpen(null));
+  $("#gNewF").addEventListener("click", () => newFolder());
   $("#gq").addEventListener("input", (e) => {
     hq = e.target.value;
     hub(false);
@@ -4936,10 +5149,72 @@ window.SKNotes = function (X) {
   $("#gpages").addEventListener("click", (e) => {
     const g = e.target.closest("[data-gnew]");
     if (g) createAndOpen(null, g.dataset.gnew === "me");
+    const fe = e.target.closest("[data-gf-edit]");
+    if (fe) {
+      const F = folderOf(fe.dataset.gfEdit, hubSpace);
+      if (F) editFolder(F);
+    }
   });
+  /* dugmad (folder, „Sve stranice“) Enter već pretvara u klik */
   $("#gpages").addEventListener("keydown", (e) => {
-    const t = e.key === "Enter" && e.target.closest("[data-go]");
+    const t = e.key === "Enter" && e.target.closest("[data-go]:not(button)");
     if (t) X.nav(t.dataset.go);
+  });
+  /* prevlačenje stranice (miš) na folder, ili na „Sve stranice“ dok je folder otvoren */
+  let dragId = null;
+  const dropAt = (e) =>
+    dragId && e.target.closest
+      ? e.target.closest("[data-gf], [data-gf-up]")
+      : null;
+  const dropOff = () =>
+    $("#gpages")
+      .querySelectorAll(".drop")
+      .forEach((x) => x.classList.remove("drop"));
+  /* hub se može ponovo nacrtati usred prevlačenja (tuđa izmena), pa dragend ne stigne do
+     #gpages: stanje se čisti i na drop i na nivou prozora */
+  function dragEnd() {
+    dragId = null;
+    dropOff();
+    $("#gpages")
+      .querySelectorAll(".gtile.drag")
+      .forEach((x) => x.classList.remove("drag"));
+    $("#gpages").classList.remove("dragging");
+  }
+  $("#gpages").addEventListener("dragstart", (e) => {
+    const t = e.target.closest && e.target.closest(".gtile[draggable=true]");
+    if (!t || !e.dataTransfer) return;
+    dragId = t.dataset.gid;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/x-skeylo-page", dragId);
+    requestAnimationFrame(() => {
+      t.classList.add("drag");
+      $("#gpages").classList.add("dragging");
+    });
+  });
+  $("#gpages").addEventListener("dragend", dragEnd);
+  addEventListener("dragend", () => dragId && dragEnd(), true);
+  addEventListener("drop", () => dragId && setTimeout(dragEnd), true);
+  $("#gpages").addEventListener("dragover", (e) => {
+    const t = dropAt(e);
+    if (!t) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!t.classList.contains("drop")) {
+      dropOff();
+      t.classList.add("drop");
+    }
+  });
+  $("#gpages").addEventListener("dragleave", (e) => {
+    const t = dropAt(e);
+    if (t && !t.contains(e.relatedTarget)) t.classList.remove("drop");
+  });
+  $("#gpages").addEventListener("drop", (e) => {
+    const t = dropAt(e);
+    if (!t) return;
+    e.preventDefault();
+    const n = noteOf(dragId);
+    dragEnd();
+    moveTo(n, t.dataset.gf || null);
   });
   $("#gpages").addEventListener("pointermove", (e) => {
     const t = e.target.closest(".cptile");

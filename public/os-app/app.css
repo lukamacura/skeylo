@@ -13211,7 +13211,8 @@ html.fcv-open {
   display: block;
   z-index: 1;
 }
-.fcf-th img {
+/* sličice (FC) ili listovi stranica (General) */
+.fcf-th > * {
   --fo: calc(var(--k) - (var(--n) - 1) / 2);
   position: absolute;
   left: 50%;
@@ -13301,7 +13302,7 @@ html.fcv-open {
   .fcf:hover .fcf-front {
     transform: perspective(700px) rotateX(-12deg);
   }
-  .fcf:hover .fcf-th img {
+  .fcf:hover .fcf-th > * {
     transform: translateX(calc(var(--fo) * 58%))
       translateY(calc(var(--fo) * var(--fo) * 6px - 10px))
       rotate(calc(var(--fo) * 11deg));
@@ -13312,7 +13313,7 @@ html.fcv-open {
   outline-offset: 4px;
 }
 /* prevlačenje kreative na folder */
-#fcBody.dragging .fcf .fcf-front {
+:is(#fcBody, #gpages).dragging .fcf .fcf-front {
   box-shadow:
     0 0 0 1.5px color-mix(in srgb, var(--fc) 80%, transparent) inset,
     0 18px 34px -22px #000;
@@ -13326,7 +13327,7 @@ html.fcv-open {
     0 0 0 2px var(--fc) inset,
     0 24px 40px -18px color-mix(in srgb, var(--fc) 60%, #000);
 }
-.fcf.drop .fcf-th img {
+.fcf.drop .fcf-th > * {
   transform: translateX(calc(var(--fo) * 62%)) translateY(-16px)
     rotate(calc(var(--fo) * 12deg));
 }
@@ -13409,7 +13410,7 @@ html.fcv-open {
   color: var(--cream);
   background: rgba(255, 255, 255, 0.04);
 }
-#fcBody.dragging .fcfh-up {
+:is(#fcBody, #gpages).dragging .fcfh-up {
   color: var(--cream);
   border-color: color-mix(in srgb, var(--cream) 35%, transparent);
 }
