@@ -594,3 +594,255 @@ html.gated body > :not(.gate) {
     animation: none;
   }
 }
+
+/* ---------- Final Creatives: folderi iz Skeylo OS-a ---------- */
+.gfolds {
+  list-style: none;
+  margin: 0 0 clamp(34px, 4vw, 52px);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(22px, 2.6vw, 34px) clamp(14px, 1.8vw, 24px);
+}
+.gfi {
+  min-width: 0;
+}
+.gfold {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10.5;
+  text-align: left;
+  color: var(--cream);
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.6s var(--spring);
+}
+/* zadnja strana fascikle sa jezičkom */
+.gf-back {
+  position: absolute;
+  inset: 16px 0 0;
+  border-radius: 8px 26px 26px 26px;
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--fc) 34%, var(--bg-3)),
+    color-mix(in srgb, var(--fc) 18%, var(--bg-2))
+  );
+  border: 1px solid color-mix(in srgb, var(--fc) 26%, transparent);
+}
+.gf-back::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -16px;
+  width: 40%;
+  height: 24px;
+  border-radius: 16px 18px 0 0;
+  background: color-mix(in srgb, var(--fc) 34%, var(--bg-3));
+  border: inherit;
+  border-bottom: 0;
+}
+/* kreative koje vire iz fascikle */
+.gf-th {
+  position: absolute;
+  inset: 30px 14% 34%;
+  z-index: 1;
+}
+.gf-th img {
+  --gfo: calc(var(--k) - (var(--n) - 1) / 2);
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 40%;
+  aspect-ratio: 3 / 4;
+  margin-left: -20%;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow:
+    0 14px 28px -12px #000,
+    0 0 0 1.5px rgba(251, 228, 223, 0.5);
+  transform: translateX(calc(var(--gfo) * 48%))
+    translateY(calc(var(--gfo) * var(--gfo) * 8px))
+    rotate(calc(var(--gfo) * 8deg));
+  transition: transform 0.7s var(--spring);
+}
+.gf-front {
+  position: absolute;
+  inset: 44% 0 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: end;
+  align-items: center;
+  column-gap: 12px;
+  padding: 18px 18px 20px 22px;
+  border-radius: 22px 22px 26px 26px;
+  background: linear-gradient(
+    172deg,
+    color-mix(in srgb, var(--fc) 50%, var(--bg-3)),
+    color-mix(in srgb, var(--fc) 24%, var(--bg-2)) 88%
+  );
+  border-top: 1px solid color-mix(in srgb, var(--fc) 70%, #fff 15%);
+  box-shadow:
+    0 -14px 30px -18px rgba(0, 0, 0, 0.8),
+    0 34px 70px -42px #000;
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.6s var(--spring),
+    box-shadow 0.4s;
+}
+.gf-n {
+  grid-column: 1;
+  min-width: 0;
+  font-family: var(--f-display);
+  font-size: clamp(22px, 1.9vw, 27px);
+  line-height: 1.12;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gf-c {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: color-mix(in srgb, var(--cream) 72%, transparent);
+}
+.gf-c .scm {
+  position: static;
+  margin: 0;
+}
+.gf-go {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.22);
+  transition:
+    transform 0.5s var(--spring),
+    background 0.3s;
+}
+.gf-go svg {
+  width: 18px;
+  height: 18px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gfold:hover {
+    transform: translateY(-6px);
+  }
+  .gfold:hover .gf-front {
+    transform: perspective(800px) rotateX(-12deg);
+    box-shadow:
+      0 -14px 30px -18px rgba(0, 0, 0, 0.8),
+      0 50px 80px -40px #000,
+      0 0 70px -30px var(--fc);
+  }
+  .gfold:hover .gf-th img {
+    transform: translateX(calc(var(--gfo) * 60%))
+      translateY(calc(var(--gfo) * var(--gfo) * 8px - 12px))
+      rotate(calc(var(--gfo) * 11deg));
+  }
+  .gfold:hover .gf-go {
+    transform: translateX(3px);
+    background: color-mix(in srgb, var(--fc) 45%, transparent);
+  }
+}
+.gfold:active .gf-front {
+  transform: perspective(800px) rotateX(-5deg) scale(0.99);
+}
+.gfold:focus-visible {
+  outline: 2px solid var(--fc);
+  outline-offset: 6px;
+  border-radius: 26px;
+}
+.gsec {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 clamp(18px, 2vw, 26px);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.gsec i {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.v-gal.enter .gfi,
+.v-gal.enter .gsec {
+  animation: gin 0.9s var(--ease) both;
+  animation-delay: calc(0.25s + var(--i) * 0.09s);
+}
+/* otvoren folder: naslov = ime foldera, ispod period i broj kreativa */
+.v-gal.infold .rhead {
+  margin-bottom: 12px;
+}
+.gfk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 clamp(26px, 3vw, 40px);
+  color: var(--muted);
+  font-size: 15px;
+}
+.gfk i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--fc);
+  box-shadow: 0 0 14px var(--fc);
+}
+.v-gal.enter .gfk {
+  animation: tlin 0.8s var(--ease) both;
+  animation-delay: 0.45s;
+}
+@media (max-width: 760px) {
+  .gfolds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+  }
+  .gfold {
+    aspect-ratio: 6 / 5;
+  }
+  .gf-back {
+    inset: 12px 0 0;
+    border-radius: 6px 20px 20px 20px;
+  }
+  .gf-back::before {
+    top: -12px;
+    height: 18px;
+    border-radius: 12px 14px 0 0;
+  }
+  .gf-th {
+    inset: 22px 8% 38%;
+  }
+  .gf-front {
+    inset: 47% 0 0;
+    padding: 12px 14px 14px;
+    border-radius: 18px 18px 20px 20px;
+  }
+  .gf-n {
+    font-size: 19px;
+  }
+  .gf-c {
+    font-size: 12px;
+  }
+  .gf-go {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gf-th img,
+  .gf-front,
+  .gfold {
+    transition: none;
+  }
+}

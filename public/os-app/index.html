@@ -425,6 +425,7 @@
     <div class="cm-id" id="fcId"></div>
     <div class="fc-acts" id="fcActs">
       <button class="pill" id="fcLink" type="button" title="Link za klijenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.2 1.2"/><path d="M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.2-1.2"/></svg><span class="lbl">Link za klijenta</span></button>
+      <button class="pill" id="fcNewF" type="button" title="Novi folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2.2 2.4h7.2A2.5 2.5 0 0 1 21 9.9v7.6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M12 11v5M9.5 13.5h5"/></svg><span class="lbl">Novi folder</span></button>
       <button class="pill" id="fcAdd" type="button" title="Dodaj kreative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">Dodaj</span></button>
       <button class="pill solid" id="fcAll" type="button" title="Preuzmi sve kreative u punom kvalitetu"><i class="fcpr"></i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span class="lbl" id="fcAllLbl">Export All</span></button>
     </div>
@@ -625,6 +626,7 @@
       <div class="fcv-tools">
         <button class="pill" type="button" data-fcv="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Export</button>
         <button class="pill" type="button" data-fcv="replace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><path d="M21 4v5h-5M3 20v-5h5"/></svg>Zameni</button>
+        <label class="pill fcv-fold" id="fcvFold" title="Folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2.2 2.4h7.2A2.5 2.5 0 0 1 21 9.9v7.6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/></svg><span id="fcvFoldL">Folder</span><select id="fcvFoldS" aria-label="Premesti u folder"></select></label>
         <button class="pill del" type="button" data-fcv="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>Obriši</button>
       </div>
       <div class="fcv-scroll" id="fcvScroll"></div>
@@ -646,6 +648,20 @@
     </div>
     <button class="fca-x" type="button" data-ask="cancel">Otkaži</button>
   </div>
+</div>
+<div class="fcask fcfd" id="fcFold" hidden role="dialog" aria-modal="true" aria-labelledby="fcFoldT">
+  <form class="fca-b" id="fcFoldF" autocomplete="off">
+    <span class="fcfd-pv" aria-hidden="true"><i class="fcfd-tab"></i><i class="fcfd-sh"></i><i class="fcfd-sh b"></i><i class="fcfd-fr"></i></span>
+    <h3 id="fcFoldT">Novi folder</h3>
+    <input class="fcfd-in" id="fcFoldN" maxlength="40" spellcheck="false" placeholder="Naziv foldera" aria-label="Naziv foldera">
+    <div class="fcfd-c" id="fcFoldC" role="radiogroup" aria-label="Boja foldera"></div>
+    <div class="fcfd-b">
+      <button class="pill del" type="button" id="fcFoldDel" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg><span>Obriši folder</span></button>
+      <span class="fcfd-sp"></span>
+      <button class="pill" type="button" data-fold="cancel">Otkaži</button>
+      <button class="pill solid" type="submit" id="fcFoldOk">Napravi</button>
+    </div>
+  </form>
 </div>
 <div class="fcyay" id="fcYay" hidden aria-live="polite"><canvas id="fcYayCv"></canvas><div class="fy"><div class="fy-t"><span>Bravo,</span> <span class="nm" id="fcYayName"></span></div><i class="fy-l"></i><div class="fy-s" id="fcYaySub"></div></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" hidden>Poništi</button></div>

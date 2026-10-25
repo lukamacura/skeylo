@@ -978,16 +978,19 @@
       firstCM = true;
       renderCM();
     } else if (h.startsWith("fc-")) {
+      /* fc-{mesec}, fc-{mesec}~{folder}, fc-{mesec}.{kreativa} */
       const x = h.slice(3),
         k = x.indexOf("."),
-        mid = k < 0 ? x : x.slice(0, k),
-        cid = k < 0 ? null : x.slice(k + 1) || null;
+        head = k < 0 ? x : x.slice(0, k),
+        q = head.indexOf("~"),
+        mid = q < 0 ? head : head.slice(0, q),
+        cid = k < 0 ? null : x.slice(k + 1) || null,
+        oc = cid && S.creatives.find((c) => c.id === cid),
+        fid = oc ? fcFid(oc) : q < 0 ? null : head.slice(q + 1) || null;
       const same = view.name === "fc" && view.id === mid && !$("#fc").hidden;
-      view = { name: "fc", id: mid, cid };
-      if (!same) {
-        show("fc");
-        firstFC = true;
-      }
+      if (!same || view.fid !== fid) firstFC = true;
+      view = { name: "fc", id: mid, cid, fid };
+      if (!same) show("fc");
       renderFC();
       fcSyncViewer();
     } else if (h.startsWith("s-")) {
@@ -1229,11 +1232,23 @@
   function monthIndex(it) {
     return it.year * 12 + (it.month - 1);
   }
-  function currentMonthItem(items) {
+  function latestMonthItem(items) {
     const ms = items.filter((i) => i.type === "month");
     return ms.length
       ? ms.reduce((a, b) => (monthIndex(b) > monthIndex(a) ? b : a))
       : null;
+  }
+  /* aktuelni = kalendarski mesec; meseci otvoreni unapred ne preuzimaju oznaku */
+  function currentMonthItem(items) {
+    const d = new Date(),
+      now = d.getFullYear() * 12 + d.getMonth(),
+      ms = items.filter((i) => i.type === "month"),
+      past = ms.filter((i) => monthIndex(i) <= now);
+    return past.length
+      ? latestMonthItem(past)
+      : ms.length
+        ? ms.reduce((a, b) => (monthIndex(b) < monthIndex(a) ? b : a))
+        : null;
   }
   function markFresh(id) {
     S.fresh.add(id);
@@ -1408,7 +1423,7 @@
   }
   function addMonth(c) {
     const items = S.items.filter((i) => i.clientId === c.id);
-    const cur = currentMonthItem(items);
+    const cur = latestMonthItem(items);
     let y, m;
     if (cur) {
       m = cur.month + 1;
@@ -4735,6 +4750,10 @@
           n.append(sp);
         }
         const keep = {};
+        if (tag === "OL") {
+          const st = parseInt(n.getAttribute("start"), 10);
+          if (st >= 0 && st !== 1) keep.start = st;
+        }
         if (tag === "IMG") {
           const src = n.getAttribute("src");
           if (!okUrl(src)) {
@@ -5509,8 +5528,8 @@
         false,
         tag === "BLOCKQUOTE" ? "<p>" : "<blockquote>",
       );
-    else if (id === "ul") document.execCommand("insertUnorderedList");
-    else if (id === "ol") document.execCommand("insertOrderedList");
+    else if (id === "ul") listCmd("insertUnorderedList");
+    else if (id === "ol") listCmd("insertOrderedList");
     else if (id === "grey") toggleGrey();
     else fbCmd(id);
     b.classList.remove("hit");
@@ -5610,8 +5629,41 @@
     const k = m[1];
     if (k[0] === "#")
       document.execCommand("formatBlock", false, "<h" + k.length + ">");
-    else if (k === "1.") document.execCommand("insertOrderedList");
-    else document.execCommand("insertUnorderedList");
+    else if (k === "1.") listCmd("insertOrderedList");
+    else listCmd("insertUnorderedList");
+  }
+  /* Chrome od praznog pasusa pravi <p><ol>…</ol></p>: lista ostaje zarobljena u pasusu,
+     sledeće "1. " / "- " posle nje više ne radi i čuvaju se prazni pasusi. Lista se izvlači. */
+  function listCmd(cmd) {
+    document.execCommand(cmd);
+    const s = getSelection(),
+      r = s.rangeCount ? s.getRangeAt(0) : null,
+      at = r && [r.startContainer, r.startOffset, r.endContainer, r.endOffset];
+    let hit = false;
+    editor.querySelectorAll("p").forEach((p) => {
+      if (!p.isConnected || !p.querySelector(":scope > ol, :scope > ul"))
+        return;
+      hit = true;
+      const out = [];
+      let buf = null;
+      [...p.childNodes].forEach((n) => {
+        if (/^(OL|UL|P|H[1-3]|BLOCKQUOTE|DIV|HR|TABLE)$/.test(n.nodeName)) {
+          buf = null;
+          out.push(n);
+        } else if (buf || (n.nodeName !== "BR" && n.textContent.trim())) {
+          if (!buf) out.push((buf = document.createElement("p")));
+          buf.append(n);
+        }
+      });
+      p.replaceWith(...out);
+    });
+    if (hit && at && at[0].isConnected && at[2].isConnected) {
+      const q = document.createRange();
+      q.setStart(at[0], at[1]);
+      q.setEnd(at[2], at[3]);
+      s.removeAllRanges();
+      s.addRange(q);
+    }
   }
   const SLASH = [
     {
@@ -5792,8 +5844,8 @@
     if (it.id === "p") document.execCommand("formatBlock", false, "<p>");
     else if (/^h[123]$/.test(it.id))
       document.execCommand("formatBlock", false, "<" + it.id + ">");
-    else if (it.id === "ul") document.execCommand("insertUnorderedList");
-    else if (it.id === "ol") document.execCommand("insertOrderedList");
+    else if (it.id === "ul") listCmd("insertUnorderedList");
+    else if (it.id === "ol") listCmd("insertOrderedList");
     else if (it.id === "hr")
       document.execCommand("insertHTML", false, "<hr><p><br></p>");
     else if (it.id === "table") {
@@ -7114,9 +7166,10 @@
       if (n.nodeType !== 1) return;
       if (n.tagName === "HR") return;
       if (n.tagName === "UL" || n.tagName === "OL") {
-        [...n.children].forEach((li) => {
+        const st = n.tagName === "OL" ? n.start : null;
+        [...n.children].forEach((li, k) => {
           const p = document.createElement("p");
-          p.innerHTML = "• " + li.innerHTML;
+          p.innerHTML = (st != null ? st + k + ". " : "• ") + li.innerHTML;
           push(p);
         });
         return;
@@ -10444,6 +10497,36 @@
           (a.createdAt || 0) - (b.createdAt || 0),
       );
   }
+  /* ---------- folderi ----------
+     items/{mesec}.fcFolders = [{id, name, color, order}], kreativa.folderId.
+     Kreativa čiji folder više ne postoji je u glavnom prikazu (brisanje foldera ne dira kreative). */
+  const FC_FCOL = [
+    "#e1802c",
+    "#f3b04c",
+    "#ff7a6b",
+    "#e0679a",
+    "#a98bff",
+    "#5b9cf0",
+    "#4fbfa8",
+    "#8fc25a",
+  ];
+  const IC_FOLD = SV(
+    '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2.2 2.4h7.2A2.5 2.5 0 0 1 21 9.9v7.6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/>',
+  );
+  function fcFolders(mid) {
+    const it = S.items.find((i) => i.id === mid);
+    return ((it && it.fcFolders) || [])
+      .filter((f) => f && f.id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+  const fcFolder = (mid, fid) =>
+    (fid && fcFolders(mid).find((f) => f.id === fid)) || null;
+  const fcFid = (c) =>
+    c && c.folderId && fcFolder(c.monthId, c.folderId) ? c.folderId : null;
+  const creativesIn = (mid, fid) =>
+    creativesOf(mid).filter((c) => fcFid(c) === (fid || null));
+  const fcHash = () => "fc-" + view.id + (view.fid ? "~" + view.fid : "");
+  const fcFCol = (f) => (f && f.color) || FC_FCOL[0];
   function fcOpenCC(cid) {
     return S.creativeComments.filter(
       (x) => x.creativeId === cid && !x.resolved,
@@ -10475,12 +10558,13 @@
           Date.now().toString(36) +
           Math.random().toString(36).slice(2, 7);
   }
-  function fcLinkOf(it) {
+  function fcLinkOf(it, fid) {
     const c = S.clients.find((x) => x.id === it.clientId) || {};
     return (
       String(c.crmUrl || CRM_BASE).replace(/#.*$/, "") +
       "#creatives." +
-      encodeURIComponent(it.id)
+      encodeURIComponent(it.id) +
+      (fid ? ".~" + encodeURIComponent(fid) : "")
     );
   }
 
@@ -10744,6 +10828,14 @@
         '<div class="state"><b>Ovaj mesec ne postoji</b>Možda je obrisan.<button class="pill" data-go="projects">Nazad na projekte</button></div>';
       return;
     }
+    /* otvoren folder je obrisan (npr. neko drugi ga je obrisao): nazad u glavni prikaz */
+    if (view.fid && !fcFolder(it.id, view.fid)) {
+      view.fid = null;
+      if (!view.cid) {
+        history.replaceState(null, "", "#" + fcHash());
+        curHash = fcHash();
+      }
+    }
     const c = S.clients.find((x) => x.id === it.clientId) || {
       id: "",
       name: "",
@@ -10753,37 +10845,55 @@
     $("#fcActs").hidden = false;
     const anim = firstFC;
     firstFC = false;
+    const F = view.fid ? fcFolder(it.id, view.fid) : null,
+      FS = F ? [] : fcFolders(it.id);
     $("#fcId").style.setProperty("--c", c.color || "#e1802c");
     $("#fcId").innerHTML =
       `${logo(c, "lg-ic")}<div><h1><span class="w"><span>Final Creatives</span></span></h1><div class="sub">${esc(c.name)} · ${esc(it.title)}</div></div>`;
     if (!anim) $("#fcId .w>span").style.animation = "none";
-    $("#fcBackLbl").textContent = it.title;
-    const L = creativesOf(it.id),
+    $("#fcBackLbl").textContent = F ? "Sve kreative" : it.title;
+    $("#fcNewF").hidden = !!F;
+    $("#fcAllLbl").textContent = F ? "Export foldera" : "Export All";
+    const L = creativesIn(it.id, view.fid),
       ups = [...FCUP.values()].filter(
-        (u) => u.monthId === it.id && !L.some((x) => x.id === u.id),
+        (u) =>
+          u.monthId === it.id &&
+          (u.folderId || null) === (view.fid || null) &&
+          !L.some((x) => x.id === u.id),
       );
-    $("#fcAll").disabled = !L.length;
+    $("#fcAll").disabled = !(F ? L : creativesOf(it.id)).length;
     $("#fcAdd").hidden = !fcCanUp();
-    if (!L.length && !ups.length) {
-      body.innerHTML = fcCanUp()
-        ? `<div class="fcempty" id="fcEmpty" role="button" tabindex="0"><span class="fce-o">${IC_FCUP}</span><b>Prevuci kreative ovde</b><span>ili klikni da ih izabereš</span></div>`
-        : `<div class="state"><b>Još nema kreativa</b>Otpremanje je dostupno uredniku Skeylo OS-a.</div>`;
-      return;
-    }
-    const sig =
-      L.map((x) =>
-        [
-          x.id,
-          x.title,
-          fcPoster(x),
-          (x.files || []).length,
-          x.v || 1,
-          fcOpenCC(x.id).length + fcOpenN(x.id).length,
-        ].join("~"),
-      ).join("|") +
-      "#" +
-      ups.map((u) => u.id).join("|");
-    const g = body.querySelector(".fcgrid");
+    const all = creativesOf(it.id),
+      sig =
+        (F ? `F${F.id}~${F.name}~${fcFCol(F)}` : "R") +
+        "@" +
+        FS.map((f) =>
+          [
+            f.id,
+            f.name,
+            fcFCol(f),
+            all
+              .filter((x) => fcFid(x) === f.id)
+              .map((x) => x.id + fcPoster(x))
+              .join(","),
+          ].join("~"),
+        ).join("|") +
+        "@" +
+        L.map((x) =>
+          [
+            x.id,
+            x.title,
+            fcPoster(x),
+            (x.files || []).length,
+            x.v || 1,
+            fcOpenCC(x.id).length + fcOpenN(x.id).length,
+          ].join("~"),
+        ).join("|") +
+        "#" +
+        ups.map((u) => u.id).join("|") +
+        "#" +
+        fcCanUp();
+    const g = body.querySelector(".fcwrap");
     if (g && g.dataset.sig === sig) {
       ups.forEach(fcPaintUp);
       return;
@@ -10791,7 +10901,16 @@
     if (fcHov) {
       fcHover(null);
     }
-    body.innerHTML = `<div class="fcgrid${anim ? " enter" : ""}" data-sig="${esc(sig)}">${L.map((x, i) => fcCard(x, i)).join("")}${ups.map((u, k) => fcUpCard(u, L.length + k)).join("")}</div>`;
+    const head = F ? fcFolderHead(F, L.length, anim) : "",
+      row = FS.length ? fcFolderRow(FS, all, anim) : "";
+    let grid;
+    if (!L.length && !ups.length)
+      grid = fcCanUp()
+        ? `<div class="fcempty${F ? " infold" : ""}" id="fcEmpty" role="button" tabindex="0"${F ? ` style="--fc:${esc(fcFCol(F))}"` : ""}><span class="fce-o">${F ? IC_FOLD : IC_FCUP}</span><b>${F ? "Prevuci kreative u folder" : "Prevuci kreative ovde"}</b><span>${F ? "ili klikni da ih izabereš · postojeće premesti iz pregleda kreative" : "ili klikni da ih izabereš"}</span></div>`
+        : `<div class="state"><b>${F ? "Folder je prazan" : "Još nema kreativa"}</b>${F ? "" : "Otpremanje je dostupno uredniku Skeylo OS-a."}</div>`;
+    else
+      grid = `<div class="fcgrid${anim ? " enter" : ""}">${L.map((x, i) => fcCard(x, i)).join("")}${ups.map((u, k) => fcUpCard(u, L.length + k)).join("")}</div>`;
+    body.innerHTML = `<div class="fcwrap" data-sig="${esc(sig)}">${head}${row}${row && (L.length || ups.length) ? `<div class="fcsec"><span>Kreative</span><i></i></div>` : ""}${grid}</div>`;
     ups.forEach(fcPaintUp);
     L.forEach((x) => {
       if (FC_NEW.has(x.id)) {
@@ -10817,6 +10936,32 @@
       }
     });
   }
+  /* red foldera iznad kreativa: kartica-fascikla sa tri sličice koje vire */
+  function fcFolderRow(FS, all, anim) {
+    return `<div class="fcfolders${anim ? " enter" : ""}">${FS.map((f, i) => {
+      const L = all.filter((x) => fcFid(x) === f.id),
+        th = L.map(fcPoster).filter(Boolean).slice(0, 3),
+        n = L.reduce(
+          (a, x) => a + fcOpenCC(x.id).length + fcOpenN(x.id).length,
+          0,
+        );
+      return `<button class="fcf" type="button" data-fcf="${esc(f.id)}" style="--fc:${esc(fcFCol(f))};--i:${i}" aria-label="Folder ${esc(f.name || "Folder")}, ${L.length} ${fcWord(L.length)}">
+      <span class="fcf-back" aria-hidden="true"></span>
+      <span class="fcf-th" aria-hidden="true">${th.map((s, k) => `<img src="${esc(s)}" alt="" decoding="async" draggable="false" style="--k:${k};--n:${th.length}">`).join("")}</span>
+      <span class="fcf-front"><span class="fcf-ic">${IC_FOLD}</span><span class="fcf-tx"><span class="fcf-n">${esc(f.name || "Folder")}</span><span class="fcf-c">${L.length} ${fcWord(L.length)}${n ? ` · ${IC.msg}${n}` : ""}</span></span></span>
+    </button>`;
+    }).join("")}</div>`;
+  }
+  function fcFolderHead(F, n, anim) {
+    return `<div class="fcfh${anim ? " enter" : ""}" style="--fc:${esc(fcFCol(F))}">
+      <button class="fcfh-up" type="button" data-fcf-up title="Nazad na sve kreative · prevuci kreativu ovde da je izvadiš iz foldera">${SV('<path d="M19 12H5M11 18l-6-6 6-6"/>', 2.2)}<span>Sve kreative</span></button>
+      <span class="fcfh-sl" aria-hidden="true">/</span>
+      <span class="fcfh-ic" aria-hidden="true">${IC_FOLD}</span>
+      <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
+      <span class="fcfh-c">${n} ${fcWord(n)}</span>
+      <button class="fcfh-ed" type="button" data-fcf-edit="${esc(F.id)}" aria-label="Uredi folder" title="Naziv, boja, brisanje">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
+    </div>`;
+  }
   function fcRing(p) {
     return `<svg class="fcc-ring" viewBox="0 0 64 64" aria-hidden="true"><circle class="t" cx="32" cy="32" r="26"/><circle class="p" cx="32" cy="32" r="26" style="--p:${p || 0}"/></svg>`;
   }
@@ -10825,8 +10970,8 @@
       p = fcPoster(x),
       f = (x.files || [])[0] || {},
       n = fcOpenCC(x.id).length + fcOpenN(x.id).length;
-    return `<article class="fcc" data-fcid="${esc(x.id)}" style="--i:${i}">
-    <button class="fcc-f" type="button" data-fc-open="${esc(x.id)}" aria-label="${esc(x.title || "Kreativa")}">${p ? `<img class="fcc-pos" src="${esc(p)}" alt="" decoding="async" loading="lazy">` : `<span class="fcc-none">${IC_FC}</span>`}${k === "video" && !f.parts && fcSrc(f) ? `<video class="fcc-vid" muted loop playsinline preload="none" data-src="${esc(fcSrc(f))}"></video>` : ""}${k !== "image" ? `<span class="fcc-k">${k === "video" ? IC_FCPLAY : IC_FCCAR}</span>` : ""}${n ? `<span class="fcc-cc" title="Otvoreni komentari">${IC.msg}${n}</span>` : ""}</button>
+    return `<article class="fcc" data-fcid="${esc(x.id)}" style="--i:${i}"${fine ? ' draggable="true"' : ""}>
+    <button class="fcc-f" type="button" data-fc-open="${esc(x.id)}" aria-label="${esc(x.title || "Kreativa")}">${p ? `<img class="fcc-pos" src="${esc(p)}" alt="" decoding="async" loading="lazy" draggable="false">` : `<span class="fcc-none">${IC_FC}</span>`}${k === "video" && !f.parts && fcSrc(f) ? `<video class="fcc-vid" muted loop playsinline preload="none" data-src="${esc(fcSrc(f))}"></video>` : ""}${k !== "image" ? `<span class="fcc-k">${k === "video" ? IC_FCPLAY : IC_FCCAR}</span>` : ""}${n ? `<span class="fcc-cc" title="Otvoreni komentari">${IC.msg}${n}</span>` : ""}</button>
     <div class="fcc-b"><span class="fcc-n">${fcNN(i)}</span><span class="fcc-t">${esc(x.title || "Kreativa")}</span><button class="fcc-dl" type="button" data-fc-export="${esc(x.id)}" aria-label="Export: ${esc(x.title || "Kreativa")}" title="Export">${IC_FCDL}</button></div>
   </article>`;
   }
@@ -10990,7 +11135,7 @@
       };
     });
   }
-  async function fcIngest(list, mid, from) {
+  async function fcIngest(list, mid, from, fid) {
     const it = S.items.find((i) => i.id === mid);
     if (!it) return;
     if (!fcCanUp()) {
@@ -11070,6 +11215,7 @@
           id,
           monthId: mid,
           clientId: it.clientId,
+          folderId: fcFolder(mid, fid) ? fid : null,
           kind: g.kind,
           files: g.files,
           title:
@@ -11200,6 +11346,7 @@
           createdAt: Date.now(),
           createdBy: me ? me.id : null,
           v: 1,
+          ...(u.folderId ? { folderId: u.folderId } : {}),
         });
       } catch (e) {
         FC_NEW.delete(u.id);
@@ -11447,7 +11594,7 @@
         if (c) fcReplace(c, files);
         return;
       }
-      fcIngest(files, view.id, pt);
+      fcIngest(files, view.id, pt, view.fid);
     });
   })();
 
@@ -11469,8 +11616,14 @@
     );
     if (!c) {
       fcCloseViewer();
-      if (!FCUP.has(view.cid)) nav("fc-" + view.id);
+      if (!FCUP.has(view.cid)) nav(fcHash());
       return;
+    }
+    /* pozadina pregleda je folder ove kreative (i kad je premeštena dok je otvorena) */
+    if ((view.fid || null) !== fcFid(c)) {
+      view.fid = fcFid(c);
+      firstFC = true;
+      renderFC();
     }
     if (fcvCur !== c.id) fcOpenViewer(c);
     else fcUpdViewer(c);
@@ -11518,7 +11671,7 @@
     document.documentElement.classList.remove("fcv-open");
   }
   function fcUpdViewer(c, first) {
-    const L = creativesOf(c.monthId),
+    const L = creativesIn(c.monthId, fcFid(c)),
       i = L.findIndex((x) => x.id === c.id);
     ["#fcvPrev", "#fcvPrevM"].forEach((s) => ($(s).disabled = i <= 0));
     ["#fcvNext", "#fcvNextM"].forEach(
@@ -11545,6 +11698,22 @@
       .filter(Boolean)
       .map(esc)
       .join("<i></i>");
+    const FS = fcFolders(c.monthId),
+      cf = fcFid(c),
+      CF = fcFolder(c.monthId, cf),
+      fsel = $("#fcvFoldS"),
+      fsig =
+        FS.map((f) => f.id + "~" + f.name + "~" + fcFCol(f)).join("|") +
+        "#" +
+        cf;
+    if (fsel.dataset.sig !== fsig) {
+      fsel.dataset.sig = fsig;
+      fsel.innerHTML = `<option value="">Bez foldera</option>${FS.map((f) => `<option value="${esc(f.id)}">${esc(f.name || "Folder")}</option>`).join("")}<option value="+new">+ Novi folder…</option>`;
+      fsel.value = cf || "";
+      $("#fcvFoldL").textContent = CF ? CF.name || "Folder" : "Folder";
+      $("#fcvFold").classList.toggle("has", !!CF);
+      $("#fcvFold").style.setProperty("--fc", CF ? fcFCol(CF) : "");
+    }
     const sig =
       (c.files || [])
         .map((x) => fcSrc(x) || (x.parts || []).join(","))
@@ -12059,7 +12228,10 @@
   }
   function fcStep(d) {
     if (view.name !== "fc" || !view.cid) return false;
-    const L = creativesOf(view.id),
+    const L = creativesIn(
+        view.id,
+        fcFid(S.creatives.find((x) => x.id === view.cid)),
+      ),
       i = L.findIndex((x) => x.id === view.cid),
       n = L[i + d];
     if (i < 0 || !n) return false;
@@ -12219,7 +12391,7 @@
         .map((x) => JSON.parse(JSON.stringify(x)));
     let undone = false;
     try {
-      if (view.cid === id) nav("fc-" + c.monthId);
+      if (view.cid === id) nav(fcHash());
       await api.del("creatives", id);
       for (const x of cms) {
         try {
@@ -12424,7 +12596,7 @@
     if (!c || (btn && btn.classList.contains("busy"))) return;
     btn && btn.classList.add("busy");
     try {
-      const L = creativesOf(c.monthId),
+      const L = creativesIn(c.monthId, fcFid(c)),
         i = L.findIndex((x) => x.id === c.id),
         title = fcSafe(c.title),
         fs = c.files || [];
@@ -12453,14 +12625,26 @@
       b = $("#fcAll"),
       lbl = $("#fcAllLbl");
     if (!it || b.classList.contains("busy")) return;
-    const L = creativesOf(it.id);
-    if (!L.length) return;
+    /* u folderu: samo taj folder; inače sve, a kreative iz foldera idu u podfoldere arhive */
+    const F = fcFolder(it.id, view.fid),
+      groups = F
+        ? [{ dir: "", L: creativesIn(it.id, F.id) }]
+        : [
+            { dir: "", L: creativesIn(it.id, null) },
+            ...fcFolders(it.id).map((f) => ({
+              dir: fcSafe(f.name || "Folder") + "/",
+              L: creativesIn(it.id, f.id),
+            })),
+          ];
+    if (!groups.some((g) => g.L.length)) return;
     const cl = S.clients.find((x) => x.id === it.clientId) || { name: "" },
       yr =
         it.type === "month" && it.year && !/\d{4}/.test(it.title || "")
           ? " " + it.year
           : "";
-    const name = fcSafe(`${cl.name} – ${it.title}${yr}`);
+    const name = fcSafe(
+      `${cl.name} – ${it.title}${yr}${F ? " – " + (F.name || "Folder") : ""}`,
+    );
     b.classList.add("busy");
     const set = (p, t) => {
       b.style.setProperty("--p", p);
@@ -12468,9 +12652,11 @@
     };
     try {
       const ents = [];
-      L.forEach((c, i) =>
-        fcEntries(c, `${fcNN(i)} ${fcSafe(c.title)}`).forEach((e) =>
-          ents.push(e),
+      groups.forEach((g) =>
+        g.L.forEach((c, i) =>
+          fcEntries(c, `${g.dir}${fcNN(i)} ${fcSafe(c.title)}`).forEach((e) =>
+            ents.push(e),
+          ),
         ),
       );
       const list = [];
@@ -12493,7 +12679,9 @@
     } finally {
       b.classList.remove("busy");
       b.style.removeProperty("--p");
-      lbl.textContent = "Export All";
+      lbl.textContent = fcFolder(view.id, view.fid)
+        ? "Export foldera"
+        : "Export All";
     }
   }
 
@@ -12501,7 +12689,7 @@
   async function fcCopyLink() {
     const it = S.items.find((i) => i.id === view.id);
     if (!it) return;
-    const url = fcLinkOf(it);
+    const url = fcLinkOf(it, fcFolder(it.id, view.fid) ? view.fid : null);
     let ok = false;
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -12626,7 +12814,7 @@
   }
 
   /* ---------- događaji ---------- */
-  $("#fcBack").onclick = () => nav("m-" + view.id);
+  $("#fcBack").onclick = () => nav(view.fid ? "fc-" + view.id : "m-" + view.id);
   $("#fcAdd").onclick = () => $("#fcFile").click();
   $("#fcAll").onclick = () => fcExportAll();
   $("#fcLink").onclick = () => fcCopyLink();
@@ -12635,10 +12823,15 @@
     e.target.value = "";
     if (fs.length) {
       const r = $("#fcAdd").getBoundingClientRect();
-      fcIngest(fs, view.id, {
-        x: r.left + r.width / 2,
-        y: r.top + r.height / 2,
-      });
+      fcIngest(
+        fs,
+        view.id,
+        {
+          x: r.left + r.width / 2,
+          y: r.top + r.height / 2,
+        },
+        view.fid,
+      );
     }
   });
   $("#fcRep").addEventListener("change", (e) => {
@@ -12651,6 +12844,21 @@
     const em = e.target.closest("#fcEmpty");
     if (em) {
       $("#fcFile").click();
+      return;
+    }
+    const fo = e.target.closest("[data-fcf]");
+    if (fo) {
+      nav(`fc-${view.id}~${fo.dataset.fcf}`);
+      return;
+    }
+    if (e.target.closest("[data-fcf-up]")) {
+      nav("fc-" + view.id);
+      return;
+    }
+    const fe = e.target.closest("[data-fcf-edit]");
+    if (fe) {
+      const F = fcFolder(view.id, fe.dataset.fcfEdit);
+      if (F) fcOpenFold(F);
       return;
     }
     const ex = e.target.closest("[data-fc-export]");
@@ -12694,6 +12902,283 @@
       $("#fcFile").click();
     }
   });
+  /* ---------- folderi: pravljenje, uređivanje, premeštanje ---------- */
+  const FC_FCOLN = [
+    "Narandžasta",
+    "Zlatna",
+    "Koralna",
+    "Roze",
+    "Ljubičasta",
+    "Plava",
+    "Tirkizna",
+    "Zelena",
+  ];
+  async function fcSaveFolders(mid, fn) {
+    const it = S.items.find((i) => i.id === mid);
+    if (!it) return false;
+    const prev = it.fcFolders,
+      next = fn(fcFolders(mid).map((f) => ({ ...f })));
+    const p = api.upd("items", mid, { fcFolders: next });
+    fcRefreshUI();
+    try {
+      await p;
+      return true;
+    } catch (e) {
+      it.fcFolders = prev;
+      fcRefreshUI();
+      toast(errMsg(e));
+      return false;
+    }
+  }
+  async function fcMoveTo(c, fid, quiet) {
+    if (!c) return;
+    const to = fcFolder(c.monthId, fid) ? fid : null,
+      from = fcFid(c);
+    if (from === to) return;
+    const p = api.upd("creatives", c.id, { folderId: to });
+    fcRefreshUI();
+    const tile = to && $(`#fcBody .fcf[data-fcf="${CSS.escape(to)}"]`);
+    if (tile) {
+      tile.classList.add("got");
+      setTimeout(() => tile.classList.remove("got"), 700);
+    }
+    try {
+      await p;
+    } catch (e) {
+      c.folderId = from;
+      fcRefreshUI();
+      toast(errMsg(e));
+      return;
+    }
+    if (quiet) return;
+    const F = fcFolder(c.monthId, to);
+    toast(
+      F ? `Premešteno u „${F.name || "Folder"}“` : "Premešteno u sve kreative",
+      () =>
+        fcMoveTo(
+          S.creatives.find((x) => x.id === c.id),
+          from,
+          true,
+        ),
+    );
+  }
+  /* dijalog: novi folder / uredi folder (naziv, boja, brisanje) */
+  let fcFD = null;
+  function fcOpenFold(F, move) {
+    const mid = view.id;
+    fcFD = {
+      mid,
+      F,
+      move: move || null,
+      color: F ? fcFCol(F) : FC_FCOL[fcFolders(mid).length % FC_FCOL.length],
+    };
+    const a = $("#fcFold");
+    $("#fcFoldT").textContent = F ? "Uredi folder" : "Novi folder";
+    $("#fcFoldOk").textContent = F ? "Sačuvaj" : "Napravi";
+    $("#fcFoldN").value = F ? F.name || "" : "";
+    $("#fcFoldN").classList.remove("bad");
+    const del = $("#fcFoldDel");
+    del.hidden = !F;
+    del.classList.remove("arm");
+    del.lastChild.textContent = "Obriši folder";
+    fcFoldPaint();
+    a.hidden = false;
+    requestAnimationFrame(() => a.classList.add("on"));
+    setTimeout(() => {
+      const n = $("#fcFoldN");
+      n.focus();
+      n.select();
+    }, 60);
+  }
+  function fcFoldPaint() {
+    $("#fcFold").style.setProperty("--fc", fcFD.color);
+    $("#fcFoldC").innerHTML = FC_FCOL.map(
+      (c, i) =>
+        `<button type="button" role="radio" aria-checked="${c === fcFD.color}" aria-label="${FC_FCOLN[i]}" title="${FC_FCOLN[i]}" data-fcol="${c}" style="--sw:${c}"></button>`,
+    ).join("");
+  }
+  function fcCloseFold() {
+    const a = $("#fcFold");
+    fcFD = null;
+    if (a.hidden) return;
+    a.classList.remove("on");
+    setTimeout(
+      () => {
+        if (!fcFD) a.hidden = true;
+      },
+      reduce ? 0 : 250,
+    );
+  }
+  $("#fcNewF").onclick = () => fcOpenFold(null);
+  $("#fcFoldC").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fcol]");
+    if (!b || !fcFD) return;
+    fcFD.color = b.dataset.fcol;
+    fcFoldPaint();
+    $(`#fcFoldC [data-fcol="${fcFD.color}"]`).focus();
+  });
+  $("#fcFoldC").addEventListener("keydown", (e) => {
+    if (fcFD && e.key === "Enter") {
+      e.preventDefault();
+      $("#fcFoldF").requestSubmit();
+      return;
+    }
+    if (!fcFD || !/^Arrow(Left|Right|Up|Down)$/.test(e.key)) return;
+    e.preventDefault();
+    const d = /Left|Up/.test(e.key) ? -1 : 1,
+      i = FC_FCOL.indexOf(fcFD.color);
+    fcFD.color = FC_FCOL[(i + d + FC_FCOL.length) % FC_FCOL.length];
+    fcFoldPaint();
+    $(`#fcFoldC [data-fcol="${fcFD.color}"]`).focus();
+  });
+  $("#fcFold").addEventListener("click", (e) => {
+    if (e.target.id === "fcFold" || e.target.closest("[data-fold=cancel]"))
+      fcCloseFold();
+  });
+  $("#fcFold").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      fcCloseFold();
+    }
+  });
+  $("#fcFoldN").addEventListener("input", (e) =>
+    e.target.classList.remove("bad"),
+  );
+  $("#fcFoldF").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const D = fcFD;
+    if (!D) return;
+    const inp = $("#fcFoldN"),
+      name = inp.value.replace(/\s+/g, " ").trim().slice(0, 40);
+    if (!name) {
+      inp.classList.remove("bad");
+      void inp.offsetWidth;
+      inp.classList.add("bad");
+      inp.focus();
+      return;
+    }
+    fcCloseFold();
+    if (D.F) {
+      await fcSaveFolders(D.mid, (fs) =>
+        fs.map((f) => (f.id === D.F.id ? { ...f, name, color: D.color } : f)),
+      );
+      return;
+    }
+    const id = "f" + Math.random().toString(36).slice(2, 11);
+    const ok = await fcSaveFolders(D.mid, (fs) => [
+      ...fs,
+      {
+        id,
+        name,
+        color: D.color,
+        order: Math.max(0, ...fs.map((f) => f.order || 0)) + 1,
+        createdBy: me ? me.id : null,
+      },
+    ]);
+    if (!ok) return;
+    if (D.move)
+      fcMoveTo(
+        S.creatives.find((x) => x.id === D.move.id),
+        id,
+      );
+    else toast(`Folder „${name}“ je spreman. Prevuci kreative na njega.`);
+  });
+  $("#fcFoldDel").onclick = async () => {
+    const D = fcFD,
+      b = $("#fcFoldDel");
+    if (!D || !D.F) return;
+    if (!b.classList.contains("arm")) {
+      b.classList.add("arm");
+      b.lastChild.textContent = "Sigurno? Klikni opet";
+      return;
+    }
+    fcCloseFold();
+    const F = D.F,
+      n = creativesIn(D.mid, F.id).length;
+    if (view.name === "fc" && view.fid === F.id && !view.cid)
+      nav("fc-" + D.mid);
+    /* kreative zadržavaju folderId, pa ih „Poništi“ vraća baš u ovaj folder */
+    const ok = await fcSaveFolders(D.mid, (fs) =>
+      fs.filter((f) => f.id !== F.id),
+    );
+    if (ok)
+      toast(
+        n
+          ? `Folder obrisan. ${n} ${fcWord(n)} ${fcJe(n)} sad u svim kreativama.`
+          : "Folder obrisan",
+        () =>
+          fcSaveFolders(D.mid, (fs) =>
+            fs.some((f) => f.id === F.id) ? fs : [...fs, F],
+          ),
+      );
+  };
+  /* pregled kreative: izbor foldera */
+  $("#fcvFoldS").addEventListener("change", (e) => {
+    const c = S.creatives.find((x) => x.id === fcvCur),
+      v = e.target.value;
+    if (!c) return;
+    if (v === "+new") {
+      e.target.value = fcFid(c) || "";
+      fcOpenFold(null, c);
+      return;
+    }
+    fcMoveTo(c, v || null);
+  });
+  /* prevlačenje kartice (miš) na folder, ili na „Sve kreative“ dok je folder otvoren */
+  let fcDragId = null;
+  const fcDropAt = (e) =>
+    fcDragId && e.target.closest
+      ? e.target.closest("[data-fcf], [data-fcf-up]")
+      : null;
+  const fcDropOff = () =>
+    $$("#fcBody .drop").forEach((x) => x.classList.remove("drop"));
+  $("#fcBody").addEventListener("dragstart", (e) => {
+    const card = e.target.closest && e.target.closest(".fcc[data-fcid]");
+    if (!card || !e.dataTransfer) return;
+    fcDragId = card.dataset.fcid;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/x-skeylo-fc", fcDragId);
+    fcHover(null);
+    requestAnimationFrame(() => {
+      card.classList.add("drag");
+      $("#fcBody").classList.add("dragging");
+    });
+  });
+  /* kartica može nestati iz DOM-a usred prevlačenja (premeštanje, tuđa izmena), pa njen
+     dragend ne stigne do #fcBody: stanje se čisti i na drop i na nivou prozora */
+  function fcDragEnd() {
+    fcDragId = null;
+    fcDropOff();
+    $$("#fcBody .fcc.drag").forEach((x) => x.classList.remove("drag"));
+    $("#fcBody").classList.remove("dragging");
+  }
+  $("#fcBody").addEventListener("dragend", fcDragEnd);
+  addEventListener("dragend", () => fcDragId && fcDragEnd(), true);
+  addEventListener("drop", () => fcDragId && setTimeout(fcDragEnd), true);
+  $("#fcBody").addEventListener("dragover", (e) => {
+    const t = fcDropAt(e);
+    if (!t) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!t.classList.contains("drop")) {
+      fcDropOff();
+      t.classList.add("drop");
+    }
+  });
+  $("#fcBody").addEventListener("dragleave", (e) => {
+    const t = fcDropAt(e);
+    if (t && !t.contains(e.relatedTarget)) t.classList.remove("drop");
+  });
+  $("#fcBody").addEventListener("drop", (e) => {
+    const t = fcDropAt(e);
+    if (!t) return;
+    e.preventDefault();
+    const c = S.creatives.find((x) => x.id === fcDragId);
+    fcDragEnd();
+    fcMoveTo(c, t.dataset.fcf || null);
+  });
+
   if (fine) {
     $("#fcBody").addEventListener("pointerover", (e) => {
       const c = e.target.closest(".fcc:not(.up)");
@@ -12722,13 +13207,13 @@
   }
   fcv.addEventListener("click", (e) => {
     if (e.target.id === "fcvStage" && matchMedia("(min-width:861px)").matches) {
-      nav("fc-" + view.id);
+      nav(fcHash());
       return;
     }
     const b = e.target.closest("button");
     if (!b) return;
     if (b.id === "fcvX") {
-      nav("fc-" + view.id);
+      nav(fcHash());
       return;
     }
     if (b.id === "fcvPrev" || b.id === "fcvPrevM") {
@@ -12900,9 +13385,9 @@
   document.addEventListener("keydown", (e) => {
     if (fcv.hidden || view.name !== "fc") return;
     if (e.key === "Escape") {
-      if (!$("#fcAsk").hidden) return;
+      if (!$("#fcAsk").hidden || !$("#fcFold").hidden) return;
       e.preventDefault();
-      nav("fc-" + view.id);
+      nav(fcHash());
       return;
     }
     const a = document.activeElement;

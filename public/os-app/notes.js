@@ -662,7 +662,9 @@ window.SKNotes = function (X) {
           parts.push(nx.trim());
           j++;
         }
-        add({ t, x: parts.join("\n"), l: Math.min(6, st.length - 1), c });
+        const b = { t, x: parts.join("\n"), l: Math.min(6, st.length - 1), c };
+        if (t === "ol" && parseInt(m[1], 10) !== 1) b.n = parseInt(m[1], 10);
+        add(b);
         i = j;
         continue;
       }
@@ -709,6 +711,18 @@ window.SKNotes = function (X) {
       }
       add({ t: "p", x: parts.join("\n").replace(/ {2,}$/, "") });
       i = j;
+    }
+    /* broj iz md važi samo za prvu stavku niza: od njega kreće numeracija */
+    let rc = [];
+    for (const b of out) {
+      if (!LISTY.has(b.t)) {
+        rc = [];
+        continue;
+      }
+      const l = b.l || 0;
+      rc.length = l + 1;
+      if (b.t === "ol" && rc[l]) delete b.n;
+      rc[l] = b.t === "ol";
     }
     return out;
   }
@@ -774,6 +788,8 @@ window.SKNotes = function (X) {
       }
     }
   }
+  /* početni broj numerisane liste (1 ako nije zadat) */
+  const olStart = (n) => (n >= 0 && n !== 1 ? +n : 1);
   function toMd(bs) {
     const out = [];
     let prev = null,
@@ -783,6 +799,8 @@ window.SKNotes = function (X) {
       if (b.t === "p" && !String(b.x || "").trim()) {
         out.push("");
         prev = null;
+        cnt = [];
+        ind = [0];
         continue;
       }
       let num = 0,
@@ -790,8 +808,9 @@ window.SKNotes = function (X) {
       if (LISTY.has(b.t)) {
         const l = Math.min(b.l || 0, ind.length - 1);
         cnt.length = l + 1;
-        if (b.t === "ol") num = cnt[l] = (cnt[l] || 0) + 1;
-        else cnt[l] = 0;
+        if (b.t === "ol")
+          num = cnt[l] = cnt[l] != null ? cnt[l] + 1 : olStart(b.n);
+        else cnt[l] = null;
         /* deca počinju tamo gde počinje tekst roditelja (CommonMark) */
         pad = " ".repeat(ind[l]);
         ind.length = l + 1;
@@ -827,7 +846,13 @@ window.SKNotes = function (X) {
         if (st.length === l + 1 && st[l] === tag) h += "</li>";
         else {
           if (st.length === l + 1) h += "</li></" + st.pop() + ">";
-          h += "<" + tag + ">";
+          h +=
+            "<" +
+            tag +
+            (tag === "ol" && olStart(b.n) !== 1
+              ? ` start="${olStart(b.n)}"`
+              : "") +
+            ">";
           st.push(tag);
         }
         h +=
@@ -979,6 +1004,7 @@ window.SKNotes = function (X) {
       el.dataset.i = b.i || "";
     }
     if (t === "code") el.dataset.lang = b.lang || "";
+    if (t === "ol" && olStart(b.n) !== 1) el.dataset.n = olStart(b.n);
     if (t === "img" || t === "file" || t === "embed") {
       el.dataset.src = b.src || "";
       el.dataset.alt = b.alt || "";
@@ -1093,6 +1119,7 @@ window.SKNotes = function (X) {
           ? codeText(tt).replace(/\n$/, "")
           : inlineMd(tt).replace(/\n+$/, "");
     if (t === "todo") b.c = el.dataset.c === "1";
+    if (t === "ol" && el.dataset.n) b.n = +el.dataset.n;
     if (t === "callout") {
       b.v = el.dataset.v || "NOTE";
       b.i = el.dataset.i || "";
@@ -1138,10 +1165,12 @@ window.SKNotes = function (X) {
       if (l > prevL + 1) setLevel(el, (l = prevL + 1));
       cnt.length = l + 1;
       if (t === "ol") {
-        cnt[l] = (cnt[l] || 0) + 1;
+        /* zadati početni broj važi samo za prvu stavku niza */
+        if (cnt[l] != null) delete el.dataset.n;
+        cnt[l] = cnt[l] != null ? cnt[l] + 1 : olStart(+el.dataset.n);
         const m = el.querySelector(":scope > .nb-m");
         if (m) m.textContent = cnt[l] + ".";
-      } else cnt[l] = 0;
+      } else cnt[l] = null;
       prevL = l;
     }
   }
@@ -2205,7 +2234,7 @@ window.SKNotes = function (X) {
     const s = getSelection();
     if (s.rangeCount && !s.isCollapsed) s.getRangeAt(0).deleteContents();
     if (caretOff(t) === 0 && !isEmpty(t)) {
-      el.before(make({ t: nt, l: LISTY.has(tp) ? l : 0 }));
+      el.before(make({ t: nt, l: LISTY.has(tp) ? l : 0, n: el.dataset.n }));
       renum();
       focusBlock(el, 0);
       changed();
@@ -2443,8 +2472,11 @@ window.SKNotes = function (X) {
     if (tp === "p") {
       if (/^#{1,3} $/.test(pre)) to = "h" + (pre.length - 1);
       else if (/^[-*+] $/.test(pre)) to = "ul";
-      else if (/^\d{1,3}[.)] $/.test(pre)) to = "ol";
-      else if (/^(>|") $/.test(pre)) to = "quote";
+      else if (/^\d{1,3}[.)] $/.test(pre)) {
+        /* "3. " posle teksta nastavlja numeraciju od 3 */
+        to = "ol";
+        extra.n = parseInt(pre, 10);
+      } else if (/^(>|") $/.test(pre)) to = "quote";
     }
     if (/^\[[ xX]?\] $/.test(pre)) {
       to = "todo";
@@ -4058,11 +4090,14 @@ window.SKNotes = function (X) {
         walkList(sub, l + 1);
     }
     function walkList(n, l) {
-      const kind = n.tagName === "OL" ? "ol" : "ul";
+      const kind = n.tagName === "OL" ? "ol" : "ul",
+        k0 = out.length,
+        st = parseInt(n.getAttribute("start"), 10);
       for (const li of n.children) {
         if (li.tagName === "LI") walkLi(li, l, kind);
         else if (/^(UL|OL)$/.test(li.tagName)) walkList(li, l + 1);
       }
+      if (kind === "ol" && st >= 0 && st !== 1 && out[k0]) out[k0].n = st;
     }
     function walk(node) {
       for (const n of [...node.childNodes]) {

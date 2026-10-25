@@ -13160,3 +13160,584 @@ html.fcv-open {
   font-size: 13px;
   font-weight: 600;
 }
+
+/* ---------------- FINAL CREATIVES: folderi ---------------- */
+.fcfolders {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr));
+  gap: 22px 18px;
+  margin: 2px 0 34px;
+}
+.fcf {
+  --fc: var(--orange);
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  text-align: left;
+  color: var(--cream);
+  border-radius: 20px;
+  isolation: isolate;
+  transition: transform 0.45s var(--spring);
+}
+.fcfolders.enter .fcf {
+  animation: fcIn 0.8s var(--ease) both;
+  animation-delay: calc(0.08s + var(--i) * 0.06s);
+}
+/* zadnja strana fascikle sa jezičkom */
+.fcf-back {
+  position: absolute;
+  inset: 12px 0 0;
+  border-radius: 6px 20px 20px 20px;
+  background: color-mix(in srgb, var(--fc) 30%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--fc) 26%, transparent);
+}
+.fcf-back::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -13px;
+  width: 42%;
+  height: 20px;
+  border-radius: 12px 14px 0 0;
+  background: inherit;
+  border: inherit;
+  border-bottom: 0;
+}
+/* sličice koje vire iz fascikle */
+.fcf-th {
+  position: absolute;
+  inset: 22px 12% 30%;
+  display: block;
+  z-index: 1;
+}
+.fcf-th img {
+  --fo: calc(var(--k) - (var(--n) - 1) / 2);
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 42%;
+  aspect-ratio: 3 / 4;
+  margin-left: -21%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--cream) 70%, transparent);
+  box-shadow: 0 10px 22px -10px #000;
+  transform: translateX(calc(var(--fo) * 46%))
+    translateY(calc(var(--fo) * var(--fo) * 6px)) rotate(calc(var(--fo) * 8deg));
+  transition: transform 0.5s var(--spring);
+}
+.fcf-front {
+  position: absolute;
+  inset: 40% 0 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px 16px 15px;
+  border-radius: 18px 18px 20px 20px;
+  background: linear-gradient(
+    172deg,
+    color-mix(in srgb, var(--fc) 52%, var(--surface-2)),
+    color-mix(in srgb, var(--fc) 26%, var(--surface)) 85%
+  );
+  border-top: 1px solid color-mix(in srgb, var(--fc) 70%, #fff 12%);
+  box-shadow:
+    0 -12px 26px -16px rgba(0, 0, 0, 0.75),
+    0 18px 34px -22px #000;
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.5s var(--spring),
+    box-shadow 0.3s;
+}
+.fcf-ic {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: color-mix(in srgb, var(--fc) 45%, #fff);
+}
+.fcf-ic svg {
+  width: 20px;
+  height: 20px;
+}
+.fcf-tx {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.fcf-n {
+  font-family: var(--f-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fcf-c {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--cream) 72%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.fcf-c svg {
+  width: 13px;
+  height: 13px;
+  margin-left: 2px;
+}
+.theme-ils :is(.fcf-n, .fcfh-n) {
+  font-weight: 400;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fcf:hover {
+    transform: translateY(-4px);
+  }
+  .fcf:hover .fcf-front {
+    transform: perspective(700px) rotateX(-12deg);
+  }
+  .fcf:hover .fcf-th img {
+    transform: translateX(calc(var(--fo) * 58%))
+      translateY(calc(var(--fo) * var(--fo) * 6px - 10px))
+      rotate(calc(var(--fo) * 11deg));
+  }
+}
+.fcf:focus-visible {
+  outline: 2px solid var(--fc);
+  outline-offset: 4px;
+}
+/* prevlačenje kreative na folder */
+#fcBody.dragging .fcf .fcf-front {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--fc) 80%, transparent) inset,
+    0 18px 34px -22px #000;
+}
+.fcf.drop {
+  transform: translateY(-6px) scale(1.035);
+}
+.fcf.drop .fcf-front {
+  transform: perspective(700px) rotateX(-24deg);
+  box-shadow:
+    0 0 0 2px var(--fc) inset,
+    0 24px 40px -18px color-mix(in srgb, var(--fc) 60%, #000);
+}
+.fcf.drop .fcf-th img {
+  transform: translateX(calc(var(--fo) * 62%)) translateY(-16px)
+    rotate(calc(var(--fo) * 12deg));
+}
+.fcf.got .fcf-front {
+  animation: fcfGot 0.6s var(--spring);
+}
+@keyframes fcfGot {
+  40% {
+    transform: perspective(700px) rotateX(-18deg) scale(1.04);
+  }
+}
+.fcc.drag {
+  opacity: 0.35;
+  transform: scale(0.96);
+  transition:
+    opacity 0.2s,
+    transform 0.3s var(--ease);
+}
+.fcc[draggable="true"] .fcc-f {
+  -webkit-user-drag: element;
+}
+/* razdelnik između foldera i kreativa */
+.fcsec {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.fcsec i {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+/* zaglavlje otvorenog foldera */
+.fcfh {
+  --fc: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 0 26px;
+  padding: 10px 12px;
+  border-radius: 22px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--fc) 20%, var(--surface)),
+    var(--surface) 72%
+  );
+  border: 1px solid color-mix(in srgb, var(--fc) 26%, var(--line));
+}
+.fcfh.enter {
+  animation: fcIn 0.7s var(--ease) both;
+}
+.fcfh-up {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px dashed transparent;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s;
+}
+.fcfh-up svg {
+  width: 17px;
+  height: 17px;
+}
+.fcfh-up:hover {
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.04);
+}
+#fcBody.dragging .fcfh-up {
+  color: var(--cream);
+  border-color: color-mix(in srgb, var(--cream) 35%, transparent);
+}
+.fcfh-up.drop {
+  border-style: solid;
+  border-color: var(--fc);
+  background: color-mix(in srgb, var(--fc) 18%, transparent);
+}
+.fcfh-sl {
+  color: color-mix(in srgb, var(--muted) 60%, transparent);
+  font-size: 20px;
+}
+.fcfh-ic {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--fc) 32%, transparent);
+  color: color-mix(in srgb, var(--fc) 40%, #fff);
+}
+.fcfh-ic svg {
+  width: 21px;
+  height: 21px;
+}
+.fcfh-n {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fcfh-c {
+  flex: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.fcfh-ed {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 500;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.fcfh-ed svg {
+  width: 16px;
+  height: 16px;
+}
+.fcfh-ed:hover {
+  border-color: color-mix(in srgb, var(--fc) 60%, transparent);
+  background: var(--surface-2);
+}
+/* prazan folder: zona za otpremanje u boji foldera */
+.fcempty.infold {
+  --orange: var(--fc);
+  --gold: color-mix(in srgb, var(--fc) 55%, #fff);
+}
+/* pregled kreative: izbor foldera */
+.fcv-fold {
+  position: relative;
+  max-width: 100%;
+  cursor: pointer;
+}
+.fcv-fold > span {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fcv-fold.has > svg {
+  color: var(--fc);
+}
+.fcv-fold select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+  appearance: none;
+}
+.fcv-fold:focus-within {
+  border-color: var(--orange);
+}
+/* dijalog: novi / uredi folder */
+.fcfd {
+  --fc: var(--orange);
+}
+.fcfd .fca-b {
+  width: min(440px, 100%);
+  gap: 20px;
+  justify-items: center;
+}
+.fcfd .fca-b h3 {
+  font-size: 26px;
+  margin-top: -4px;
+}
+.fcfd-pv {
+  position: relative;
+  width: 112px;
+  height: 84px;
+  margin-top: 4px;
+}
+.fcfd-pv i {
+  position: absolute;
+  display: block;
+  transition:
+    background 0.35s,
+    transform 0.5s var(--spring);
+}
+.fcfd-tab {
+  left: 0;
+  top: 0;
+  width: 46%;
+  height: 22px;
+  border-radius: 10px 12px 0 0;
+  background: color-mix(in srgb, var(--fc) 55%, var(--surface));
+}
+.fcfd-pv::before {
+  content: "";
+  position: absolute;
+  inset: 10px 0 0;
+  border-radius: 4px 16px 16px 16px;
+  background: color-mix(in srgb, var(--fc) 55%, var(--surface));
+  transition: background 0.35s;
+}
+.fcfd-sh {
+  left: 22%;
+  top: 16px;
+  width: 40%;
+  height: 48px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--cream) 85%, var(--fc));
+  transform: rotate(-8deg);
+  box-shadow: 0 6px 14px -8px #000;
+}
+.fcfd-sh.b {
+  left: 42%;
+  transform: rotate(7deg);
+  background: color-mix(in srgb, var(--cream) 70%, var(--fc));
+}
+.fcfd-fr {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56%;
+  border-radius: 14px 14px 16px 16px;
+  background: linear-gradient(
+    172deg,
+    color-mix(in srgb, var(--fc) 92%, #fff),
+    var(--fc)
+  );
+  box-shadow: 0 -8px 18px -12px rgba(0, 0, 0, 0.7);
+  transform-origin: 50% 100%;
+}
+.fcfd.on .fcfd-fr {
+  animation: fcfdOpen 0.9s var(--spring) 0.15s both;
+}
+@keyframes fcfdOpen {
+  45% {
+    transform: perspective(300px) rotateX(-28deg);
+  }
+}
+.fcfd-in {
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 16px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  color: var(--cream);
+  font: inherit;
+  font-size: 18px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.fcfd-in:focus {
+  border-color: color-mix(in srgb, var(--fc) 75%, transparent);
+}
+.fcfd-in.bad {
+  border-color: var(--bad);
+  animation: fcfdShake 0.4s;
+}
+@keyframes fcfdShake {
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+.fcfd-c {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.fcfd-c button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--sw);
+  box-shadow: 0 0 0 0 var(--sw);
+  transition:
+    transform 0.3s var(--spring),
+    box-shadow 0.25s;
+}
+.fcfd-c button:hover {
+  transform: scale(1.1);
+}
+.fcfd-c button[aria-checked="true"] {
+  transform: scale(1.06);
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 5px var(--sw);
+}
+.fcfd-c button:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 5px;
+}
+.fcfd-b {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.fcfd-sp {
+  flex: 1;
+}
+.fcfd .pill.del {
+  color: var(--muted);
+}
+.fcfd .pill.del:hover,
+.fcfd .pill.del.arm {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+@media (max-width: 860px) {
+  .fcfolders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+    margin-bottom: 28px;
+  }
+  .fcf {
+    aspect-ratio: 5 / 4;
+  }
+  .fcf-front {
+    inset: 46% 0 0;
+    padding: 10px 12px 12px;
+    gap: 9px;
+  }
+  .fcf-ic {
+    display: none;
+  }
+  .fcf-n {
+    font-size: 16px;
+  }
+  .fcf-c {
+    font-size: 12px;
+  }
+  .fcf-th {
+    inset: 20px 8% 34%;
+  }
+  .fcfh {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 18px;
+  }
+  .fcfh-up {
+    padding: 10px;
+  }
+  .fcfh-up span,
+  .fcfh-sl,
+  .fcfh-c {
+    display: none;
+  }
+  .fcfh-ic {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+  .fcfh-n {
+    font-size: 20px;
+  }
+  .fcfh-ed {
+    padding: 10px 12px;
+  }
+  .fcfh-ed span {
+    display: none;
+  }
+  .fcfd .fca-b {
+    padding: 24px 20px;
+  }
+  .fcfd-b .pill {
+    flex: 1;
+    justify-content: center;
+  }
+  .fcfd-sp {
+    display: none;
+  }
+  .fcfd-b .pill.del {
+    flex-basis: 100%;
+    order: 3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fcfd.on .fcfd-fr,
+  .fcf.got .fcf-front {
+    animation: none;
+  }
+}

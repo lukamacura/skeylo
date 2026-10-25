@@ -1486,6 +1486,10 @@ const RP = (function () {
           return;
         }
         const keep = {};
+        if (tag === "OL") {
+          const st = parseInt(n.getAttribute("start"), 10);
+          if (st >= 0 && st !== 1) keep.start = st;
+        }
         if (tag === "IMG") {
           const src = n.getAttribute("src") || "";
           if (!/^(https:\/\/|data:image\/(png|jpe?g|gif|webp);)/i.test(src)) {
@@ -2605,6 +2609,20 @@ p{line-height:1.65;margin:0}
       }
     paint(derive());
   }
+  /* aktuelni period = kalendarski mesec (meseci otvoreni unapred ga ne preuzimaju); ciklusi: poslednji po redosledu */
+  function curPeriod(ps) {
+    const d = new Date(),
+      now = d.getFullYear() * 12 + d.getMonth(),
+      ix = (i) => i.year * 12 + (i.month - 1),
+      ms = ps.filter((i) => i.type === "month" && i.year && i.month),
+      past = ms.filter((i) => ix(i) <= now);
+    if (past.length) return past.reduce((a, b) => (ix(b) >= ix(a) ? b : a));
+    if (ms.length) return ms.reduce((a, b) => (ix(b) < ix(a) ? b : a));
+    return ps.reduce(
+      (a, b) => (!a || (b.order || 0) >= (a.order || 0) ? b : a),
+      null,
+    );
+  }
   function derive() {
     const cid = CLIENT.id,
       desc = (a, b) =>
@@ -2800,10 +2818,7 @@ p{line-height:1.65;margin:0}
       C,
       byS,
       known: repOk ? new Set(R.keys()) : ST.known,
-      latest: periods.reduce(
-        (a, b) => (!a || (b.order || 0) >= (a.order || 0) ? b : a),
-        null,
-      ),
+      latest: curPeriod(periods),
     });
     if (crAdded.length) {
       crAdded.forEach((id) => {
@@ -2818,11 +2833,7 @@ p{line-height:1.65;margin:0}
         {
           label: "Pogledaj",
           fn: () => {
-            if (ST.CR.get(c.id))
-              navTo(
-                { sec: "cr", v: "gallery", pid: c.monthId, cid: c.id },
-                null,
-              );
+            if (ST.CR.get(c.id)) navTo(crRoute(c), null);
           },
         },
       );
@@ -2839,11 +2850,7 @@ p{line-height:1.65;margin:0}
         {
           label: "Pogledaj",
           fn: () => {
-            if (ST.CR.get(c.id))
-              navTo(
-                { sec: "cr", v: "gallery", pid: c.monthId, cid: c.id },
-                null,
-              );
+            if (ST.CR.get(c.id)) navTo(crRoute(c), null);
           },
         },
       );
@@ -2981,7 +2988,9 @@ p{line-height:1.65;margin:0}
         .filter(Boolean)
         .join(".");
     if (r.sec === "cr")
-      return ["creatives", r.pid, r.cid].filter(Boolean).join(".");
+      return ["creatives", r.pid, r.fid ? "~" + r.fid : null, r.cid]
+        .filter(Boolean)
+        .join(".");
     if (r.sec === "pv") return "privacy";
     if (r.sec === "sys") return "sistem";
     if (r.sec === "org")
@@ -3008,7 +3017,15 @@ p{line-height:1.65;margin:0}
         : { sec: "org", v: "list" };
     if (p[0] === "creatives") {
       if (!p[1]) return { sec: "cr", v: "periods" };
-      return { sec: "cr", v: "gallery", pid: p[1], cid: p[2] || null };
+      /* creatives.{period}.~{folder}.{kreativa} */
+      const f = p[2] && p[2][0] === "~" ? p[2].slice(1) || null : null;
+      return {
+        sec: "cr",
+        v: "gallery",
+        pid: p[1],
+        fid: f,
+        cid: (f ? p[3] : p[2]) || null,
+      };
     }
     if (p[0] === "creative") {
       if (!p[1]) return { sec: "ci", v: "periods" };
@@ -3046,7 +3063,7 @@ p{line-height:1.65;margin:0}
             : r.v === "periods"
               ? "p:" + r.sec
               : r.v === "gallery"
-                ? "g:" + r.pid
+                ? "g:" + r.pid + (r.fid ? ":" + r.fid : "")
                 : r.v === "types"
                   ? "t:" + r.pid
                   : r.v === "scripts"
@@ -3067,11 +3084,15 @@ p{line-height:1.65;margin:0}
             : 1
           : r.v === "periods"
             ? 1
-            : r.v === "types" || r.v === "scripts" || r.v === "gallery"
-              ? 2
-              : isViewer(r)
-                ? 4
-                : 3;
+            : r.v === "gallery"
+              ? r.fid
+                ? 3
+                : 2
+              : r.v === "types" || r.v === "scripts"
+                ? 2
+                : isViewer(r)
+                  ? 4
+                  : 3;
   function parentOf(r) {
     if (GUEST) return r;
     if (r.sec === "pv" || r.sec === "sys") return { v: "dash" };
@@ -3085,10 +3106,12 @@ p{line-height:1.65;margin:0}
           : { v: "dash" };
     if (r.sec === "cr")
       return r.v === "gallery" && r.cid
-        ? { sec: "cr", v: "gallery", pid: r.pid }
-        : r.v === "gallery"
-          ? { sec: "cr", v: "periods" }
-          : { v: "dash" };
+        ? { sec: "cr", v: "gallery", pid: r.pid, fid: r.fid }
+        : r.v === "gallery" && r.fid
+          ? { sec: "cr", v: "gallery", pid: r.pid }
+          : r.v === "gallery"
+            ? { sec: "cr", v: "periods" }
+            : { v: "dash" };
     return r.v === "list" && r.rid
       ? { sec: "rep", v: "list", pid: r.pid, type: r.type }
       : r.v === "list"
@@ -3226,7 +3249,9 @@ p{line-height:1.65;margin:0}
     if (prev.sec === "cr")
       return prev.v === "gallery" && next.v === "periods"
         ? `#rmain [data-pid="${cssq(prev.pid)}"]`
-        : null;
+        : prev.v === "gallery" && prev.fid && next.v === "gallery" && !next.fid
+          ? `#rmain [data-fid="${cssq(prev.fid)}"]`
+          : null;
     if (prev.sec === "ci") {
       if (prev.v === "scripts" && next.v === "periods")
         return `#rmain [data-pid="${cssq(prev.pid)}"]`;
@@ -3590,7 +3615,11 @@ p{line-height:1.65;margin:0}
           : r.sec === "cr"
             ? r.v === "periods"
               ? "Dashboard"
-              : "Periodi"
+              : r.fid && folderOf(P, r.fid)
+                ? P
+                  ? periodLabel(P.it)
+                  : "Nazad"
+                : "Periodi"
             : r.sec === "ci"
               ? r.v === "periods"
                 ? "Dashboard"
@@ -3685,7 +3714,7 @@ p{line-height:1.65;margin:0}
       return;
     }
     const others = ST.periods.filter((p) => p !== L).reverse();
-    rmain.innerHTML = `<section class="v-periods">${head}${heroHTML(ST.P.get(L.id), mode)}${others.length ? `<div class="arch${en ? " enter" : ""}" style="--n:${others.length}"><div class="arail"><i class="rail" aria-hidden="true"></i><i class="beam" aria-hidden="true"></i><ol class="alist" aria-label="Raniji periodi">${others.map((it, i) => rowHTML(ST.P.get(it.id), i, sec)).join("")}</ol></div></div>` : ""}</section>`;
+    rmain.innerHTML = `<section class="v-periods">${head}${heroHTML(ST.P.get(L.id), mode)}${others.length ? `<div class="arch${en ? " enter" : ""}" style="--n:${others.length}"><div class="arail"><i class="rail" aria-hidden="true"></i><i class="beam" aria-hidden="true"></i><ol class="alist" aria-label="Ostali periodi">${others.map((it, i) => rowHTML(ST.P.get(it.id), i, sec)).join("")}</ol></div></div>` : ""}</section>`;
     after(mode);
   }
   function heroHTML(P, mode) {
@@ -4721,30 +4750,107 @@ p{line-height:1.65;margin:0}
     return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   };
   const openCC = (id) => (ST.ccBy.get(id) || []).filter((x) => !x.resolved);
+  /* folderi iz Skeylo OS-a: period.fcFolders + kreativa.folderId; kreativa čiji folder
+     više ne postoji je u glavnom prikazu */
+  const foldersOf = (P) =>
+    ((P && P.it.fcFolders) || [])
+      .filter((f) => f && f.id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const folderOf = (P, fid) =>
+    (fid && foldersOf(P).find((f) => f.id === fid)) || null;
+  const fidOf = (P, c) =>
+    c && c.folderId && folderOf(P, c.folderId) ? c.folderId : null;
+  const crIn = (P, fid) =>
+    P.creatives.filter((c) => fidOf(P, c) === (fid || null));
+  const crRoute = (c) => ({
+    sec: "cr",
+    v: "gallery",
+    pid: c.monthId,
+    fid: fidOf(ST.P.get(c.monthId), c),
+    cid: c.id,
+  });
   const crOfCur = () => {
     const P = cur.pid && ST.P.get(cur.pid);
-    return P ? P.creatives : [];
+    if (!P) return [];
+    const c = cur.cid && P.creatives.find((x) => x.id === cur.cid);
+    return crIn(P, c ? fidOf(P, c) : cur.fid);
   };
 
   /* galerija */
   function galSig(P) {
-    return P.creatives
-      .map((c) =>
-        [
-          c.id,
-          c.title || "",
-          posterOf(c),
-          filesSig(c),
-          openCC(c.id).length,
-        ].join("~"),
-      )
-      .join("|");
+    return (
+      (cur.fid || "") +
+      "@" +
+      foldersOf(P)
+        .map((f) => [f.id, f.name, f.color].join("~"))
+        .join("|") +
+      "@" +
+      P.creatives
+        .map((c) =>
+          [
+            c.id,
+            c.title || "",
+            posterOf(c),
+            filesSig(c),
+            openCC(c.id).length,
+            fidOf(P, c) || "",
+          ].join("~"),
+        )
+        .join("|")
+    );
   }
+  /* glavni prikaz: folderi (samo oni sa kreativama), pa kreative van foldera; u folderu: njegove kreative */
   function galBody(P) {
-    const L = P.creatives;
-    return L.length
-      ? `<ol class="glist">${L.map((c, i) => gcardHTML(c, i)).join("")}</ol>`
-      : `<div class="rempty"><span class="ric" aria-hidden="true">${I_FILM}</span><h2>Kreative stižu uskoro</h2></div>`;
+    const F = folderOf(P, cur.fid),
+      L = crIn(P, F ? F.id : null),
+      FS = F
+        ? []
+        : foldersOf(P)
+            .map((f) => ({ f, L: crIn(P, f.id) }))
+            .filter((x) => x.L.length);
+    if (!L.length && !FS.length)
+      return `<div class="rempty"><span class="ric" aria-hidden="true">${I_FILM}</span><h2>${F ? "Folder je prazan" : "Kreative stižu uskoro"}</h2></div>`;
+    return (
+      (FS.length
+        ? `<ol class="gfolds">${FS.map((x, i) => gfoldHTML(x.f, x.L, i)).join("")}</ol>`
+        : "") +
+      (FS.length && L.length
+        ? `<div class="gsec" style="--i:${FS.length}"><span>Ostale kreative</span><i></i></div>`
+        : "") +
+      (L.length
+        ? `<ol class="glist">${L.map((c, i) => gcardHTML(c, i + FS.length)).join("")}</ol>`
+        : "")
+    );
+  }
+  function gfoldHTML(f, L, i) {
+    const th = L.map(posterOf).filter(Boolean).slice(0, 3),
+      cm = L.reduce((a, c) => a + openCC(c.id).length, 0),
+      n = `${L.length} ${pl(L.length, "kreativa", "kreative", "kreativa")}`;
+    return `<li class="gfi" style="--i:${i};--fc:${esc(f.color || "#d4919b")}"><button class="gfold" type="button" data-fid="${esc(f.id)}" aria-label="Folder ${esc(f.name || "Folder")}, ${n}">
+      <span class="gf-back" aria-hidden="true"></span>
+      <span class="gf-th" aria-hidden="true">${th.map((src, k) => `<img src="${esc(src)}" alt="" decoding="async" style="--k:${k};--n:${th.length}">`).join("")}</span>
+      <span class="gf-front"><span class="gf-n">${esc(f.name || "Folder")}</span><span class="gf-c">${n}${cm ? `<i class="scm" aria-label="Ima komentar">${I_MSG}</i>` : ""}</span><span class="gf-go" aria-hidden="true">${I_ARR}</span></span>
+    </button></li>`;
+  }
+  function folderHead(P, F, mode) {
+    const ws = String(F.name || "Folder")
+        .trim()
+        .split(/\s+/),
+      n = crIn(P, F.id).length;
+    return (
+      headHTML(
+        [
+          ws.length > 1
+            ? [
+                { t: ws.slice(0, -1).join(" ") + " " },
+                { t: ws[ws.length - 1], em: true },
+              ]
+            : [{ t: ws[0] }],
+        ],
+        mode,
+      ) +
+      `<p class="gfk"><i aria-hidden="true"></i>${esc(periodLabel(P.it))} · ${n} ${pl(n, "kreativa", "kreative", "kreativa")}</p>`
+    );
   }
   function gcardHTML(c, i) {
     const k = kindOf(c),
@@ -4756,17 +4862,32 @@ p{line-height:1.65;margin:0}
       <span class="gtitle">${titleWithIcon(c.title || "Kreativa", cm ? `<i class="scm" aria-label="Ima komentar">${I_MSG}</i>` : "")}</span>
     </button></li>`;
   }
+  const galHead = (P) => {
+    const F = folderOf(P, cur.fid);
+    return F ? `${F.id}~${F.name}~${F.color}~${crIn(P, F.id).length}` : "";
+  };
   function vGallery(P, mode) {
-    const en = mode === "enter" || mode === "swap";
+    const en = mode === "enter" || mode === "swap",
+      F = folderOf(P, cur.fid);
     hovCard = null;
-    rmain.innerHTML = `<section class="v-gal${en ? " enter" : ""}" data-sig="${esc(galSig(P))}">${headHTML([nameParts(P.it)], mode)}<div class="gbody">${galBody(P)}</div></section>`;
+    rmain.innerHTML = `<section class="v-gal${en ? " enter" : ""}${F ? " infold" : ""}" data-sig="${esc(galSig(P))}" data-head="${esc(galHead(P))}"${F ? ` style="--fc:${esc(F.color || "#d4919b")}"` : ""}>${F ? folderHead(P, F, mode) : headHTML([nameParts(P.it)], mode)}<div class="gbody">${galBody(P)}</div></section>`;
     after(mode);
   }
   function updGallery() {
     const P = ST.P.get(cur.pid),
       sec = rmain.querySelector(".v-gal");
     if (!P || !sec) return;
+    /* otvoren folder je obrisan u OS-u: nazad na sve kreative perioda */
+    if (cur.fid && !folderOf(P, cur.fid) && !cur.cid) {
+      go({ sec: "cr", v: "gallery", pid: cur.pid });
+      return;
+    }
     const sig = galSig(P);
+    if (sec.dataset.head !== galHead(P)) {
+      vGallery(P, "update");
+      if (!th.hidden) updTheater();
+      return;
+    }
     if (sec.dataset.sig !== sig) {
       sec.dataset.sig = sig;
       sec.classList.remove("enter");
@@ -5492,7 +5613,10 @@ p{line-height:1.65;margin:0}
       i = L.findIndex((x) => x.id === cur.cid),
       n = L[i + d];
     if (i < 0 || !n) return false;
-    go({ sec: "cr", v: "gallery", pid: cur.pid, cid: n.id }, { dir: d });
+    go(
+      { sec: "cr", v: "gallery", pid: cur.pid, fid: cur.fid, cid: n.id },
+      { dir: d },
+    );
     return true;
   }
   th.addEventListener("click", (e) => {
@@ -6384,7 +6508,7 @@ p{line-height:1.65;margin:0}
     }
     if (
       (e.clientX || e.clientY) &&
-      (d.pid || d.type || d.rid || d.sid || d.crid)
+      (d.pid || d.type || d.rid || d.sid || d.crid || d.fid)
     )
       FX.sparks(e.clientX, e.clientY, 20, true);
     if (d.pid && cur.v === "periods")
@@ -6396,8 +6520,13 @@ p{line-height:1.65;margin:0}
             : { sec: "rep", v: "types", pid: d.pid },
         t,
       );
+    else if (d.fid && cur.sec === "cr" && cur.v === "gallery" && !cur.fid)
+      navTo({ sec: "cr", v: "gallery", pid: cur.pid, fid: d.fid }, t);
     else if (d.crid && cur.v === "gallery")
-      navTo({ sec: "cr", v: "gallery", pid: cur.pid, cid: d.crid }, t);
+      navTo(
+        { sec: "cr", v: "gallery", pid: cur.pid, fid: cur.fid, cid: d.crid },
+        t,
+      );
     else if (d.type && cur.v === "types")
       navTo({ sec: "rep", v: "list", pid: cur.pid, type: d.type }, t);
     else if (d.rid && cur.v === "list" && !isViewer(cur))
