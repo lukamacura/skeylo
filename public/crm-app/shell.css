@@ -846,3 +846,8 @@ html.gated body > :not(.gate) {
     transition: none;
   }
 }
+
+/* sklonjen dashboard (dok je otvorena stranica): bez preračuna stilova za njegove ambijent petlje */
+.page.away {
+  content-visibility: hidden;
+}

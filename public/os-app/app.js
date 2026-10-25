@@ -6,6 +6,14 @@
     nina: "/os-app/img/f8e39d5612.jpg",
   };
   const ICON = "/os-app/img/e20eeaf7f1.png";
+  /* tempo animacija (motion.js): adl = kašnjenje ulaska upisano u HTML (s), MT = tajmer koji čeka animaciju (ms) */
+  const adl = window.OS_DL || ((s) => s),
+    MT = window.OS_T || ((ms) => ms);
+  /* kašnjenja ulaska upisana u index.html (kartice dashboarda, naslovi) idu kroz istu krivu */
+  document.querySelectorAll('[style*="animation-delay"]').forEach((el) => {
+    const d = parseFloat(el.style.animationDelay);
+    if (d > 0) el.style.animationDelay = adl(d) + "s";
+  });
   // Pozadina Start kartice po osobi (Filip: podrazumevana iz index.html)
   const START_BG = {
     luka: "/os-app/img/start_luka.webp",
@@ -166,7 +174,7 @@
         o.classList.add("nm");
         s.textContent = w.replace("{N}", nm);
       } else s.textContent = w;
-      s.style.animationDelay = 0.15 + i * 0.06 + "s";
+      s.style.animationDelay = adl(0.15 + i * 0.06) + "s";
       o.appendChild(s);
       h.appendChild(o);
       if (i < a.length - 1) h.appendChild(document.createTextNode(" "));
@@ -864,6 +872,18 @@
     "fc",
   ];
   let view = { name: "dash" };
+  /* ekran koji je u ovoj sesiji već viđen: sadržaj stoji odmah (ulazne animacije delova se
+     završe pre prvog kadra), a pomera se samo ceo ekran (.enter). Petlje ostaju. */
+  const seenScreens = new Set();
+  function settleIn(el) {
+    for (const a of el.getAnimations({ subtree: true }))
+      if (
+        a.effect.target !== el &&
+        a instanceof CSSAnimation &&
+        a.effect.getTiming().iterations !== Infinity
+      )
+        a.finish();
+  }
   function show(id) {
     setTimeout(() => {
       try {
@@ -878,6 +898,9 @@
           el.hidden = false;
           el.classList.remove("leave");
           el.classList.add("enter");
+          if (seenScreens.has(s) && !reduce)
+            requestAnimationFrame(() => !el.hidden && settleIn(el));
+          seenScreens.add(s);
         }
       } else el.hidden = true;
     });
@@ -1331,9 +1354,7 @@
     const anim = firstPM;
     firstPM = false;
     const d = (v) =>
-      anim
-        ? ` style="animation-delay:${v.toFixed(2)}s"`
-        : ' style="animation:none"';
+      anim ? ` style="animation-delay:${adl(v)}s"` : ' style="animation:none"';
     const sl = root.scrollLeft;
     root.innerHTML = S.clients
       .map((c, ci) => {
@@ -1351,7 +1372,7 @@
             return `<button class="row${it === cur ? " current" : ""}${fresh ? " new" : ""}" data-item="${esc(it.id)}"${fresh ? "" : d(0.2 + ci * 0.1 + i * 0.05)}>${logo(c, "ri")}<span class="tt">${esc(it.title)}</span>${it === cur ? '<span class="dot"></span>' : ""}${IC.go}</button>`;
           })
           .join("");
-        return `<section class="col" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${(0.05 + ci * 0.1).toFixed(2)}s` : "animation:none"}">
+        return `<section class="col" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(0.05 + ci * 0.1)}s` : "animation:none"}">
       <div class="col-h"><button class="cplat" data-plat="${esc(c.id)}" title="Client Platform">${logo(c, "lg-ic")}<h2>${esc(c.name)}</h2></button><span class="n">${list.length}</span><button class="plus" data-add="${esc(c.id)}" aria-label="${addLbl}">${IC.plus}</button></div>
       <div class="rows">${rows || `<div class="tnone">Klikni + gore da dodaš ${c.kind === "internal" ? "projekat" : "mesec"}</div>`}</div>
       ${c.kind === "internal" ? "" : `<div class="cfoot"><button class="cdel clogo" data-clogo="${esc(c.id)}">${SV('<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>')}${logoOf(c) ? "Promeni logo" : "Dodaj logo"}</button><button class="cdel" data-cdel="${esc(c.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši klijenta</button></div>`}
@@ -1496,7 +1517,7 @@
     );
     const bars = STATUSES.map((st, i) => {
       const n = scripts.filter((s) => (s.status || "write") === st.id).length;
-      return `<div class="bar${n ? "" : " zero"}" style="--c:${st.c}"><span class="stag">${st.name}</span><span class="track"><span class="fill" style="--p:${(n / max).toFixed(3)};${anim ? `animation-delay:${(0.45 + i * 0.07).toFixed(2)}s` : "animation:none"}"></span></span><span class="cnt">${n}</span></div>`;
+      return `<div class="bar${n ? "" : " zero"}" style="--c:${st.c}"><span class="stag">${st.name}</span><span class="track"><span class="fill" style="--p:${(n / max).toFixed(3)};${anim ? `animation-delay:${adl(0.45 + i * 0.07)}s` : "animation:none"}"></span></span><span class="cnt">${n}</span></div>`;
     }).join("");
     const word = (n) =>
       n % 10 === 1 && n % 100 !== 11
@@ -1504,7 +1525,7 @@
         : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
           ? "skripte"
           : "skripti";
-    root.innerHTML = `<button class="mod" data-go="cm-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.12s" : "animation:none"}">
+    root.innerHTML = `<button class="mod" data-go="cm-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(0.12)}s` : "animation:none"}">
     <div class="mod-l"><div class="mod-top"><span class="mi">${IC_BOARD}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Content<br>Manager</h2><div class="tot"><b id="mhTot">${scripts.length}</b>${word(scripts.length)}</div>${(() => {
       const n = S.comments.filter(
         (c) => !c.resolved && scripts.some((x) => x.id === c.scriptId),
@@ -1544,11 +1565,11 @@
       ? latest
           .map(
             (r, i) =>
-              `<div class="rp-li" style="${anim ? `animation-delay:${(0.5 + i * 0.08).toFixed(2)}s` : "animation:none"}"><span class="n">${String(reps.indexOf(r) + 1).padStart(2, "0")}</span><span class="t">${esc(r.title || "Izveštaj")}</span><span class="d">${r.createdAt ? fmtDay.format(new Date(r.createdAt)) : ""}</span></div>`,
+              `<div class="rp-li" style="${anim ? `animation-delay:${adl(0.5 + i * 0.08)}s` : "animation:none"}"><span class="n">${String(reps.indexOf(r) + 1).padStart(2, "0")}</span><span class="t">${esc(r.title || "Izveštaj")}</span><span class="d">${r.createdAt ? fmtDay.format(new Date(r.createdAt)) : ""}</span></div>`,
           )
           .join("")
       : '<div class="rp-none">Još nema izveštaja za ovaj mesec</div>';
-    return `<button class="mod" data-go="r-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.24s" : "animation:none"}">
+    return `<button class="mod" data-go="r-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(0.24)}s` : "animation:none"}">
     <div class="mod-l"><div class="mod-top"><span class="mi">${IC_REPORT}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Reporting<br>Dashboard</h2><div class="tot"><b>${reps.length}</b>${rword(reps.length)}</div></div></div>
   </button>`;
   }
@@ -1644,7 +1665,7 @@
   }
   function financeCard(it, c, anim) {
     const f = finOf(it.id);
-    return `<button class="mod" data-go="f-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.36s" : "animation:none"}">
+    return `<button class="mod" data-go="f-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(0.36)}s` : "animation:none"}">
     <div class="mod-l"><div class="mod-top"><span class="mi">${SV('<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3-1.6M12 6.5V8M12 16.8v1.7"/>')}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Finances</h2><div class="tot">${f && f.paid && f.paid.amount ? `<b>${esc(f.paid.cur === "EUR" ? "€" + nf2.format(f.paid.amount) : nf.format(f.paid.amount))}</b>${f.paid.cur === "EUR" ? "uplaćeno" : "RSD uplaćeno"}` : "Još nije upisano"}</div></div></div>
   </button>`;
   }
@@ -1661,7 +1682,7 @@
             (a.updatedAt || a.createdAt || 0),
         )
         .slice(0, 3);
-    return `<button class="mod" data-go="mg-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? "animation-delay:.42s" : "animation:none"}">
+    return `<button class="mod" data-go="mg-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(0.42)}s` : "animation:none"}">
     <div class="mod-l"><div class="mod-top"><span class="mi">${SV('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>')}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>General</h2><div class="tot">${n ? `<b>${n}</b>${n % 10 === 1 && n % 100 !== 11 ? "stranica" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "stranice" : "stranica"}` : "Marketing plan, optimizacije, CRO"}</div>${top.length ? `<div class="mh-gp">${top.map((p) => `<span>${esc(p.title || "Bez naslova")}</span>`).join("")}</div>` : ""}</div></div>
   </button>`;
   }
@@ -1720,8 +1741,7 @@
     const sumR = rows.reduce((a, r) => a + r.r, 0);
     const rest = paidR - sumR;
     const base = Math.max(paidR, sumR, 1);
-    const d = (v) =>
-      anim ? `animation-delay:${v.toFixed(2)}s` : "animation:none";
+    const d = (v) => (anim ? `animation-delay:${adl(v)}s` : "animation:none");
     body.innerHTML = `
     <section class="fhero" style="${d(0.08)}">
       <div><div class="flbl">Klijent je platio</div>
@@ -1836,13 +1856,13 @@
       const sumR = MEMBERS.reduce((a, m) => a + toRSD(W.vals[m.id]), 0);
       return `<h2 class="wq">Sve <span class="nmg">ok?</span></h2>
       <div class="wsum">
-        <div class="r tot" style="animation-delay:.05s">${logo(W.c, "lg-ic")}<span>${esc(W.c.name)} je platio</span><b>${moneyV(W.vals.paid)}</b></div>
+        <div class="r tot" style="animation-delay:${adl(0.05)}s">${logo(W.c, "lg-ic")}<span>${esc(W.c.name)} je platio</span><b>${moneyV(W.vals.paid)}</b></div>
         ${MEMBERS.map((m, i) => {
           const u = TEAM.find((t) => t.id === m.id);
-          return `<div class="r" style="animation-delay:${(0.1 + i * 0.06).toFixed(2)}s"><img src="${IMG[u.id]}" alt=""><span>${u.name}</span><b>${moneyV(W.vals[m.id])}</b></div>`;
+          return `<div class="r" style="animation-delay:${adl(0.1 + i * 0.06)}s"><img src="${IMG[u.id]}" alt=""><span>${u.name}</span><b>${moneyV(W.vals[m.id])}</b></div>`;
         }).join("")}
-        <div class="r" style="animation-delay:.4s"><span class="lg-ic sk"><img src="${ICON}" alt=""></span><span>Ostaje Skeylu</span><b>${nf.format(Math.round(paidR - sumR))} RSD</b></div>
-        ${W.per ? `<div class="r wper" style="animation-delay:.46s"><span>Mesec zarade</span><div class="mswitch"><button type="button" data-wper="-1" aria-label="Prethodni mesec">${SV('<path d="m15 18-6-6 6-6"/>', 2.4)}</button><span id="wperT">${ymName(W.per.year, W.per.month)}</span><button type="button" data-wper="1" aria-label="Sledeći mesec">${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}</button></div></div>` : ""}
+        <div class="r" style="animation-delay:${adl(0.4)}s"><span class="lg-ic sk"><img src="${ICON}" alt=""></span><span>Ostaje Skeylu</span><b>${nf.format(Math.round(paidR - sumR))} RSD</b></div>
+        ${W.per ? `<div class="r wper" style="animation-delay:${adl(0.46)}s"><span>Mesec zarade</span><div class="mswitch"><button type="button" data-wper="-1" aria-label="Prethodni mesec">${SV('<path d="m15 18-6-6 6-6"/>', 2.4)}</button><span id="wperT">${ymName(W.per.year, W.per.month)}</span><button type="button" data-wper="1" aria-label="Sledeći mesec">${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}</button></div></div>` : ""}
       </div>`;
     }
     const v = W.vals[k];
@@ -2113,9 +2133,7 @@
       .filter((p) => p.clientId === c.id)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
     const d = (i) =>
-      anim
-        ? `animation-delay:${(0.08 + i * 0.06).toFixed(2)}s`
-        : "animation:none";
+      anim ? `animation-delay:${adl(0.08 + i * 0.06)}s` : "animation:none";
     g.innerHTML = `<div class="cptile ang" role="button" tabindex="0" data-go="ang-${esc(c.id)}" style="--c:${col};${d(0)}">
       <div class="mod-top"><span class="ci">${SV('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>', 1.9)}</span><span class="arrow" aria-hidden="true" style="width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--grad);color:var(--on-accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
       <div><h3>Angles</h3><div class="meta2">${angs.length ? angs.length + (angs.length % 10 === 1 && angs.length % 100 !== 11 ? " ugao" : " uglova") : "Još nema uglova"}</div></div>
@@ -2125,7 +2143,7 @@
               .slice(0, 8)
               .map(
                 (a, i) =>
-                  `<span class="achip" style="${anim ? `animation-delay:${(0.35 + i * 0.05).toFixed(2)}s` : "animation:none"}">${esc(a.name || "Bez naziva")}</span>`,
+                  `<span class="achip" style="${anim ? `animation-delay:${adl(0.35 + i * 0.05)}s` : "animation:none"}">${esc(a.name || "Bez naziva")}</span>`,
               )
               .join(
                 "",
@@ -2306,7 +2324,7 @@
         (
           a,
           i,
-        ) => `<div class="angrow${S.fresh.has(a.id) ? " new" : ""}" data-aid="${esc(a.id)}" style="${anim ? `animation-delay:${(0.08 + i * 0.05).toFixed(2)}s` : "animation:none"}">
+        ) => `<div class="angrow${S.fresh.has(a.id) ? " new" : ""}" data-aid="${esc(a.id)}" style="${anim ? `animation-delay:${adl(0.08 + i * 0.05)}s` : "animation:none"}">
       <div class="an"><textarea rows="1" data-f="name" placeholder="Naziv ugla">${esc(a.name || "")}</textarea></div>
       <div><div class="l2">Pain Point</div><textarea rows="1" data-f="pain" placeholder="Šta ih muči?">${esc(a.pain || "")}</textarea></div>
       <div><div class="l2">Selling Point</div><textarea rows="1" data-f="sell" placeholder="Kako im mi to rešavamo?">${esc(a.sell || "")}</textarea></div>
@@ -2416,11 +2434,11 @@
       ms
         .map(
           (m, i) =>
-            `<img src="${esc(m.photo)}" alt="" style="animation-delay:${(0.3 + i * 0.06).toFixed(2)}s">`,
+            `<img src="${esc(m.photo)}" alt="" style="animation-delay:${adl(0.3 + i * 0.06)}s">`,
         )
         .join("") +
       (rest > 0
-        ? `<span style="animation-delay:${(0.3 + ms.length * 0.06).toFixed(2)}s">+${rest}</span>`
+        ? `<span style="animation-delay:${adl(0.3 + ms.length * 0.06)}s">+${rest}</span>`
         : "")
     );
   }
@@ -2478,7 +2496,7 @@
     }
     if (!anim) $("#general .phead .w>span").style.animation = "none";
     $("#gmods").innerHTML =
-      `<button class="gmod" data-go="models" style="${anim ? "animation-delay:.1s" : "animation:none"}">
+      `<button class="gmod" data-go="models" style="${anim ? `animation-delay:${adl(0.1)}s` : "animation:none"}">
     <div class="mod-top"><span class="mi">${SV('<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M16 4a4 4 0 0 1 0 8M22 21v-1a7 7 0 0 0-4-6.3"/>')}</span><span class="avstack">${S.ready ? avStack(4) : ""}</span></div>
     <div><h2>Models</h2><div class="tot"><b>${S.models.length}</b>${S.models.length % 10 === 1 && S.models.length % 100 !== 11 ? "model" : "modela"}</div></div>
   </button>`;
@@ -2533,7 +2551,7 @@
     root.innerHTML = list
       .map((m, i) => {
         const ig = igUrl(m.instagram);
-        return `<article class="mdl${S.fresh.has(m.id) ? " new" : ""}" style="${anim ? `animation-delay:${(0.08 + i * 0.05).toFixed(2)}s` : "animation:none"}">
+        return `<article class="mdl${S.fresh.has(m.id) ? " new" : ""}" style="${anim ? `animation-delay:${adl(0.08 + i * 0.05)}s` : "animation:none"}">
     <div class="ph2">${m.photo ? `<img src="${esc(m.photo)}" alt="${esc(m.name)}" loading="lazy">` : `<span class="ini">${esc(initials(m.name))}</span>`}<div class="nm">${esc(m.name)}</div>
       <div class="tools"><button data-medit="${esc(m.id)}" aria-label="Izmeni ${esc(m.name)}">${SV('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')}</button><button class="del" data-mdel="${esc(m.id)}" aria-label="Obriši ${esc(m.name)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}</button></div></div>
     <div class="info">
@@ -2839,7 +2857,7 @@
       list
         .map(
           (m, i) =>
-            `<button type="button" class="mopt" data-pick="${esc(m.id)}" aria-pressed="${pickSel.has(m.id)}" style="animation-delay:${first ? (0.05 + i * 0.03).toFixed(2) : 0}s${first ? "" : ";animation:none"}"><span class="wp">${m.photo ? `<img src="${esc(m.photo)}" alt="">` : `<span class="ini2">${esc(initials(m.name))}</span>`}<span class="ok">${IC.check.replace('class="check"', "")}</span></span><span class="nm">${esc(m.name)}</span></button>`,
+            `<button type="button" class="mopt" data-pick="${esc(m.id)}" aria-pressed="${pickSel.has(m.id)}" style="animation-delay:${first ? adl(0.05 + i * 0.03) : 0}s${first ? "" : ";animation:none"}"><span class="wp">${m.photo ? `<img src="${esc(m.photo)}" alt="">` : `<span class="ini2">${esc(initials(m.name))}</span>`}<span class="ok">${IC.check.replace('class="check"', "")}</span></span><span class="nm">${esc(m.name)}</span></button>`,
         )
         .join("") +
       legacy
@@ -3064,7 +3082,7 @@
     const others = mode === "member" ? t.assignees || [] : t.assignees || [];
     const showAvs = mode === "proj" || others.length > 1;
     const fresh = S.fresh.has(t.id);
-    return `<div class="tcard${t.done ? " done" : ""}${fresh ? " new" : ""}" data-task="${esc(t.id)}" style="--c:${colColor};--stripe:${stripe(t.assignees)};${fresh ? "" : delay != null ? `animation-delay:${delay.toFixed(2)}s` : "animation:none"}">
+    return `<div class="tcard${t.done ? " done" : ""}${fresh ? " new" : ""}" data-task="${esc(t.id)}" style="--c:${colColor};--stripe:${stripe(t.assignees)};${fresh ? "" : delay != null ? `animation-delay:${adl(delay)}s` : "animation:none"}">
     <button class="tck" data-tck="${esc(t.id)}" aria-label="${t.done ? "Vrati task" : "Završi task"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></button>
     <div class="tbody"><div class="ttl">${esc(t.title)}</div>
       <div class="tmeta">${mode === "member" ? `<span class="tchip proj" style="--c:${esc(tc.color || "#888")}">${logo(tc, "ri")}${esc(cName(tc))}</span>` : ""}${dateChip(t)}${showAvs ? `<span class="avs">${others.map((i) => (IMG[i] ? `<img src="${IMG[i]}" alt="${esc(i)}">` : "")).join("")}</span>` : ""}</div>
@@ -3122,7 +3140,7 @@
           .filter((t) => t.done)
           .sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
         const d = (i) => (anim ? 0.18 + ci * 0.07 + i * 0.05 : null);
-        return `<section class="col tcol${TBLACK[col.k] && tView === "member" ? " blk" : ""}" data-k="${esc(col.k)}" style="--c:${col.color};${anim ? `animation-delay:${(0.05 + ci * 0.07).toFixed(2)}s` : "animation:none"}">
+        return `<section class="col tcol${TBLACK[col.k] && tView === "member" ? " blk" : ""}" data-k="${esc(col.k)}" style="--c:${col.color};${anim ? `animation-delay:${adl(0.05 + ci * 0.07)}s` : "animation:none"}">
       <div class="col-h">${col.head}<span class="n">${open.length}</span><button class="plus" data-tadd='${esc(JSON.stringify(col.pre))}' aria-label="Add Task">${IC.plus}</button></div>
       <div class="trows">${open.length ? open.map((t, i) => tcardHTML(t, col.color, tView, d(i))).join("") : '<div class="tnone">Nema otvorenih taskova</div>'}</div>
       ${done.length ? `<details class="tdone" data-k="${esc(col.k)}"${openStates[col.k] ? " open" : ""}><summary>${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}Završeno · ${done.length}</summary><div class="trows">${done.map((t) => tcardHTML(t, col.color, tView, null)).join("")}</div></details>` : ""}
@@ -3180,7 +3198,7 @@
       tBusy = true;
       setTimeout(() => {
         card.classList.add("leaving");
-      }, 380);
+      }, MT(380));
     }
     try {
       await api.upd("tasks", id, {
@@ -3503,14 +3521,14 @@
     <div class="whos">${["luka", "mihajlo", "nina", "filip"]
       .map((id, i) => {
         const u = TEAM.find((x) => x.id === id);
-        return `<button type="button" class="who${TBLACK[id] ? " blk" : ""}" data-who="${id}" aria-pressed="${T.who.has(id)}" style="--m:${TCOL[id]};animation:rowIn .5s ${(0.1 + i * 0.07).toFixed(2)}s var(--ease) backwards"><span class="wp"><img src="${IMG[id]}" alt=""><span class="ok">${IC.check.replace('class="check"', "")}</span></span><span class="nm">${u.name}</span></button>`;
+        return `<button type="button" class="who${TBLACK[id] ? " blk" : ""}" data-who="${id}" aria-pressed="${T.who.has(id)}" style="--m:${TCOL[id]};animation:rowIn ${MT(500)}ms ${adl(0.1 + i * 0.07)}s var(--ease) backwards"><span class="wp"><img src="${IMG[id]}" alt=""><span class="ok">${IC.check.replace('class="check"', "")}</span></span><span class="nm">${u.name}</span></button>`;
       })
       .join("")}</div>
     <div class="whint">Možeš izabrati više ljudi</div>`;
     if (k === "proj") {
       const cs = [...S.clients].sort((a, b) => (a.order || 0) - (b.order || 0));
       return `<h2 class="wq">Which client <span class="nmg">is it for?</span></h2>
-    <div class="projs">${cs.map((c, i) => `<button type="button" class="popt" data-proj="${esc(c.id)}" aria-pressed="${T.client === c.id}" style="--c:${esc(c.color || "#e1802c")};animation-delay:${(0.08 + i * 0.05).toFixed(2)}s">${logo(c, "lg-ic")}<span>${esc(c.name)}</span></button>`).join("")}</div>`;
+    <div class="projs">${cs.map((c, i) => `<button type="button" class="popt" data-proj="${esc(c.id)}" aria-pressed="${T.client === c.id}" style="--c:${esc(c.color || "#e1802c")};animation-delay:${adl(0.08 + i * 0.05)}s">${logo(c, "lg-ic")}<span>${esc(c.name)}</span></button>`).join("")}</div>`;
     }
     if (k === "job")
       return `<h2 class="wq">What's <span class="nmg">the job?</span></h2><textarea class="wjob" id="tjob" rows="1" maxlength="200" placeholder="Opiši task…">${esc(T.job)}</textarea><div class="whint">Enter za dalje</div>`;
@@ -3750,8 +3768,7 @@
     const idx = sorted.indexOf(key);
     const anim = firstMoney;
     firstMoney = false;
-    const d = (v) =>
-      anim ? `animation-delay:${v.toFixed(2)}s` : "animation:none";
+    const d = (v) => (anim ? `animation-delay:${adl(v)}s` : "animation:none");
     // last 6 months ending at max(current, selected)
     const end = Math.max(thisKey(), key);
     const span = [];
@@ -3968,7 +3985,7 @@
       .reverse()
       .map(({ r, i }, k) => {
         const fresh = S.fresh.has(r.id);
-        return `<article class="rcard" style="--c:${esc(c.color || "#e1802c")};${fresh ? "" : anim ? `animation-delay:${(0.1 + k * 0.08).toFixed(2)}s` : "animation:none"}">
+        return `<article class="rcard" style="--c:${esc(c.color || "#e1802c")};${fresh ? "" : anim ? `animation-delay:${adl(0.1 + k * 0.08)}s` : "animation:none"}">
       <div class="rtools"><button class="rtool" data-edit-report="${esc(r.id)}" aria-label="Uredi izveštaj" title="Uredi">${SV('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')}</button><button class="rtool del" data-del-report="${esc(r.id)}" aria-label="Obriši izveštaj" title="Obriši">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}</button></div>
       <div class="rn">${String(i + 1).padStart(2, "0")}</div>
       <div class="rt">${esc(r.title || "Izveštaj")}</div>
@@ -4287,7 +4304,7 @@
     const fresh = S.fresh.has(s.id);
     const models = (s.models || []).filter(Boolean).map(modelRef);
     const cc = openComments(s.id).length;
-    return `<div class="scard${fresh ? " new" : ""}${cc ? " has-cc" : ""}" role="button" tabindex="0" data-script="${esc(s.id)}" style="--c:${c};${fresh ? "" : anim ? `animation-delay:${delay.toFixed(2)}s` : "animation:none"}">
+    return `<div class="scard${fresh ? " new" : ""}${cc ? " has-cc" : ""}" role="button" tabindex="0" data-script="${esc(s.id)}" style="--c:${c};${fresh ? "" : anim ? `animation-delay:${adl(delay)}s` : "animation:none"}">
     ${cc ? `<span class="sc-cc" title="Komentari klijenta" aria-label="${cc} ${ccWord(cc)} klijenta">${IC.msg}<b>${cc}</b></span>` : ""}
     <div class="st${s.title ? "" : " empty"}">${esc(s.title || "Bez naziva")}</div>
     ${s.angle ? `<div class="meta">${IC.angle}<span>${esc(s.angle)}</span></div>` : ""}
@@ -4342,9 +4359,9 @@
       const list = scripts
         .filter((s) => (s.status || "write") === st.id)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
-      return `<section class="col scol" data-status="${st.id}" style="--c:${st.c};${anim ? `animation-delay:${(0.05 + si * 0.07).toFixed(2)}s` : "animation:none"}">
+      return `<section class="col scol" data-status="${st.id}" style="--c:${st.c};${anim ? `animation-delay:${adl(0.05 + si * 0.07)}s` : "animation:none"}">
       <div class="col-h"><span class="stag">${st.name}</span><span class="n">${list.length}</span><button class="plus" data-new="${st.id}" aria-label="Nova skripta u ${st.name}">${IC.plus}</button></div>
-      <div class="srows">${list.map((s, i) => cardHTML(s, st.c, anim, 0.18 + si * 0.07 + i * 0.05)).join("")}<button class="row add" data-new="${st.id}"${anim ? ` style="animation-delay:${(0.2 + si * 0.07 + list.length * 0.05).toFixed(2)}s"` : ' style="animation:none"'}><span class="ri">${IC.plus}</span><span class="tt">Nova skripta</span></button></div>
+      <div class="srows">${list.map((s, i) => cardHTML(s, st.c, anim, 0.18 + si * 0.07 + i * 0.05)).join("")}<button class="row add" data-new="${st.id}"${anim ? ` style="animation-delay:${adl(0.2 + si * 0.07 + list.length * 0.05)}s"` : ' style="animation:none"'}><span class="ri">${IC.plus}</span><span class="tt">Nova skripta</span></button></div>
     </section>`;
     }).join("");
     root.scrollLeft = sl;
@@ -7195,7 +7212,7 @@
   }
   function entCard(e, delay) {
     const s = S.scripts.find((x) => x.id === e.scriptId);
-    return `<div class="ent${S.fresh.has(e.id) ? " new" : ""}" data-ent="${esc(e.id)}" style="--ec:${esc(e.color || ECOL[0])};${delay != null ? `animation-delay:${delay.toFixed(2)}s` : "animation:none"}">
+    return `<div class="ent${S.fresh.has(e.id) ? " new" : ""}" data-ent="${esc(e.id)}" style="--ec:${esc(e.color || ECOL[0])};${delay != null ? `animation-delay:${adl(delay)}s` : "animation:none"}">
     <button type="button" class="edel" data-edel="${esc(e.id)}" aria-label="Obriši entitet" title="Obriši entitet">${ICK.trash}</button>
     <div class="en">${esc(e.name || "Entitet")}${(e.models || []).length ? entAvs(e.models, 3) : ""}</div>
     <div class="em">${e.location ? `<span class="ec">${ICK.pin}${esc(e.location)}</span>` : ""}<span class="ec">${ICK.clock}${fmtDur(e.duration)}</span>${e.props ? `<span class="ec">${ICK.box}Rekviziti</span>` : ""}</div>
@@ -7358,7 +7375,7 @@
         })),
       ].sort(bySt);
       const mods = [...new Set(ents.flatMap((e) => e.models || []))];
-      return `<div class="cday${d.getMonth() !== st.m ? " out" : ""}${ds === today ? " today" : ""}${ents.length ? " has" : ""}${evs.length ? " hasev" : ""}" data-day="${ds}" role="button" tabindex="0" style="${anim ? `animation-delay:${(i * 0.008).toFixed(3)}s` : "animation:none"}">
+      return `<div class="cday${d.getMonth() !== st.m ? " out" : ""}${ds === today ? " today" : ""}${ents.length ? " has" : ""}${evs.length ? " hasev" : ""}" data-day="${ds}" role="button" tabindex="0" style="${anim ? `animation-delay:${adl(i * 0.008)}s` : "animation:none"}">
       <div class="dn"><span>${d.getDate()}</span>${tot ? `<em>${fmtDur(tot)}</em>` : ""}</div>
       <div class="chips" style="display:grid;gap:4px">${chipItems
         .slice(0, 3)
@@ -7447,7 +7464,7 @@
     );
     if (anim) {
       $("#ckHero").innerHTML =
-        `<h1><span class="w"><span>Organisation</span></span><br><span class="w"><span style="animation-delay:.1s">Cockpit</span></span></h1>
+        `<h1><span class="w"><span>Organisation</span></span><br><span class="w"><span style="animation-delay:${adl(0.1)}s">Cockpit</span></span></h1>
       ${[
         [4, 18, "0s"],
         [42, 6, "-.8s"],
@@ -7463,7 +7480,7 @@
       <div class="ckstats" id="ckStats"></div>`;
     }
     $("#ckStats").innerHTML =
-      `<span class="ckstat" style="animation-delay:.3s"><b>${sched.length}</b>${sched.length === 1 ? "skripta za zakazivanje" : "skripti za zakazivanje"}</span><span class="ckstat" style="animation-delay:.38s"><b>${unsched.length}</b>entiteta čeka datum</span><span class="ckstat" style="animation-delay:.46s"><b>${weekDays.size}</b>${weekDays.size === 1 ? "snimajući dan" : "snimajućih dana"} ove nedelje</span>`;
+      `<span class="ckstat" style="animation-delay:${adl(0.3)}s"><b>${sched.length}</b>${sched.length === 1 ? "skripta za zakazivanje" : "skripti za zakazivanje"}</span><span class="ckstat" style="animation-delay:${adl(0.38)}s"><b>${unsched.length}</b>entiteta čeka datum</span><span class="ckstat" style="animation-delay:${adl(0.46)}s"><b>${weekDays.size}</b>${weekDays.size === 1 ? "snimajući dan" : "snimajućih dana"} ove nedelje</span>`;
     $("#ckCntS").textContent = sched.length;
     $("#ckCntE").textContent = unsched.length;
     const sc = $("#ckScripts");
@@ -7483,7 +7500,7 @@
             const pct = bl.length
               ? Math.round((used.size / bl.length) * 100)
               : 0;
-            return `<div class="cks" role="button" tabindex="0" data-go="build-${esc(s.id)}" style="${anim ? `animation-delay:${(0.15 + i * 0.07).toFixed(2)}s` : "animation:none"}">
+            return `<div class="cks" role="button" tabindex="0" data-go="build-${esc(s.id)}" style="${anim ? `animation-delay:${adl(0.15 + i * 0.07)}s` : "animation:none"}">
       <div class="top3">${logo(c, "lg-ic")}<span>${esc(c.name)}${it ? " · " + esc(it.title) : ""}</span></div>
       <h3>${esc(s.title || "Bez naziva")}</h3>
       ${(s.models || []).length ? entAvs(s.models, 5) : ""}
@@ -7545,7 +7562,7 @@
     $("#bEnts").innerHTML = ents
       .map(
         (e, i) =>
-          `<button class="bent" data-ent="${esc(e.id)}" style="--ec:${esc(e.color)};animation-delay:${(i * 0.05).toFixed(2)}s">${esc(e.name)} · ${(e.blocks || []).length}<span class="bx" data-edel="${esc(e.id)}" role="button" aria-label="Obriši ${esc(e.name)}" title="Obriši entitet">${ICK.x}</span></button>`,
+          `<button class="bent" data-ent="${esc(e.id)}" style="--ec:${esc(e.color)};animation-delay:${adl(i * 0.05)}s">${esc(e.name)} · ${(e.blocks || []).length}<span class="bx" data-edel="${esc(e.id)}" role="button" aria-label="Obriši ${esc(e.name)}" title="Obriši entitet">${ICK.x}</span></button>`,
       )
       .join("");
     const bl = scriptBlocks(s);
@@ -7553,7 +7570,7 @@
       ? bl
           .map((b, k) => {
             const o = owner[b.i];
-            return `<div class="bblk${buildSel.has(b.i) ? " sel" : ""}${o ? " asg" : ""}" data-blk="${b.i}" style="${o ? `--ec:${esc(o.color)};` : ""}${anim ? `animation-delay:${Math.min(0.6, k * 0.025).toFixed(3)}s` : "animation:none"}">${b.html}${o ? `<span class="tag">${esc(o.name)}</span>` : ""}<span class="ck2">${IC.check.replace('class="check"', "")}</span></div>`;
+            return `<div class="bblk${buildSel.has(b.i) ? " sel" : ""}${o ? " asg" : ""}" data-blk="${b.i}" style="${o ? `--ec:${esc(o.color)};` : ""}${anim ? `animation-delay:${adl(Math.min(0.6, k * 0.025))}s` : "animation:none"}">${b.html}${o ? `<span class="tag">${esc(o.name)}</span>` : ""}<span class="ck2">${IC.check.replace('class="check"', "")}</span></div>`;
           })
           .join("")
       : '<div class="ckempty">Skripta je prazna. Filip još nije napisao tekst.</div>';
@@ -7655,7 +7672,7 @@
     if (k === "models") {
       const ms = modelsSorted();
       return `<h2 class="wq">Koji modeli su ti potrebni <span class="nmg">za ovaj entitet?</span></h2>
-    <div class="mgrid2" style="max-width:720px">${ms.map((m, i) => `<button type="button" class="mopt" data-em="${esc(m.id)}" aria-pressed="${EW.models.has(m.id)}" style="animation-delay:${(0.05 + i * 0.03).toFixed(2)}s"><span class="wp">${m.photo ? `<img src="${esc(m.photo)}" alt="">` : `<span class="ini2">${esc(initials(m.name))}</span>`}<span class="ok">${IC.check.replace('class="check"', "")}</span></span><span class="nm">${esc(m.name)}</span></button>`).join("")}</div>
+    <div class="mgrid2" style="max-width:720px">${ms.map((m, i) => `<button type="button" class="mopt" data-em="${esc(m.id)}" aria-pressed="${EW.models.has(m.id)}" style="animation-delay:${adl(0.05 + i * 0.03)}s"><span class="wp">${m.photo ? `<img src="${esc(m.photo)}" alt="">` : `<span class="ini2">${esc(initials(m.name))}</span>`}<span class="ok">${IC.check.replace('class="check"', "")}</span></span><span class="nm">${esc(m.name)}</span></button>`).join("")}</div>
     <div class="whint" id="ehint">${EW.models.size ? `Izabrano: ${EW.models.size}` : "Može i bez modela (npr. pokrivalice)"}</div>`;
     }
     if (k === "props")
@@ -8305,7 +8322,7 @@
       const busy = x.t === "e" && a != null && evClash(d, a, b).length > 0;
       if (a != null && prevEnd != null) {
         if (a > prevEnd)
-          rows += `<div class="tgap" style="${anim ? `animation-delay:${(0.1 + i * 0.05).toFixed(2)}s` : "animation:none"}"><span>Slobodno ${fmtDur(a - prevEnd)}</span></div>`;
+          rows += `<div class="tgap" style="${anim ? `animation-delay:${adl(0.1 + i * 0.05)}s` : "animation:none"}"><span>Slobodno ${fmtDur(a - prevEnd)}</span></div>`;
         else if (a < prevEnd) clash = true;
       }
       if (b != null) prevEnd = Math.max(prevEnd || 0, b);
@@ -8313,7 +8330,7 @@
       const tm = `<button type="button" class="tm" data-dtime="${i}" aria-label="Promeni vreme">${a != null ? `${hm(a)}<small>${hm(b)}</small>` : `<span class="tset">Postavi vreme</span>`}</button>`;
       const ctl = `<div class="ctl"><button data-dd="${i}" data-v="-5" aria-label="5 minuta kraće">${ICK.minus}</button><span class="dv">${fmtDur(x.dur)}</span><button data-dd="${i}" data-v="5" aria-label="5 minuta duže">${ICK.plus}</button>${x.t === "e" ? `<button data-drm="${i}" aria-label="Vrati u Cockpit" title="Vrati u Cockpit">${ICK.back}</button><button class="dz" data-edel="${esc(x.id)}" aria-label="Obriši entitet" title="Obriši entitet">${ICK.trash}</button>` : `<button class="dz" data-drm="${i}" aria-label="Ukloni ${nm}" title="Ukloni">${ICK.trash}</button>`}</div>`;
       const st = anim
-        ? `animation-delay:${(0.12 + i * 0.05).toFixed(2)}s`
+        ? `animation-delay:${adl(0.12 + i * 0.05)}s`
         : "animation:none";
       const tag = busy
         ? `<span class="clt">Mihajlo zauzet</span>`
@@ -8322,7 +8339,7 @@
           : "";
       if (busy) clash = true;
       if (x.t === "ev") {
-        rows += `<div class="trw evt" style="${anim ? `animation-delay:${(0.12 + i * 0.05).toFixed(2)}s` : "animation:none"}"><div class="tm">${hm(a)}<small>${hm(b)}</small></div><div class="tt2"><b>${esc(r.title || "Event")}</b><div class="em">${evAvs(r.assignees)}<span class="evbusy">Zauzeti: ${esc(pplStr(r.assignees))}</span>${evBlocks(x) ? `<span class="clt">Nema snimanja</span>` : ""}</div></div><div class="evtag">${ICK.clock}Event</div></div>`;
+        rows += `<div class="trw evt" style="${anim ? `animation-delay:${adl(0.12 + i * 0.05)}s` : "animation:none"}"><div class="tm">${hm(a)}<small>${hm(b)}</small></div><div class="tt2"><b>${esc(r.title || "Event")}</b><div class="em">${evAvs(r.assignees)}<span class="evbusy">Zauzeti: ${esc(pplStr(r.assignees))}</span>${evBlocks(x) ? `<span class="clt">Nema snimanja</span>` : ""}</div></div><div class="evtag">${ICK.clock}Event</div></div>`;
         return;
       }
       if (x.t === "e") {
@@ -8920,7 +8937,7 @@
       (
         st,
         ci,
-      ) => `<section class="col lcol" data-lcol="${st.id}" style="--c:${st.c};${anim ? `animation-delay:${(0.32 + ci * 0.06).toFixed(2)}s` : "animation:none"}" aria-label="${st.name}">
+      ) => `<section class="col lcol" data-lcol="${st.id}" style="--c:${st.c};${anim ? `animation-delay:${adl(0.32 + ci * 0.06)}s` : "animation:none"}" aria-label="${st.name}">
     <header class="lch2"><h2>${st.name}</h2><b class="lcnt" data-lcnt="${st.id}">0</b></header>
     ${st.id === "new" ? `<button type="button" class="lnew" data-ladd>${LIC.plus}<span>Novi lead</span></button>` : ""}
     <div class="lrows" data-lrows="${st.id}"></div>
@@ -8965,8 +8982,7 @@
           lcardApply(el, l);
           lmEls.set(l.id, el);
           if (anim)
-            el.style.animationDelay =
-              (0.42 + ci * 0.06 + i * 0.045).toFixed(3) + "s";
+            el.style.animationDelay = adl(0.42 + ci * 0.06 + i * 0.045) + "s";
           else if (!(lmFlipQ && lmFlipQ.id === l.id))
             el.classList.add(S.fresh.has(l.id) ? "new" : "enter");
         } else if (el.dataset.sig !== lcardSig(l)) lcardApply(el, l);
@@ -9751,9 +9767,9 @@
       <section class="ldhero"><span class="ldav" id="ldAv">${lInit(l)}</span><div class="ldid"><input class="ldname" id="ldName" data-lf="name" maxlength="80" value="${esc(l.name || "")}" aria-label="Naziv biznisa"><label class="ldown">${LIC.user}<input id="ldOwner" data-lf="owner" maxlength="80" placeholder="Vlasnik ili menadžer" value="${esc(l.owner || "")}" aria-label="Vlasnik ili menadžer"></label></div><div id="ldClient"></div></section>
       <section class="ltk" id="ldTrack" aria-label="Faza leada"></section>
       <div class="ldgrid">
-        <section class="lbox" style="animation-delay:.16s"><h3>Kontakt</h3><div class="lfs">${LFIELDS.map((f) => `<div class="lf"><span class="ic">${f.ic}</span><input data-lf="${f.k}" type="${f.type}" maxlength="200" placeholder="${esc(f.n)}" value="${esc(l[f.k] || "")}" aria-label="${esc(f.n)}"><a class="lgo" data-lgo="${f.k}" href="${esc(lHref(f.k, l[f.k]))}" ${f.k === "phone" || f.k === "email" ? "" : 'target="_blank" rel="noopener"'} aria-label="Otvori ${esc(f.n)}" ${(l[f.k] || "").trim() ? "" : "hidden"}>${f.k === "phone" ? LIC.phone : f.k === "email" ? LIC.mail : LIC.open}</a></div>`).join("")}</div></section>
+        <section class="lbox" style="animation-delay:${adl(0.16)}s"><h3>Kontakt</h3><div class="lfs">${LFIELDS.map((f) => `<div class="lf"><span class="ic">${f.ic}</span><input data-lf="${f.k}" type="${f.type}" maxlength="200" placeholder="${esc(f.n)}" value="${esc(l[f.k] || "")}" aria-label="${esc(f.n)}"><a class="lgo" data-lgo="${f.k}" href="${esc(lHref(f.k, l[f.k]))}" ${f.k === "phone" || f.k === "email" ? "" : 'target="_blank" rel="noopener"'} aria-label="Otvori ${esc(f.n)}" ${(l[f.k] || "").trim() ? "" : "hidden"}>${f.k === "phone" ? LIC.phone : f.k === "email" ? LIC.mail : LIC.open}</a></div>`).join("")}</div></section>
         <div class="ldcol">
-          <section class="lbox lnextbox" id="ldNextBox" style="animation-delay:.22s"><h3>Sledeći korak<em id="ldDueB" hidden></em></h3><input class="lnin" data-lf="nextStep" maxlength="140" placeholder="npr. Pozvati u utorak oko ponude" value="${esc(l.nextStep || "")}" aria-label="Sledeći korak"><div class="lnd"><input type="date" data-lf="nextDate" value="${esc(l.nextDate || "")}" aria-label="Datum"><div class="lqd">${[
+          <section class="lbox lnextbox" id="ldNextBox" style="animation-delay:${adl(0.22)}s"><h3>Sledeći korak<em id="ldDueB" hidden></em></h3><input class="lnin" data-lf="nextStep" maxlength="140" placeholder="npr. Pozvati u utorak oko ponude" value="${esc(l.nextStep || "")}" aria-label="Sledeći korak"><div class="lnd"><input type="date" data-lf="nextDate" value="${esc(l.nextDate || "")}" aria-label="Datum"><div class="lqd">${[
             ["Danas", 0],
             ["Sutra", 1],
             ["Za 3 dana", 3],
@@ -9763,10 +9779,10 @@
               ([n, d]) => `<button type="button" data-lqd="${d}">${n}</button>`,
             )
             .join("")}</div></div></section>
-          <section class="lbox" style="animation-delay:.28s"><h3>Beleške</h3><textarea class="lnotes" data-lf="notes" placeholder="Sve što treba da zapamtimo o ovom leadu" aria-label="Beleške">${esc(l.notes || "")}</textarea></section>
+          <section class="lbox" style="animation-delay:${adl(0.28)}s"><h3>Beleške</h3><textarea class="lnotes" data-lf="notes" placeholder="Sve što treba da zapamtimo o ovom leadu" aria-label="Beleške">${esc(l.notes || "")}</textarea></section>
         </div>
       </div>
-      <section class="lbox llog" style="animation-delay:.34s"><h3>Istorija kontakta</h3>
+      <section class="lbox llog" style="animation-delay:${adl(0.34)}s"><h3>Istorija kontakta</h3>
         <div class="lcomp"><div class="lchs" role="group" aria-label="Kanal">${LCH.map((c) => `<button type="button" class="lch" data-lch="${c.id}" aria-pressed="${c.id === ldCh}">${c.ic}${c.n}</button>`).join("")}</div>
         <div class="lcrow"><input id="ldLogNote" maxlength="240" placeholder="Kako je prošlo? Šta je rekao?" aria-label="Beleška o kontaktu"><button class="pill solid" id="ldLogAdd">${LIC.plus}Zapiši kontakt</button></div></div>
         <div class="ltl" id="ldTl"></div>
@@ -9797,7 +9813,7 @@
           .map((x, i) => {
             const c = LCH.find((y) => y.id === x.ch) || LCH[0];
             const u = TEAM.find((t) => t.id === x.by);
-            return `<div class="lev" style="animation-delay:${Math.min(0.4, i * 0.04).toFixed(2)}s"><span class="lei">${c.ic}</span><div class="let"><b>${esc(c.n)}</b>${x.note ? `<p>${esc(x.note)}</p>` : ""}</div><div class="lem">${u ? `<img src="${IMG[u.id]}" alt="${esc(u.name)}" title="${esc(u.name)}">` : ""}<span>${esc(fmtLD.format(new Date(x.at)))}</span><button class="ledel" data-ledel="${esc(String(x.at))}" aria-label="Obriši zapis">${LIC.x}</button></div></div>`;
+            return `<div class="lev" style="animation-delay:${adl(Math.min(0.4, i * 0.04))}s"><span class="lei">${c.ic}</span><div class="let"><b>${esc(c.n)}</b>${x.note ? `<p>${esc(x.note)}</p>` : ""}</div><div class="lem">${u ? `<img src="${IMG[u.id]}" alt="${esc(u.name)}" title="${esc(u.name)}">` : ""}<span>${esc(fmtLD.format(new Date(x.at)))}</span><button class="ledel" data-ledel="${esc(String(x.at))}" aria-label="Obriši zapis">${LIC.x}</button></div></div>`;
           })
           .join("")
       : `<div class="lempty">Još nema kontakta. Zapiši prvi poziv ili poruku.</div>`;
@@ -12807,7 +12823,7 @@
         0,
       ),
       th = L.slice(-3).map(fcPoster).filter(Boolean).reverse();
-    return `<button class="mod" data-go="fc-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${delay}s` : "animation:none"}">
+    return `<button class="mod" data-go="fc-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(delay)}s` : "animation:none"}">
     <div class="mod-l"><div class="mod-top"><span class="mi">${IC_FC}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Final<br>Creatives</h2><div class="tot"><b>${L.length}</b>${fcWord(L.length)}</div>${n ? `<div class="mh-cc">${IC.msg}<span>${n} ${ccWord(n)}</span></div>` : ""}</div></div>
     ${th.length ? `<span class="mh-fc" aria-hidden="true">${th.map((s, i) => `<img src="${esc(s)}" alt="" style="--k:${i}">`).join("")}</span>` : ""}
   </button>`;
@@ -13659,11 +13675,11 @@
       if (NT) NT.flush();
     }
   });
+  /* sesija (a sa njom i podaci) se proverava odmah, dok traje uvodni znak, a ne tek posle
+     njega; znak ostaje dok sesija ne stigne, pa između nema praznog ekrana */
+  const sessP = (async () => OS.session())().catch(() => null);
   async function start() {
-    let slug = null;
-    try {
-      slug = await OS.session();
-    } catch (e) {}
+    const slug = await sessP;
     const u = TEAM.find((t) => t.id === slug);
     if (u) store.set(u.id);
     else store.del();
@@ -13673,11 +13689,11 @@
       auth.show();
     }
   }
-  setTimeout(
-    () => {
-      $("#boot").classList.add("done");
-      start();
-    },
-    reduce ? 0 : 1100,
-  );
+  Promise.all([
+    sessP,
+    new Promise((r) => setTimeout(r, reduce ? 0 : MT(1100))),
+  ]).then(() => {
+    $("#boot").classList.add("done");
+    start();
+  });
 })();

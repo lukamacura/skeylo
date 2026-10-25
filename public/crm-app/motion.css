@@ -1,0 +1,125 @@
+/* Ručno podešeni ulasci CRM-a. Ovo su konačne vrednosti: motion.js ovaj fajl ne prepisuje
+   (app.css i shell.css prolaze kroz njegovu krivu, ovde se samo menja redosled).
+   Pravilo: sadržaj (tekst, kartica, red) stiže odmah, a dekoracija (laserski obris, sjaj,
+   šina) ide uz njega, ne pre njega. Liste se ne kaskadiraju sekundama: korak 32 ms,
+   najviše 8 koraka, pa i duga lista stoji cela za ~0.6 s. */
+:root {
+  --m-lead: 90ms;
+  --m-step: 32ms;
+}
+
+/* kartica: pozadina, slika i tekst zajedno; obris (trace) se crta preko njih */
+.rv.on > .bg {
+  animation-delay: 0ms;
+}
+.rv.on .art {
+  animation-delay: 40ms;
+}
+.rv.on .t {
+  animation-delay: 70ms;
+}
+.priv.rv.on .t {
+  animation-delay: 70ms, 0ms;
+}
+.rv.on .rin {
+  animation-delay: calc(var(--d, 0.7s) * 0.15);
+}
+
+/* periodi / raspored: redovi na šini */
+.arch.enter .arow {
+  animation-duration: 400ms;
+  animation-delay: calc(var(--m-lead) + min(var(--i), 8) * var(--m-step));
+}
+.arch.enter .prow .node {
+  animation-duration: 360ms;
+  animation-delay: calc(var(--m-lead) + min(var(--i), 8) * var(--m-step));
+}
+.arch.enter .beam {
+  animation-duration: calc(min(var(--n, 4), 9) * var(--m-step) + 320ms);
+  animation-delay: var(--m-lead);
+}
+
+/* liste izveštaja i skripti */
+.v-list.enter .rli,
+.v-scripts.enter .sli {
+  animation-duration: 400ms;
+  animation-delay: calc(var(--m-lead) + min(var(--i), 8) * var(--m-step));
+}
+
+/* šina faza: punjenje i čvorovi dele isti sat (×0.5), da čvor plane kad ga laser stigne */
+.trk.anim .tf,
+.trk.anim .th {
+  animation-duration: calc(var(--dur) * 0.5);
+  animation-delay: calc(var(--td) * 0.5);
+}
+.trk.anim .tn[data-ig] {
+  animation-delay: calc(var(--nd) * 0.5);
+}
+.tn.c::after {
+  animation-delay: calc(var(--rd, 0s) * 0.5);
+}
+
+/* skripta: oznake faza i komentari odmah posle naslova */
+.v-script.enter .tl {
+  animation-duration: 360ms;
+  animation-delay: calc(120ms + min(var(--k), 8) * var(--m-step));
+}
+.v-script.enter .cc {
+  animation-duration: 380ms;
+  animation-delay: calc(160ms + min(var(--i), 8) * var(--m-step));
+}
+.th.on .th-list .cc {
+  animation-duration: 360ms;
+  animation-delay: calc(120ms + min(var(--i), 8) * var(--m-step));
+}
+
+/* galerija kreativa: okvir i naslov zajedno sa karticom */
+.v-gal.enter .gli,
+.v-gal.enter .gfi,
+.v-gal.enter .gsec {
+  animation-duration: 450ms;
+  animation-delay: calc(var(--m-lead) + min(var(--i), 8) * var(--m-step));
+}
+.v-gal.enter .gframe,
+.v-gal.enter .gscan {
+  animation-duration: 530ms;
+  animation-delay: calc(
+    var(--m-lead) + 40ms + min(var(--i), 8) * var(--m-step)
+  );
+}
+.v-gal.enter .gtitle {
+  animation-duration: 400ms;
+  animation-delay: calc(
+    var(--m-lead) + 80ms + min(var(--i), 8) * var(--m-step)
+  );
+}
+/* nova kreativa stigla uživo (kašnjenja dolaze iz app.css kroz krivu) */
+.gli.fresh {
+  animation-duration: 450ms;
+}
+.gli.fresh .gtitle {
+  animation-duration: 400ms;
+}
+.v-gal.enter .gfk {
+  animation-duration: 400ms;
+  animation-delay: 60ms;
+}
+
+/* dan snimanja i Privacy */
+.v-oday.enter .oi {
+  animation-duration: 400ms;
+  animation-delay: calc(var(--m-lead) + min(var(--i), 8) * var(--m-step));
+}
+.v-oday.enter .otl::after {
+  animation-delay: var(--m-lead);
+}
+.v-pv.enter .pv-c {
+  animation-duration: 360ms;
+  animation-delay: calc(var(--m-lead) + min(var(--i), 10) * 24ms);
+}
+
+/* izbor klijenta na ulazu */
+.gpick.in > * {
+  animation-duration: 360ms;
+  animation-delay: calc(var(--i, 0) * 40ms + 40ms);
+}

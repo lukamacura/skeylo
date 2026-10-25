@@ -5,62 +5,11 @@
    - gost link #raspored.{id}: bez prijave, samo taj jedan raspored (os.schedule_get)
    Šta klijent sme da čita i piše čuvaju RLS pravila i funkcije u bazi, ne ovaj fajl. */
 
-/* Tempo animacija: koliko puta brže od dizajna (app.css/app.js ostaju netaknuti).
-   Svaka jednokratna CSS animacija i prelaz dobija trajanje i kašnjenje podeljeno sa
-   CRM_TEMPO, pa redosled i preklapanja ostaju isti, samo brži. Beskonačne petlje
-   (ambijent) zadržavaju ritam; skraćuje im se samo početno kašnjenje. app.js istim
-   brojem deli tajmere koji čekaju animacije (uvod, prelazi među stranicama). */
-window.CRM_TEMPO = 1.5;
-(() => {
-  const TEMPO = window.CRM_TEMPO;
-  if (
-    TEMPO === 1 ||
-    !document.getAnimations ||
-    !window.CSSAnimation ||
-    !window.CSSTransition
-  )
-    return;
-  const seen = new WeakSet();
-  let queued = false;
-  function retime() {
-    queued = false;
-    for (const a of document.getAnimations()) {
-      if (seen.has(a)) continue;
-      seen.add(a);
-      if (!(a instanceof CSSAnimation || a instanceof CSSTransition)) continue;
-      // animacija koja je već krenula se ne dira, da ne skoči
-      if (a.currentTime > 34) continue;
-      const t = a.effect.getTiming(),
-        delay = t.delay || 0;
-      if (t.iterations === Infinity) {
-        if (delay) a.effect.updateTiming({ delay: delay / TEMPO });
-      } else if (typeof t.duration === "number")
-        a.effect.updateTiming({
-          duration: t.duration / TEMPO,
-          delay: delay / TEMPO,
-        });
-    }
-  }
-  const soon = () => {
-    if (queued) return;
-    queued = true;
-    queueMicrotask(retime);
-  };
-  // klasa/novi elementi pokreću animacije; prelaze (i :hover) javlja transitionrun
-  new MutationObserver(soon).observe(document.documentElement, {
-    subtree: true,
-    childList: true,
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-  addEventListener("transitionrun", soon, true);
-  addEventListener("animationstart", soon, true);
-  soon();
-})();
-
+/* tempo animacija: motion.js (u <head>) jednom prepiše CSS; WAAPI ovde ide kroz istu krivu (CRM_T) */
 (() => {
   const E = window.OS_ENV || {};
-  const TEMPO = window.CRM_TEMPO || 1;
+  const MT = window.CRM_T || ((ms) => ms),
+    MLAG = window.CRM_LAG || ((ms) => ms);
   /* klijenti u izboru na ulazu; novi klijent = novi red ovde + njegov CLIENT i boje u app.js */
   const CLIENTS = [
     {
@@ -485,8 +434,8 @@ window.CRM_TEMPO = 1.5;
             easing: EZ,
             fill: "both",
             ...o,
-            duration: o.duration / TEMPO,
-            delay: (o.delay || 0) / TEMPO,
+            duration: MT(o.duration),
+            delay: MLAG(o.delay || 0),
           }),
         );
     const logo = card.querySelector(".gci"),
@@ -706,8 +655,8 @@ window.CRM_TEMPO = 1.5;
             { opacity: 0, transform: reduce ? "none" : "translateY(-10px)" },
           ],
           {
-            duration: 260 / TEMPO,
-            delay: (i * 12) / TEMPO,
+            duration: MT(260),
+            delay: MLAG(i * 12),
             easing: "cubic-bezier(.4,0,1,1)",
             fill: "forwards",
           },
@@ -734,14 +683,14 @@ window.CRM_TEMPO = 1.5;
     gate.classList.add("out");
     if (!reduce && box.style.visibility === "visible")
       mark.animate([{ transform: "none" }, { transform: "scale(1.12)" }], {
-        duration: 550 / TEMPO,
+        duration: MT(550),
         easing: EZ,
         fill: "forwards",
       });
     try {
       if (onDash()) EMB.pause(false);
     } catch (e) {}
-    setTimeout(() => (gate.hidden = true), 600 / TEMPO);
+    setTimeout(() => (gate.hidden = true), MT(600));
   }
 
   async function start() {

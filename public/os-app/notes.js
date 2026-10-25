@@ -13,6 +13,7 @@ window.SKNotes = function (X) {
   const { S, api, esc, SV, toast, errMsg } = X;
   const $ = (s, r = document) => r.querySelector(s);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const adl = window.OS_DL || ((s) => s); // kašnjenje ulaska po krivoj iz motion.js
   const touch = () => matchMedia("(hover: none)").matches;
   const APPLE =
     /Mac|iPhone|iPad|iPod/.test(navigator.platform || "") ||
@@ -1854,9 +1855,7 @@ window.SKNotes = function (X) {
     /* privatne stranice (privateTo) su u svojoj sekciji; tuđe baza ni ne šalje */
     const own = f ? [] : kidsOf(null).filter((n) => n.privateTo);
     const d = (i) =>
-      anim
-        ? `animation-delay:${(0.16 + i * 0.05).toFixed(2)}s`
-        : "animation:none";
+      anim ? `animation-delay:${adl(0.16 + i * 0.05)}s` : "animation:none";
     const all = mine.filter((n) => !n.privateTo).length,
       sec = anim ? "" : "animation:none";
     box.innerHTML =

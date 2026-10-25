@@ -1,0 +1,31 @@
+/* Ručno podešeni pokreti Skeylo OS-a. Ovo su konačne vrednosti: motion.js ovaj fajl ne
+   prepisuje (app.css, notes.css i auth.css prolaze kroz njegovu krivu).
+   Pravilo: alat se koristi ceo dan, pa prelaz između ekrana mora da bude kratak i miran;
+   sadržaj stoji odmah, a pokret samo pokazuje odakle je došao. */
+
+/* ceo ekran pri navigaciji: kratko izdizanje i fade */
+.enter {
+  animation-duration: 240ms;
+}
+.leave {
+  animation-duration: 200ms;
+}
+
+/* pravila sa var() shorthandom + posebnim kašnjenjem (OS_MOTION_SKIPPED): trajanje ručno */
+.fbar.show button {
+  animation-duration: 240ms;
+  animation-delay: calc(min(var(--i), 8) * 12ms);
+}
+/* tačke na šini leada pale se dok je toplota (ignite, kroz krivu: 90 ms + 595 ms) stiže */
+.lrail.ignite .lr-dot {
+  animation-duration: 320ms;
+  animation-delay: calc(128ms + var(--i) * 105ms);
+}
+.fcgrid.enter .fcc {
+  animation-duration: 400ms;
+  animation-delay: calc(30ms + min(var(--i), 10) * 24ms);
+}
+.fcfolders.enter .fcf {
+  animation-duration: 400ms;
+  animation-delay: calc(24ms + min(var(--i), 10) * 24ms);
+}

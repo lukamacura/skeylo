@@ -28,8 +28,11 @@ const CRM_MEDIA = {}; // samo demo kreative u pregledu (ime fajla → adresa); p
 const $ = (s) => document.querySelector(s),
   $$ = (s) => [...document.querySelectorAll(s)];
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-/* tempo animacija (crm-db.js): tajmeri koji čekaju animacije dele se istim brojem */
-const TEMPO = window.CRM_TEMPO || 1;
+/* tempo animacija (motion.js): MT = trajanje po istoj krivoj kao CSS, MLAG = kašnjenje,
+   TEMPO = brzina sata uvodnog amblema */
+const TEMPO = window.CRM_TEMPO || 1,
+  MT = window.CRM_T || ((ms) => ms),
+  MLAG = window.CRM_LAG || ((ms) => ms);
 const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
 const esc = (s) =>
   String(s).replace(
@@ -432,11 +435,13 @@ const EMB = (function () {
     sk = $("#sk"),
     api = {};
   let S = 0,
-    C = 0;
+    C = 0,
+    skW = 0; // širina bedža: čita se samo pri promeni veličine, ne u svakom kadru (prisilni layout)
   const TILT = (-16 * Math.PI) / 180;
   function size() {
     if (!emb.offsetWidth) return;
     S = emb.offsetWidth;
+    skW = sk.offsetWidth;
     C = S * 1.36;
     const d = Math.min(2, devicePixelRatio || 1);
     [ob, of].forEach((c) => {
@@ -487,7 +492,7 @@ const EMB = (function () {
     }
   }
   function place(p, sc, bl) {
-    const b = sk.offsetWidth;
+    const b = skW || (skW = sk.offsetWidth);
     sk.style.transform = `translate(${(p.x - OFF() - b / 2).toFixed(1)}px,${(p.y - OFF() - b / 2).toFixed(1)}px) scale(${sc.toFixed(3)})`;
     sk.style.filter = bl > 0.2 ? `blur(${bl.toFixed(1)}px)` : "none";
   }
@@ -507,8 +512,8 @@ const EMB = (function () {
     mark.classList.add("zap");
   }
   function fire() {
-    beam = { t: performance.now(), d: 480 / TEMPO };
-    setTimeout(zap, 130 / TEMPO);
+    beam = { t: performance.now(), d: MT(480) };
+    setTimeout(zap, MT(130));
   }
   function flashAll() {
     const r = emb.getBoundingClientRect(),
@@ -528,7 +533,7 @@ const EMB = (function () {
     zap();
     flashAll();
     document.body.classList.add("jolt");
-    setTimeout(() => document.body.classList.remove("jolt"), 560 / TEMPO);
+    setTimeout(() => document.body.classList.remove("jolt"), MT(560));
     try {
       if (
         navigator.vibrate &&
@@ -732,7 +737,7 @@ if (reduce) {
     setTimeout(async () => {
       await FX.etch($("#ew1"), 760, true);
       await FX.etch($("#ew2"), 960, true);
-    }, 140 / TEMPO);
+    }, MLAG(140));
 
 /* ---------- cards: laser trace outline, reveal, tilt + parallax + magnetic arrow ---------- */
 const NS = "http://www.w3.org/2000/svg";
@@ -819,7 +824,7 @@ $$(".card").forEach(armCard);
 /* reveal: on first load cards come in one after another while the emblem intro plays */
 const dashWake = (function () {
   const T0 = performance.now(),
-    INTRO = reduce ? 0 : 800 / TEMPO,
+    INTRO = reduce ? 0 : 300,
     away = () => $("#dash").classList.contains("away");
   let k = 0,
     fb = 0;
@@ -827,7 +832,7 @@ const dashWake = (function () {
     if (el.classList.contains("on")) return;
     el.classList.add("on");
     if (el.classList.contains("rep"))
-      setTimeout(() => el.classList.add("live"), 3200 / TEMPO);
+      setTimeout(() => el.classList.add("live"), MT(3200));
   };
   const io = new IntersectionObserver(
     (es) =>
@@ -836,9 +841,7 @@ const dashWake = (function () {
         const el = e.target;
         io.unobserve(el);
         const wait = Math.max(0, INTRO - (performance.now() - T0)),
-          d = wait
-            ? wait + (+el.dataset.i * 130) / TEMPO
-            : ((k++ % 2) * 100) / TEMPO;
+          d = wait ? wait + Math.min(+el.dataset.i, 6) * 60 : (k++ % 2) * 50;
         setTimeout(() => show(el), d);
       }),
     { threshold: 0.12 },
@@ -852,7 +855,7 @@ const dashWake = (function () {
     clearTimeout(fb);
     fb = setTimeout(() => {
       if (!away()) cards.forEach(show);
-    }, 3400 / TEMPO);
+    }, 1500);
   };
   arm();
   return () => {
@@ -910,19 +913,31 @@ const dashWake = (function () {
   const orb = $("#orb"),
     ring = $("#orbRing"),
     s0 = performance.now();
+  /* tačka na liniji iz unapred izračunatih uzoraka (getPointAtLength u svakom kadru je skup);
+     svetlo ne radi dok kartica nije na ekranu ili je dashboard sklonjen */
+  const at = (u) => {
+    const f = u * 260,
+      i = Math.min(259, Math.floor(f)),
+      a = samples[i],
+      b = samples[i + 1],
+      k = f - i;
+    return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+  };
+  let seen = true;
+  new IntersectionObserver((es) => (seen = es[0].isIntersecting)).observe(rep);
   (function ride(now) {
-    const T = 7000,
-      q = ((now - s0) % T) / T,
-      e = q < 0.85 ? q / 0.85 : 1,
-      pt = line.getPointAtLength(
-        len * (0.55 + 0.45 * (1 - Math.pow(1 - e, 3))),
-      );
-    orb.setAttribute("cx", pt.x);
-    orb.setAttribute("cy", pt.y);
-    ring.setAttribute("cx", pt.x);
-    ring.setAttribute("cy", pt.y);
-    ring.setAttribute("r", (10 + Math.sin(now / 300) * 4).toFixed(1));
-    ring.style.strokeOpacity = String(0.35 + 0.35 * Math.sin(now / 300));
+    if (seen && !rep.closest(".away")) {
+      const T = 7000,
+        q = ((now - s0) % T) / T,
+        e = q < 0.85 ? q / 0.85 : 1,
+        pt = at(0.55 + 0.45 * (1 - Math.pow(1 - e, 3)));
+      orb.setAttribute("cx", pt.x);
+      orb.setAttribute("cy", pt.y);
+      ring.setAttribute("cx", pt.x);
+      ring.setAttribute("cy", pt.y);
+      ring.setAttribute("r", (10 + Math.sin(now / 300) * 4).toFixed(1));
+      ring.style.strokeOpacity = String(0.35 + 0.35 * Math.sin(now / 300));
+    }
     if (!reduce) requestAnimationFrame(ride);
   })(s0);
   if (fine) {
@@ -1050,7 +1065,9 @@ function openPage(card) {
     requestAnimationFrame(() => {
       pane.style.transition = reduce
         ? "none"
-        : "left .8s cubic-bezier(.75,0,.2,1),top .8s cubic-bezier(.75,0,.2,1),width .8s cubic-bezier(.75,0,.2,1),height .8s cubic-bezier(.75,0,.2,1),border-radius .8s";
+        : ["left", "top", "width", "height", "border-radius"]
+            .map((p) => `${p} ${MT(800)}ms cubic-bezier(.75,0,.2,1)`)
+            .join(",");
       Object.assign(pane.style, {
         left: "0px",
         top: "0px",
@@ -1064,10 +1081,10 @@ function openPage(card) {
           softTitle($("#takeT .ew"));
           setTimeout(
             () => $("#takeBack").focus({ preventScroll: true }),
-            300 / TEMPO,
+            MT(300),
           );
         },
-        reduce ? 0 : 620,
+        reduce ? 0 : MT(620),
       );
     }),
   );
@@ -1094,10 +1111,10 @@ function closePage() {
           card.focus({ preventScroll: true });
           fromCard = null;
         },
-        reduce ? 0 : 820,
+        reduce ? 0 : MT(820),
       );
     },
-    reduce ? 0 : 180,
+    reduce ? 0 : MT(180),
   );
 }
 $("#takeBack").addEventListener("click", closePage);
@@ -1178,9 +1195,9 @@ async function tryUnlock() {
     setTimeout(
       () => {
         closeVault();
-        setTimeout(() => RP.openPV($("#privCard")), reduce ? 0 : 260 / TEMPO);
+        setTimeout(() => RP.openPV($("#privCard")), reduce ? 0 : MT(260));
       },
-      reduce ? 0 : 760 / TEMPO,
+      reduce ? 0 : MT(760),
     );
   } else {
     vbox.classList.remove("bad");
@@ -3143,7 +3160,7 @@ p{line-height:1.65;margin:0}
     if (next.sec === "pv" && !unlocked) {
       pending = null;
       if (location.hash.replace(/^#/, "")) location.hash = "";
-      setTimeout(openVault, cur.v === "dash" ? 0 : 700 / TEMPO);
+      setTimeout(openVault, cur.v === "dash" ? 0 : MT(700));
       return;
     }
     pending = null;
@@ -3295,9 +3312,16 @@ p{line-height:1.65;margin:0}
     pane.style.transition = "none";
     pane.style.opacity = "";
   }
-  const EZ = "cubic-bezier(.75,0,.2,1)",
+  /* prelaz među nivoima: kartica izraste u stranicu (nazad: stranica se skupi u karticu).
+     Kreće u istom kadru kao klik, brzo pa mekano staje; nova stranica se crta čim panel
+     prekrije ekran i izranja dok panel bledi, pa nema praznog ekrana između. */
+  const EZ = "cubic-bezier(.32,.72,0,1)",
+    GROW = 340,
+    SHRINK = 340,
     geo = (D) =>
-      `left ${D}ms ${EZ},top ${D}ms ${EZ},width ${D}ms ${EZ},height ${D}ms ${EZ},border-radius ${D}ms`;
+      ["left", "top", "width", "height", "border-radius"]
+        .map((p) => `${p} ${D}ms ${EZ}`)
+        .join(",");
   function growFrom(snap, mid) {
     if (reduce || !snap) {
       fadeTo(mid);
@@ -3317,30 +3341,28 @@ p{line-height:1.65;margin:0}
       backgroundImage: look.img,
       backgroundColor: look.col,
     });
-    requestAnimationFrame(() =>
+    void pane.offsetWidth;
+    pane.style.transition = geo(GROW);
+    Object.assign(pane.style, {
+      left: "0px",
+      top: "0px",
+      width: "100vw",
+      height: "100vh",
+      borderRadius: "0px",
+    });
+    // poslednjih 60 ms panel se više ne pomera vidljivo: tada se već crta stranica
+    setTimeout(() => {
+      if (tok !== tTok) return;
+      mid();
       requestAnimationFrame(() => {
         if (tok !== tTok) return;
-        pane.style.transition = geo(600);
-        Object.assign(pane.style, {
-          left: "0px",
-          top: "0px",
-          width: "100vw",
-          height: "100vh",
-          borderRadius: "0px",
-        });
+        pane.style.transition = "opacity .2s ease";
+        pane.style.opacity = "0";
         setTimeout(() => {
-          if (tok !== tTok) return;
-          mid();
-          requestAnimationFrame(() => {
-            pane.style.transition = "opacity .5s ease";
-            pane.style.opacity = "0";
-            setTimeout(() => {
-              if (tok === tTok) paneOff();
-            }, 520 / TEMPO);
-          });
-        }, 600 / TEMPO);
-      }),
-    );
+          if (tok === tTok) paneOff();
+        }, 220);
+      });
+    }, GROW - 60);
   }
   function shrinkTo(sel, mid) {
     if (reduce) {
@@ -3362,51 +3384,50 @@ p{line-height:1.65;margin:0}
       backgroundImage: "none",
       backgroundColor: "#1c0f15",
     });
-    requestAnimationFrame(() => {
+    void pane.offsetWidth;
+    pane.style.transition = "opacity .1s ease";
+    pane.style.opacity = "1";
+    setTimeout(() => {
       if (tok !== tTok) return;
-      pane.style.transition = "opacity .2s ease";
-      pane.style.opacity = "1";
-      setTimeout(() => {
+      mid();
+      requestAnimationFrame(() => {
         if (tok !== tTok) return;
-        mid();
-        requestAnimationFrame(() => {
-          if (tok !== tTok) return;
-          const el = sel && document.querySelector(sel),
-            r = el && el.getBoundingClientRect();
-          if (!el || !r.width || r.bottom < 0 || r.top > innerHeight) {
-            pane.style.transition = "opacity .35s ease";
-            pane.style.opacity = "0";
-            setTimeout(() => {
-              if (tok === tTok) paneOff();
-            }, 360 / TEMPO);
-            return;
-          }
-          const look = paneLook(el);
-          pane.style.backgroundImage = look.img;
-          pane.style.backgroundColor = look.col;
-          pane.style.transition = geo(560);
-          Object.assign(pane.style, {
-            left: r.left + "px",
-            top: r.top + "px",
-            width: r.width + "px",
-            height: r.height + "px",
-            borderRadius: look.rad,
-          });
+        const el = sel && document.querySelector(sel),
+          r = el && el.getBoundingClientRect();
+        if (!el || !r.width || r.bottom < 0 || r.top > innerHeight) {
+          pane.style.transition = "opacity .2s ease";
+          pane.style.opacity = "0";
           setTimeout(() => {
-            if (tok !== tTok) return;
-            el.classList.remove("land");
-            void el.offsetWidth;
-            el.classList.add("land");
-            setTimeout(() => el.classList.remove("land"), 1000 / TEMPO);
-            pane.style.transition = "opacity .22s";
-            pane.style.opacity = "0";
-            setTimeout(() => {
-              if (tok === tTok) paneOff();
-            }, 240 / TEMPO);
-          }, 560 / TEMPO);
+            if (tok === tTok) paneOff();
+          }, 220);
+          return;
+        }
+        const look = paneLook(el);
+        pane.style.backgroundImage = look.img;
+        pane.style.backgroundColor = look.col;
+        pane.style.transition = geo(SHRINK);
+        Object.assign(pane.style, {
+          left: r.left + "px",
+          top: r.top + "px",
+          width: r.width + "px",
+          height: r.height + "px",
+          borderRadius: look.rad,
         });
-      }, 210 / TEMPO);
-    });
+        // kraj krive je skoro miran: kartica se pokaže dok panel još sleće
+        setTimeout(() => {
+          if (tok !== tTok) return;
+          el.classList.remove("land");
+          void el.offsetWidth;
+          el.classList.add("land");
+          setTimeout(() => el.classList.remove("land"), MT(1000));
+          pane.style.transition = `opacity .18s, ${geo(SHRINK)}`;
+          pane.style.opacity = "0";
+          setTimeout(() => {
+            if (tok === tTok) paneOff();
+          }, 200);
+        }, SHRINK - 100);
+      });
+    }, 100);
   }
   function fadeTo(mid) {
     const tok = ++tTok;
@@ -3425,8 +3446,8 @@ p{line-height:1.65;margin:0}
       b.classList.remove("fadein");
       void b.offsetWidth;
       b.classList.add("fadein");
-      setTimeout(() => b.classList.remove("fadein"), 420 / TEMPO);
-    }, 170 / TEMPO);
+      setTimeout(() => b.classList.remove("fadein"), MT(420));
+    }, MT(170));
   }
   function wipeSwap(mid) {
     const tok = ++tTok;
@@ -3439,7 +3460,7 @@ p{line-height:1.65;margin:0}
     if (l) l.classList.add("out");
     setTimeout(() => {
       if (tok === tTok) mid();
-    }, 250 / TEMPO);
+    }, MT(250));
   }
   function showApp() {
     if (!rapp.hidden) return;
@@ -3667,7 +3688,7 @@ p{line-height:1.65;margin:0}
     if (h) h.style.setProperty("--pw", h.offsetWidth + "px");
     if (mode === "enter")
       [...rmain.querySelectorAll(".rv")].forEach((el, i) =>
-        setTimeout(() => el.classList.add("on"), (200 + i * 150) / TEMPO),
+        setTimeout(() => el.classList.add("on"), 20 + Math.min(i, 6) * 50),
       );
     if (mode === "enter" || mode === "swap") {
       const tok = etchTok;
@@ -3675,14 +3696,14 @@ p{line-height:1.65;margin:0}
         () => {
           if (tok === etchTok) etchHead(mode, tok);
         },
-        (mode === "swap" ? 60 : 260) / TEMPO,
+        mode === "swap" ? 0 : 30,
       );
     }
   }
   async function etchHead(mode, tok) {
     [...rmain.querySelectorAll(".rh1 .ew:not(.done)")].forEach((el, i) => {
       if (tok === etchTok && el.isConnected)
-        softTitle(el, mode === "swap" ? 0 : i * 90);
+        softTitle(el, mode === "swap" ? 0 : i * 60);
     });
   }
   const topShadow = () => rtop.classList.toggle("scrolled", scrollY > 8);
@@ -3807,7 +3828,7 @@ p{line-height:1.65;margin:0}
     f.addEventListener("load", () => {
       f.classList.add("ready");
       const l = box.querySelector(".vload");
-      if (l) setTimeout(() => l.remove(), 450 / TEMPO);
+      if (l) setTimeout(() => l.remove(), MT(450));
     });
     box.appendChild(f);
   }
@@ -3921,7 +3942,7 @@ p{line-height:1.65;margin:0}
           lovScreen.style.transformOrigin = "0 0";
           lovScreen.style.transform = `translate(${a.left - b.left}px,${a.top - b.top}px) scale(${a.width / b.width},${a.height / b.height})`;
           void lovScreen.offsetWidth;
-          lovScreen.style.transition = "transform .66s cubic-bezier(.7,0,.2,1)";
+          lovScreen.style.transition = `transform ${MT(660)}ms cubic-bezier(.7,0,.2,1)`;
           lovScreen.style.transform = "none";
         }
       }
@@ -3960,7 +3981,7 @@ p{line-height:1.65;margin:0}
         b = lovScreen.getBoundingClientRect();
       if (a.width && b.width) {
         lovScreen.style.transformOrigin = "0 0";
-        lovScreen.style.transition = "transform .55s cubic-bezier(.7,0,.25,1)";
+        lovScreen.style.transition = `transform ${MT(550)}ms cubic-bezier(.7,0,.25,1)`;
         lovScreen.style.transform = `translate(${a.left - b.left}px,${a.top - b.top}px) scale(${a.width / b.width},${a.height / b.height})`;
       }
     }
@@ -3968,7 +3989,7 @@ p{line-height:1.65;margin:0}
       done();
       const t = rowThumb(rid);
       if (t) t.closest("button").focus({ preventScroll: true });
-    }, 560 / TEMPO);
+    }, MT(560));
   }
 
   /* =========================================================
@@ -4031,7 +4052,7 @@ p{line-height:1.65;margin:0}
     return `<li class="sli" style="--i:${i}"><button class="sitem${ix === 5 ? " done" : ""}" type="button" data-sid="${esc(s.id)}">
       <span class="sidx" aria-hidden="true">${pad(i + 1)}</span>
       <span class="stitle">${titleWithIcon(s.title || "Skripta", cm ? `<i class="scm" aria-label="Ima komentar">${I_MSG}</i>` : "")}</span>
-      <span class="sstage">${trackHTML(ix, from, anim, en ? 0.55 + i * 0.08 : 0.05, false)}</span>
+      <span class="sstage">${trackHTML(ix, from, anim, en ? 0.3 + Math.min(i, 8) * 0.064 : 0.05, false)}</span>
       <span class="parr" aria-hidden="true">${I_ARR}</span><i class="rsweep" aria-hidden="true"></i>
     </button></li>`;
   }
@@ -4062,7 +4083,7 @@ p{line-height:1.65;margin:0}
     });
     rmain.innerHTML = `<section class="v-script${en ? " enter" : ""}" data-sid="${esc(s.id)}">
       <div class="rhead"><h1 class="rh1 sh1" tabindex="-1" data-t="${esc(s.title || "Skripta")}">${wordsHTML(s.title, !en)}</h1></div>
-      <div class="spipe">${trackHTML(ix, from, anim, en ? 0.6 : 0.05, true)}</div>
+      <div class="spipe">${trackHTML(ix, from, anim, en ? 0.4 : 0.05, true)}</div>
       <div class="sgrid">
         <article class="paper" id="paper"><i class="pline" aria-hidden="true"></i><div class="psheet"><div class="pbody" id="pbody"></div></div></article>
         <aside class="crail" id="crail" aria-label="Komentari">
@@ -4213,7 +4234,7 @@ p{line-height:1.65;margin:0}
         w: [...m.getClientRects()].reduce((a, r) => a + r.width, 0),
       })),
       tot = segs.reduce((a, x) => a + x.w, 0) || 1,
-      T = 0.9;
+      T = MT(900) / 1000;
     let acc = 0;
     segs.forEach((x) => {
       x.m.style.animationDelay = ((acc / tot) * T).toFixed(3) + "s";
@@ -4268,7 +4289,7 @@ p{line-height:1.65;margin:0}
     const st = anim
       ? ""
       : fresh && !reduce
-        ? ";animation:ccin .95s var(--spring) both"
+        ? `;animation:ccin ${MT(950)}ms var(--spring) both`
         : ";animation:none";
     return `<li class="cc${res ? " res" : ""}${just ? " justres" : ""}" data-cid="${esc(c.id)}" style="--i:${i}${st}">
       ${res ? `<span class="cres"><i class="cok" aria-hidden="true">${I_CHECK}</i>Rešeno</span>` : ""}
@@ -4411,7 +4432,7 @@ p{line-height:1.65;margin:0}
     clearTimeout(selbtn._t);
     selbtn._t = setTimeout(() => {
       if (!selbtn.classList.contains("on")) selbtn.hidden = true;
-    }, 260 / TEMPO);
+    }, MT(260));
   }
   document.addEventListener("selectionchange", () => {
     if (rapp.hidden || cur.v !== "script") return;
@@ -4649,7 +4670,7 @@ p{line-height:1.65;margin:0}
           : thList.querySelector(`.cc[data-ccid="${cssq(cid)}"]`);
     if (el && !reduce) {
       el.classList.add("gone");
-      await new Promise((r) => setTimeout(r, 260 / TEMPO));
+      await new Promise((r) => setTimeout(r, MT(260)));
     }
     try {
       await SRC.delComment(id, col);
@@ -5031,16 +5052,18 @@ p{line-height:1.65;margin:0}
         520,
         () => {
           done();
+          /* bez .enter: kad .land ode, kartica ne sme ponovo da pusti ulaznu animaciju */
+          card.closest(".v-gal")?.classList.remove("enter");
           card.classList.remove("land");
           void card.offsetWidth;
           card.classList.add("land");
-          setTimeout(() => card.classList.remove("land"), 900 / TEMPO);
+          setTimeout(() => card.classList.remove("land"), MT(900));
         },
         "cubic-bezier(.45,0,.2,1)",
       );
     } else {
       thMedia.classList.remove("in");
-      setTimeout(done, 380 / TEMPO);
+      setTimeout(done, MT(380));
     }
   }
   function switchTheater(cid, dir) {
@@ -5079,11 +5102,11 @@ p{line-height:1.65;margin:0}
         $(".th-amb").classList.remove("swap");
         startMedia();
       });
-    }, 230 / TEMPO);
+    }, MT(230));
   }
   /* kartica "izraste" u kreativu (i vrati se nazad) */
   function ghost(a, b, img, r1, r2, D, cb, E) {
-    D /= TEMPO;
+    D = MT(D);
     const g = document.createElement("div");
     g.className = "th-ghost";
     const A = {
@@ -5112,9 +5135,9 @@ p{line-height:1.65;margin:0}
       done = true;
       cb && cb();
       requestAnimationFrame(() => {
-        g.style.transition = "opacity .28s";
+        g.style.transition = `opacity ${MT(280)}ms`;
         g.style.opacity = "0";
-        setTimeout(() => g.remove(), 320 / TEMPO);
+        setTimeout(() => g.remove(), MT(320));
       });
     };
     /* Web Animations: ceo let se uvek vidi, i kad prvi kadar zakasni */
@@ -5550,7 +5573,7 @@ p{line-height:1.65;margin:0}
     const st = anim
       ? ""
       : fresh && !reduce
-        ? ";animation:ccin .95s var(--spring) both"
+        ? `;animation:ccin ${MT(950)}ms var(--spring) both`
         : ";animation:none";
     return `<li class="cc${res ? " res" : ""}${just ? " justres" : ""}" data-ccid="${esc(x.id)}" style="--i:${i}${st}">${res ? `<span class="cres"><i class="cok" aria-hidden="true">${I_CHECK}</i>Rešeno</span>` : ""}${chip}<p class="ctext">${esc(x.text)}</p><span class="cmeta"><time datetime="${new Date(x.createdAt || 0).toISOString()}">${ago(x.createdAt)}</time>${!res && mine && SRC && SRC.delComment ? `<button type="button" class="cdel" data-ccdel="${esc(x.id)}" aria-label="Obriši komentar">${I_TRASH}</button>` : ""}</span></li>`;
   }
@@ -5760,12 +5783,12 @@ p{line-height:1.65;margin:0}
       setP();
       cb();
       ci.classList.add("open");
-    }, 1800 / TEMPO);
+    }, MT(1800));
     setTimeout(() => {
       ci.hidden = true;
       ci.classList.remove("go", "open");
       INTRO = null;
-    }, 2900 / TEMPO);
+    }, MT(2900));
   }
 
   /* =========================================================
@@ -6164,7 +6187,7 @@ p{line-height:1.65;margin:0}
         const q = $("#pvQ");
         if (q && !rmain.querySelector(".pv-sheet"))
           q.focus({ preventScroll: true });
-      }, 700 / TEMPO);
+      }, MT(700));
   }
   function pvBody() {
     if (!ST.V.length)
@@ -6312,7 +6335,7 @@ p{line-height:1.65;margin:0}
     if (!sh) return;
     sh.classList.remove("on");
     document.documentElement.classList.remove("noscroll");
-    setTimeout(() => sh.remove(), reduce ? 0 : 280 / TEMPO);
+    setTimeout(() => sh.remove(), reduce ? 0 : MT(280));
     pvEdit = null;
   }
   async function pvSave(sh, btn) {
@@ -6747,7 +6770,7 @@ p{line-height:1.65;margin:0}
     try {
       location.hash = "";
     } catch (e) {}
-    setTimeout(openVault, 900 / TEMPO);
+    setTimeout(openVault, MT(900));
   }
   curKey = keyOf(cur);
   if (cur.v !== "dash") {
