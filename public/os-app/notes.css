@@ -789,15 +789,504 @@
   text-decoration: line-through;
 }
 
+/* ---------- tabela (baza) ---------- */
+.nb[data-t="tbl"] {
+  margin: 10px 0 14px;
+}
+.nb[data-t="tbl"] > .nb-g {
+  top: 8px;
+}
+.nb-tbl {
+  flex: 1;
+  min-width: 0;
+}
+/* levi razmak drži ručice redova unutar oblasti koja se skroluje */
+.tb-sc {
+  overflow-x: auto;
+  margin-left: -30px;
+  padding: 0 2px 4px 30px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-2) transparent;
+}
+.tb {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+.tb th,
+.tb td {
+  position: relative;
+  padding: 0;
+  vertical-align: top;
+  text-align: left;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.tb tr > :last-child {
+  border-right: 0;
+}
+.tb thead th {
+  background: var(--surface);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--cream) 72%, var(--muted));
+}
+.tb thead th:first-child {
+  border-top-left-radius: 13px;
+}
+.tb thead th:last-child {
+  border-top-right-radius: 13px;
+}
+.tb tbody td {
+  height: 1px;
+  transition: background 0.15s;
+}
+.tb tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.tb tbody tr:is(:hover, *) td:focus-within {
+  background: color-mix(in srgb, var(--orange) 6%, transparent);
+  box-shadow: inset 0 0 0 1.5px
+    color-mix(in srgb, var(--orange) 70%, transparent);
+}
+/* otvoren meni reda: ceo red je istaknut, bez okvira oko prve ćelije */
+.tb tbody tr:has(.tb-rh:focus) td {
+  background: color-mix(in srgb, var(--orange) 6%, transparent);
+  box-shadow: none;
+}
+.tb thead th:focus-within {
+  box-shadow: inset 0 0 0 1.5px
+    color-mix(in srgb, var(--orange) 55%, transparent);
+}
+.tb .tb-c {
+  outline: none;
+  padding: 7px 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tb tbody .tb-c {
+  height: 100%;
+  min-height: 38px;
+}
+.tb td[data-k="num"] .tb-c {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tb [data-a="c"] :is(.tb-c, .tb-hn) {
+  text-align: center;
+}
+.tb [data-a="r"] :is(.tb-c, .tb-hn) {
+  text-align: right;
+}
+
+/* zaglavlje: ikonica tipa + naziv */
+.tb-hd {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 38px;
+  padding: 0 4px 0 5px;
+}
+.tb .tb-hn {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px 8px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tb-hn:empty::before {
+  content: attr(data-ph);
+  color: #4f463e;
+}
+.tb-ti {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #7a6f64;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.tb-ti:hover {
+  background: var(--surface-2);
+  color: var(--cream);
+}
+.tb-ti svg {
+  width: 15px;
+  height: 15px;
+}
+.tb-rz {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: -5px;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.tb-rz::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 3px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--orange);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tb-rz:hover::after,
+.tb.rz .tb-rz:active::after {
+  opacity: 1;
+}
+.tb.rz,
+.tb.rz * {
+  cursor: col-resize !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* ručica reda (levo od prve ćelije) */
+.tb-rh {
+  position: absolute;
+  z-index: 2;
+  top: 7px;
+  left: -28px;
+  width: 22px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: #6d6359;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.tb tbody tr:hover .tb-rh,
+.tb-rh:focus {
+  opacity: 1;
+}
+.tb-rh:hover {
+  background: var(--surface-2);
+  color: var(--cream);
+}
+.tb-rh svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* vrednosti: izbor, osoba, datum, kvačica */
+.tb-v {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tb-v:empty::before {
+  content: attr(data-ph);
+  color: #5a5047;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tb tbody tr:hover .tb-v:empty::before,
+.tb-v:empty:focus::before {
+  opacity: 1;
+}
+.tb-pill {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 9px;
+  border-radius: 7px;
+  vertical-align: top;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--c) 55%, var(--cream));
+  background: color-mix(in srgb, var(--c) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 24%, transparent);
+}
+.tb-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  vertical-align: top;
+}
+.tb-who img,
+.tb-who i {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.tb-who i {
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.tb-who span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tb-date {
+  font-variant-numeric: tabular-nums;
+}
+.tb-date.now {
+  color: var(--gold);
+  font-weight: 600;
+}
+.tb-date.raw {
+  color: var(--muted);
+}
+.tb .tb-v[role="checkbox"] {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+.tb-ck {
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  border: 1.5px solid #6d6359;
+  display: grid;
+  place-items: center;
+  color: var(--on-accent);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.tb-ck svg {
+  width: 12px;
+  height: 12px;
+  transform: scale(0);
+  transition: transform 0.35s var(--spring);
+}
+.tb-v:hover .tb-ck {
+  border-color: var(--orange);
+}
+.tb-v[aria-checked="true"] .tb-ck {
+  background: var(--grad);
+  border-color: transparent;
+}
+.tb-v[aria-checked="true"] .tb-ck svg {
+  transform: none;
+}
+.tb-v.ckpop .tb-ck {
+  animation: ckPop 0.45s var(--spring);
+}
+.tb-di {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* dno: zbir brojeva + novi red */
+.tb tfoot td {
+  border-right: 0;
+}
+.tb-sum td {
+  padding: 6px 10px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: color-mix(in srgb, var(--cream) 80%, var(--muted));
+}
+.tb-sum td span {
+  margin-right: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tb tfoot tr:last-child td {
+  border-bottom: 0;
+}
+.tb-fb {
+  display: flex;
+  align-items: stretch;
+}
+.tb-addr,
+.tb-addc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14.5px;
+  color: #6d6359;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+.tb-addr {
+  flex: 1;
+  border-bottom-left-radius: 13px;
+}
+.tb-addc {
+  border-bottom-right-radius: 13px;
+  opacity: 0;
+}
+.nb-tbl:hover .tb-addc,
+.tb-addc:focus-visible {
+  opacity: 1;
+}
+.tb-addr:hover,
+.tb-addc:hover {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  color: var(--cream);
+}
+.tb-addr svg,
+.tb-addc svg {
+  width: 15px;
+  height: 15px;
+}
+.tb-more {
+  display: none;
+}
+@media (hover: none) {
+  /* telefon: ručice redova staju u marginu stranice (20px) */
+  .tb-sc {
+    margin-left: -20px;
+    padding-left: 20px;
+  }
+  .tb-rh {
+    left: -19px;
+    width: 18px;
+    opacity: 0.6;
+  }
+  .tb-rz {
+    display: none;
+  }
+  .tb-addc {
+    opacity: 1;
+    border-radius: 0;
+  }
+  .tb-v:empty::before {
+    opacity: 0.6;
+  }
+  .tb-more {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    color: #7a6f64;
+    border-bottom-right-radius: 13px;
+  }
+  .tb-more svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* meni kolone (tipovi) i izbor opcije */
+.tb-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 0 4px 4px;
+}
+.pop.nmenu .tb-types button {
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  height: 58px;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pop.nmenu .tb-types button.on {
+  border-color: var(--orange);
+  color: var(--gold);
+}
+.pop.nmenu .tb-types button.on svg {
+  color: var(--gold);
+}
+.tb-menu .tb-pq {
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  color: var(--cream);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.tb-menu .tb-pq:focus {
+  border-color: color-mix(in srgb, var(--orange) 55%, var(--line));
+}
+.tb-pl {
+  display: grid;
+  gap: 1px;
+}
+.pop.nmenu .tb-pl button {
+  gap: 8px;
+  min-height: 42px;
+}
+.tb-pnew {
+  font-size: 13px;
+  color: var(--muted);
+}
+.nmenu .tb-pok {
+  margin-left: auto;
+  display: grid;
+}
+.nmenu .tb-pok svg {
+  width: 16px;
+  height: 16px;
+  color: var(--gold);
+}
+.nmenu .tb-pclr {
+  color: var(--muted);
+}
+.tb-pnone {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 /* inline marks */
 .nb-t b,
-.nb-t strong {
+.nb-t strong,
+.tb-c b,
+.tb-c strong {
   font-weight: 700;
 }
-.nb-t s {
+.nb-t s,
+.tb-c s {
   opacity: 0.65;
 }
-.nb-t code {
+.nb-t code,
+.tb-c code {
   font:
     0.86em ui-monospace,
     "SF Mono",
@@ -811,7 +1300,8 @@
   border: 1px solid var(--line);
   color: var(--gold);
 }
-.nb-t a {
+.nb-t a,
+.tb-c a {
   color: var(--cream);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--orange) 60%, transparent);
