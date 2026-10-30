@@ -3,7 +3,7 @@
    Markdown u polju md. spaceId = mesec/projekat (items) čiji je to General (#mg-{id});
    bez njega stranica pripada glavnom Generalu. Podstranice nasleđuju spaceId roditelja. Editor isti Markdown prikazuje kao blokove: tekst, naslovi,
    liste, zadaci, citat, napomena, kod, razdelnik, slika, fajl, podstranica i tabela.
-   "/" otvara blokove i iOS emoji. app.js zove window.SKNotes(most) i dobija
+   "/" otvara blokove i iOS emoji, "@" vezu ka drugoj stranici. app.js zove window.SKNotes(most) i dobija
    { hub, open, sync, leave, flush, focusTop }.
    Isti editor piše i skripte (ekran #ed, open(id, "script")): skripta čuva md, a
    body (HTML za CRM i stari editor) se generiše iz njega; mdSig = otisak tog body-ja,
@@ -290,6 +290,28 @@ window.SKNotes = function (X) {
     if (!fw) return null;
     return fw === "bold" || fw === "bolder" || +fw >= 600;
   }
+  /* veza ka stranici: [@Naslov](#g-id), u editoru nedeljiv čip koji se otvara na klik.
+     Naslov u md-u ostaje kakav je bio pri ubacivanju (preimenovanje ne menja tuđe
+     stranice ni spajanje izmena), a prikaz, izvod i izvoz uzimaju trenutni. */
+  const RELG = /\[@(?:\\.|[^\]\\\n])*\]\(#g-([^)\s]+)\)/g;
+  const relMd = (id, name) =>
+    "[@" + escPlain(name).replace(/]/g, "\\]") + "](#g-" + id + ")";
+  const relFresh = (md) =>
+    md.replace(RELG, (m, id) => {
+      const n = noteOf(id);
+      return n ? relMd(id, n.title || "Bez naslova") : m;
+    });
+  const isRel = (c) => !!c.classList && c.classList.contains("nb-rel");
+  function relIn(id, name) {
+    const n = noteOf(id);
+    return `${n && n.icon ? emo(n.icon) : I.doc}<span class="rl-n">${esc(n ? n.title || "Bez naslova" : name || "Stranica")}</span>`;
+  }
+  /* skripta ide klijentu u CRM, pa veza u njoj ostaje običan tekst. Znak iza čipa drži
+     mesto za kursor kad je čip poslednji u bloku (Safari ga inače ne može da postavi). */
+  const relHtml = (id, name) =>
+    isScript()
+      ? esc(name)
+      : `<a class="nb-rel${noteOf(id) ? "" : " gone"}" href="#g-${esc(id)}" data-ref="${esc(id)}" data-name="${esc(name)}" contenteditable="false" draggable="false" tabindex="-1">${relIn(id, name)}</a>\u200b`;
   /* DOM (inline) -> Markdown */
   function inlineMd(node, o = {}) {
     let out = "";
@@ -308,6 +330,10 @@ window.SKNotes = function (X) {
       }
       if (tag === "IMG") {
         if (n.classList.contains("emo")) out += n.alt || "";
+        continue;
+      }
+      if (isRel(n) && n.dataset.ref) {
+        out += relMd(n.dataset.ref, n.dataset.name || "Stranica");
         continue;
       }
       if (
@@ -496,9 +522,12 @@ window.SKNotes = function (X) {
       if (c === "[") {
         const L = linkAt(s, i);
         if (L) {
-          out += OKHREF.test(L.href)
-            ? `<a href="${esc(L.href)}">${mdInline(L.text)}</a>`
-            : mdInline(L.text);
+          out +=
+            L.text[0] === "@" && /^#g-/.test(L.href)
+              ? relHtml(L.href.slice(3), unesc(L.text.slice(1)))
+              : OKHREF.test(L.href)
+                ? `<a href="${esc(L.href)}">${mdInline(L.text)}</a>`
+                : mdInline(L.text);
           i = L.end;
           continue;
         }
@@ -534,7 +563,7 @@ window.SKNotes = function (X) {
     return out;
   }
   function plainOf(md) {
-    return String(md || "")
+    return relFresh(String(md || ""))
       .split("\n")
       .filter(
         (l) =>
@@ -552,7 +581,7 @@ window.SKNotes = function (X) {
           .replace(/(^|\s)\[[ xX]\](?=\s|$)/g, " "),
       )
       .join(" ")
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/\[((?:\\.|[^\]\\])*)\]\([^)]*\)/g, "$1")
       .replace(/\\(.)/g, "$1")
       .replace(/[*_~`]+/g, "")
       .replace(/\s+/g, " ")
@@ -949,7 +978,7 @@ window.SKNotes = function (X) {
       }
       const lk = ln[0] === "[" ? linkAt(ln, 0) : null;
       if (lk && lk.end === ln.replace(/\s+$/, "").length) {
-        if (/^#g-/.test(lk.href)) {
+        if (/^#g-/.test(lk.href) && lk.text[0] !== "@") {
           add({ t: "page", ref: lk.href.slice(3), name: unesc(lk.text) });
           continue;
         }
@@ -1443,6 +1472,11 @@ window.SKNotes = function (X) {
     a.classList.toggle("gone", !n);
     a.innerHTML = `<span class="pi">${n && n.icon ? emo(n.icon) : I.doc}</span><span class="pn">${esc(n ? n.title || "Bez naslova" : el.dataset.name || "Obrisana stranica")}</span>${n ? `<span class="pa">${I.open}</span>` : ""}`;
   }
+  function paintRel(a) {
+    const h = relIn(a.dataset.ref, a.dataset.name);
+    a.classList.toggle("gone", !noteOf(a.dataset.ref));
+    if (a._h !== h) a.innerHTML = a._h = h;
+  }
   function renum() {
     let cnt = [],
       prevL = -1;
@@ -1507,7 +1541,8 @@ window.SKNotes = function (X) {
     const w = (x) => {
       for (const c of x.childNodes) {
         if (c.nodeType === 3) n += c.nodeValue.length;
-        else if (c.nodeName === "BR" || c.nodeName === "IMG") n += 1;
+        else if (c.nodeName === "BR" || c.nodeName === "IMG" || isRel(c))
+          n += 1;
         else if (c.nodeType === 1) w(c);
       }
     };
@@ -1536,7 +1571,7 @@ window.SKNotes = function (X) {
             return;
           }
           left -= c.nodeValue.length;
-        } else if (c.nodeName === "BR" || c.nodeName === "IMG") {
+        } else if (c.nodeName === "BR" || c.nodeName === "IMG" || isRel(c)) {
           if (left === 0) {
             res = [c.parentNode, [...c.parentNode.childNodes].indexOf(c)];
             return;
@@ -2565,6 +2600,7 @@ window.SKNotes = function (X) {
     blocks()
       .filter((b) => b.dataset.t === "page")
       .forEach(paintPage);
+    root.querySelectorAll(".nb-rel").forEach(paintRel);
     paintKids();
   }
   function leave(h) {
@@ -2634,7 +2670,7 @@ window.SKNotes = function (X) {
   }
   const pageMd = () => {
     const t = titleEl.textContent.trim();
-    return (t ? "# " + t + "\n\n" : "") + serialize();
+    return (t ? "# " + t + "\n\n" : "") + relFresh(serialize());
   };
   async function copyText(s, msg) {
     try {
@@ -3133,6 +3169,13 @@ window.SKNotes = function (X) {
       kw: "stranica page podstranica subpage",
     },
     {
+      id: "rel",
+      label: "Veza ka stranici",
+      ic: I.link,
+      hint: "@",
+      kw: "veza relacija relation mention pomen link povezi stranica",
+    },
+    {
       id: "img",
       label: "Slika",
       ic: I.img,
@@ -3167,7 +3210,8 @@ window.SKNotes = function (X) {
   slashEl.setAttribute("role", "listbox");
   document.body.appendChild(slashEl);
   let SL = null;
-  function openSlash(t) {
+  /* m = "/" blokovi i emoji, "@" veza ka stranici */
+  function openSlash(t, m) {
     const s = getSelection();
     if (!s.rangeCount) return;
     const r = s.getRangeAt(0);
@@ -3176,12 +3220,13 @@ window.SKNotes = function (X) {
       off = r.startOffset - 1,
       pc = node.nodeValue[off - 1];
     if (off > 0 && pc && !/[\s​]/.test(pc)) return;
-    SL = { t, node, off, idx: 0, items: [] };
+    SL = { t, node, off, m, idx: 0, items: [] };
     updateSlash();
-    loadEmoji().then(
-      () => SL && updateSlash(),
-      () => {},
-    );
+    if (m === "/")
+      loadEmoji().then(
+        () => SL && updateSlash(),
+        () => {},
+      );
   }
   function slashQ() {
     if (!SL || !SL.node.isConnected) return null;
@@ -3190,7 +3235,28 @@ window.SKNotes = function (X) {
     const r = s.getRangeAt(0);
     if (r.startContainer !== SL.node || r.startOffset <= SL.off) return null;
     const v = SL.node.nodeValue.slice(SL.off, r.startOffset);
-    return v[0] === "/" ? v.slice(1) : null;
+    return v[0] === SL.m ? v.slice(1) : null;
+  }
+  /* privatna stranica samo iz privatne: ostali je ne vide, a naslov bi im ostao u tekstu */
+  function relPages(f, max) {
+    const here = docOf(cur);
+    return notes()
+      .filter(
+        (n) =>
+          n.id !== cur &&
+          (!n.privateTo || (here && here.privateTo)) &&
+          (!f || fold(n.title || "Bez naslova").includes(f)),
+      )
+      .sort(
+        (a, b) =>
+          (f ? fold(b.title).startsWith(f) - fold(a.title).startsWith(f) : 0) ||
+          byUpd(a, b),
+      )
+      .slice(0, max);
+  }
+  function relHint(n) {
+    const sp = spaceOf(n) !== spaceOf(docOf(cur)) && X.spaceLabel(spaceOf(n));
+    return [sp, pathOf(n)].filter(Boolean).join(" / ");
   }
   function updateSlash() {
     const q = slashQ();
@@ -3198,24 +3264,20 @@ window.SKNotes = function (X) {
       closeSlash();
       return;
     }
-    const f = fold(q.trim());
+    const f = fold(q.trim()),
+      rel = SL.m === "@";
     /* skripta ide klijentu u CRM, pa u njoj nema podstranica ni linkova na General */
-    const items = BLOCKS.filter(
-      (b) =>
-        !(b.id === "page" && isScript()) &&
-        (!f || fold(b.label).includes(f) || b.kw.includes(f)),
-    ).map((b) => ({ k: "b", b }));
-    if (f && !isScript())
-      notes()
-        .filter(
-          (n) =>
-            n.id !== cur &&
-            spaceOf(n) === spaceOf(docOf(cur)) &&
-            fold(n.title || "Bez naslova").includes(f),
-        )
-        .slice(0, 4)
-        .forEach((n) => items.push({ k: "link", n }));
-    const em = EMO ? (f ? searchEmoji(f, 16) : recentEmoji().slice(0, 8)) : [];
+    const items = rel
+      ? relPages(f, 8).map((n) => ({ k: "rel", n }))
+      : BLOCKS.filter(
+          (b) =>
+            !((b.id === "page" || b.id === "rel") && isScript()) &&
+            (!f || fold(b.label).includes(f) || b.kw.includes(f)),
+        ).map((b) => ({ k: "b", b }));
+    if (!rel && f && !isScript())
+      relPages(f, 4).forEach((n) => items.push({ k: "link", n }));
+    const em =
+      !rel && EMO ? (f ? searchEmoji(f, 16) : recentEmoji().slice(0, 8)) : [];
     em.forEach((ch) => items.push({ k: "e", ch }));
     if (!items.length && /\s$/.test(q)) {
       closeSlash();
@@ -3229,13 +3291,22 @@ window.SKNotes = function (X) {
         return `<button type="button" class="${on}" data-si="${i}" role="option"><span class="si">${it.b.ic}</span><span class="sl">${it.b.label}</span><span class="sk">${it.b.hint}</span></button>`;
       if (it.k === "link")
         return `<button type="button" class="${on}" data-si="${i}" role="option"><span class="si">${it.n.icon ? emo(it.n.icon) : I.doc}</span><span class="sl">${esc(it.n.title || "Bez naslova")}</span><span class="sk">Link</span></button>`;
+      if (it.k === "rel") {
+        const hint = relHint(it.n);
+        return `<button type="button" class="ns-rel${on}" data-si="${i}" role="option"><span class="si">${it.n.icon ? emo(it.n.icon) : I.doc}</span><span class="sl"><span>${esc(it.n.title || "Bez naslova")}</span>${hint ? `<span class="sk">${esc(hint)}</span>` : ""}</span></button>`;
+      }
       return `<button type="button" class="ns-e${on}" data-si="${i}" role="option" aria-label="Emoji ${esc(it.ch)}">${emo(it.ch)}</button>`;
     };
     let h = "",
       i = 0;
     const bl = items.filter((x) => x.k === "b"),
       ln = items.filter((x) => x.k === "link"),
+      rl = items.filter((x) => x.k === "rel"),
       es = items.filter((x) => x.k === "e");
+    if (rl.length)
+      h +=
+        `<div class="ns-h">Veza ka stranici</div>` +
+        rl.map((it) => row(it, i++)).join("");
     if (bl.length)
       h +=
         `<div class="ns-h">Blokovi</div>` +
@@ -3246,7 +3317,9 @@ window.SKNotes = function (X) {
         ln.map((it) => row(it, i++)).join("");
     if (es.length)
       h += `<div class="ns-h">${f ? "Emoji" : "Nedavni emoji"}</div><div class="ns-emo">${es.map((it) => row(it, i++)).join("")}</div>`;
-    slashEl.innerHTML = h || '<div class="none">Nema rezultata</div>';
+    slashEl.innerHTML =
+      h ||
+      `<div class="none">${rel ? "Nema te stranice" : "Nema rezultata"}</div>`;
     slashEl.hidden = false;
     placeFloat(slashEl, caretRect(), 300, 400);
   }
@@ -3327,7 +3400,15 @@ window.SKNotes = function (X) {
       placeBlock(el, empty, { t: "page", ref: it.n.id });
       return;
     }
+    if (it.k === "rel") {
+      relInsert(t, it.n);
+      return;
+    }
     const id = it.b.id;
+    if (id === "rel") {
+      document.execCommand("insertText", false, "@"); // input otvara izbor stranice
+      return;
+    }
     if (TEXTY.has(id)) {
       convert(el, id, { focus: true });
       changed();
@@ -3352,6 +3433,100 @@ window.SKNotes = function (X) {
         document.execCommand("insertText", false, ch);
       });
     }
+  }
+  function relInsert(t, n) {
+    insertInline(t, relMd(n.id, n.title || "Bez naslova"));
+    const s = getSelection(),
+      r = s.getRangeAt(0),
+      nx = r.startContainer.childNodes[r.startOffset];
+    if (!(nx && nx.nodeType === 3 && /^\s/.test(nx.nodeValue))) {
+      const sp = document.createTextNode("\u00a0");
+      r.insertNode(sp);
+      r.setStart(sp, 1);
+      r.collapse(true);
+      s.removeAllRanges();
+      s.addRange(r);
+    }
+    changed();
+  }
+  function relOpen(a) {
+    if (noteOf(a.dataset.ref)) X.nav("g-" + a.dataset.ref);
+    else toast("Stranica je obrisana ili nemaš pristup");
+  }
+  /* čip do kursora u smeru d (-1 levo, 1 desno); znak koji drži mesto se preskače */
+  function relAdj(d) {
+    const s = getSelection();
+    if (!s.rangeCount || !s.isCollapsed) return null;
+    const ZW = /\u200b/g,
+      step = (x) => (d < 0 ? x.previousSibling : x.nextSibling);
+    let n = s.anchorNode,
+      o = s.anchorOffset;
+    if (n.nodeType === 3) {
+      const rest = d < 0 ? n.nodeValue.slice(0, o) : n.nodeValue.slice(o);
+      if (rest.replace(ZW, "")) return null;
+      n = step(n);
+    } else n = n.childNodes[d < 0 ? o - 1 : o];
+    while (n && n.nodeType === 3 && !n.nodeValue.replace(ZW, "")) n = step(n);
+    return n && isRel(n) ? n : null;
+  }
+  /* čip je jedna celina: strelica ga preskače, Backspace i Delete ga brišu odjednom */
+  function relKey(e, t) {
+    const k = e.key,
+      left = k === "Backspace" || k === "ArrowLeft";
+    if (
+      (!left && k !== "Delete" && k !== "ArrowRight") ||
+      e.shiftKey ||
+      e.altKey ||
+      e.metaKey ||
+      e.ctrlKey
+    )
+      return false;
+    const a = relAdj(left ? -1 : 1);
+    if (!a) return false;
+    e.preventDefault();
+    const s = getSelection(),
+      r = document.createRange(),
+      z = a.nextSibling,
+      zw = z && z.nodeType === 3 && z.nodeValue[0] === "\u200b";
+    if (k === "ArrowLeft") r.setStartBefore(a);
+    else if (k === "ArrowRight") {
+      if (zw) r.setStart(z, 1);
+      else r.setStartAfter(a);
+    } else {
+      pushUndo();
+      r.setStartBefore(a);
+      a.remove();
+      if (zw) z.deleteData(0, 1);
+      tidy(t);
+    }
+    r.collapse(true);
+    s.removeAllRanges();
+    s.addRange(r);
+    if (k === "Backspace" || k === "Delete") changed();
+    return true;
+  }
+  function slashKey(e) {
+    const k = e.key;
+    if (k === "ArrowDown" || k === "ArrowUp") {
+      e.preventDefault();
+      moveSlash(k === "ArrowDown" ? 1 : -1);
+      return true;
+    }
+    if (k === "Enter" || k === "Tab") {
+      const it = SL.items[SL.idx];
+      if (it) {
+        e.preventDefault();
+        runSlash(it);
+        return true;
+      }
+      closeSlash();
+    }
+    if (k === "Escape") {
+      e.preventDefault();
+      closeSlash();
+      return true;
+    }
+    return false;
   }
   async function subpage(el, replace) {
     try {
@@ -4144,7 +4319,7 @@ window.SKNotes = function (X) {
   function mdPlain(x) {
     const t = document.createElement("template");
     t.innerHTML = mdInline(x);
-    return t.content.textContent;
+    return t.content.textContent.replace(/\u200b/g, "");
   }
   /* vrednost ćelije kad kolona promeni tip (prazno ostaje prazno) */
   function conv(from, to, x) {
@@ -4657,6 +4832,8 @@ window.SKNotes = function (X) {
     if (SP || e.isComposing || e.keyCode === 229) return;
     const c = e.target.closest && e.target.closest(".tb-c");
     if (!c || !root.contains(c)) return;
+    if (SL && slashKey(e)) return;
+    if (isTextCell(c) && relKey(e, c)) return;
     const el = c.closest(".nb"),
       { r, c: ci } = cellRC(c),
       k = e.key,
@@ -4789,9 +4966,19 @@ window.SKNotes = function (X) {
       "*_~`".includes(e.data)
     )
       inlineShortcut(c, e.data);
-    changed();
     const el = c.closest(".nb"),
       p = cellRC(c);
+    if (
+      !composing &&
+      e.data === "@" &&
+      !SL &&
+      !isScript() &&
+      p.r >= 0 &&
+      kindAt(el, p.c) === "text"
+    )
+      openSlash(c, "@");
+    else if (SL) updateSlash();
+    changed();
     if (p.r >= 0 && kindAt(el, p.c) === "num") tbSum(el);
   });
   onRoot("paste", (e) => {
@@ -4862,13 +5049,14 @@ window.SKNotes = function (X) {
     else if ((b = e.target.closest(".tb-v"))) {
       getSelection().removeAllRanges();
       activate(b);
-    } else if ((b = e.target.closest(".tb-c a[href]"))) {
+    } else if ((b = e.target.closest(".tb-c a[href]:not(.nb-rel)"))) {
       e.preventDefault();
       if (e.metaKey || e.ctrlKey) openHref(b.getAttribute("href"));
     }
   });
   onRoot("mouseover", (e) => {
-    const a = e.target.closest && e.target.closest(".tb-c a[href]");
+    const a =
+      e.target.closest && e.target.closest(".tb-c a[href]:not(.nb-rel)");
     if (a && !a.title) a.title = MOD + "klik otvara link";
   });
   /* širina kolone: ručka na desnoj ivici zaglavlja. Prvo prevlačenje zamrzne sve kolone
@@ -5114,7 +5302,8 @@ window.SKNotes = function (X) {
   onRoot("pointerdown", (e) => {
     justSel = false;
     if (e.pointerType !== "mouse" || e.button !== 0) return;
-    if (e.target.closest(".nb-g,.nb-ck,.nb-ci,.nb-cbar,.nb-x,.nb-tbl")) return;
+    if (e.target.closest(".nb-g,.nb-ck,.nb-ci,.nb-cbar,.nb-x,.nb-tbl,.nb-rel"))
+      return;
     if (e.shiftKey && spanTo(e.clientX, e.clientY)) {
       e.preventDefault();
       justSel = true;
@@ -5966,7 +6155,8 @@ window.SKNotes = function (X) {
       if (e.data === "`" && fenceShortcut(el, t)) return;
       if (/[-—–]/.test(e.data) && hrShortcut(el, t)) return;
       if ("*_~`".includes(e.data)) inlineShortcut(t, e.data);
-      if (e.data === "/" && !SL) openSlash(t);
+      if ((e.data === "/" || (e.data === "@" && !isScript())) && !SL)
+        openSlash(t, e.data);
       else if (SL) updateSlash();
     } else if (SL) updateSlash();
     changed();
@@ -5980,27 +6170,8 @@ window.SKNotes = function (X) {
       k = e.key,
       mod = e.metaKey || e.ctrlKey,
       low = k.length === 1 ? k.toLowerCase() : k;
-    if (SL) {
-      if (k === "ArrowDown" || k === "ArrowUp") {
-        e.preventDefault();
-        moveSlash(k === "ArrowDown" ? 1 : -1);
-        return;
-      }
-      if (k === "Enter" || k === "Tab") {
-        const it = SL.items[SL.idx];
-        if (it) {
-          e.preventDefault();
-          runSlash(it);
-          return;
-        }
-        closeSlash();
-      }
-      if (k === "Escape") {
-        e.preventDefault();
-        closeSlash();
-        return;
-      }
-    }
+    if (SL && slashKey(e)) return;
+    if (tp !== "code" && relKey(e, t)) return;
     if (mod && !e.altKey) {
       if (low === "z") {
         e.preventDefault();
@@ -6137,6 +6308,12 @@ window.SKNotes = function (X) {
       justSel = false;
       return;
     }
+    const rl = e.target.closest(".nb-rel");
+    if (rl) {
+      e.preventDefault();
+      relOpen(rl);
+      return;
+    }
     const a = e.target.closest(".nb-t a[href]");
     if (a) {
       e.preventDefault();
@@ -6218,7 +6395,8 @@ window.SKNotes = function (X) {
   }
   $("#gpFill").addEventListener("click", clickBelow);
   onRoot("mouseover", (e) => {
-    const a = e.target.closest && e.target.closest(".nb-t a[href]");
+    const a =
+      e.target.closest && e.target.closest(".nb-t a[href]:not(.nb-rel)");
     if (a && !a.title) a.title = MOD + "klik otvara link";
   });
   onRoot("focusin", () => {

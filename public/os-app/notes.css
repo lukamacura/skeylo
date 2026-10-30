@@ -1308,6 +1308,61 @@
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
 }
+.nb-t a.nb-rel,
+.tb-c a.nb-rel {
+  padding: 0.08em 0.42em 0.08em 0.32em;
+  border-radius: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: text;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.nb-t a.nb-rel:hover,
+.tb-c a.nb-rel:hover {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--orange) 55%, transparent);
+}
+.nb-rel svg {
+  width: 1em;
+  height: 1em;
+  margin-right: 0.28em;
+  vertical-align: -0.14em;
+  color: var(--orange);
+}
+.nb-rel .emo {
+  margin-right: 0.24em;
+}
+.nb-t a.nb-rel.gone,
+.tb-c a.nb-rel.gone {
+  color: var(--muted);
+}
+.nb-rel.gone svg {
+  color: inherit;
+}
+.nb-rel.gone .rl-n {
+  text-decoration: line-through;
+}
+.nslash .ns-rel .sl {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.nslash .ns-rel .sl > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nslash .ns-rel .sk {
+  margin-left: 0;
+  font-size: 12.5px;
+}
 .emo {
   font-family:
     "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
