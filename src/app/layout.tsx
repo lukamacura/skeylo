@@ -48,7 +48,9 @@ export default async function RootLayout({
   const isCalculator = pathname.startsWith("/calculator");
   // /ils su privatni dokumenti za klijenta — takođe bez site chrome-a.
   const isIls = pathname.startsWith("/ils");
-  const hideChrome = construction || isAdmin || isCalculator || isIls;
+  // /uml je prezentacija preko celog ekrana — takođe bez site chrome-a.
+  const isUml = pathname === "/uml";
+  const hideChrome = construction || isAdmin || isCalculator || isIls || isUml;
 
   return (
     <html lang="sr" className={`${display.variable} ${sans.variable}`}>

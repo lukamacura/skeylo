@@ -1,0 +1,3324 @@
+/* /uml: prezentacija preko celog ekrana, bez skrolovanja. Boje nose značenje uz
+   legendu, a UML oznake (puna/isprekidana linija, vrh strelice) ostaju i u
+   crno-beloj štampi. Animiraju se samo transform, opacity i stroke-dashoffset. */
+
+/* ---------- Mera: 1rem je 16 jedinica platna ----------
+   Sve veličine su u rem, a rem prati ekran. Slajd koji stane na platno staje na
+   svaki ekran istog usmerenja, pa skrolovanje nikad nije potrebno. */
+
+@media screen {
+  html:has(.uml-deck) {
+    font-size: calc(min(100vw / 1600, 100dvh / 900) * 16);
+  }
+
+  html:has(.uml-deck),
+  html:has(.uml-deck) body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
+@media screen and (max-aspect-ratio: 6/5) {
+  html:has(.uml-deck) {
+    font-size: calc(min(100vw / 420, 100dvh / 860) * 16);
+  }
+}
+
+/* ---------- Tokeni ---------- */
+
+.uml-root,
+.uml-lightbox {
+  --ink: #1a1442;
+  --ink-soft: #575279;
+  --paper: #fffdf8;
+  --hair: rgba(26, 20, 66, 0.1);
+  --hair-strong: rgba(26, 20, 66, 0.22);
+  --line: #2c2560;
+
+  --iris: #4b32e6;
+  --iris-deep: #2f1bb0;
+  --iris-soft: #e9e6ff;
+  --coral: #ff6482;
+  --coral-deep: #d11c4b;
+  --coral-soft: #ffe3e9;
+  --sun: #ffc72e;
+  --sun-deep: #8a5a00;
+  --sun-soft: #fff3c7;
+  --teal: #22d3b8;
+  --teal-deep: #00786a;
+  --teal-soft: #d3f8f0;
+
+  /* Opruga izračunata iz prigušenja: 0.72 (blago preteruje, oko 4%) i 1.0 (bez
+     preterivanja). Na 600ms odgovara „response“ od oko 0.44s. */
+  --uml-spring: linear(
+    0,
+    0.0465,
+    0.1577,
+    0.2994,
+    0.4478,
+    0.5876,
+    0.71,
+    0.811,
+    0.8901,
+    0.9487,
+    0.9895,
+    1.0157,
+    1.0307,
+    1.0373,
+    1.0382,
+    1.0355,
+    1.0307,
+    1.0251,
+    1.0195,
+    1.0143,
+    1.0098,
+    1.0062,
+    1.0034,
+    1.0014,
+    1,
+    0.9992,
+    1
+  );
+  --uml-soft: linear(
+    0,
+    0.0431,
+    0.1399,
+    0.2572,
+    0.3759,
+    0.4862,
+    0.5835,
+    0.6665,
+    0.7356,
+    0.7921,
+    0.8376,
+    0.8739,
+    0.9026,
+    0.9251,
+    0.9426,
+    0.9562,
+    0.9667,
+    0.9747,
+    0.9808,
+    0.9855,
+    0.9891,
+    0.9918,
+    0.9938,
+    0.9954,
+    0.9965,
+    0.9974,
+    1
+  );
+}
+
+/* Ton jednog elementa. Tri dijagrama imaju stalne boje kroz celu prezentaciju. */
+[data-tone="iris"],
+[data-tone="use-case"] {
+  --tone: var(--iris);
+  --tone-deep: var(--iris);
+  --tone-soft: var(--iris-soft);
+  --on-tone: #fff;
+}
+[data-tone="coral"],
+[data-tone="sequence"] {
+  --tone: var(--coral);
+  --tone-deep: var(--coral-deep);
+  --tone-soft: var(--coral-soft);
+  --on-tone: var(--ink);
+}
+[data-tone="sun"] {
+  --tone: var(--sun);
+  --tone-deep: var(--sun-deep);
+  --tone-soft: var(--sun-soft);
+  --on-tone: var(--ink);
+}
+[data-tone="teal"],
+[data-tone="class"] {
+  --tone: var(--teal);
+  --tone-deep: var(--teal-deep);
+  --tone-soft: var(--teal-soft);
+  --on-tone: var(--ink);
+}
+
+/* Boja poglavlja: marker u naslovu i dugme „sledeći“ */
+[data-chapter="title"],
+[data-chapter="use-case"] {
+  --accent: var(--iris);
+  --mark: #cfc8ff;
+}
+[data-chapter="system"] {
+  --accent: var(--coral-deep);
+  --mark: #ffc9a8;
+}
+[data-chapter="sketch"] {
+  --accent: #c25a00;
+  --mark: #ffe07a;
+}
+[data-chapter="class"] {
+  --accent: var(--teal-deep);
+  --mark: #93f0df;
+}
+[data-chapter="sequence"] {
+  --accent: var(--coral-deep);
+  --mark: #ffbccb;
+}
+[data-chapter="model"] {
+  --accent: var(--iris);
+  --mark: linear-gradient(90deg, #cfc8ff, #93f0df 55%, #ffbccb);
+}
+
+/* Klase i učesnici */
+[data-group="central"],
+[data-participant="posiljka"] {
+  --uml-tone: var(--iris);
+  --uml-tone-deep: var(--iris-deep);
+  --uml-on-tone: #fff;
+}
+[data-group="people"],
+[data-participant="korisnik"],
+[data-participant="primalac"] {
+  --uml-tone: var(--coral);
+  --uml-tone-deep: var(--coral-deep);
+  --uml-on-tone: var(--ink);
+}
+[data-group="catalog"],
+[data-participant="tip"] {
+  --uml-tone: var(--sun);
+  --uml-tone-deep: #b57f00;
+  --uml-on-tone: var(--ink);
+}
+[data-group="org"] {
+  --uml-tone: var(--teal);
+  --uml-tone-deep: var(--teal-deep);
+  --uml-on-tone: var(--ink);
+}
+
+/* ---------- Okvir prezentacije ---------- */
+
+.uml-deck {
+  position: fixed;
+  inset: 0;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #3a22d8;
+  color: var(--ink);
+  font-family: var(--uml-font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  /* Prevlačenje prstom menja slajd; uvećanje sa dva prsta i dalje radi. */
+  touch-action: pinch-zoom;
+}
+
+.uml-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 720ms ease;
+  will-change: opacity;
+}
+
+.uml-bg[data-active="true"] {
+  opacity: 1;
+}
+
+.uml-bg[data-chapter="title"] {
+  background:
+    radial-gradient(54% 72% at 90% 6%, #ff4f8b 0%, rgba(255, 79, 139, 0) 72%),
+    radial-gradient(48% 64% at 6% 98%, #14c8b0 0%, rgba(20, 200, 176, 0) 72%),
+    radial-gradient(38% 46% at 66% 106%, #ff9d2e 0%, rgba(255, 157, 46, 0) 72%),
+    #3a22d8;
+}
+.uml-bg[data-chapter="system"] {
+  background: linear-gradient(115deg, #f22f68, #ff8a3d);
+}
+.uml-bg[data-chapter="sketch"] {
+  background: linear-gradient(115deg, #ff8f1f, #ffc72e);
+}
+.uml-bg[data-chapter="use-case"] {
+  background: linear-gradient(115deg, #3a22d8, #8b3ff2);
+}
+.uml-bg[data-chapter="class"] {
+  background: linear-gradient(115deg, #009b84, #2bdcc0);
+}
+.uml-bg[data-chapter="sequence"] {
+  background: linear-gradient(115deg, #e0205a, #ff6a93);
+}
+.uml-bg[data-chapter="model"] {
+  background: linear-gradient(110deg, #3a22d8, #00a88f 52%, #e0205a);
+}
+
+.uml-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0.875rem 0.875rem 0;
+}
+
+.uml-sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.75rem;
+  background: var(--paper);
+  box-shadow: 0 1.5rem 4rem -1.5rem rgba(20, 10, 80, 0.5);
+  transition:
+    opacity 380ms ease,
+    transform 620ms var(--uml-soft);
+}
+
+[data-title="true"] .uml-sheet {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.uml-slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding: 1.125rem 1.875rem 1.125rem;
+}
+
+.uml-slide[data-active="true"],
+.uml-slide[data-leaving="true"] {
+  display: flex;
+}
+
+.uml-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Prelaz je kratak i miran; smer prati navigaciju. */
+.uml-slide[data-active="true"]:not([data-instant]) {
+  animation: uml-enter-fwd 320ms var(--uml-soft) backwards;
+}
+
+[data-dir="back"] .uml-slide[data-active="true"]:not([data-instant]) {
+  animation-name: uml-enter-back;
+}
+
+.uml-slide[data-leaving="true"] {
+  pointer-events: none;
+  animation: uml-exit-fwd 180ms ease-in forwards;
+}
+
+[data-dir="back"] .uml-slide[data-leaving="true"] {
+  animation-name: uml-exit-back;
+}
+
+@keyframes uml-enter-fwd {
+  from {
+    opacity: 0;
+    transform: translate3d(1.5rem, 0, 0);
+  }
+}
+
+@keyframes uml-enter-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-1.5rem, 0, 0);
+  }
+}
+
+@keyframes uml-exit-fwd {
+  to {
+    opacity: 0;
+    transform: translate3d(-1rem, 0, 0);
+  }
+}
+
+@keyframes uml-exit-back {
+  to {
+    opacity: 0;
+    transform: translate3d(1rem, 0, 0);
+  }
+}
+
+/* Sadržaj slajda se slaže redom. Animacija se sama ponovo pokreće kad slajd
+   postane vidljiv (display), a --d je njegov red. */
+.uml-slide:not([data-instant]) .uml-rise {
+  animation: uml-rise 520ms var(--uml-spring) backwards;
+  animation-delay: calc(50ms + var(--d, 0) * 42ms);
+}
+
+@keyframes uml-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.875rem, 0);
+  }
+}
+
+/* ---------- Navigacija: pošiljka putuje rutom ---------- */
+
+.uml-dock-wrap {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 4.25rem;
+}
+
+.uml-dock {
+  --stop: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0.75rem 2rem -0.75rem rgba(15, 5, 70, 0.6);
+}
+
+.uml-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: 999px;
+  color: var(--ink);
+  outline: none;
+  transition:
+    background-color 160ms,
+    transform 320ms var(--uml-spring);
+}
+
+.uml-nav-btn svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.uml-nav-btn:hover:not(:disabled) {
+  background: var(--hair);
+}
+
+.uml-nav-btn:disabled {
+  opacity: 0.28;
+}
+
+.uml-nav-btn[data-primary="true"]:not(:disabled),
+.uml-nav-btn[data-primary="true"]:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.uml-route {
+  position: relative;
+  height: 2.625rem;
+}
+
+.uml-route-line,
+.uml-route-done {
+  position: absolute;
+  left: calc(var(--stop) / 2);
+  right: calc(var(--stop) / 2);
+  top: 50%;
+  height: 0.1875rem;
+  margin-top: -0.09375rem;
+  border-radius: 999px;
+}
+
+.uml-route-line {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--hair-strong) 0 0.375rem,
+    transparent 0.375rem 0.75rem
+  );
+}
+
+.uml-route-done {
+  background: var(--accent);
+  transform-origin: left center;
+  transition: transform 520ms var(--uml-soft);
+}
+
+.uml-stops {
+  position: relative;
+  display: flex;
+  height: 100%;
+}
+
+.uml-stop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--stop);
+  height: 100%;
+  border-radius: 0.5rem;
+  outline: none;
+}
+
+.uml-stop span {
+  width: 0.6875rem;
+  height: 0.6875rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.125rem var(--hair-strong);
+  transition: transform 320ms var(--uml-spring);
+}
+
+.uml-stop[data-done="true"] span {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.uml-stop:hover span {
+  transform: scale(1.4);
+}
+
+.uml-parcel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--stop);
+  height: 100%;
+  pointer-events: none;
+}
+
+.uml-parcel svg {
+  width: 1.875rem;
+  height: 1.875rem;
+  overflow: visible;
+}
+
+.uml-parcel-box {
+  fill: var(--sun);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.uml-parcel-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.uml-parcel-tape {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.uml-count {
+  min-width: 3.25rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.uml-root button:focus-visible,
+.uml-lightbox button:focus-visible {
+  outline: 0.1875rem solid var(--ink);
+  outline-offset: 0.125rem;
+}
+
+/* Povratna reakcija stiže na pritisak, ne na otpuštanje. */
+.uml-root button:active:not(:disabled) {
+  transform: scale(0.965);
+  transition: transform 90ms ease-out;
+}
+
+/* ---------- Tipografija ---------- */
+
+.uml-root h1,
+.uml-root h2,
+.uml-root h3 {
+  font-family: var(--uml-font-display), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+.uml-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 3.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.uml-head-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  min-width: 0;
+}
+
+.uml-head-tag {
+  padding: 0.3125rem 0.875rem;
+  border-radius: 999px;
+  background: var(--coral-soft);
+  color: var(--coral-deep);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.uml-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.uml-head-note {
+  max-width: 50rem;
+  font-size: 1.125rem;
+  line-height: 1.38;
+  color: var(--ink-soft);
+}
+
+.uml-heading {
+  font-size: 2.625rem;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.024em;
+}
+
+/* Marker prelazi preko reči pri ulasku na slajd. */
+.uml-mark {
+  position: relative;
+  z-index: 0;
+  white-space: nowrap;
+}
+
+.uml-mark::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0.5em -0.1em 0.04em;
+  border-radius: 0.16em;
+  background: var(--mark);
+  transform-origin: left center;
+}
+
+.uml-slide:not([data-instant]) .uml-mark::before {
+  animation: uml-mark-in 620ms var(--uml-soft) 140ms backwards;
+}
+
+@keyframes uml-mark-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Isticanje u tekstu: tačna ista boja kao taj pojam na dijagramima. */
+.uml-hl {
+  padding: 0.02em 0.26em;
+  border-radius: 0.3em;
+  background: var(--tone-soft);
+  color: var(--ink);
+  font-weight: 650;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.uml-hl[data-tone="sun"] {
+  background: #ffe68f;
+}
+.uml-hl[data-tone="coral"] {
+  background: #ffd0da;
+}
+.uml-hl[data-tone="teal"] {
+  background: #aef3e4;
+}
+.uml-hl[data-tone="iris"] {
+  background: #d9d3ff;
+}
+
+.uml-prose {
+  font-size: 1.75rem;
+  line-height: 1.52;
+  letter-spacing: -0.004em;
+}
+
+.uml-code {
+  padding: 0.06em 0.34em;
+  border-radius: 0.32em;
+  background: var(--iris-soft);
+  color: var(--iris-deep);
+  font-family: var(--uml-font-mono), ui-monospace, Menlo, monospace;
+  font-size: 0.88em;
+  font-weight: 500;
+}
+
+/* ---------- Dugmad ---------- */
+
+.uml-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.625rem;
+  padding: 0 1.125rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.09375rem var(--hair-strong);
+  color: var(--ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  transition:
+    background-color 160ms,
+    transform 320ms var(--uml-spring);
+}
+
+.uml-btn svg,
+.uml-icon-btn svg {
+  width: 1.1875rem;
+  height: 1.1875rem;
+}
+
+.uml-btn:hover:not(:disabled),
+.uml-icon-btn:hover:not(:disabled) {
+  background: var(--iris-soft);
+}
+
+.uml-btn:disabled,
+.uml-icon-btn:disabled {
+  opacity: 0.34;
+}
+
+.uml-btn[data-primary="true"],
+.uml-btn[data-primary="true"]:hover:not(:disabled) {
+  background: var(--accent);
+  box-shadow: none;
+  color: #fff;
+}
+
+/* Na širokom ekranu dijagram je već čitljiv, pa „Uvećaj“ ne treba. */
+@media (min-width: 1024px) and (min-aspect-ratio: 6/5) {
+  .uml-btn-expand {
+    display: none;
+  }
+}
+
+.uml-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.09375rem var(--hair-strong);
+  color: var(--ink);
+  transition:
+    background-color 160ms,
+    transform 320ms var(--uml-spring);
+}
+
+/* ---------- Figura dijagrama ---------- */
+
+.uml-figure {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 1.25rem;
+  background-color: #fff;
+  background-image: radial-gradient(
+    rgba(26, 20, 66, 0.1) 1px,
+    transparent 1.2px
+  );
+  background-size: 1.375rem 1.375rem;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+.uml-figure-inner {
+  position: absolute;
+  inset: 0.5rem 0.625rem;
+}
+
+.uml-figure[data-expanded="true"] {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  border-radius: 0;
+  animation: uml-fade-in 220ms ease-out;
+}
+
+/* Bez skrolovanja: uspravan telefon dobija dijagram položen po dužoj strani. */
+@media (orientation: portrait) {
+  .uml-figure[data-expanded="true"] .uml-figure-inner {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: calc(100dvh - 1.5rem);
+    height: calc(100dvw - 1.5rem);
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+}
+
+.uml-figure-close {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 61;
+}
+
+.uml-legend-wrap {
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+}
+
+.uml-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.625rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.uml-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.uml-swatch {
+  flex-shrink: 0;
+  width: 2.125rem;
+  height: 1.125rem;
+  overflow: visible;
+}
+
+.uml-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.uml-svg text {
+  font-family: var(--uml-font-body), ui-sans-serif, system-ui, sans-serif;
+  fill: var(--ink);
+}
+
+/* Elementi: zatamnjenje, podizanje, fokus */
+
+.uml-el {
+  outline: none;
+  transition:
+    opacity 200ms ease,
+    transform 420ms var(--uml-spring);
+}
+
+.uml-el[role="button"] {
+  cursor: pointer;
+}
+
+.uml-el[data-dim="true"],
+[data-dim="true"].uml-operand,
+[data-dim="true"].uml-guard {
+  opacity: 0.25;
+}
+
+.uml-lift {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 420ms var(--uml-spring);
+}
+
+.uml-lift[data-lift="true"] {
+  transform: scale(1.022);
+}
+
+.uml-el.uml-lift:active {
+  transform: scale(0.985);
+  transition: transform 90ms ease-out;
+}
+
+.uml-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16;
+  pointer-events: stroke;
+}
+
+.uml-hit-box {
+  fill: transparent;
+}
+
+.uml-el:focus-visible .uml-focus-shape {
+  stroke: var(--ink);
+  stroke-width: 3.5;
+}
+
+.uml-el:focus-visible .uml-hit {
+  stroke: rgba(26, 20, 66, 0.14);
+}
+
+.uml-el:focus-visible .uml-hit-box {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+/* Linije */
+
+.uml-line,
+.uml-lifeline {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.uml-el[data-hi="true"] .uml-line {
+  stroke-width: 2.6;
+}
+
+.uml-dashed {
+  stroke-dasharray: 7 5;
+  stroke-linecap: butt;
+}
+
+.uml-lifeline {
+  stroke-dasharray: 6 5;
+  stroke-width: 1.3;
+  stroke-linecap: butt;
+  opacity: 0.6;
+}
+
+/* Istaknuta isprekidana veza kratko teče u smeru svoje strelice. Mora biti konačno:
+   veza ostaje istaknuta dok traje fokus, a stroke-dashoffset se crta na glavnoj niti. */
+.uml-edge[data-hi="true"] .uml-dashed {
+  animation: uml-flow 760ms linear 3;
+}
+
+@keyframes uml-flow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+/* Kratak impuls duž istaknute pune linije; posle tri prolaza miruje. */
+.uml-pulse {
+  fill: none;
+  stroke: var(--coral);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  stroke-dasharray: 0.12 1.2;
+  stroke-dashoffset: 0.13;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.uml-el[data-hi="true"] .uml-pulse {
+  opacity: 1;
+  animation: uml-pulse 1000ms cubic-bezier(0.45, 0, 0.3, 1) 3;
+}
+
+@keyframes uml-pulse {
+  to {
+    stroke-dashoffset: -1.02;
+  }
+}
+
+.uml-marker-open {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.uml-marker-filled {
+  fill: var(--line);
+}
+
+/* Natpisi */
+
+.uml-svg .uml-label {
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.uml-svg .uml-stereotype {
+  font-weight: 700;
+  fill: var(--iris);
+}
+
+.uml-svg .uml-multiplicity {
+  font-size: 15.5px;
+  font-weight: 800;
+  fill: var(--coral-deep);
+}
+
+.uml-svg .uml-end-label[data-emphasis="true"] {
+  font-weight: 700;
+}
+
+/* Akter */
+
+.uml-actor circle {
+  fill: var(--coral-soft);
+  stroke: var(--coral-deep);
+  stroke-width: 2.4;
+}
+
+.uml-actor path {
+  fill: none;
+  stroke: var(--coral-deep);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.uml-svg .uml-actor-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Slučajevi upotrebe */
+
+.uml-system-frame {
+  fill: rgba(75, 50, 230, 0.04);
+  stroke: var(--iris);
+  stroke-width: 2;
+}
+
+.uml-svg .uml-system-title {
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  fill: var(--iris);
+}
+
+.uml-uc-base {
+  stroke: var(--iris-deep);
+  stroke-width: 1.3;
+}
+
+.uml-uc-helper {
+  stroke: #c58a00;
+  stroke-width: 1.3;
+}
+
+.uml-shadow {
+  pointer-events: none;
+}
+
+.uml-halo {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.uml-el[data-hi="true"] .uml-halo {
+  opacity: 1;
+}
+
+.uml-svg .uml-uc-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+.uml-svg .uml-uc-name[data-kind="base"] {
+  fill: #fff;
+}
+
+/* Klase: grupa bira ton */
+
+.uml-class-shadow {
+  fill: var(--uml-tone);
+  opacity: 0.24;
+}
+
+.uml-class-body {
+  fill: color-mix(in srgb, var(--uml-tone) 5%, #fff);
+  stroke: var(--uml-tone-deep);
+  stroke-width: 1.4;
+}
+
+[data-group="central"] > .uml-class-body {
+  stroke-width: 2.8;
+}
+
+.uml-class-head {
+  fill: var(--uml-tone);
+}
+
+.uml-class-divider {
+  stroke: var(--uml-tone-deep);
+  stroke-width: 1.4;
+}
+
+.uml-ring {
+  fill: none;
+  stroke: var(--uml-tone-deep);
+  stroke-width: 2.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+
+.uml-el[data-hi="true"] > .uml-ring {
+  opacity: 0.7;
+}
+
+.uml-svg .uml-class-name {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  fill: var(--uml-on-tone);
+}
+
+.uml-svg .uml-attribute {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.uml-svg .uml-attribute-type {
+  font-weight: 400;
+  fill: var(--ink-soft);
+}
+
+.uml-svg .uml-attribute-link {
+  fill: var(--iris);
+}
+
+.uml-svg .uml-attribute-link .uml-attribute-type {
+  fill: var(--iris);
+}
+
+.uml-attribute-row {
+  fill: var(--sun);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.uml-link-attribute:hover .uml-attribute-row,
+.uml-link-attribute:focus-visible .uml-attribute-row {
+  opacity: 0.5;
+}
+
+.uml-link-attribute:focus-visible .uml-attribute-row {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.uml-class-swatch {
+  fill: var(--uml-tone);
+  stroke: var(--uml-tone-deep);
+  stroke-width: 1;
+}
+
+.uml-swatch-link {
+  fill: var(--iris);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.uml-swatch-line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.uml-swatch-fill {
+  fill: var(--line);
+}
+
+.uml-swatch-activation {
+  fill: var(--coral-soft);
+  stroke: var(--coral-deep);
+  stroke-width: 1.5;
+}
+
+.uml-tooltip {
+  position: fixed;
+  z-index: 75;
+  width: max-content;
+  max-width: 21rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.875rem;
+  background: var(--ink);
+  box-shadow: 0 1rem 2.5rem -0.75rem rgba(20, 10, 80, 0.6);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.32;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 0.75rem));
+  animation: uml-tip-in 300ms var(--uml-spring) backwards;
+}
+
+@keyframes uml-tip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 0.125rem)) scale(0.96);
+  }
+}
+
+/* Sekvence */
+
+.uml-operand[data-operand="ispravni"] {
+  fill: rgba(34, 211, 184, 0.11);
+}
+
+.uml-operand[data-operand="neispravni"] {
+  fill: rgba(255, 100, 130, 0.12);
+}
+
+.uml-operand,
+.uml-svg .uml-guard {
+  transition: opacity 200ms ease;
+}
+
+.uml-alt-frame rect,
+.uml-alt-frame line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.uml-alt-tag {
+  fill: #fff;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.uml-svg .uml-alt-tag-text {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.uml-svg .uml-guard {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.uml-svg .uml-guard[data-guard="ispravni"] {
+  fill: var(--teal-deep);
+}
+
+.uml-svg .uml-guard[data-guard="neispravni"] {
+  fill: var(--coral-deep);
+}
+
+.uml-activation {
+  fill: color-mix(in srgb, var(--uml-tone) 26%, #fff);
+  stroke: var(--uml-tone-deep);
+  stroke-width: 1.8;
+}
+
+.uml-object {
+  fill: var(--uml-tone);
+  stroke: var(--uml-tone-deep);
+  stroke-width: 1.4;
+}
+
+.uml-svg .uml-object-name {
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--uml-on-tone);
+}
+
+.uml-svg .uml-message-label {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Trenutni korak: linija se iscrtava zajedno sa putujućom tačkom. */
+.uml-step-line {
+  fill: none;
+  stroke: var(--coral-deep);
+  stroke-width: 3;
+  stroke-dasharray: 1;
+  pointer-events: none;
+  animation: uml-line-in 600ms linear backwards;
+}
+
+.uml-svg .uml-el[data-state="current"] .uml-message-label {
+  fill: var(--coral-deep);
+  font-weight: 800;
+}
+
+.uml-dot {
+  fill: var(--sun);
+  stroke: var(--ink);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.uml-dot-glow {
+  fill: var(--sun);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.uml-arrival {
+  fill: none;
+  stroke: var(--coral-deep);
+  stroke-width: 2.2;
+  pointer-events: none;
+}
+
+.uml-seq-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 3.375rem;
+  margin-top: 0.5rem;
+}
+
+.uml-seq-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.uml-segment {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0.1875rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 0.09375rem var(--hair-strong);
+}
+
+.uml-segment button {
+  position: relative;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition:
+    color 160ms,
+    transform 320ms var(--uml-spring);
+}
+
+.uml-segment button[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.uml-segment-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.uml-segment-pill[data-branch="ispravni"] {
+  background: var(--teal);
+}
+
+.uml-segment-pill[data-branch="neispravni"] {
+  background: var(--coral);
+}
+
+.uml-segment-label {
+  position: relative;
+}
+
+.uml-step-note {
+  flex: 1;
+  min-width: 0;
+}
+
+.uml-step-track {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.uml-step-track span {
+  position: relative;
+  flex: 1;
+  height: 0.3125rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hair);
+}
+
+.uml-step-track span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--coral-deep);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 360ms var(--uml-soft);
+}
+
+.uml-step-track span[data-done="true"]::after {
+  transform: none;
+}
+
+.uml-step-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.3125rem;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.26;
+  animation: uml-rise 420ms var(--uml-spring) backwards;
+}
+
+.uml-step-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--coral-deep);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+/* ---------- Prvo iscrtavanje: elementi, pa linije, pa natpisi, do ~1,5 s ---------- */
+
+.uml-draw .uml-a-node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: uml-node-in 560ms var(--uml-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+.uml-draw .uml-a-mask {
+  stroke-dasharray: 1;
+  animation: uml-line-in 460ms cubic-bezier(0.35, 0, 0.2, 1) backwards;
+  animation-delay: calc(500ms + var(--i, 0) * 26ms);
+}
+
+.uml-draw .uml-a-label {
+  animation: uml-label-in 300ms ease-out backwards;
+  animation-delay: 1130ms;
+}
+
+@keyframes uml-node-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+}
+
+@keyframes uml-line-in {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes uml-label-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 5px, 0);
+  }
+}
+
+@keyframes uml-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- Naslovni slajd ---------- */
+
+.uml-title {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 45rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0 2.5rem;
+  color: #fff;
+}
+
+.uml-title-line {
+  display: inline-flex;
+  padding: 0.375rem 1rem;
+  border: 0.09375rem solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.uml-title h1 {
+  margin: 1.5rem 0 1.375rem;
+  font-size: 6.75rem;
+  font-weight: 650;
+  line-height: 1.06;
+  letter-spacing: -0.032em;
+  word-spacing: 0.07em;
+}
+
+.uml-title-row {
+  display: block;
+}
+
+.uml-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  /* Mesto za j, g i š, koje bi maska inače odsekla */
+  padding: 0.05em 0.03em 0.2em 0;
+  margin: -0.05em -0.03em -0.2em 0;
+}
+
+.uml-word > span {
+  display: inline-block;
+}
+
+.uml-slide:not([data-instant]) .uml-word > span {
+  animation: uml-word-in 760ms var(--uml-soft) backwards;
+  animation-delay: calc(90ms + var(--d, 0) * 58ms);
+}
+
+@keyframes uml-word-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 108%, 0);
+  }
+}
+
+/* „skice“ je podvučena rukom, „realizacije“ čistim blokom: tema cele prezentacije. */
+.uml-scribbled {
+  position: relative;
+  display: inline-block;
+}
+
+.uml-scribbled svg {
+  position: absolute;
+  left: 0;
+  bottom: -0.1em;
+  width: 100%;
+  overflow: visible;
+}
+
+.uml-scribbled path {
+  fill: none;
+  stroke: var(--sun);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+}
+
+.uml-slide:not([data-instant]) .uml-scribbled path {
+  animation: uml-line-in 700ms cubic-bezier(0.4, 0, 0.3, 1) 520ms backwards;
+}
+
+.uml-title-block {
+  position: relative;
+  z-index: 0;
+  display: inline-block;
+  margin-left: -0.14em;
+  padding: 0 0.16em 0 0.14em;
+  color: var(--ink);
+}
+
+.uml-title-block::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0.1em 0 -0.02em;
+  border-radius: 0.14em;
+  background: var(--sun);
+  transform-origin: left center;
+}
+
+.uml-slide:not([data-instant]) .uml-title-block::before {
+  animation: uml-mark-in 620ms var(--uml-soft) 240ms backwards;
+}
+
+.uml-title-topic {
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 2.375rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.uml-author {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.uml-author-name {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.uml-author-index {
+  padding: 0.25rem 0.875rem;
+  border-radius: 0.625rem;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kombi: linije se iscrtaju preko bele skice, boje je popune, a onda kombi krene. */
+.uml-van {
+  display: block;
+  justify-self: center;
+  width: 100%;
+  max-width: 56rem;
+  height: auto;
+  overflow: visible;
+}
+
+.uml-van-ink {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.uml-van-ghost {
+  --o: 0.55;
+  opacity: 0.55;
+}
+
+.uml-van-route {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 8 12;
+}
+
+.uml-van-pin-dot {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.uml-van-label {
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 54px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  fill: var(--ink);
+}
+
+.uml-van-wheel {
+  transform-box: view-box;
+}
+
+.uml-van-sun,
+.uml-van-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.uml-slide:not([data-instant]) .uml-van-sun {
+  animation: uml-van-pop 760ms var(--uml-spring) backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-ground {
+  animation: uml-rise 620ms var(--uml-soft) 80ms backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-paper {
+  animation: uml-van-fade 200ms linear 80ms backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-ink path {
+  stroke-dasharray: 1;
+  animation: uml-van-draw 420ms cubic-bezier(0.4, 0, 0.3, 1) backwards;
+  animation-delay: calc(160ms + var(--i, 0) * 28ms);
+}
+
+.uml-slide:not([data-instant]) .uml-van-color {
+  animation: uml-van-fade 420ms ease-out 1020ms backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-route {
+  animation: uml-van-fade 380ms ease-out 1240ms backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-truck {
+  animation: uml-van-hop 620ms cubic-bezier(0.3, 0, 0.3, 1) 1240ms backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-wheel {
+  animation: uml-van-roll 1000ms var(--uml-soft) 1140ms backwards;
+}
+
+.uml-slide:not([data-instant]) .uml-van-pop {
+  animation: uml-van-pop 520ms var(--uml-spring) backwards;
+  animation-delay: calc(1300ms + var(--i, 0) * 60ms);
+}
+
+@keyframes uml-van-draw {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 1;
+  }
+  1% {
+    opacity: var(--o, 1);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes uml-van-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes uml-van-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes uml-van-hop {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  35% {
+    transform: translate3d(-5px, -11px, 0);
+  }
+}
+
+/* Kombi ide ulevo, pa se točkovi okreću suprotno od kazaljke. */
+@keyframes uml-van-roll {
+  from {
+    transform: rotate(320deg);
+  }
+}
+
+/* ---------- Opis sistema ---------- */
+
+.uml-system {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.uml-system .uml-prose {
+  font-size: 2.25rem;
+  line-height: 1.5;
+}
+
+.uml-lifecycle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+.uml-lifecycle h3 {
+  flex-shrink: 0;
+  max-width: 13rem;
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.16;
+  letter-spacing: -0.012em;
+}
+
+.uml-lifecycle-flow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.uml-lifecycle-ends {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.uml-lifecycle-arrow {
+  display: none;
+}
+
+.uml-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 1.125rem;
+  border-radius: 999px;
+  background: var(--tone);
+  color: var(--on-tone);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.uml-status svg {
+  width: 1.3125rem;
+  height: 1.3125rem;
+}
+
+/* Spojnice životnog ciklusa se crtaju između statusa. */
+.uml-connector {
+  flex-shrink: 0;
+  width: 4rem;
+  height: 1.25rem;
+}
+
+.uml-connector-fork {
+  width: 4.75rem;
+  height: 5.25rem;
+}
+
+.uml-connector path {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+}
+
+.uml-slide:not([data-instant]) .uml-connector path {
+  animation: uml-line-in 460ms cubic-bezier(0.35, 0, 0.2, 1) backwards;
+  animation-delay: calc(50ms + var(--d, 0) * 42ms);
+}
+
+/* ---------- Galerija skica ---------- */
+
+.uml-sketch-lead {
+  padding: 0.3125rem 1.125rem;
+  border-radius: 0.75rem;
+  background: var(--sun);
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+/* Visine redova prate odnos stranica skica, da nijedna ne bude sitnija nego što mora. */
+.uml-sketch-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 620fr) minmax(0, 800fr);
+  grid-template-rows: minmax(0, 0.437fr) minmax(0, 0.62fr);
+  gap: 0.625rem 1.25rem;
+}
+
+.uml-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  min-height: 0;
+  min-width: 0;
+}
+
+.uml-sketch[data-sketch="use-case"] {
+  grid-column: 1;
+  grid-row: 1;
+}
+.uml-sketch[data-sketch="sequence"] {
+  grid-column: 1;
+  grid-row: 2;
+}
+.uml-sketch[data-sketch="class"] {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.uml-sketch figcaption {
+  flex-shrink: 0;
+  color: var(--ink);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.uml-sketch figcaption::before {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  border-radius: 999px;
+  background: var(--tone);
+}
+
+.uml-sketch-btn {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: block;
+  width: 100%;
+  cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #fff;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 0.125rem var(--tone),
+    0 0.875rem 1.75rem -1rem rgba(26, 20, 66, 0.4);
+  transition: transform 420ms var(--uml-spring);
+}
+
+.uml-sketch-btn:hover {
+  transform: translate3d(0, -0.1875rem, 0) scale(1.006);
+}
+
+.uml-sketch-btn img {
+  position: absolute;
+  inset: 0.375rem;
+  width: calc(100% - 0.75rem);
+  height: calc(100% - 0.75rem);
+  object-fit: contain;
+}
+
+.uml-sketch-hint {
+  position: absolute;
+  right: 0.625rem;
+  top: 0.625rem;
+  padding: 0.4375rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 160ms,
+    transform 320ms var(--uml-spring);
+}
+
+.uml-sketch-hint svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+}
+
+.uml-sketch-btn:hover .uml-sketch-hint,
+.uml-sketch-btn:focus-visible .uml-sketch-hint {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Lista i opis (slajdovi 5 i 7) ---------- */
+
+.uml-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 19rem minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.uml-tablist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  min-height: 0;
+}
+
+.uml-tab {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.875rem;
+  color: var(--ink-soft);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  transition:
+    background-color 160ms,
+    color 160ms,
+    transform 320ms var(--uml-spring);
+}
+
+.uml-tab:hover {
+  background: var(--hair);
+  color: var(--ink);
+}
+
+.uml-tab[aria-selected="true"],
+.uml-tab[aria-selected="true"]:hover {
+  background: none;
+  color: #fff;
+  font-weight: 700;
+}
+
+.uml-tab[data-group][aria-selected="true"],
+.uml-tab[data-group][aria-selected="true"]:hover {
+  color: var(--uml-on-tone);
+}
+
+.uml-tab-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.875rem;
+  background: var(--accent);
+}
+
+.uml-tab[data-group] .uml-tab-pill {
+  background: var(--uml-tone);
+}
+
+.uml-tab-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.uml-tab-no {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--iris-soft);
+  color: var(--iris);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.uml-tab-dot {
+  flex-shrink: 0;
+  width: 1.0625rem;
+  height: 1.0625rem;
+  border-radius: 999px;
+  background: var(--uml-tone);
+  box-shadow: inset 0 0 0 0.09375rem var(--uml-tone-deep);
+}
+
+.uml-tab[aria-selected="true"] .uml-tab-dot {
+  background: #fff;
+  box-shadow: none;
+}
+
+.uml-tabpanels {
+  min-height: 0;
+  min-width: 0;
+}
+
+.uml-tabpanel {
+  height: 100%;
+  min-height: 0;
+}
+
+.uml-tabpanel[data-active="false"] {
+  display: none;
+}
+
+/* Opis slučaja upotrebe: polja šablona idu redom, sleva nadesno. */
+
+.uml-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.uml-field {
+  position: relative;
+}
+
+.uml-field dt {
+  color: var(--iris);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.uml-field dd {
+  margin-top: 0.0625rem;
+  font-size: 1rem;
+  line-height: 1.42;
+}
+
+.uml-field[data-area="exception"] dt {
+  color: var(--coral-deep);
+}
+
+.uml-field[data-area="post"] dt {
+  color: var(--teal-deep);
+}
+
+.uml-tabpanel .uml-fields {
+  display: grid;
+  height: 100%;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "name name short short short participants"
+    "pre pre pre pre pre pre"
+    "description description description description description description"
+    "exception exception exception post post post";
+  gap: 0.625rem;
+}
+
+.uml-tabpanel .uml-field {
+  padding: 0.75rem 1.125rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+
+.uml-tabpanel .uml-field dt {
+  font-size: 1rem;
+}
+
+.uml-tabpanel .uml-field dd {
+  margin-top: 0.1875rem;
+  font-size: 1.3125rem;
+  line-height: 1.36;
+}
+
+.uml-field[data-area="name"] {
+  grid-area: name;
+}
+.uml-field[data-area="short"] {
+  grid-area: short;
+}
+.uml-field[data-area="participants"] {
+  grid-area: participants;
+}
+.uml-field[data-area="pre"] {
+  grid-area: pre;
+}
+.uml-field[data-area="description"] {
+  grid-area: description;
+}
+.uml-field[data-area="exception"] {
+  grid-area: exception;
+}
+.uml-field[data-area="post"] {
+  grid-area: post;
+}
+
+.uml-tabpanel .uml-field[data-area="name"] {
+  background: var(--iris);
+  box-shadow: none;
+  color: #fff;
+}
+
+.uml-tabpanel .uml-field[data-area="name"] dt {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.uml-tabpanel .uml-field[data-area="name"] dd {
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 1.875rem;
+  font-weight: 650;
+  line-height: 1.12;
+  letter-spacing: -0.014em;
+}
+
+.uml-tabpanel .uml-field[data-area="pre"] {
+  background: var(--iris-soft);
+  box-shadow: none;
+}
+
+.uml-tabpanel .uml-field[data-area="description"] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Oznaka polja ostaje gore, a tekst je na sredini slobodnog prostora. */
+.uml-tabpanel .uml-field[data-area="description"] dd {
+  margin-block: auto;
+  font-size: 1.75rem;
+  line-height: 1.5;
+}
+
+.uml-tabpanel .uml-field[data-area="exception"] {
+  background: var(--coral-soft);
+  box-shadow: none;
+}
+
+.uml-tabpanel .uml-field[data-area="post"] {
+  background: var(--teal-soft);
+  box-shadow: none;
+}
+
+.uml-tabpanel[data-active="true"] .uml-fields > * {
+  animation: uml-rise 460ms var(--uml-spring) backwards;
+}
+
+.uml-tabpanel[data-active="true"] .uml-fields > :nth-child(2) {
+  animation-delay: 24ms;
+}
+.uml-tabpanel[data-active="true"] .uml-fields > :nth-child(3) {
+  animation-delay: 48ms;
+}
+.uml-tabpanel[data-active="true"] .uml-fields > :nth-child(4) {
+  animation-delay: 72ms;
+}
+.uml-tabpanel[data-active="true"] .uml-fields > :nth-child(5) {
+  animation-delay: 96ms;
+}
+.uml-tabpanel[data-active="true"] .uml-fields > :nth-child(6) {
+  animation-delay: 120ms;
+}
+.uml-tabpanel[data-active="true"] .uml-fields > :nth-child(7) {
+  animation-delay: 144ms;
+}
+
+.uml-exception-tag {
+  display: inline;
+  padding: 0 0.3em;
+  border-radius: 0.3em;
+  background: #ffd0da;
+  color: #a80f39;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.uml-exception-tag:hover {
+  background: var(--coral);
+  color: var(--ink);
+}
+
+.uml-root .uml-exception-tag:active:not(:disabled) {
+  transform: none;
+}
+
+.uml-exception-label {
+  color: #a80f39;
+  font-weight: 700;
+}
+
+/* Klik na oznaku izuzetka: polje Izuzeci kratko zasvetli. */
+.uml-field[data-flash="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -0.1875rem;
+  border: 0.1875rem solid var(--coral-deep);
+  border-radius: 1.1875rem;
+  pointer-events: none;
+  opacity: 0;
+  animation: uml-ring 1100ms ease-out;
+}
+
+@keyframes uml-ring {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Opis klase */
+
+.uml-class-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 0.125rem var(--uml-tone),
+    0 1rem 2.5rem -1.5rem rgba(26, 20, 66, 0.35);
+}
+
+.uml-tabpanel.uml-class-card[data-active="true"] {
+  animation: uml-rise 460ms var(--uml-spring) backwards;
+}
+
+.uml-class-card-title {
+  flex-shrink: 0;
+  padding: 0.5rem 1.75rem;
+  background: var(--uml-tone);
+  color: var(--uml-on-tone);
+  font-size: 2.375rem;
+  font-weight: 650;
+  letter-spacing: -0.018em;
+}
+
+.uml-class-desc {
+  min-height: 0;
+}
+
+.uml-class-card .uml-class-desc {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.75rem 0.75rem;
+}
+
+.uml-class-intro {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.uml-class-card .uml-class-intro {
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.625rem;
+  line-height: 1.34;
+}
+
+.uml-class-intro strong {
+  font-weight: 800;
+}
+
+.uml-attrs {
+  margin-top: 0.625rem;
+  font-size: 0.9375rem;
+  line-height: 1.32;
+}
+
+.uml-attrs li {
+  padding: 0.25rem 0;
+  border-top: 1px solid var(--hair);
+}
+
+.uml-attr-names {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.25rem;
+  margin-right: 0.5rem;
+}
+
+.uml-attr-text {
+  color: var(--ink-soft);
+}
+
+.uml-class-card .uml-attrs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  font-size: 1.4375rem;
+}
+
+.uml-class-card .uml-attrs[data-dense="true"] {
+  font-size: 1.25rem;
+}
+
+.uml-class-card .uml-attrs li {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 5.25rem;
+  display: grid;
+  grid-template-columns: 21rem minmax(0, 1fr);
+  align-items: center;
+  padding: 0;
+}
+
+.uml-class-card .uml-attrs[data-dense="true"] li {
+  grid-template-columns: 17rem minmax(0, 1fr);
+}
+
+.uml-class-card .uml-attr-text {
+  color: var(--ink);
+}
+
+/* Atribut-veza ima istu boju kao na dijagramu klasa. */
+.uml-attrs .uml-code {
+  background: var(--hair);
+  color: var(--ink);
+}
+
+.uml-attrs [data-kind="link"] .uml-code {
+  background: var(--iris-soft);
+  color: var(--iris-deep);
+}
+
+/* ---------- Konzistentnost ---------- */
+
+.uml-model-intro {
+  flex-shrink: 0;
+  margin-bottom: 0.875rem;
+  font-size: 1.5rem;
+  line-height: 1.5;
+}
+
+.uml-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--hair);
+}
+
+.uml-table {
+  width: 100%;
+  height: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 1.375rem;
+  line-height: 1.3;
+}
+
+.uml-table th {
+  padding: 0.625rem 1.5rem;
+  background: var(--tone);
+  color: var(--on-tone);
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 1.4375rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-align: left;
+}
+
+.uml-table td {
+  padding: 0.375rem 1.5rem;
+  border-top: 1px solid var(--hair);
+  vertical-align: middle;
+  transition: background-color 140ms;
+}
+
+.uml-table td[data-empty="true"] {
+  color: var(--hair-strong);
+}
+
+.uml-slide:not([data-instant]) .uml-table tbody tr {
+  animation: uml-rise 480ms var(--uml-spring) backwards;
+  animation-delay: calc(140ms + var(--d, 0) * 36ms);
+}
+
+.uml-table tbody tr:hover td {
+  background: var(--tone-soft);
+}
+
+/* ---------- Panel ---------- */
+
+.uml-panel {
+  position: fixed;
+  z-index: 70;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 80dvh;
+  background: #fff;
+  border-radius: 1.5rem 1.5rem 0 0;
+  box-shadow: 0 -1.5rem 4rem rgba(20, 10, 80, 0.4);
+  animation: uml-sheet-in 440ms var(--uml-soft) backwards;
+}
+
+.uml-panel[data-closing] {
+  pointer-events: none;
+  animation: uml-sheet-out 170ms ease-in forwards;
+}
+
+@keyframes uml-sheet-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+@keyframes uml-sheet-out {
+  to {
+    opacity: 0;
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+@keyframes uml-panel-right-in {
+  from {
+    opacity: 0;
+    transform: translate3d(2.25rem, 0, 0);
+  }
+}
+
+@keyframes uml-panel-left-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-2.25rem, 0, 0);
+  }
+}
+
+@keyframes uml-panel-right-out {
+  to {
+    opacity: 0;
+    transform: translate3d(2.25rem, 0, 0);
+  }
+}
+
+@keyframes uml-panel-left-out {
+  to {
+    opacity: 0;
+    transform: translate3d(-2.25rem, 0, 0);
+  }
+}
+
+@media (min-aspect-ratio: 6/5) {
+  .uml-panel {
+    top: 0.875rem;
+    bottom: 0.875rem;
+    left: auto;
+    right: 0.875rem;
+    width: 32rem;
+    max-height: none;
+    border-radius: 1.5rem;
+    box-shadow: 0 2.5rem 6rem -1.25rem rgba(20, 10, 80, 0.65);
+    animation: uml-panel-right-in 480ms var(--uml-spring) backwards;
+  }
+
+  .uml-panel[data-side="left"] {
+    left: 0.875rem;
+    right: auto;
+    animation-name: uml-panel-left-in;
+  }
+
+  .uml-panel[data-closing] {
+    animation: uml-panel-right-out 170ms ease-in forwards;
+  }
+
+  .uml-panel[data-closing][data-side="left"] {
+    animation-name: uml-panel-left-out;
+  }
+}
+
+.uml-panel-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.125rem 1rem 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--hair);
+}
+
+.uml-panel-eyebrow {
+  color: var(--accent);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.uml-panel-title {
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.16;
+  letter-spacing: -0.016em;
+}
+
+.uml-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.5rem 1.25rem;
+}
+
+.uml-panel-text {
+  font-size: 1.1875rem;
+  line-height: 1.45;
+}
+
+.uml-panel-route {
+  margin-top: 0.75rem;
+  color: var(--ink-soft);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.uml-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.uml-panel-list:first-child {
+  margin-top: 0;
+}
+
+.uml-panel-content > *,
+.uml-panel-content .uml-fields > * {
+  animation: uml-rise 460ms var(--uml-spring) backwards;
+}
+
+.uml-panel-content .uml-fields > :nth-child(2) {
+  animation-delay: 26ms;
+}
+.uml-panel-content .uml-fields > :nth-child(3) {
+  animation-delay: 52ms;
+}
+.uml-panel-content .uml-fields > :nth-child(4) {
+  animation-delay: 78ms;
+}
+.uml-panel-content .uml-fields > :nth-child(5) {
+  animation-delay: 104ms;
+}
+.uml-panel-content .uml-fields > :nth-child(6) {
+  animation-delay: 130ms;
+}
+.uml-panel-content .uml-fields > :nth-child(7) {
+  animation-delay: 156ms;
+}
+
+/* ---------- Lightbox: raste iz dugmeta koje ga je otvorilo ---------- */
+
+.uml-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(18, 12, 60, 0.9);
+}
+
+.uml-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem;
+  outline: none;
+  transform-origin: var(--uml-origin, 50% 50%);
+}
+
+.uml-lightbox-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.uml-lightbox-title {
+  color: #fff;
+  font-family: var(--uml-font-display), ui-serif, serif;
+  font-size: 1.875rem;
+  font-weight: 650;
+  letter-spacing: -0.016em;
+}
+
+.uml-lightbox-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.uml-lightbox-close svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.uml-lightbox-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uml-lightbox-body img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 1rem;
+  background: #fff;
+  object-fit: contain;
+}
+
+.uml-lightbox[data-state="open"] {
+  animation: uml-lightbox-in 480ms var(--uml-spring) backwards;
+}
+
+.uml-lightbox[data-state="closed"] {
+  animation: uml-lightbox-out 170ms ease-in forwards;
+}
+
+.uml-lightbox-overlay[data-state="open"] {
+  animation: uml-fade-in 240ms ease-out;
+}
+
+.uml-lightbox-overlay[data-state="closed"] {
+  animation: uml-fade-out 170ms ease-in forwards;
+}
+
+@keyframes uml-lightbox-in {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+}
+
+@keyframes uml-lightbox-out {
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes uml-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------- Uspravan ekran: isti sadržaj, u jednoj koloni ---------- */
+
+@media screen and (max-aspect-ratio: 6/5) {
+  .uml-stage {
+    margin: 0.5rem 0.5rem 0;
+  }
+
+  .uml-sheet {
+    border-radius: 1.25rem;
+  }
+
+  .uml-slide {
+    padding: 0.75rem 0.75rem 0.625rem;
+  }
+
+  .uml-head {
+    flex-wrap: wrap;
+    gap: 0.375rem 0.625rem;
+    min-height: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .uml-heading {
+    font-size: 1.625rem;
+  }
+
+  .uml-head-tag {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .uml-head-note {
+    font-size: 0.75rem;
+  }
+
+  .uml-btn {
+    min-height: 2rem;
+    padding: 0 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .uml-btn svg,
+  .uml-icon-btn svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .uml-icon-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .uml-dock {
+    --stop: 1.5rem;
+    gap: 0.125rem;
+  }
+
+  .uml-dock-wrap {
+    height: 3.75rem;
+  }
+
+  .uml-parcel svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .uml-stop span {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  .uml-count {
+    min-width: 2.75rem;
+    font-size: 0.875rem;
+  }
+
+  .uml-prose,
+  .uml-system .uml-prose {
+    font-size: 1.0625rem;
+    line-height: 1.44;
+  }
+
+  .uml-title {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 1.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .uml-title-line {
+    font-size: 0.875rem;
+  }
+
+  .uml-title h1 {
+    margin: 1rem 0 0.75rem;
+    font-size: 3.75rem;
+  }
+
+  .uml-title-topic {
+    font-size: 1.5rem;
+  }
+
+  .uml-author {
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .uml-author-name {
+    font-size: 1.375rem;
+  }
+
+  .uml-author-index {
+    font-size: 1rem;
+  }
+
+  .uml-van {
+    align-self: center;
+    max-width: none;
+  }
+
+  .uml-system {
+    align-items: flex-start;
+  }
+
+  .uml-lifecycle {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.875rem;
+  }
+
+  .uml-lifecycle h3 {
+    max-width: none;
+    font-size: 0.9375rem;
+  }
+
+  .uml-lifecycle-flow {
+    gap: 0.25rem;
+  }
+
+  .uml-connector {
+    width: 1.25rem;
+    height: 0.75rem;
+  }
+
+  .uml-connector-fork {
+    display: none;
+  }
+
+  .uml-lifecycle-arrow {
+    display: block;
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    color: var(--ink-soft);
+  }
+
+  .uml-lifecycle-ends {
+    gap: 0.25rem;
+  }
+
+  .uml-status {
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .uml-status svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .uml-sketch-lead {
+    padding: 0.25rem 0.625rem;
+    font-size: 1.0625rem;
+  }
+
+  .uml-sketch-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .uml-sketch[data-sketch="use-case"] {
+    order: 1;
+    flex: 0.437 1 0;
+  }
+  .uml-sketch[data-sketch="class"] {
+    order: 2;
+    flex: 0.87 1 0;
+  }
+  .uml-sketch[data-sketch="sequence"] {
+    order: 3;
+    flex: 0.62 1 0;
+  }
+
+  .uml-sketch figcaption {
+    font-size: 0.8125rem;
+  }
+
+  .uml-sketch-btn {
+    border-radius: 0.625rem;
+  }
+
+  .uml-figure-inner {
+    inset: 0.25rem;
+  }
+
+  .uml-legend {
+    gap: 0.125rem 0.625rem;
+    font-size: 0.6875rem;
+  }
+
+  .uml-swatch {
+    width: 1.5rem;
+    height: 0.875rem;
+  }
+
+  .uml-seq-bar {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+  }
+
+  .uml-segment button {
+    min-height: 1.75rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .uml-step-note {
+    flex-basis: 100%;
+    min-height: 3.5rem;
+  }
+
+  .uml-step-text {
+    font-size: 0.8125rem;
+  }
+
+  .uml-step-badge {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.75rem;
+  }
+
+  .uml-split {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .uml-tablist {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.1875rem;
+  }
+
+  .uml-tab {
+    padding: 0.3125rem 0.5rem;
+    border-radius: 0.625rem;
+    font-size: 0.8125rem;
+  }
+
+  .uml-tab-pill {
+    border-radius: 0.625rem;
+  }
+
+  .uml-tab-label {
+    gap: 0.375rem;
+  }
+
+  .uml-tab-no {
+    width: 1.125rem;
+    height: 1.125rem;
+    font-size: 0.6875rem;
+  }
+
+  .uml-tab-dot {
+    width: 0.5625rem;
+    height: 0.5625rem;
+  }
+
+  .uml-tabpanel .uml-fields {
+    display: flex;
+    gap: 0.3125rem;
+  }
+
+  .uml-tabpanel .uml-field {
+    padding: 0.3125rem 0.5rem;
+    border-radius: 0.625rem;
+  }
+
+  .uml-field dt,
+  .uml-tabpanel .uml-field dt {
+    font-size: 0.6875rem;
+  }
+
+  .uml-tabpanel .uml-field dd,
+  .uml-tabpanel .uml-field[data-area="description"] dd {
+    margin-block: 0;
+    font-size: 0.9375rem;
+    line-height: 1.34;
+  }
+
+  .uml-tabpanel .uml-field[data-area="name"] dd {
+    font-size: 1.0625rem;
+  }
+
+  .uml-class-card-title {
+    padding: 0.25rem 0.75rem;
+    font-size: 1.125rem;
+  }
+
+  .uml-class-card {
+    height: auto;
+    border-radius: 0.875rem;
+  }
+
+  .uml-class-card .uml-class-desc {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .uml-class-card .uml-class-intro {
+    margin-bottom: 0.375rem;
+    font-size: 0.9375rem;
+  }
+
+  .uml-class-card .uml-attrs,
+  .uml-class-card .uml-attrs[data-dense="true"] {
+    display: block;
+    font-size: 0.8125rem;
+  }
+
+  .uml-class-card .uml-attrs li,
+  .uml-class-card .uml-attrs[data-dense="true"] li {
+    display: block;
+    max-height: none;
+    padding: 0.1875rem 0;
+  }
+
+  .uml-model-intro {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .uml-table-wrap {
+    border-radius: 0.875rem;
+  }
+
+  .uml-table {
+    font-size: 0.75rem;
+    line-height: 1.24;
+  }
+
+  .uml-table th {
+    padding: 0.3125rem 0.375rem;
+    font-size: 0.75rem;
+  }
+
+  .uml-table td {
+    padding: 0.25rem 0.375rem;
+  }
+
+  .uml-panel-title {
+    font-size: 1.25rem;
+  }
+
+  .uml-panel-head {
+    padding: 0.625rem 0.625rem 0.5rem 0.875rem;
+  }
+
+  .uml-panel-body {
+    padding: 0.625rem 0.875rem 0.875rem;
+  }
+
+  .uml-panel .uml-field dd {
+    font-size: 0.8125rem;
+    line-height: 1.34;
+  }
+
+  .uml-panel .uml-fields {
+    gap: 0.375rem;
+  }
+
+  .uml-lightbox {
+    padding: 0.625rem;
+  }
+
+  .uml-lightbox-title {
+    font-size: 1.125rem;
+  }
+}
+
+/* ---------- Smanjen pokret: bez animacija, odmah konačno stanje ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .uml-root *,
+  .uml-root *::before,
+  .uml-root *::after,
+  .uml-lightbox,
+  .uml-lightbox-overlay {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .uml-lift[data-lift="true"],
+  .uml-el.uml-lift:active,
+  .uml-sketch-btn:hover,
+  .uml-root button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ---------- Štampa: svi slajdovi, bez navigacije, konačno stanje ---------- */
+
+@page {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  html:has(.uml-deck) {
+    font-size: 11.5px;
+  }
+
+  .uml-root {
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .uml-deck {
+    position: static;
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .uml-stage {
+    position: static;
+    margin: 0;
+  }
+
+  .uml-bg,
+  .uml-sheet,
+  .uml-dock-wrap,
+  .uml-head-actions,
+  .uml-panel,
+  .uml-tablist,
+  .uml-tooltip,
+  .uml-js-only,
+  .uml-dot,
+  .uml-dot-glow,
+  .uml-arrival,
+  .uml-step-line,
+  .uml-halo,
+  .uml-ring,
+  .uml-pulse,
+  [data-part="traveling-dot"] {
+    display: none !important;
+  }
+
+  .uml-slide,
+  .uml-slide[data-active="true"],
+  .uml-slide[data-leaving="true"] {
+    display: block !important;
+    position: static;
+    padding: 0;
+    break-after: page;
+  }
+
+  .uml-slide:last-child {
+    break-after: auto;
+  }
+
+  .uml-layout {
+    display: block;
+  }
+
+  .uml-root *,
+  .uml-root *::before,
+  .uml-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Konačno stanje: bez zatamnjenja i isticanja iz koračanja i hover-a */
+  .uml-el,
+  [data-dim="true"] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .uml-el[data-hi="true"] .uml-line {
+    stroke-width: 1.8;
+  }
+
+  .uml-svg .uml-el[data-state="current"] .uml-message-label {
+    fill: var(--ink);
+    font-weight: 500;
+  }
+
+  .uml-title {
+    padding-top: 30mm;
+    color: var(--ink);
+  }
+
+  .uml-title-line {
+    border-color: var(--ink);
+  }
+
+  .uml-title-block {
+    margin-left: 0;
+  }
+
+  .uml-author-index {
+    background: var(--sun);
+  }
+
+  .uml-figure {
+    position: static;
+    background: none;
+    box-shadow: none;
+  }
+
+  .uml-figure-inner {
+    position: static;
+  }
+
+  .uml-svg {
+    height: auto;
+    max-height: 150mm;
+  }
+
+  .uml-system {
+    display: block;
+  }
+
+  .uml-system .uml-prose {
+    font-size: 1.75rem;
+  }
+
+  .uml-lifecycle {
+    margin-top: 6mm;
+    box-shadow: none;
+  }
+
+  .uml-sketch-grid {
+    display: block;
+  }
+
+  .uml-sketch {
+    margin-bottom: 4mm;
+    break-inside: avoid;
+  }
+
+  .uml-sketch-btn {
+    flex: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .uml-sketch-btn img {
+    position: static;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 140mm;
+    margin-inline: auto;
+  }
+
+  .uml-split {
+    display: block;
+  }
+
+  .uml-tabpanel,
+  .uml-tabpanel[data-active="false"] {
+    display: block !important;
+    height: auto;
+    max-height: none;
+    margin-bottom: 6mm;
+    break-inside: avoid;
+  }
+
+  .uml-tabpanel .uml-fields {
+    height: auto;
+  }
+
+  .uml-class-card {
+    box-shadow: inset 0 0 0 1px var(--hair-strong);
+  }
+
+  .uml-class-card .uml-attrs li {
+    flex: none;
+    padding: 1mm 0;
+  }
+
+  .uml-table,
+  .uml-table-wrap {
+    height: auto;
+  }
+
+  .uml-table td {
+    padding: 2mm 3mm;
+  }
+
+  .uml-table tbody tr:hover td {
+    background: none;
+  }
+}
