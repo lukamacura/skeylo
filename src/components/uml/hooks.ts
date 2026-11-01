@@ -11,7 +11,7 @@ import {
   type FocusEvent,
 } from "react";
 
-export const SLIDE_COUNT = 9;
+export const SLIDE_COUNT = 8;
 
 export function parseSlideHash(hash: string): number {
   const match = /^#(\d+)$/.exec(hash);

@@ -23,7 +23,6 @@ import SequenceDiagram from "./SequenceDiagram";
 import SketchGallery from "./SketchGallery";
 import {
   ClassDescriptionsSlide,
-  ConsistencySlide,
   SystemSlide,
   TitleSlide,
   UseCaseDescriptionsSlide,
@@ -280,9 +279,6 @@ export default function SlideDeck() {
           </Slide>
           <Slide n={8} {...slideProps}>
             <SequenceDiagram {...diagramProps(8)} />
-          </Slide>
-          <Slide n={9} {...slideProps}>
-            <ConsistencySlide />
           </Slide>
         </div>
 

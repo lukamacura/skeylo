@@ -18,7 +18,6 @@ export const SLIDE_TITLES = [
   "Dijagram klasa",
   "Opis klasa i obeležja",
   "Dijagram sekvenci",
-  "Konzistentnost modela",
 ] as const;
 
 /**
@@ -34,7 +33,6 @@ export const SLIDE_CHAPTERS = [
   "class",
   "class",
   "sequence",
-  "model",
 ] as const;
 
 export type Chapter = (typeof SLIDE_CHAPTERS)[number];
@@ -401,30 +399,3 @@ export const SEQUENCE_LEGEND = {
   activation: "fokus kontrole",
   alt: "alt — alternativni tokovi",
 };
-
-/* Slajd 9 */
-export const CONSISTENCY_INTRO =
-  "Tri dijagrama opisuju isti sistem iz različitih uglova: dijagram slučajeva upotrebe prikazuje {{iris|šta sistem radi i ko ga koristi}}, dijagram klasa {{teal|koje podatke sistem čuva}}, a dijagram sekvenci {{coral|kako objekti sarađuju}} u realizaciji jednog slučaja upotrebe.";
-
-export const CONSISTENCY_HEAD = [
-  "Dijagram slučajeva upotrebe",
-  "Dijagram klasa",
-  "Dijagram sekvenci",
-];
-
-export const CONSISTENCY_ROWS = [
-  [
-    "«include» Obračun cene",
-    "`tezina` (Posiljka), `cenaPoKg` (TipPosiljke)",
-    "poruke 5–7",
-  ],
-  ["Plaćanje pošiljke", "klasa Placanje", "—"],
-  ["Dodela pošiljke kuriru", "`kurirID`, `zaposleniID` u Posiljci", "—"],
-  ["«include» Ažuriranje statusa", "atribut `status`", "—"],
-  [
-    "Izuzetak „Nepotpuni ili neispravni podaci“",
-    "—",
-    "grana `[podaci neispravni]`, poruka 9",
-  ],
-  ["«extend» Vraćanje pošiljke", "status „Vraćena“", "—"],
-];

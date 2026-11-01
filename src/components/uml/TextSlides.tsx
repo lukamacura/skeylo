@@ -14,9 +14,6 @@ import { CLASSES } from "@/lib/uml/uml-data";
 import {
   CLASS_DESCRIPTIONS,
   CLASS_INTRO,
-  CONSISTENCY_HEAD,
-  CONSISTENCY_INTRO,
-  CONSISTENCY_ROWS,
   DECK_LINE,
   DECK_SUBTITLE,
   LIFECYCLE_LABEL,
@@ -356,50 +353,6 @@ export function ClassDescriptionsSlide({ active }: { active: boolean }) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* Slajd 9 */
-const COLUMN_TONES = ["use-case", "class", "sequence"];
-
-export function ConsistencySlide() {
-  return (
-    <div className="uml-layout">
-      <header className="uml-head">
-        <SlideHeading title="Konzistentnost modela" mark="modela" />
-      </header>
-      <p className="uml-model-intro uml-rise" style={delay(1)}>
-        {renderInline(CONSISTENCY_INTRO)}
-      </p>
-      <div className="uml-table-wrap uml-rise" style={delay(2)}>
-        <table className="uml-table">
-          <thead>
-            <tr>
-              {CONSISTENCY_HEAD.map((cell, i) => (
-                <th key={cell} scope="col" data-tone={COLUMN_TONES[i]}>
-                  {cell}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {CONSISTENCY_ROWS.map((row, rowIndex) => (
-              <tr key={row[0]} style={delay(rowIndex)}>
-                {row.map((cell, i) => (
-                  <td
-                    key={i}
-                    data-tone={COLUMN_TONES[i]}
-                    data-empty={cell === "—" ? "true" : undefined}
-                  >
-                    {renderInline(cell)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );
