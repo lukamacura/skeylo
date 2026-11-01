@@ -61,9 +61,9 @@ export const SKETCHES: Record<SketchId, Sketch> = {
   "use-case": {
     id: "use-case",
     title: "Dijagram slučajeva upotrebe",
-    src: "/uml/skica-slucajevi-upotrebe.png",
-    width: 2400,
-    height: 1049,
+    src: "/uml/dijagram-slucaji.png",
+    width: 6481,
+    height: 2833,
     alt: "Skica dijagrama slučajeva upotrebe kurirske službe, nacrtana u Excalidraw-u",
   },
   class: {
@@ -98,7 +98,7 @@ export const USE_CASE_LEGEND = {
 export const HELPER_USE_CASE_NOTES: Partial<Record<UseCaseId, string>> = {
   U6: "Uključuje ga Kreiranje pošiljke. Izvršava se uvek: cena = težina × cena po kg za izabrani tip pošiljke.",
   U5: "Uključuju ga Preuzimanje i Isporuka pošiljke. Status se menja: Kreirana → Preuzeta → Isporučena / Vraćena. Izdvojen je u poseban slučaj upotrebe da se isto ponašanje ne bi opisivalo dva puta.",
-  U9: "Proširuje Isporuku pošiljke. Izvršava se samo pod uslovom da primalac ne preuzme pošiljku. Odgovara izuzetku u opisu slučaja upotrebe Isporuka pošiljke.",
+  U9: "Proširuje Isporuku pošiljke u tački proširenja „predaja pošiljke“. Izvršava se samo pod uslovom da primalac ne preuzme pošiljku. Odgovara izuzetku u opisu slučaja upotrebe Isporuka pošiljke.",
 };
 
 export const DEPENDENCY_DIRECTION = {

@@ -48,6 +48,17 @@ export type UseCase = {
   kind: UseCaseKind;
   cx: number;
   cy: number;
+  /** Odeljak ispod naziva, prošireni slučaj upotrebe (P1, sl. 40). */
+  extensionPoints?: {
+    rx: number;
+    ry: number;
+    nameY: number;
+    dividerY: number;
+    textX: number;
+    headingY: number;
+    /** Redovi teksta, kao na skici. */
+    lines: { y: number; text: string }[];
+  };
 };
 
 export type UcAssociation = { actor: ActorId; useCase: UseCaseId };
@@ -94,15 +105,35 @@ export const USE_CASES: UseCase[] = [
   { id: "U5", name: "Ažuriranje statusa", kind: "ukljuceni", cx: 370, cy: 500 },
   { id: "U6", name: "Obračun cene", kind: "ukljuceni", cx: 910, cy: 104 },
   { id: "U7", name: "Preuzimanje pošiljke", kind: "osnovni", cx: 910, cy: 216 },
-  { id: "U8", name: "Isporuka pošiljke", kind: "osnovni", cx: 910, cy: 336 },
+  {
+    id: "U8",
+    name: "Isporuka pošiljke",
+    kind: "osnovni",
+    cx: 910,
+    cy: 336,
+    extensionPoints: {
+      rx: 146,
+      ry: 66,
+      nameY: 297,
+      dividerY: 314,
+      textX: 824,
+      headingY: 332,
+      lines: [
+        { y: 350, text: "predaja pošiljke: primalac" },
+        { y: 368, text: "ne preuzme pošiljku" },
+      ],
+    },
+  },
   {
     id: "U9",
     name: "Vraćanje pošiljke",
     kind: "prosirujuci",
     cx: 910,
-    cy: 480,
+    cy: 500,
   },
 ];
+
+export const UC_EXTENSION_HEADING = "Extension points";
 
 export const UC_ASSOCIATIONS: UcAssociation[] = [
   { actor: "A1", useCase: "U1" },
@@ -139,7 +170,7 @@ export const UC_DEPENDENCIES: UcDependency[] = [
     from: "U9",
     to: "U8",
     stereotype: "«extend»",
-    label: { x: 898, y: 412, anchor: "end" },
+    label: { x: 898, y: 436, anchor: "end" },
   },
 ];
 
@@ -155,24 +186,41 @@ export const actorHand = (actor: UcActor): Point => ({
 
 const ucCenter = (u: UseCase): Point => ({ x: u.cx, y: u.cy });
 
+/** Poluprečnici elipse; slučaj sa odeljkom „Extension points“ je veći. */
+export const ucRadii = (u: UseCase) => ({
+  rx: u.extensionPoints?.rx ?? UC_RX,
+  ry: u.extensionPoints?.ry ?? UC_RY,
+});
+
+const ucEdge = (u: UseCase, toward: Point) => {
+  const { rx, ry } = ucRadii(u);
+  return ellipseEdge(ucCenter(u), rx, ry, toward);
+};
+
 export const ucAssociationPath = ({ actor, useCase }: UcAssociation) => {
   const hand = actorHand(actorById(actor));
-  const target = ucById(useCase);
-  return linePath(hand, ellipseEdge(ucCenter(target), UC_RX, UC_RY, hand));
+  return linePath(hand, ucEdge(ucById(useCase), hand));
 };
 
 export const ucDependencyPath = ({ from, to, curve }: UcDependency) => {
-  const a = ucCenter(ucById(from));
-  const b = ucCenter(ucById(to));
+  const a = ucById(from);
+  const b = ucById(to);
   if (curve) {
+    const { rx, ry } = ucRadii(b);
     return sCurvePath(
-      { x: a.x - UC_RX, y: a.y },
-      ellipsePointAtY(b, UC_RX, UC_RY, curve.arriveY, "right"),
+      { x: a.cx - ucRadii(a).rx, y: a.cy },
+      ellipsePointAtY(ucCenter(b), rx, ry, curve.arriveY, "right"),
     );
   }
+  return linePath(ucEdge(a, ucCenter(b)), ucEdge(b, ucCenter(a)));
+};
+
+/** Vodoravna linija odeljka, od ivice do ivice elipse. */
+export const ucDividerPath = (u: UseCase, y: number) => {
+  const { rx, ry } = ucRadii(u);
   return linePath(
-    ellipseEdge(a, UC_RX, UC_RY, b),
-    ellipseEdge(b, UC_RX, UC_RY, a),
+    ellipsePointAtY(ucCenter(u), rx, ry, y, "left"),
+    ellipsePointAtY(ucCenter(u), rx, ry, y, "right"),
   );
 };
 

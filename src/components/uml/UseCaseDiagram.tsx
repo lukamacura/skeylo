@@ -5,13 +5,15 @@ import {
   UC_ACTORS,
   UC_ASSOCIATIONS,
   UC_DEPENDENCIES,
+  UC_EXTENSION_HEADING,
   UC_FRAME,
-  UC_RX,
-  UC_RY,
   UC_VIEWBOX,
   USE_CASES,
   ucAssociationPath,
   ucDependencyPath,
+  ucDividerPath,
+  ucRadii,
+  type UseCase,
   type UseCaseId,
 } from "@/lib/uml/uml-data";
 import {
@@ -41,6 +43,9 @@ const ucName = (id: UseCaseId) =>
 
 const assocId = (actor: string, useCase: string) => `${actor}-${useCase}`;
 const depId = (from: string, to: string) => `${from}>${to}`;
+
+const extensionText = ({ extensionPoints }: UseCase) =>
+  extensionPoints?.lines.map((line) => line.text).join(" ");
 
 /** Element i sve što je direktno povezano sa njim. */
 function relatedTo(id: string): Set<string> {
@@ -132,6 +137,11 @@ export default function UseCaseDiagram({ active, slide, onSketch }: Props) {
               </li>
             ))}
           </ul>
+          {USE_CASES.filter((u) => u.extensionPoints).map((u) => (
+            <p key={u.id}>
+              {u.name}, {UC_EXTENSION_HEADING}: {extensionText(u)}
+            </p>
+          ))}
         </>
       }
     >
@@ -268,56 +278,88 @@ export default function UseCaseDiagram({ active, slide, onSketch }: Props) {
           </g>
         ))}
 
-        {USE_CASES.map((u, i) => (
-          <g
-            key={u.id}
-            {...bind(u.id, `Slučaj upotrebe ${u.name}`, () =>
-              setSelected(u.id),
-            )}
-            className="uml-el uml-lift uml-a-node"
-            style={{ "--i": i + 5 } as CSSProperties}
-            data-kind="use-case"
-            data-id={u.id}
-            data-dim={dim(u.id)}
-            data-hi={hi(u.id)}
-            data-lift={highlighted === u.id ? "true" : undefined}
-          >
-            <ellipse
-              cx={u.cx}
-              cy={u.cy}
-              rx={UC_RX + 26}
-              ry={UC_RY + 22}
-              fill="url(#uc-halo)"
-              className="uml-halo"
-            />
-            <ellipse
-              cx={u.cx}
-              cy={u.cy + 8}
-              rx={UC_RX + 8}
-              ry={UC_RY + 8}
-              fill="url(#uc-shadow)"
-              className="uml-shadow"
-            />
-            <ellipse
-              cx={u.cx}
-              cy={u.cy}
-              rx={UC_RX}
-              ry={UC_RY}
-              fill={u.kind === "osnovni" ? "url(#uc-base)" : "url(#uc-helper)"}
-              className={`uml-focus-shape ${u.kind === "osnovni" ? "uml-uc-base" : "uml-uc-helper"}`}
-            />
-            <text
-              x={u.cx}
-              y={u.cy}
-              dy=".35em"
-              textAnchor="middle"
-              className="uml-uc-name"
-              data-kind={u.kind === "osnovni" ? "base" : "helper"}
+        {USE_CASES.map((u, i) => {
+          const { rx, ry } = ucRadii(u);
+          const extension = u.extensionPoints;
+          return (
+            <g
+              key={u.id}
+              {...bind(
+                u.id,
+                extension
+                  ? `Slučaj upotrebe ${u.name}. ${UC_EXTENSION_HEADING}: ${extensionText(u)}`
+                  : `Slučaj upotrebe ${u.name}`,
+                () => setSelected(u.id),
+              )}
+              className="uml-el uml-lift uml-a-node"
+              style={{ "--i": i + 5 } as CSSProperties}
+              data-kind="use-case"
+              data-id={u.id}
+              data-dim={dim(u.id)}
+              data-hi={hi(u.id)}
+              data-lift={highlighted === u.id ? "true" : undefined}
             >
-              {u.name}
-            </text>
-          </g>
-        ))}
+              <ellipse
+                cx={u.cx}
+                cy={u.cy}
+                rx={rx + 26}
+                ry={ry + 22}
+                fill="url(#uc-halo)"
+                className="uml-halo"
+              />
+              <ellipse
+                cx={u.cx}
+                cy={u.cy + 8}
+                rx={rx + 8}
+                ry={ry + 8}
+                fill="url(#uc-shadow)"
+                className="uml-shadow"
+              />
+              <ellipse
+                cx={u.cx}
+                cy={u.cy}
+                rx={rx}
+                ry={ry}
+                fill={
+                  u.kind === "osnovni" ? "url(#uc-base)" : "url(#uc-helper)"
+                }
+                className={`uml-focus-shape ${u.kind === "osnovni" ? "uml-uc-base" : "uml-uc-helper"}`}
+              />
+              <text
+                x={u.cx}
+                y={extension?.nameY ?? u.cy}
+                dy=".35em"
+                textAnchor="middle"
+                className="uml-uc-name"
+                data-kind={u.kind === "osnovni" ? "base" : "helper"}
+              >
+                {u.name}
+              </text>
+              {extension && (
+                <g data-part="extension-points">
+                  <path
+                    d={ucDividerPath(u, extension.dividerY)}
+                    className="uml-uc-divider"
+                  />
+                  <text className="uml-uc-extension">
+                    <tspan
+                      x={extension.textX}
+                      y={extension.headingY}
+                      className="uml-uc-extension-head"
+                    >
+                      {UC_EXTENSION_HEADING}
+                    </tspan>
+                    {extension.lines.map((line) => (
+                      <tspan key={line.text} x={extension.textX} y={line.y}>
+                        {line.text}
+                      </tspan>
+                    ))}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
       </svg>
 
       <DetailPanel
