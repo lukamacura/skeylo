@@ -1509,7 +1509,14 @@ const RP = (function () {
         }
         if (tag === "IMG") {
           const src = n.getAttribute("src") || "";
-          if (!/^(https:\/\/|data:image\/(png|jpe?g|gif|webp);)/i.test(src)) {
+          /* crtež iz OS-a je naš fajl sa istog domena; ostale /_blob/ slike ostaju skrivene */
+          const drawing =
+            n.getAttribute("alt") === "excalidraw" &&
+            /^\/_blob\/[A-Za-z0-9]+$/.test(src);
+          if (
+            !drawing &&
+            !/^(https:\/\/|data:image\/(png|jpe?g|gif|webp);)/i.test(src)
+          ) {
             n.remove();
             return;
           }
@@ -1519,6 +1526,7 @@ const RP = (function () {
             loading: "lazy",
             referrerpolicy: "no-referrer",
           });
+          if (drawing) keep["data-draw"] = "1";
         }
         if (tag === "A") {
           const href = n.getAttribute("href") || "",

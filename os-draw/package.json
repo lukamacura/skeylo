@@ -1,0 +1,18 @@
+{
+  "name": "os-draw",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Excalidraw editor za blok Crtež u Skeylo OS-u. Build ide u public/os-app/draw.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

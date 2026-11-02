@@ -2,12 +2,21 @@
    Stranice (kolekcija "notes": title, icon, md, parentId, spaceId, order) čuvaju sadržaj kao
    Markdown u polju md. spaceId = mesec/projekat (items) čiji je to General (#mg-{id});
    bez njega stranica pripada glavnom Generalu. Podstranice nasleđuju spaceId roditelja. Editor isti Markdown prikazuje kao blokove: tekst, naslovi,
-   liste, zadaci, citat, napomena, kod, razdelnik, slika, fajl, podstranica i tabela.
+   liste, zadaci, citat, napomena, kod, razdelnik, slika, fajl, podstranica, tabela i crtež.
    "/" otvara blokove i iOS emoji, "@" vezu ka drugoj stranici. app.js zove window.SKNotes(most) i dobija
    { hub, open, sync, leave, flush, focusTop }.
    Isti editor piše i skripte (ekran #ed, open(id, "script")): skripta čuva md, a
    body (HTML za CRM i stari editor) se generiše iz njega; mdSig = otisak tog body-ja,
    pa skripta čiji je body kasnije menjan negde drugde ponovo kreće od body-ja. */
+/* Editor crteža pokriva stranicu, pa nazad u browseru tada znači "gotovo", a ne odlazak.
+   Registruje se ovde, pre rutera iz app.js, jer listeneri rade redom registrovanja. */
+window.addEventListener(
+  "hashchange",
+  (e) => {
+    if (window.SKDrawHash && window.SKDrawHash()) e.stopImmediatePropagation();
+  },
+  true,
+);
 window.SKNotes = function (X) {
   "use strict";
   const { S, api, esc, SV, toast, errMsg } = X;
@@ -147,6 +156,9 @@ window.SKNotes = function (X) {
     flag: SV('<path d="M5 21V4h11l-1 4h4l-1 4H5"/>'),
     table: SV(
       '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M3 15h18M9 10v10"/>',
+    ),
+    pen: SV(
+      '<path d="M4 20l1.2-4.6L16.6 4a2.2 2.2 0 0 1 3.1 0l.3.3a2.2 2.2 0 0 1 0 3.1L8.6 18.8z"/><path d="m14.5 6 3.5 3.5"/>',
     ),
     hash: SV('<path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/>'),
     tag: SV(
@@ -607,6 +619,7 @@ window.SKNotes = function (X) {
     "code",
   ]);
   const isBlobHref = (h) => /^(\/_blob\/|blob:)/i.test(h);
+  const DRAW_ALT = /^excalidraw:([A-Za-z0-9]+)$/;
   const endsBreak = (s) => /(^|[^\\])(\\\\)*\\$/.test(s) || /\S {2,}$/.test(s);
   const stripBreak = (s) =>
     / {2,}$/.test(s) ? s.replace(/ +$/, "") : s.slice(0, -1);
@@ -1027,7 +1040,13 @@ window.SKNotes = function (X) {
           /^!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)(?:\{width=(\d{1,3})%\})?\s*$/,
         ))
       ) {
-        add({ t: "img", alt: unesc(m[1]), src: m[2], w: imgW(m[3]) });
+        /* crtež je slika sa id-jem scene u alt-u: ![excalidraw:id](/_blob/svg) */
+        const dk = m[1].match(DRAW_ALT);
+        add(
+          dk && isBlobHref(m[2])
+            ? { t: "draw", scene: dk[1], src: m[2], w: imgW(m[3]) }
+            : { t: "img", alt: unesc(m[1]), src: m[2], w: imgW(m[3]) },
+        );
         continue;
       }
       /* HTML fajl ugrađen u stranicu: ::embed[ime](/_blob/id) */
@@ -1126,6 +1145,10 @@ window.SKNotes = function (X) {
         return [
           `![${escPlain(b.alt || "")}](${b.src})` +
             (b.w ? `{width=${b.w}%}` : ""),
+        ];
+      case "draw":
+        return [
+          `![excalidraw:${b.scene}](${b.src})` + (b.w ? `{width=${b.w}%}` : ""),
         ];
       case "file":
         return [`[${escPlain(b.name || "Fajl")}](${b.src})`];
@@ -1231,6 +1254,11 @@ window.SKNotes = function (X) {
       else if (b.t === "hr") h += "<hr>";
       else if (b.t === "img" && OKSRC.test(b.src || ""))
         h += `<p><img src="${esc(b.src)}" alt=""></p>`;
+      /* alt je znak za CRM, koji inače ne prikazuje slike sa /_blob/ */ else if (
+        b.t === "draw" &&
+        OKSRC.test(b.src || "")
+      )
+        h += `<p><img src="${esc(b.src)}" alt="excalidraw"></p>`;
       else if ((b.t === "file" || b.t === "embed") && OKSRC.test(b.src || ""))
         h += `<p><a class="file" href="${esc(b.src)}" data-name="${esc(b.name || "Fajl")}">${esc(b.name || "Fajl")}</a></p>`;
       else if (b.t === "page") h += "<p>" + esc(b.name || "Stranica") + "</p>";
@@ -1369,6 +1397,8 @@ window.SKNotes = function (X) {
     else if (t === "hr") h += `<div class="nb-x nb-hr"><hr></div>`;
     else if (t === "img")
       h += `<figure class="nb-x nb-img">${b.src ? `<span class="nb-iw"${b.w ? ` style="width:${b.w}%"` : ""}><img src="${esc(b.src)}" alt="${esc(b.alt || "")}" loading="lazy" draggable="false"><span class="nb-rz" aria-hidden="true" title="Prevuci za veličinu · dupli klik vraća original"></span></span>` : `<span class="nb-up">Otpremam sliku…</span>`}</figure>`;
+    else if (t === "draw")
+      h += `<figure class="nb-x nb-draw">${b.src ? `<span class="nb-iw"${b.w ? ` style="width:${b.w}%"` : ""}><img src="${esc(b.src)}" alt="Crtež" loading="lazy" draggable="false" onerror="this.closest('.nb-draw').classList.add('bad')"><span class="nb-de">${I.pen}<span>Izmeni</span></span><span class="nb-dx">Preview nije mogao da se učita. Klikni da otvoriš crtež.</span><span class="nb-rz" aria-hidden="true" title="Prevuci za veličinu · dupli klik vraća original"></span></span>` : `<span class="nb-up">Crtež je otvoren…</span>`}</figure>`;
     else if (t === "file")
       h += `<a class="nb-x nb-file"${b.src ? ` href="${esc(b.src)}" target="_blank" rel="noopener"` : ""} draggable="false"><span class="nb-fi">${I.file}</span><span class="nb-fn">${esc(b.name || "Fajl")}</span>${b.src ? `<span class="nb-fo">${I.open}</span>` : `<span class="nb-fo">Otpremam…</span>`}</a>`;
     else if (t === "embed")
@@ -1395,6 +1425,11 @@ window.SKNotes = function (X) {
       el.dataset.name = b.name || "";
     }
     if (t === "img" && b.w) el.dataset.w = b.w;
+    if (t === "draw") {
+      el.dataset.src = b.src || "";
+      el.dataset.scene = b.scene || "";
+      if (b.w) el.dataset.w = b.w;
+    }
     if (t === "embed" && b.src) loadEmbed(el);
     if (t === "page") {
       el.dataset.ref = b.ref || "";
@@ -1516,6 +1551,11 @@ window.SKNotes = function (X) {
       b.name = el.dataset.name || "";
     }
     if (t === "img") b.w = imgW(el.dataset.w);
+    if (t === "draw") {
+      b.src = el.dataset.src || "";
+      b.scene = el.dataset.scene || "";
+      b.w = imgW(el.dataset.w);
+    }
     if (t === "page") {
       b.ref = el.dataset.ref;
       const n = noteOf(b.ref);
@@ -2263,6 +2303,7 @@ window.SKNotes = function (X) {
   const busy = () =>
     composing ||
     !!DG ||
+    !!DR ||
     !!root.querySelector(".nb.up, .tb-di, .tb.rz") ||
     !!SL ||
     !EP.hidden ||
@@ -3244,6 +3285,13 @@ window.SKNotes = function (X) {
       kw: "tabela table baza database tablica kolone redovi grid spreadsheet",
     },
     {
+      id: "draw",
+      label: "Crtež",
+      ic: I.pen,
+      hint: "",
+      kw: "crtez draw drawing excalidraw skica sketch dijagram diagram whiteboard tabla shema",
+    },
+    {
       id: "page",
       label: "Stranica",
       ic: I.doc,
@@ -3498,6 +3546,7 @@ window.SKNotes = function (X) {
     }
     if (id === "hr") placeBlock(el, empty, { t: "hr" });
     else if (id === "tbl") focusCell(placeBlock(el, empty, tbNew()), 0, 0);
+    else if (id === "draw") drNew(el, empty);
     else if (id === "embed")
       pickFiles(".html,.htm,text/html", (fs) => uploadInto(fs, el, empty));
     else if (id === "img" || id === "file")
@@ -3869,6 +3918,9 @@ window.SKNotes = function (X) {
       (t1 === "page"
         ? `<button type="button" data-act="openp">${I.open}Otvori stranicu</button>`
         : "") +
+      (t1 === "draw"
+        ? `<button type="button" data-act="draw">${I.pen}Izmeni crtež</button>`
+        : "") +
       ((t1 === "img" || t1 === "file") && one.dataset.src
         ? `<button type="button" data-act="openf">${I.open}Otvori u novom tabu</button>`
         : "") +
@@ -3931,6 +3983,7 @@ window.SKNotes = function (X) {
     if (a === "add") addBelow(els[els.length - 1]);
     else if (a === "openp") X.nav("g-" + one.dataset.ref);
     else if (a === "openf") window.open(one.dataset.src, "_blank", "noopener");
+    else if (a === "draw") drOpen(one);
     else if (a === "icon") calloutIcon(one);
     else if (a === "in" || a === "out") {
       indentEls(els, a === "in" ? 1 : -1);
@@ -6300,6 +6353,241 @@ window.SKNotes = function (X) {
     changed();
   }
 
+  /* ---------------- crtež (Excalidraw) ----------------
+     Excalidraw je React, pa živi u svom iframe-u (izvor: os-draw/, build: os-app/draw) i
+     učitava se tek kad zatreba. Iframe posle prvog otvaranja ostaje učitan. Crtež je u
+     Markdownu jedan red, ![excalidraw:<scena>](/_blob/<svg>), a fajlovi su nepromenljivi:
+     iframe traži "upload" za scenu, preview i slike, pa "commit" kad su svi otpremljeni.
+     Tako undo vraća prethodnu verziju, a duplirani blok je nezavisna kopija. Među-verzije
+     autosave-a se brišu na zatvaranju; verzija pre otvaranja ostaje zbog undo-a. */
+  const DR_URL = "/os-app/draw/index.html";
+  let DR = null, // otvorena sesija
+    drOv = null,
+    drWin = null,
+    drReady = false,
+    drQueued = null,
+    drN = 0;
+  function drSend(m) {
+    if (!drWin) return;
+    if (!drReady) {
+      drQueued = m;
+      return;
+    }
+    drWin.postMessage({ skd: 1, ...m }, location.origin);
+  }
+  function drFrame() {
+    if (drOv) return;
+    drOv = document.createElement("div");
+    drOv.className = "dr-ov";
+    drOv.innerHTML = `<span class="dr-wait" aria-hidden="true"></span><iframe class="dr-f" src="${DR_URL}" title="Crtež" allow="clipboard-read; clipboard-write"></iframe>`;
+    document.body.appendChild(drOv);
+    drWin = drOv.querySelector("iframe").contentWindow;
+  }
+  function drTheme() {
+    const c = getComputedStyle(document.documentElement),
+      g = (k) => c.getPropertyValue(k).trim();
+    return {
+      ink: g("--ink"),
+      surface: g("--surface"),
+      surface2: g("--surface-2"),
+      line: g("--line"),
+      cream: g("--cream"),
+      muted: g("--muted"),
+      accent: g("--orange"),
+      gold: g("--gold"),
+      onAccent: g("--on-accent"),
+    };
+  }
+  function drStart(el, fresh) {
+    if (DR || !cur) return;
+    if (!X.assets()) {
+      if (fresh) drDropNew(el);
+      toast("Nemaš dozvolu za otpremanje.");
+      return;
+    }
+    drFrame();
+    closeAll();
+    const r = el.getBoundingClientRect();
+    drOv.style.transformOrigin = `${r.left + r.width / 2}px ${r.top + r.height / 2}px`;
+    DR = {
+      n: ++drN,
+      el,
+      fresh,
+      id: cur,
+      host: H,
+      hash: location.hash,
+      pushed: false,
+      trail: [],
+    };
+    drOv.getBoundingClientRect(); // polazno stanje prelaza
+    drOv.classList.add("on");
+    drSend({
+      type: "open",
+      n: DR.n,
+      scene: el.dataset.scene || "",
+      doc: H.col + "/" + cur,
+      title: titleEl ? titleEl.textContent.trim() : "",
+      theme: drTheme(),
+    });
+  }
+  const drOpen = (el) => drStart(el, false);
+  function drNew(el, replace) {
+    /* .up se ne upisuje u Markdown: blok postoji tek od prvog čuvanja */
+    const nb = make({ t: "draw", src: "", scene: "" });
+    nb.classList.add("up");
+    if (replace) el.replaceWith(nb);
+    else el.after(nb);
+    let nx = nb.nextElementSibling;
+    if (!(isNb(nx) && nx.dataset.t === "p" && isEmpty(tOf(nx)))) {
+      nx = make({ t: "p", x: "" });
+      nb.after(nx);
+    }
+    renum();
+    changed();
+    drStart(nb, true);
+  }
+  function drDropNew(el) {
+    el.remove();
+    if (!blocks().length) root.append(make({ t: "p", x: "" }));
+    renum();
+    changed();
+  }
+  /* editor je pokrio stranicu, pa ona ne može da se promeni osim kroz istoriju (vidi dole) */
+  const drLive = (d) => rendered === cur && cur === d.id && H === d.host;
+  function drCommit(d, scene, src) {
+    if (!drLive(d)) throw new Error("page");
+    if (!d.pushed) {
+      pushUndo();
+      d.pushed = true;
+    }
+    const w = imgW(d.el.dataset.w);
+    const nb = make({ t: "draw", scene, src, w });
+    if (d.el.isConnected) d.el.replaceWith(nb);
+    else {
+      /* blok je u međuvremenu nestao: crtež je važniji, vraća se na kraj stranice */
+      const last = blocks().pop();
+      if (last) last.after(nb);
+      else root.append(nb);
+      toast("Blok je bio uklonjen, pa je crtež vraćen na kraj stranice");
+    }
+    d.el = nb;
+    d.trail.push({ scene, src });
+    renum();
+    changed();
+  }
+  function drBlobId(src) {
+    return String(src || "").replace(/^\/_blob\//, "");
+  }
+  function drSweep(list) {
+    const A = X.assets();
+    if (!A) return;
+    for (const v of list) {
+      A.delete(v.scene).catch(() => {});
+      A.delete(drBlobId(v.src)).catch(() => {});
+    }
+  }
+  function drClose() {
+    const d = DR;
+    drOv.classList.remove("on", "ready");
+    drSend({ type: "close" });
+    DR = null;
+    drWin.blur();
+    if (pendingRemote && !busy()) applyRemote();
+    return d;
+  }
+  async function drFinish(d, empty) {
+    if (!drLive(d)) throw new Error("page");
+    if (empty) {
+      if (d.el.classList.contains("up")) drDropNew(d.el);
+      else removeBlocks([d.el]);
+      await flush();
+      drClose();
+      drSweep(d.trail);
+      return;
+    }
+    await flush();
+    /* preview je spreman pre nego što se editor skloni, da stranica ne blesne praznim */
+    const last = d.trail[d.trail.length - 1];
+    if (last) {
+      const im = new Image();
+      im.src = last.src;
+      await Promise.race([
+        im.decode().catch(() => {}),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+    }
+    const el = d.el;
+    drClose();
+    drSweep(d.trail.slice(0, -1));
+    if (el.isConnected && !el.classList.contains("up")) {
+      const nx = el.nextElementSibling;
+      if (d.fresh && isNb(nx) && tOf(nx)) focusBlock(nx, 0);
+      else selectBlocks([el]);
+    }
+  }
+  function drFailed(d) {
+    drClose();
+    if (d.fresh && d.el.classList.contains("up")) drDropNew(d.el);
+    toast("Crtež nije mogao da se učita. Proveri vezu i probaj ponovo.");
+  }
+  addEventListener("message", (e) => {
+    const m = e.data;
+    if (!drOv || e.source !== drWin || e.origin !== location.origin) return;
+    if (!m || m.skd !== 1) return;
+    if (m.type === "ready") {
+      drReady = true;
+      if (drQueued) {
+        const q = drQueued;
+        drQueued = null;
+        drSend(q);
+      }
+      return;
+    }
+    const d = DR;
+    if (m.rid) {
+      const reply = (ok, value, error) =>
+        drSend({ type: "reply", rid: m.rid, ok, value, error });
+      const fail = (err) =>
+        reply(false, null, String((err && err.code) || err));
+      if (!d) return fail("closed");
+      if (m.type === "upload")
+        upload(m.blob, "draw").then((src) => {
+          reply(true, { src, id: drBlobId(src) });
+        }, fail);
+      else if (m.type === "commit") {
+        try {
+          drCommit(d, m.scene, m.src);
+          reply(true);
+        } catch (err) {
+          fail(err);
+        }
+      } else if (m.type === "finish") {
+        drFinish(d, !!m.empty).then(() => reply(true), fail);
+      }
+      return;
+    }
+    if (!d || m.n !== d.n) return;
+    if (m.type === "opened") {
+      drOv.classList.add("ready");
+      drOv.querySelector("iframe").focus();
+    } else if (m.type === "failed") drFailed(d);
+  });
+  /* adresa se vraća, a editor sačuva crtež i zatvori se (listener je na vrhu fajla) */
+  window.SKDrawHash = () => {
+    if (!DR || location.hash === DR.hash) return false;
+    history.replaceState(
+      history.state,
+      "",
+      location.href.split("#")[0] + DR.hash,
+    );
+    drSend({ type: "requestFinish", n: DR.n });
+    return true;
+  };
+  /* iframe se učitava čim se pokazivač nađe na crtežu, pa se otvara bez čekanja */
+  onRoot("pointerover", (e) => {
+    if (!drOv && e.target.closest && e.target.closest(".nb-draw")) drFrame();
+  });
+
   /* ---------------- editor events ---------------- */
   onRoot("compositionstart", () => {
     if (SP) {
@@ -6567,6 +6855,17 @@ window.SKNotes = function (X) {
       if (!fl.getAttribute("href")) e.preventDefault();
       return;
     }
+    const dw = e.target.closest(".nb-draw");
+    if (
+      dw &&
+      dw.parentElement.dataset.src &&
+      !e.shiftKey &&
+      !e.metaKey &&
+      !e.ctrlKey
+    ) {
+      drOpen(dw.parentElement);
+      return;
+    }
     const x = e.target.closest(".nb-x");
     if (x) {
       selectBlocks([x.parentElement]);
@@ -6708,6 +7007,10 @@ window.SKNotes = function (X) {
       if (tg && tOf(tg)) focusBlock(tg);
     } else if (k === "Enter") {
       e.preventDefault();
+      if (sel.length === 1 && sel[0].dataset.t === "draw") {
+        drOpen(sel[0]);
+        return;
+      }
       const f = sel.find((x) => tOf(x) || x.dataset.t === "tbl");
       if (f && tOf(f)) focusBlock(f);
       else if (f) focusCell(f, 0, 0) || focusCell(f, -1, 0);

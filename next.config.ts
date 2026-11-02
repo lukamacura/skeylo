@@ -3,6 +3,25 @@ import type { NextConfig } from "next";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 const nextConfig: NextConfig = {
+  // Fajlovi editora za crteže: nazivi u assets sadrže hash, a fontovi se menjaju samo sa
+  // novom verzijom Excalidraw-a. Bez ovoga bi se svi proveravali pri svakom otvaranju.
+  async headers() {
+    return [
+      {
+        source: "/os-app/draw/assets/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/os-app/draw/fonts/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],
+      },
+    ];
+  },
   async rewrites() {
     return [
       // Skeylo OS je samostalna aplikacija u public/os-app (hash rute).

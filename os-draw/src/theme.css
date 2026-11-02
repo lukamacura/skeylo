@@ -1,0 +1,279 @@
+/* Boje stižu iz OS-a pri otvaranju (--sk-*), pa editor prati temu Skeylo, ILS ili Nina.
+   Platno je providno, a pozadina dolazi odavde. */
+:root {
+  --sk-ink: #0b0806;
+  --sk-surface: #16110d;
+  --sk-surface2: #1e1711;
+  --sk-line: rgba(255, 200, 150, 0.09);
+  --sk-cream: #f4ebdc;
+  --sk-muted: #a89a88;
+  --sk-accent: #e1802c;
+  --sk-gold: #f3b04c;
+  --sk-onAccent: #1a0e04;
+}
+html,
+body,
+#root {
+  background: var(--sk-ink);
+}
+.sk-editor {
+  position: fixed;
+  inset: 0;
+}
+.sk-alone {
+  margin: 0;
+  padding: 40px 20px;
+  color: var(--sk-muted);
+  font:
+    15px/1.5 system-ui,
+    sans-serif;
+  text-align: center;
+}
+
+.excalidraw.theme--dark {
+  --default-bg-color: var(--sk-ink);
+  --island-bg-color: var(--sk-surface);
+  --input-bg-color: var(--sk-ink);
+  --input-hover-bg-color: var(--sk-surface2);
+  --input-border-color: var(--sk-line);
+  --input-label-color: var(--sk-cream);
+  --dialog-border-color: var(--sk-line);
+  --popup-text-color: var(--sk-cream);
+  --button-gray-1: var(--sk-surface2);
+  --button-gray-2: var(--sk-surface2);
+  --button-gray-3: var(--sk-surface);
+  --link-color: var(--sk-gold);
+  --select-highlight-color: var(--sk-accent);
+  --focus-highlight-color: var(--sk-accent);
+  --color-primary: var(--sk-accent);
+  --color-primary-darker: var(--sk-gold);
+  --color-primary-darkest: var(--sk-gold);
+  --color-primary-hover: var(--sk-gold);
+  --color-primary-light: color-mix(in srgb, var(--sk-accent) 28%, transparent);
+  --color-primary-light-darker: color-mix(
+    in srgb,
+    var(--sk-accent) 40%,
+    transparent
+  );
+  --color-surface-primary-container: color-mix(
+    in srgb,
+    var(--sk-accent) 26%,
+    var(--sk-surface)
+  );
+  --color-on-primary-container: var(--sk-gold);
+  --color-brand-hover: var(--sk-gold);
+  --color-brand-active: var(--sk-gold);
+  --color-surface-lowest: var(--sk-ink);
+  --color-surface-low: var(--sk-surface);
+  --color-surface-mid: var(--sk-surface);
+  --color-surface-high: var(--sk-surface2);
+  --color-on-surface: var(--sk-cream);
+  --color-border-outline-variant: var(--sk-line);
+  --sidebar-bg-color: var(--sk-surface);
+  --sidebar-border-color: var(--sk-line);
+  --sidebar-shadow: none;
+  --color-selection: var(--sk-accent);
+  --color-slider-track: var(--sk-surface2);
+  --scrollbar-thumb: var(--sk-surface2);
+}
+.excalidraw.theme--dark,
+.excalidraw.theme--dark .excalidraw__canvas {
+  background: transparent;
+}
+/* biblioteka je ova; link ka spoljnim bibliotekama vodi van OS-a */
+.excalidraw .library-menu-browse-button {
+  display: none;
+}
+
+.excalidraw .sidebar-triggers .sk-tab {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sk-cream);
+  font-size: 13px;
+  font-weight: 600;
+}
+.excalidraw .sidebar-triggers .sk-tab:hover {
+  background: var(--sk-surface2);
+}
+.excalidraw .sidebar-triggers .sk-tab[aria-selected="true"],
+.excalidraw .sidebar-triggers .sk-tab[data-state="active"] {
+  background: var(--sk-accent);
+  color: var(--sk-onAccent);
+}
+
+/* ---------- Gotovo ---------- */
+.sk-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  font-family:
+    Assistant,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+.sk-st {
+  min-width: 0;
+  color: var(--sk-muted);
+  font-size: 12px;
+}
+.sk-st.bad {
+  color: #ff7a6b;
+  font-weight: 600;
+}
+.sk-done {
+  height: var(--lg-button-size, 2.25rem);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--border-radius-lg, 0.5rem);
+  background: var(--sk-accent);
+  color: var(--sk-onAccent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.16s;
+}
+.sk-done:hover {
+  background: var(--sk-gold);
+}
+.sk-done:active {
+  transform: scale(0.96);
+}
+.sk-done:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.sk-done:focus-visible {
+  outline: 2px solid var(--sk-gold);
+  outline-offset: 2px;
+}
+
+.sk-mobile-top {
+  display: none;
+  position: fixed;
+  right: 14px;
+  bottom: calc(env(safe-area-inset-bottom) + 78px);
+  z-index: 5;
+}
+.sk-editor:has(.excalidraw--mobile) .sk-mobile-top {
+  display: block;
+}
+/* traka sa ikonama, meni i dijalozi na telefonu pokrivaju ceo ekran */
+.sk-editor:has(.sidebar) .sk-mobile-top,
+.sk-editor:has(.Modal) .sk-mobile-top,
+.sk-editor:has(.dropdown-menu) .sk-mobile-top,
+.sk-editor:has(.App-mobile-menu .panelColumn) .sk-mobile-top {
+  display: none;
+}
+.sk-mobile-top .sk-st:empty {
+  display: none;
+}
+
+/* ---------- tab Ikone ---------- */
+.sk-icons {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0 12px 12px;
+  box-sizing: border-box;
+}
+.sk-q {
+  flex: none;
+  width: 100%;
+  height: 34px;
+  margin: 8px 0 10px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--sk-line);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--sk-ink);
+  color: var(--sk-cream);
+  font: inherit;
+  font-size: 14px;
+}
+.sk-q:focus {
+  border-color: var(--sk-accent);
+}
+.sk-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sk-icons h4 {
+  margin: 14px 0 6px;
+  color: var(--sk-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.sk-icons section:first-child h4 {
+  margin-top: 2px;
+}
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.sk-i {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 8px 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sk-muted);
+  cursor: grab;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.sk-i:hover {
+  border-color: var(--sk-line);
+  background: var(--sk-surface2);
+  color: var(--sk-cream);
+}
+.sk-i:active {
+  cursor: grabbing;
+}
+.sk-ic {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+.sk-ic svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sk-n {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sk-none {
+  margin: 24px 0;
+  color: var(--sk-muted);
+  font-size: 13px;
+  text-align: center;
+}

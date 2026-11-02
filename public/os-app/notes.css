@@ -2268,3 +2268,144 @@ body.nb-dragging * {
     padding: 12px 14px;
   }
 }
+
+/* ---------- crtež (Excalidraw) ---------- */
+.nb[data-t="draw"] {
+  padding: 6px 0;
+}
+.nb-draw {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.nb-draw img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+.nb-draw .nb-iw:hover img {
+  background: rgba(255, 255, 255, 0.025);
+}
+.nb-de {
+  position: absolute;
+  top: 8px;
+  right: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.16s,
+    transform 0.16s var(--ease);
+  pointer-events: none;
+}
+.nb-de svg {
+  width: 13px;
+  height: 13px;
+}
+.nb-draw .nb-iw:hover .nb-de {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: none) {
+  .nb-de {
+    display: none;
+  }
+}
+.nb-dx {
+  display: none;
+}
+.nb-draw.bad img,
+.nb-draw.bad .nb-de,
+.nb-draw.bad .nb-rz {
+  display: none;
+}
+.nb-draw.bad .nb-dx {
+  display: block;
+  padding: 18px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.dr-ov {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--ink);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.985);
+  transition:
+    opacity 0.16s ease,
+    transform 0.2s var(--ease),
+    visibility 0s linear 0.2s;
+}
+.dr-ov.on {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.26s var(--ease),
+    visibility 0s;
+}
+.dr-f {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+.dr-ov.ready .dr-f {
+  opacity: 1;
+}
+.dr-wait {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border: 2px solid var(--line);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: drSpin 0.8s linear infinite;
+}
+.dr-ov.ready .dr-wait,
+.dr-ov:not(.on) .dr-wait {
+  display: none;
+}
+@keyframes drSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dr-ov,
+  .dr-ov.on {
+    transform: none;
+    transition: none;
+  }
+  .dr-f {
+    transition: none;
+  }
+}

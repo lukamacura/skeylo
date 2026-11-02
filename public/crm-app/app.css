@@ -4871,6 +4871,12 @@ html.noscroll {
   border-radius: 18px;
   box-shadow: 0 20px 40px -26px rgba(42, 18, 24, 0.55);
 }
+/* crtež iz OS-a je sačuvan za tamnu pozadinu (svetle linije), a tekst je na svetloj podlozi */
+.pbody img[data-draw] {
+  box-sizing: border-box;
+  padding: 12px;
+  background: #1f1217;
+}
 .pbody .pfile {
   display: inline-flex;
   align-items: center;
