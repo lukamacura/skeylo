@@ -58,6 +58,10 @@ window.SKNotes = function (X) {
     ),
     grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
     check: SV('<path d="m5 12 5 5L20 7"/>', 3),
+    tint: SV(
+      '<path d="M12 3.2s6.8 6.9 6.8 11.6a6.8 6.8 0 0 1-13.6 0C5.2 10.1 12 3.2 12 3.2z"/>',
+      2,
+    ),
     fold: SV(
       '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2.2 2.4h7.2A2.5 2.5 0 0 1 21 9.9v7.6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/>',
     ),
@@ -618,6 +622,31 @@ window.SKNotes = function (X) {
      prikazuju. Ćelija je inline Markdown; | je \|, novi red <br>. Tipovi: text, num,
      sel (izbor), date (YYYY-MM-DD), check ([x] / [ ]), who (ime iz tima). */
   const TK = ["text", "num", "sel", "date", "check", "who"];
+  /* boje tabele: pozadina kolone, reda i ćelije, i boja opcije izbora. U komentaru tbl:
+     c = boje kolona, o = {kolona: {opcija: boja}}, r = {red: boja}, x = {"red:kolona": boja}.
+     Čuva se naziv boje, a ćelija može i "none" (bez boje, iako red ili kolona imaju boju) */
+  const TINTS = [
+    ["gray", "Siva", "#a39a90"],
+    ["orange", "Narandžasta", "#d08a55"],
+    ["yellow", "Žuta", "#e3b341"],
+    ["green", "Zelena", "#4fbf7f"],
+    ["teal", "Tirkizna", "#4fbfa8"],
+    ["blue", "Plava", "#5b9cf0"],
+    ["purple", "Ljubičasta", "#a98bff"],
+    ["pink", "Roze", "#e0679a"],
+    ["red", "Crvena", "#ff7a6b"],
+  ];
+  const TINT = Object.fromEntries(TINTS.map(([id, , hex]) => [id, hex]));
+  const tintId = (v) =>
+    typeof v === "string" && Object.hasOwn(TINT, v) ? v : "";
+  /* opcije sortirane po nazivu: isti skup boja je uvek isti Markdown */
+  function optMap(o) {
+    const m = {};
+    if (o && typeof o === "object")
+      for (const k of Object.keys(o).sort()) if (tintId(o[k])) m[k] = o[k];
+    return Object.keys(m).length ? m : null;
+  }
+  const rowTintKey = (r) => (r.bg || "") + ":" + (r.tc ? r.tc.join(".") : "");
   const colW = (v) => {
     const n = Math.round(+v);
     return n >= 40 && n <= 1200 ? n : 0;
@@ -680,7 +709,20 @@ window.SKNotes = function (X) {
       j++;
     }
     const K = Array.isArray(meta.k) ? meta.k : [],
-      W = Array.isArray(meta.w) ? meta.w : [];
+      W = Array.isArray(meta.w) ? meta.w : [],
+      C = Array.isArray(meta.c) ? meta.c : [];
+    /* boje idu uz red kao njegova svojstva, pa prate red kroz sortiranje i spajanje */
+    rows.forEach((r, i) => {
+      const bg = meta.r ? tintId(meta.r[i]) : "";
+      if (bg) r.bg = bg;
+    });
+    for (const [key, v] of Object.entries(meta.x || {})) {
+      const [ri, ci] = key.split(":").map(Number);
+      if (rows[ri] && ci >= 0 && ci < n && (v === "none" || tintId(v))) {
+        rows[ri].tc = rows[ri].tc || Array(n).fill("");
+        rows[ri].tc[ci] = v;
+      }
+    }
     const cols = hs.map((h, c) => {
       const d = ds[c],
         k = TK.includes(K[c]) ? K[c] : "text";
@@ -698,6 +740,8 @@ window.SKNotes = function (X) {
                 : d[0] === ":"
                   ? "l"
                   : "",
+        c: tintId(C[c]),
+        o: optMap(meta.o && meta.o[c]),
       };
     });
     return { b: { t: "tbl", cols, rows }, end: j - 1 };
@@ -737,7 +781,26 @@ window.SKNotes = function (X) {
     const meta = {};
     if (cols.some((c) => c.k !== "text")) meta.k = cols.map((c) => c.k);
     if (cols.some((c) => c.w)) meta.w = cols.map((c) => c.w || 0);
-    if (meta.k || meta.w) out.push("<!--tbl " + JSON.stringify(meta) + "-->");
+    if (cols.some((c) => c.c)) meta.c = cols.map((c) => c.c || "");
+    const O = {},
+      R = {},
+      XC = {};
+    cols.forEach((c, i) => {
+      const m = optMap(c.o);
+      if (m) O[i] = m;
+    });
+    b.rows.forEach((r, i) => {
+      if (r.bg) R[i] = r.bg;
+      if (r.tc) r.tc.forEach((id, j) => id && (XC[i + ":" + j] = id));
+    });
+    if (Object.keys(O).length) meta.o = O;
+    if (Object.keys(R).length) meta.r = R;
+    if (Object.keys(XC).length) meta.x = XC;
+    /* naziv opcije može da sadrži -->, a to ne sme da zatvori komentar */
+    if (Object.keys(meta).length)
+      out.push(
+        "<!--tbl " + JSON.stringify(meta).replace(/>/g, "\\u003e") + "-->",
+      );
     return out;
   }
   /* vrednosti ćelija po tipu kolone */
@@ -817,8 +880,9 @@ window.SKNotes = function (X) {
     "#4fbfa8",
     "#c9a227",
   ];
-  function optColor(v) {
+  function optColor(v, o) {
     const f = fold(v);
+    if (o && tintId(o[f])) return TINT[o[f]];
     if (
       /(gotov|zavrs|uradjen|objavljen|odobren|placen|potvrdjen|done|complete|^da$|aktivn|live)/.test(
         f,
@@ -1886,6 +1950,14 @@ window.SKNotes = function (X) {
     const n = b.cols.length;
     if (o.cols.length !== n || t.cols.length !== n) return null;
     const pick = (x, y, z) => (y !== x ? y : z);
+    const optPick = (x, y, z) => {
+      const m = {};
+      for (const k of Object.keys({ ...x, ...y, ...z })) {
+        const v = pick((x || {})[k], (y || {})[k], (z || {})[k]);
+        if (v) m[k] = v;
+      }
+      return optMap(m);
+    };
     const cols = b.cols.map((c, i) => {
       const p = o.cols[i],
         q = t.cols[i];
@@ -1894,9 +1966,14 @@ window.SKNotes = function (X) {
         k: pick(c.k, p.k, q.k),
         w: pick(c.w, p.w, q.w),
         a: pick(c.a, p.a, q.a),
+        c: pick(c.c, p.c, q.c),
+        o: optPick(c.o, p.o, q.o),
       };
     });
-    const U = (x) => ({ bs: x.rows, ks: x.rows.map((r) => r.join("\u0001")) });
+    const U = (x) => ({
+      bs: x.rows,
+      ks: x.rows.map((r) => r.join("\u0001") + "\u0002" + rowTintKey(r)),
+    });
     const rows = mergeSeq(U(b), U(o), U(t), oursWins, (rb, ro, rt) => {
       let clash = false;
       const m = ro.map((x, i) => {
@@ -1904,6 +1981,11 @@ window.SKNotes = function (X) {
         if (rt[i] !== rb[i] && rt[i] !== x) clash = true;
         return x;
       });
+      const own = (r, i) => (r.tc && r.tc[i]) || "",
+        tc = ro.map((_, i) => pick(own(rb, i), own(ro, i), own(rt, i))),
+        bg = pick(rb.bg || "", ro.bg || "", rt.bg || "");
+      if (bg) m.bg = bg;
+      if (tc.some(Boolean)) m.tc = tc;
       return clash && !oursWins ? [m, rt] : [m];
     });
     return { t: "tbl", cols, rows };
@@ -4126,7 +4208,7 @@ window.SKNotes = function (X) {
     const tr = r < 0 ? t.tHead.rows[0] : t.tBodies[0].rows[r];
     return (tr && tr.cells[c] && tr.cells[c].querySelector(".tb-c")) || null;
   }
-  function tbVal(k, x) {
+  function tbVal(k, x, o) {
     if (k === "check") return `<span class="tb-ck">${I.check}</span>`;
     if (!String(x || "").trim()) return "";
     if (k === "date") {
@@ -4139,12 +4221,14 @@ window.SKNotes = function (X) {
       const u = X.TEAM.find((p) => fold(p.name) === fold(v));
       return `<span class="tb-who">${u && X.IMG[u.id] ? `<img src="${esc(X.IMG[u.id])}" alt="" draggable="false">` : `<i>${esc([...v][0].toUpperCase())}</i>`}<span>${esc(v)}</span></span>`;
     }
-    return `<span class="tb-pill" style="--c:${optColor(v)}">${esc(v)}</span>`;
+    return `<span class="tb-pill" style="--c:${optColor(v, o)}">${esc(v)}</span>`;
   }
-  function tbCell(k, x, first) {
-    const rh = first
-      ? `<button type="button" class="tb-rh" tabindex="-1" aria-label="Red: novi, dupliraj, obriši" title="Opcije reda">${I.grip}</button>`
-      : "";
+  function tbCell(k, x, first, o) {
+    const rh =
+      (first
+        ? `<button type="button" class="tb-rh" tabindex="-1" aria-label="Red: novi, dupliraj, obriši" title="Opcije reda">${I.grip}</button>`
+        : "") +
+      `<button type="button" class="tb-cb" tabindex="-1" aria-label="Boja ćelije" title="Boja ćelije">${I.tint}</button>`;
     if (k === "text" || k === "num")
       return (
         rh +
@@ -4152,11 +4236,19 @@ window.SKNotes = function (X) {
       );
     return (
       rh +
-      `<div class="tb-c tb-v" tabindex="-1" role="${k === "check" ? "checkbox" : "button"}" data-v="${esc(x || "")}"${k === "check" ? ` aria-checked="${isChecked(x)}" aria-label="Označeno"` : ` data-ph="${TKS[k][2]}"`}>${tbVal(k, x)}</div>`
+      `<div class="tb-c tb-v" tabindex="-1" role="${k === "check" ? "checkbox" : "button"}" data-v="${esc(x || "")}"${k === "check" ? ` aria-checked="${isChecked(x)}" aria-label="Označeno"` : ` data-ph="${TKS[k][2]}"`}>${tbVal(k, x, o)}</div>`
     );
   }
+  const tintAttr = (id) =>
+    TINT[id] ? ` class="tn" style="--tn:${TINT[id]}"` : "";
+  /* boja ćelije je jača od boje reda, a boja reda od boje kolone */
   const tbRow = (cols, r) =>
-    `<tr>${cols.map((c, i) => `<td data-k="${c.k}"${c.a ? ` data-a="${c.a}"` : ""}>${tbCell(c.k, r[i] || "", i === 0)}</td>`).join("")}</tr>`;
+    `<tr${r.bg ? ` data-c="${r.bg}"` : ""}>${cols
+      .map((c, i) => {
+        const own = (r.tc && r.tc[i]) || "";
+        return `<td data-k="${c.k}"${c.a ? ` data-a="${c.a}"` : ""}${own ? ` data-c="${own}"` : ""}${tintAttr(own === "none" ? "" : own || r.bg || c.c)}>${tbCell(c.k, r[i] || "", i === 0, c.o)}</td>`;
+      })
+      .join("")}</tr>`;
   function tbHtml(b) {
     const cols = b.cols,
       fixed = cols.some((c) => c.w),
@@ -4165,7 +4257,7 @@ window.SKNotes = function (X) {
     const head = cols
       .map(
         (c) =>
-          `<th data-k="${c.k}"${c.w ? ` data-w="${c.w}"` : ""}${c.a ? ` data-a="${c.a}"` : ""}><div class="tb-hd"><button type="button" class="tb-ti" tabindex="-1" title="${TKS[c.k][0]} · tip, sortiranje, kolone" aria-label="Kolona, tip ${TKS[c.k][0]}">${TKS[c.k][1]}</button><div class="tb-c tb-hn" contenteditable="true" spellcheck="false" data-ph="Kolona">${mdInline(c.n)}</div></div><span class="tb-rz" aria-hidden="true" title="Prevuci za širinu · dupli klik vraća automatsku"></span></th>`,
+          `<th data-k="${c.k}"${c.w ? ` data-w="${c.w}"` : ""}${c.a ? ` data-a="${c.a}"` : ""}${c.c ? ` data-c="${c.c}"` : ""}${c.o ? ` data-o="${esc(JSON.stringify(c.o))}"` : ""}${tintAttr(c.c)}><div class="tb-hd"><button type="button" class="tb-ti" tabindex="-1" title="${TKS[c.k][0]} · tip, sortiranje, kolone" aria-label="Kolona, tip ${TKS[c.k][0]}">${TKS[c.k][1]}</button><div class="tb-c tb-hn" contenteditable="true" spellcheck="false" data-ph="Kolona">${mdInline(c.n)}</div></div><span class="tb-rz" aria-hidden="true" title="Prevuci za širinu · dupli klik vraća automatsku"></span></th>`,
       )
       .join("");
     const style = fixed
@@ -4196,6 +4288,8 @@ window.SKNotes = function (X) {
     tr.hidden = !any;
     if (tr.innerHTML !== html) tr.innerHTML = html;
   }
+  const thOpts = (th) =>
+    th.dataset.o ? optMap(JSON.parse(th.dataset.o)) : null;
   function tbRead(el) {
     const t = tbT(el);
     const cols = headTh(el).map((th) => ({
@@ -4205,13 +4299,21 @@ window.SKNotes = function (X) {
       k: TK.includes(th.dataset.k) ? th.dataset.k : "text",
       w: colW(th.dataset.w),
       a: th.dataset.a || "",
+      c: tintId(th.dataset.c),
+      o: thOpts(th),
     }));
-    const rows = [...t.tBodies[0].rows].map((tr) =>
-      cols.map((_, i) => {
+    const rows = [...t.tBodies[0].rows].map((tr) => {
+      const r = cols.map((_, i) => {
         const x = tr.cells[i] && tr.cells[i].querySelector(".tb-c");
         return !x ? "" : isTextCell(x) ? inlineMd(x).trim() : x.dataset.v || "";
-      }),
-    );
+      });
+      const tc = cols.map(
+        (_, i) => (tr.cells[i] && tr.cells[i].dataset.c) || "",
+      );
+      if (tr.dataset.c) r.bg = tr.dataset.c;
+      if (tc.some(Boolean)) r.tc = tc;
+      return r;
+    });
     return { t: "tbl", cols, rows };
   }
   function tbPaint(el, b) {
@@ -4225,10 +4327,17 @@ window.SKNotes = function (X) {
       at = ac && cellRC(ac),
       off = isTextCell(ac) ? caretOff(ac) : -1,
       old = tbRead(el),
+      /* promena boje crta celu tabelu: retka je, a kursor se vraća na isto mesto */
       shape = (x) =>
-        x.cols.map((c) => [c.k, c.w, c.a].join("/")).join() +
+        x.cols
+          .map((c) =>
+            [c.k, c.w, c.a, c.c || "", JSON.stringify(c.o || null)].join("/"),
+          )
+          .join() +
         "#" +
-        x.rows.length;
+        x.rows.length +
+        "#" +
+        x.rows.map(rowTintKey).join();
     let hit = false;
     if (shape(old) !== shape(b)) {
       tbPaint(el, b);
@@ -4247,7 +4356,7 @@ window.SKNotes = function (X) {
           if (x === old.rows[ri][ci]) return;
           const td = t.tBodies[0].rows[ri].cells[ci];
           hit = hit || td.contains(ac);
-          td.innerHTML = tbCell(b.cols[ci].k, x, ci === 0);
+          td.innerHTML = tbCell(b.cols[ci].k, x, ci === 0, b.cols[ci].o);
         }),
       );
       tbSum(el);
@@ -4296,7 +4405,10 @@ window.SKNotes = function (X) {
   function addCol(el, at) {
     const h = tbEdit(el, (b) => {
       b.cols.splice(at, 0, newCol(b));
-      b.rows.forEach((r) => r.splice(at, 0, ""));
+      b.rows.forEach((r) => {
+        r.splice(at, 0, "");
+        if (r.tc) r.tc.splice(at, 0, "");
+      });
       return [-1, at];
     });
     /* naziv je označen: odmah se kuca pravi */
@@ -4424,6 +4536,7 @@ window.SKNotes = function (X) {
       sl = SORTL[k] || ["Sortiraj A → Z", "Sortiraj Z → A"];
     tbMenu(
       `<div class="nm-h">Tip kolone</div><div class="tb-types">${TK.map((id) => `<button type="button" data-tm="k:${id}"${id === k ? ' class="on"' : ""}>${TKS[id][1]}<span>${TKS[id][0]}</span></button>`).join("")}</div><div class="nm-sep"></div>` +
+        `<div class="nm-h">Boja kolone</div>${swatches(headTh(el)[ci].dataset.c || "", "bg:")}<div class="nm-sep"></div>` +
         `<button type="button" data-tm="asc">${I.up}${sl[0]}</button><button type="button" data-tm="desc">${I.down}${sl[1]}</button><div class="nm-sep"></div>` +
         `<button type="button" data-tm="ins-l">${I.plus}Nova kolona levo</button><button type="button" data-tm="ins-r">${I.plus}Nova kolona desno</button>` +
         (ci > 0
@@ -4460,18 +4573,38 @@ window.SKNotes = function (X) {
       tbEdit(el, (b) => {
         const sw = (x) => ([x[ci], x[ci + d]] = [x[ci + d], x[ci]]);
         sw(b.cols);
-        b.rows.forEach(sw);
+        b.rows.forEach((r) => {
+          sw(r);
+          if (r.tc) sw(r.tc);
+        });
       });
     } else if (a === "cdel")
       tbEdit(el, (b) => {
         b.cols.splice(ci, 1);
-        b.rows.forEach((r) => r.splice(ci, 1));
+        b.rows.forEach((r) => {
+          r.splice(ci, 1);
+          if (r.tc) r.tc.splice(ci, 1);
+        });
       });
+    else if (a.startsWith("bg:")) {
+      const id = a.slice(3);
+      tbEdit(el, (b) => {
+        b.cols[ci].c = id;
+        /* poslednja izabrana boja se vidi: i preko obojenih redova i ćelija */
+        b.rows.forEach((r) => {
+          if (id && r.bg) {
+            r.tc = r.tc || b.cols.map(() => "");
+            r.tc[ci] = id;
+          } else if (r.tc) r.tc[ci] = "";
+        });
+      });
+    }
   }
   function rowMenu(el, r, anchor) {
     const n = rowsN(el);
     tbMenu(
-      `<button type="button" data-tm="above">${I.plus}Novi red iznad</button><button type="button" data-tm="below">${I.plus}Novi red ispod<span class="kb">${MOD}↵</span></button><button type="button" data-tm="dup">${I.dup}Dupliraj red<span class="kb">${MOD}D</span></button>` +
+      `<div class="nm-h">Boja reda</div>${swatches(tbT(el).tBodies[0].rows[r].dataset.c || "", "bg:")}<div class="nm-sep"></div>` +
+        `<button type="button" data-tm="above">${I.plus}Novi red iznad</button><button type="button" data-tm="below">${I.plus}Novi red ispod<span class="kb">${MOD}↵</span></button><button type="button" data-tm="dup">${I.dup}Dupliraj red<span class="kb">${MOD}D</span></button>` +
         (r > 0
           ? `<button type="button" data-tm="rup">${I.up}Pomeri gore</button>`
           : "") +
@@ -4488,7 +4621,11 @@ window.SKNotes = function (X) {
     if (a === "above" || a === "below") addRow(el, a === "below" ? r + 1 : r);
     else if (a === "dup")
       tbEdit(el, (b) => {
-        b.rows.splice(r + 1, 0, b.rows[r].slice());
+        const o = b.rows[r],
+          n = o.slice();
+        if (o.bg) n.bg = o.bg;
+        if (o.tc) n.tc = o.tc.slice();
+        b.rows.splice(r + 1, 0, n);
         return [r + 1, 0];
       });
     else if (a === "rup" || a === "rdown") {
@@ -4500,6 +4637,65 @@ window.SKNotes = function (X) {
       tbEdit(el, (b) => {
         b.rows.splice(r, 1);
       });
+    else if (a.startsWith("bg:"))
+      tbEdit(el, (b) => {
+        const row = b.rows[r];
+        delete row.tc;
+        if (a.length > 3) row.bg = a.slice(3);
+        else delete row.bg;
+      });
+  }
+  /* mreža boja za meni: tag + id boje je akcija, sam tag znači bez boje */
+  function swatches(cur, tag, none = "Bez boje") {
+    const one = (id, label, hex) =>
+      `<button type="button" data-tm="${tag}${id}"${hex ? ` style="--tn:${hex}"` : ""} class="${id ? "" : "none"}${cur === id ? " on" : ""}" title="${label}" aria-label="${label}"${cur === id ? ' aria-current="true"' : ""}>${cur === id ? I.check : ""}</button>`;
+    return `<div class="tb-sw">${one("", none)}${TINTS.map(([id, label, hex]) => one(id, label, hex)).join("")}</div>`;
+  }
+  function cellMenu(el, r, ci, anchor) {
+    const td = tbT(el).tBodies[0].rows[r].cells[ci],
+      own = td.dataset.c || "",
+      cur =
+        own === "none"
+          ? ""
+          : own || td.parentElement.dataset.c || headTh(el)[ci].dataset.c || "";
+    tbMenu(
+      `<div class="nm-h">Boja ćelije</div>${swatches(cur, "cc:")}`,
+      anchor,
+      236,
+      (a) =>
+        tbEdit(el, (b) => {
+          const row = b.rows[r],
+            id = a.slice(3);
+          row.tc = row.tc || b.cols.map(() => "");
+          /* bez boje u obojenom redu ili koloni znači baš bez boje, ne njihovu boju */
+          row.tc[ci] = id || (row.bg || b.cols[ci].c ? "none" : "");
+          return [r, ci];
+        }),
+    );
+  }
+  /* boja opcije izbora važi za celu kolonu; izbor se odmah vraća, sa novom bojom */
+  function optMenu(st, v) {
+    const c = cellAt(st.el, st.r, st.ci);
+    if (!c) return;
+    const f = fold(v),
+      m = thOpts(headTh(st.el)[st.ci]) || {},
+      M = tbMenu(
+        `<div class="nm-h">Boja opcije</div><div class="tb-pv"><span class="tb-pill" style="--c:${optColor(v, m)}">${esc(v)}</span></div>${swatches(tintId(m[f]), "oc:", "Automatska")}`,
+        c.closest("td"),
+        236,
+        (a) => {
+          const id = a.slice(3);
+          tbEdit(st.el, (b) => {
+            const o = { ...(b.cols[st.ci].o || {}) };
+            if (id) o[f] = id;
+            else delete o[f];
+            b.cols[st.ci].o = optMap(o);
+          });
+          const x = cellAt(st.el, st.r, st.ci);
+          if (x) openPick(x, st.q);
+        },
+      );
+    M.querySelector(".tb-sw .on").focus({ preventScroll: true });
   }
   /* upis izabrane vrednosti (izbor/osoba: tekst, datum: ISO, kvačica: true/false) */
   function setVal(c, v) {
@@ -4521,7 +4717,7 @@ window.SKNotes = function (X) {
     if (md === (c.dataset.v || "")) return c;
     pushUndo();
     const td = c.closest("td");
-    td.innerHTML = tbCell(k, md, ci === 0);
+    td.innerHTML = tbCell(k, md, ci === 0, thOpts(headTh(el)[ci]));
     changed();
     return td.querySelector(".tb-c");
   }
@@ -4557,6 +4753,7 @@ window.SKNotes = function (X) {
       ci,
       k,
       opts,
+      o: thOpts(headTh(el)[ci]),
       cur: unesc(c.dataset.v || "").trim(),
       q: q || "",
       idx: 0,
@@ -4568,7 +4765,10 @@ window.SKNotes = function (X) {
         : "") + `<div class="tb-pl" role="listbox"></div>`,
       c.closest("td"),
       264,
-      (a) => pickApply(st, st.items[+a.slice(2)]),
+      (a) =>
+        a[0] === "c"
+          ? optMenu(st, st.items[+a.slice(2)].v)
+          : pickApply(st, st.items[+a.slice(2)]),
     );
     TP = st;
     paintPick(st);
@@ -4598,12 +4798,12 @@ window.SKNotes = function (X) {
     const lab = (v) =>
       st.k === "who"
         ? tbVal("who", escPlain(v))
-        : `<span class="tb-pill" style="--c:${optColor(v)}">${esc(v)}</span>`;
+        : `<span class="tb-pill" style="--c:${optColor(v, st.o)}">${esc(v)}</span>`;
     st.M.querySelector(".tb-pl").innerHTML =
       st.items
         .map(
           (it, i) =>
-            `<button type="button" role="option" data-tm="p:${i}" class="${i === st.idx ? "on" : ""}${it.clear ? " tb-pclr" : ""}">${
+            `<div class="tb-po"><button type="button" role="option" data-tm="p:${i}" class="${i === st.idx ? "on" : ""}${it.clear ? " tb-pclr" : ""}">${
               it.clear
                 ? `${I.trash}Ukloni`
                 : (it.add ? `<span class="tb-pnew">Dodaj</span>` : "") +
@@ -4611,7 +4811,7 @@ window.SKNotes = function (X) {
                   (!it.add && fold(it.v) === fold(st.cur)
                     ? `<span class="tb-pok">${I.check}</span>`
                     : "")
-            }</button>`,
+            }</button>${st.k === "sel" && !it.clear && !it.add ? `<button type="button" class="tb-pc" data-tm="c:${i}" title="Boja opcije" aria-label="Boja opcije ${esc(it.v)}">${I.tint}</button>` : ""}</div>`,
         )
         .join("") ||
       `<div class="tb-pnone">${st.k === "sel" ? "Ukucaj naziv nove opcije" : "Nema rezultata"}</div>`;
@@ -4625,7 +4825,7 @@ window.SKNotes = function (X) {
         st.idx =
           (st.idx + (k === "ArrowDown" ? 1 : -1) + st.items.length) %
           st.items.length;
-      st.M.querySelectorAll("[data-tm]").forEach((b, i) =>
+      st.M.querySelectorAll('[data-tm^="p:"]').forEach((b, i) =>
         b.classList.toggle("on", i === st.idx),
       );
       const on = st.M.querySelector(".on");
@@ -5042,7 +5242,10 @@ window.SKNotes = function (X) {
       colMenu(nb, b.closest("th").cellIndex, b);
     else if ((b = e.target.closest(".tb-rh")))
       rowMenu(nb, b.closest("tr").sectionRowIndex, b);
-    else if (e.target.closest(".tb-addc")) addCol(nb, headTh(nb).length);
+    else if ((b = e.target.closest(".tb-cb"))) {
+      const td = b.closest("td");
+      cellMenu(nb, td.parentElement.sectionRowIndex, td.cellIndex, b);
+    } else if (e.target.closest(".tb-addc")) addCol(nb, headTh(nb).length);
     else if (e.target.closest(".tb-addr")) addRow(nb, rowsN(nb));
     else if ((b = e.target.closest(".tb-more")))
       openMenu(nb, b.getBoundingClientRect());
@@ -5053,6 +5256,10 @@ window.SKNotes = function (X) {
       e.preventDefault();
       if (e.metaKey || e.ctrlKey) openHref(b.getAttribute("href"));
     }
+  });
+  /* dugme za boju ćelije ne uzima fokus: kursor i tastatura na telefonu ostaju */
+  onRoot("mousedown", (e) => {
+    if (e.target.closest && e.target.closest(".tb-cb")) e.preventDefault();
   });
   onRoot("mouseover", (e) => {
     const a =
@@ -6473,7 +6680,9 @@ window.SKNotes = function (X) {
       return;
     }
     const ae = document.activeElement;
-    if (root.contains(e.target)) return; // isti taster je već obradio editor
+    /* isti taster je već obradio editor; ćelija ili blok iz kog je stigao može već biti
+       precrtan (undo), pa bez provere isConnected jedan Cmd+Z vraća dva koraka */
+    if (root.contains(e.target) || !e.target.isConnected) return;
     if (
       ae &&
       ae !== document.body &&

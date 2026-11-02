@@ -863,6 +863,20 @@
   box-shadow: inset 0 0 0 1.5px
     color-mix(in srgb, var(--orange) 55%, transparent);
 }
+/* obojene kolone, redovi i ćelije: isti obrazac pri prelazu i fokusu, samo u svojoj boji */
+.tb thead th.tn {
+  background: color-mix(in srgb, var(--tn) 24%, var(--surface));
+}
+.tb tbody td.tn {
+  background: color-mix(in srgb, var(--tn) 15%, transparent);
+}
+.tb tbody tr:hover td.tn {
+  background: color-mix(in srgb, var(--tn) 20%, transparent);
+}
+.tb tbody tr:is(:hover, *) td.tn:focus-within,
+.tb tbody tr:has(.tb-rh:focus) td.tn {
+  background: color-mix(in srgb, var(--tn) 24%, transparent);
+}
 .tb .tb-c {
   outline: none;
   padding: 7px 10px;
@@ -984,6 +998,50 @@
 .tb-rh svg {
   width: 14px;
   height: 14px;
+}
+/* boja ćelije: pojavi se na ćeliji ispod miša ili u fokusu */
+.tb-cb {
+  position: absolute;
+  z-index: 2;
+  top: 7px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: #7a6f64;
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--line);
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
+}
+.tb tbody td:focus-within .tb-cb {
+  visibility: visible;
+  opacity: 1;
+}
+.tb-cb:hover {
+  color: var(--cream);
+}
+.tb-cb svg {
+  width: 14px;
+  height: 14px;
+}
+@media (hover: hover) {
+  .tb tbody td:hover .tb-cb {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+@media (hover: none) {
+  .tb-cb {
+    top: 5px;
+    width: 28px;
+    height: 28px;
+  }
 }
 
 /* vrednosti: izbor, osoba, datum, kvačica */
@@ -1228,6 +1286,81 @@
 }
 .pop.nmenu .tb-types button.on svg {
   color: var(--gold);
+}
+/* mreža boja (red, kolona, ćelija, opcija) */
+.tb-sw {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 0 4px 4px;
+}
+.pop.nmenu .tb-sw button {
+  justify-content: center;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tn) 30%, var(--ink));
+  border: 1px solid color-mix(in srgb, var(--tn) 50%, transparent);
+  color: color-mix(in srgb, var(--tn) 60%, var(--cream));
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.pop.nmenu .tb-sw button:hover {
+  background: color-mix(in srgb, var(--tn) 46%, var(--ink));
+}
+.pop.nmenu .tb-sw button.on {
+  border-color: var(--tn);
+  box-shadow: 0 0 0 1px var(--tn);
+}
+.pop.nmenu .tb-sw button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.pop.nmenu .tb-sw button.none {
+  --tn: var(--muted);
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.75px),
+    color-mix(in srgb, var(--muted) 70%, transparent) calc(50% - 0.75px),
+    color-mix(in srgb, var(--muted) 70%, transparent) calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
+  border-color: var(--line);
+  color: var(--cream);
+}
+.pop.nmenu .tb-sw button.none.on {
+  background: var(--ink);
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px var(--orange);
+}
+.nmenu .tb-sw button svg {
+  width: 15px;
+  height: 15px;
+  color: inherit;
+}
+.tb-pv {
+  padding: 0 10px 8px;
+}
+/* opcija izbora: red za biranje + dugme za njenu boju */
+.tb-po {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+.pop.nmenu .tb-po > [data-tm^="p:"] {
+  flex: 1;
+  min-width: 0;
+}
+.pop.nmenu .tb-pl .tb-pc {
+  flex: none;
+  justify-content: center;
+  width: 38px;
+  padding: 0;
+}
+.nmenu .tb-pc svg {
+  width: 15px;
+  height: 15px;
 }
 .tb-menu .tb-pq {
   width: 100%;
