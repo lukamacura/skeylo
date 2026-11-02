@@ -43,3 +43,6 @@ next-env.d.ts
 
 # os-draw je zaseban paket; build ide u public/os-app/draw i commituje se
 /os-draw/node_modules
+
+# privatni materijal za /uml (rad koleginice, slajdovi kursa); repo je javan
+/docs/uml/
