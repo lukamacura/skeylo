@@ -1168,19 +1168,64 @@
   border-right: 0;
 }
 .tb-sum td {
-  padding: 6px 10px;
+  padding: 4px 4px;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   text-align: right;
   color: color-mix(in srgb, var(--cream) 80%, var(--muted));
 }
-.tb-sum td span {
-  margin-right: 8px;
+/* vrednost je dugme: klik bira zbir, proizvod, količnik, prosek ili bez računanja.
+   Kad nema mesta, naziv ide iznad broja */
+.tb-fx {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  column-gap: 8px;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font: inherit;
+  color: inherit;
+  text-align: right;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+.tb-fx:hover {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  color: var(--cream);
+}
+.tb-fx span {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
+}
+.tb-fx b {
+  font-weight: inherit;
+  overflow-wrap: anywhere;
+}
+.tb-fx.add {
+  font-size: 12.5px;
+  color: #6d6359;
+  opacity: 0;
+}
+.tb-sum:hover .tb-fx.add,
+.tb-fx.add:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .tb-fx.add {
+    opacity: 0.7;
+  }
+}
+/* meni računanja: kvačica ima stalno mesto, pa su objašnjenja poravnata */
+.nmenu .kb + .tb-pok {
+  width: 16px;
+  margin-left: 10px;
 }
 .tb tfoot tr:last-child td {
   border-bottom: 0;

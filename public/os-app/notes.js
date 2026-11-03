@@ -161,6 +161,12 @@ window.SKNotes = function (X) {
       '<path d="M4 20l1.2-4.6L16.6 4a2.2 2.2 0 0 1 3.1 0l.3.3a2.2 2.2 0 0 1 0 3.1L8.6 18.8z"/><path d="m14.5 6 3.5 3.5"/>',
     ),
     hash: SV('<path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/>'),
+    sum: SV('<path d="M17.5 5h-11l6 7-6 7h11"/>'),
+    mul: SV('<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>'),
+    div: SV(
+      '<path d="M5 12h14"/><path d="M12 6.5h.01M12 17.5h.01" stroke-width="3.4"/>',
+    ),
+    avg: SV('<circle cx="12" cy="12" r="6.5"/><path d="M5.5 18.5 18.5 5.5"/>'),
     tag: SV(
       '<circle cx="12" cy="12" r="9"/><path d="m8.5 10.5 3.5 3.5 3.5-3.5"/>',
     ),
@@ -635,6 +641,10 @@ window.SKNotes = function (X) {
      prikazuju. Ćelija je inline Markdown; | je \|, novi red <br>. Tipovi: text, num,
      sel (izbor), date (YYYY-MM-DD), check ([x] / [ ]), who (ime iz tima). */
   const TK = ["text", "num", "sel", "date", "check", "who"];
+  /* računanje ispod kolone broja, u komentaru tbl kao f: ["", "avg", …]. Prazno je
+     zbir koji se vidi tek kad ima bar dva broja; "none" znači bez računanja */
+  const FX = ["sum", "mul", "div", "avg", "none"];
+  const fxOf = (k, f) => (k === "num" && FX.includes(f) ? f : "");
   /* boje tabele: pozadina kolone, reda i ćelije, i boja opcije izbora. U komentaru tbl:
      c = boje kolona, o = {kolona: {opcija: boja}}, r = {red: boja}, x = {"red:kolona": boja}.
      Čuva se naziv boje, a ćelija može i "none" (bez boje, iako red ili kolona imaju boju) */
@@ -723,7 +733,8 @@ window.SKNotes = function (X) {
     }
     const K = Array.isArray(meta.k) ? meta.k : [],
       W = Array.isArray(meta.w) ? meta.w : [],
-      C = Array.isArray(meta.c) ? meta.c : [];
+      C = Array.isArray(meta.c) ? meta.c : [],
+      F = Array.isArray(meta.f) ? meta.f : [];
     /* boje idu uz red kao njegova svojstva, pa prate red kroz sortiranje i spajanje */
     rows.forEach((r, i) => {
       const bg = meta.r ? tintId(meta.r[i]) : "";
@@ -755,6 +766,7 @@ window.SKNotes = function (X) {
                   : "",
         c: tintId(C[c]),
         o: optMap(meta.o && meta.o[c]),
+        f: fxOf(k, F[c]),
       };
     });
     return { b: { t: "tbl", cols, rows }, end: j - 1 };
@@ -795,6 +807,8 @@ window.SKNotes = function (X) {
     if (cols.some((c) => c.k !== "text")) meta.k = cols.map((c) => c.k);
     if (cols.some((c) => c.w)) meta.w = cols.map((c) => c.w || 0);
     if (cols.some((c) => c.c)) meta.c = cols.map((c) => c.c || "");
+    if (cols.some((c) => fxOf(c.k, c.f)))
+      meta.f = cols.map((c) => fxOf(c.k, c.f));
     const O = {},
       R = {},
       XC = {};
@@ -2008,6 +2022,7 @@ window.SKNotes = function (X) {
         a: pick(c.a, p.a, q.a),
         c: pick(c.c, p.c, q.c),
         o: optPick(c.o, p.o, q.o),
+        f: pick(c.f || "", p.f || "", q.f || ""),
       };
     });
     const U = (x) => ({
@@ -4310,7 +4325,7 @@ window.SKNotes = function (X) {
     const head = cols
       .map(
         (c) =>
-          `<th data-k="${c.k}"${c.w ? ` data-w="${c.w}"` : ""}${c.a ? ` data-a="${c.a}"` : ""}${c.c ? ` data-c="${c.c}"` : ""}${c.o ? ` data-o="${esc(JSON.stringify(c.o))}"` : ""}${tintAttr(c.c)}><div class="tb-hd"><button type="button" class="tb-ti" tabindex="-1" title="${TKS[c.k][0]} · tip, sortiranje, kolone" aria-label="Kolona, tip ${TKS[c.k][0]}">${TKS[c.k][1]}</button><div class="tb-c tb-hn" contenteditable="true" spellcheck="false" data-ph="Kolona">${mdInline(c.n)}</div></div><span class="tb-rz" aria-hidden="true" title="Prevuci za širinu · dupli klik vraća automatsku"></span></th>`,
+          `<th data-k="${c.k}"${c.w ? ` data-w="${c.w}"` : ""}${c.a ? ` data-a="${c.a}"` : ""}${c.c ? ` data-c="${c.c}"` : ""}${fxOf(c.k, c.f) ? ` data-f="${c.f}"` : ""}${c.o ? ` data-o="${esc(JSON.stringify(c.o))}"` : ""}${tintAttr(c.c)}><div class="tb-hd"><button type="button" class="tb-ti" tabindex="-1" title="${TKS[c.k][0]} · tip, sortiranje, kolone" aria-label="Kolona, tip ${TKS[c.k][0]}">${TKS[c.k][1]}</button><div class="tb-c tb-hn" contenteditable="true" spellcheck="false" data-ph="Kolona">${mdInline(c.n)}</div></div><span class="tb-rz" aria-hidden="true" title="Prevuci za širinu · dupli klik vraća automatsku"></span></th>`,
       )
       .join("");
     const style = fixed
@@ -4318,7 +4333,30 @@ window.SKNotes = function (X) {
       : `width:100%;min-width:${cols.map(colMin).reduce((a, w) => a + w, 0)}px`;
     return `<div class="tb-sc"><table class="tb${fixed ? " fixed" : ""}" style="${style}"><colgroup>${ws.map((w) => `<col style="width:${fixed ? w + "px" : ((w / sum) * 100).toFixed(3) + "%"}">`).join("")}</colgroup><thead><tr>${head}</tr></thead><tbody>${b.rows.map((r) => tbRow(cols, r)).join("")}</tbody><tfoot><tr class="tb-sum" hidden></tr><tr><td class="tb-foot" colspan="${cols.length}"><div class="tb-fb"><button type="button" class="tb-addr" tabindex="-1">${I.plus}<span>Novi red</span></button><button type="button" class="tb-addc" tabindex="-1" title="Nova kolona na kraju">${I.plus}<span>Kolona</span></button><button type="button" class="tb-more" tabindex="-1" aria-label="Opcije tabele" title="Opcije tabele">${I.dots}</button></div></td></tr></tfoot></table></div>`;
   }
-  /* zbir ispod kolone broja (kad ima bar dva broja) */
+  /* računanje ispod kolone broja: naziv, ikonica i kratko objašnjenje za meni */
+  const FXL = {
+    sum: ["Zbir", I.sum, "sabira sve"],
+    mul: ["Proizvod", I.mul, "množi sve"],
+    div: ["Količnik", I.div, "prvi ÷ ostali"],
+    avg: ["Prosek", I.avg, "zbir ÷ broj"],
+  };
+  /* prazne ćelije se preskaču; deljenje ide odozgo nadole, a nulom daje NaN */
+  function fxCalc(f, xs) {
+    if (f === "mul") return xs.reduce((a, v) => a * v, 1);
+    if (f === "div")
+      return xs.slice(1).reduce((a, v) => (v === 0 ? NaN : a / v), xs[0]);
+    const s = xs.reduce((a, v) => a + v, 0);
+    return f === "avg" ? s / xs.length : s;
+  }
+  const NUMS = new Intl.NumberFormat("sr-Latn-RS", {
+    maximumSignificantDigits: 3,
+  });
+  /* 0,004 ne sme da postane 0 */
+  const fxNum = (v) =>
+    v !== 0 && Math.abs(v) < 0.01 ? NUMS.format(v) : NUMF.format(v);
+  /* red ispod tabele: izabrano računanje po koloni broja (podrazumevano zbir, kad ima bar
+     dva broja). Klik na vrednost menja ili uklanja računanje; kolona bez njega nudi
+     "Računaj" kad je red vidljiv zbog druge kolone */
   function tbSum(el) {
     const t = tbT(el);
     if (!t) return;
@@ -4327,19 +4365,41 @@ window.SKNotes = function (X) {
     const html = headTh(el)
       .map((th, i) => {
         if (th.dataset.k !== "num") return "<td></td>";
-        let s = 0,
-          n = 0;
+        const f = fxOf("num", th.dataset.f),
+          xs = [];
         for (const row of t.tBodies[0].rows) {
           const v = parseNum(row.cells[i] ? row.cells[i].textContent : "");
-          if (v !== null) ((s += v), n++);
+          if (v !== null) xs.push(v);
         }
-        if (n < 2) return "<td></td>";
+        if (f === "none" || xs.length < (f ? 1 : 2))
+          return `<td data-k="num"><button type="button" class="tb-fx add" tabindex="-1" title="Zbir, proizvod, količnik ili prosek kolone">Računaj</button></td>`;
         any = true;
-        return `<td data-k="num"><span>Zbir</span>${esc(NUMF.format(s))}</td>`;
+        const l = FXL[f || "sum"][0],
+          v = fxCalc(f, xs);
+        return `<td data-k="num"><button type="button" class="tb-fx" tabindex="-1" title="${l} · klik menja ili uklanja računanje"><span>${l}</span><b>${isNaN(v) ? "—" : esc(fxNum(v))}</b></button></td>`;
       })
       .join("");
     tr.hidden = !any;
     if (tr.innerHTML !== html) tr.innerHTML = html;
+  }
+  function calcMenu(el, ci, anchor) {
+    const th = headTh(el)[ci],
+      cur = fxOf("num", th.dataset.f) || "sum";
+    tbMenu(
+      `<div class="nm-h">Računanje</div>` +
+        Object.entries(FXL)
+          .map(
+            ([id, [l, ic, d]]) =>
+              `<button type="button" data-tm="fx:${id}"${id === cur ? ' aria-current="true"' : ""}>${ic}${l}<span class="kb">${d}</span><span class="tb-pok">${id === cur ? I.check : ""}</span></button>`,
+          )
+          .join("") +
+        (cur !== "none"
+          ? `<div class="nm-sep"></div><button type="button" data-tm="fx:none" class="tb-pclr">${I.trash}Bez računanja</button>`
+          : ""),
+      anchor,
+      256,
+      (a) => colAct(el, ci, a),
+    );
   }
   const thOpts = (th) =>
     th.dataset.o ? optMap(JSON.parse(th.dataset.o)) : null;
@@ -4354,6 +4414,7 @@ window.SKNotes = function (X) {
       a: th.dataset.a || "",
       c: tintId(th.dataset.c),
       o: thOpts(th),
+      f: fxOf(th.dataset.k, th.dataset.f),
     }));
     const rows = [...t.tBodies[0].rows].map((tr) => {
       const r = cols.map((_, i) => {
@@ -4384,7 +4445,14 @@ window.SKNotes = function (X) {
       shape = (x) =>
         x.cols
           .map((c) =>
-            [c.k, c.w, c.a, c.c || "", JSON.stringify(c.o || null)].join("/"),
+            [
+              c.k,
+              c.w,
+              c.a,
+              c.c || "",
+              JSON.stringify(c.o || null),
+              fxOf(c.k, c.f),
+            ].join("/"),
           )
           .join() +
         "#" +
@@ -4590,6 +4658,9 @@ window.SKNotes = function (X) {
     tbMenu(
       `<div class="nm-h">Tip kolone</div><div class="tb-types">${TK.map((id) => `<button type="button" data-tm="k:${id}"${id === k ? ' class="on"' : ""}>${TKS[id][1]}<span>${TKS[id][0]}</span></button>`).join("")}</div><div class="nm-sep"></div>` +
         `<div class="nm-h">Boja kolone</div>${swatches(headTh(el)[ci].dataset.c || "", "bg:")}<div class="nm-sep"></div>` +
+        (k === "num"
+          ? `<button type="button" data-tm="fx">${I.sum}Računanje<span class="kb">${(FXL[fxOf(k, headTh(el)[ci].dataset.f) || "sum"] || ["Isključeno"])[0]}</span></button><div class="nm-sep"></div>`
+          : "") +
         `<button type="button" data-tm="asc">${I.up}${sl[0]}</button><button type="button" data-tm="desc">${I.down}${sl[1]}</button><div class="nm-sep"></div>` +
         `<button type="button" data-tm="ins-l">${I.plus}Nova kolona levo</button><button type="button" data-tm="ins-r">${I.plus}Nova kolona desno</button>` +
         (ci > 0
@@ -4615,7 +4686,16 @@ window.SKNotes = function (X) {
             from = c.k;
           c.k = k;
           c.a = "";
+          c.f = "";
           b.rows.forEach((r) => (r[ci] = conv(from, k, r[ci])));
+        });
+    } else if (a === "fx")
+      calcMenu(el, ci, headTh(el)[ci].querySelector(".tb-ti"));
+    else if (a.startsWith("fx:")) {
+      const f = fxOf("num", a.slice(3));
+      if (f !== (fxOf("num", headTh(el)[ci].dataset.f) || "sum"))
+        tbEdit(el, (b) => {
+          b.cols[ci].f = f;
         });
     } else if (a === "asc" || a === "desc")
       tbEdit(el, (b) => sortRows(b, ci, a === "asc" ? 1 : -1));
@@ -5298,7 +5378,9 @@ window.SKNotes = function (X) {
     else if ((b = e.target.closest(".tb-cb"))) {
       const td = b.closest("td");
       cellMenu(nb, td.parentElement.sectionRowIndex, td.cellIndex, b);
-    } else if (e.target.closest(".tb-addc")) addCol(nb, headTh(nb).length);
+    } else if ((b = e.target.closest(".tb-fx")))
+      calcMenu(nb, b.closest("td").cellIndex, b);
+    else if (e.target.closest(".tb-addc")) addCol(nb, headTh(nb).length);
     else if (e.target.closest(".tb-addr")) addRow(nb, rowsN(nb));
     else if ((b = e.target.closest(".tb-more")))
       openMenu(nb, b.getBoundingClientRect());
