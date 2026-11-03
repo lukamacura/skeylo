@@ -1,0 +1,1501 @@
+/* Skeylo OS · Fakture (fakture.js). Trajanja su već konačna (motion.js ovaj fajl ne prepisuje). */
+@font-face {
+  font-family: "FakDejaVu";
+  src: url("/os-app/fonts/DejaVuSans.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "FakDejaVu";
+  src: url("/os-app/fonts/DejaVuSans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: block;
+}
+
+/* ---------- kartica na dashboardu ---------- */
+.fkcard .fkill {
+  position: absolute;
+  z-index: 0;
+  right: clamp(16px, 3vw, 34px);
+  top: 50%;
+  margin-top: -78px;
+  width: min(40%, 184px);
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.55));
+  transition: transform 0.4s var(--spring);
+}
+.fkcard:hover .fkill {
+  transform: translateY(-6px) rotate(-2deg);
+}
+.fkill .fk-p1,
+.fkill .fk-p2,
+.fkill .fk-ok {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.fkill .fk-p1 {
+  animation: fkFloat 6s ease-in-out infinite;
+}
+.fkill .fk-p2 {
+  animation: fkFloat 6s -2s ease-in-out infinite;
+}
+.fkill .fk-ok {
+  animation: fkPop 4s ease-in-out infinite;
+}
+@keyframes fkFloat {
+  50% {
+    transform: translateY(-3px) rotate(-1deg);
+  }
+}
+@keyframes fkPop {
+  0%,
+  70%,
+  100% {
+    transform: scale(1);
+  }
+  80% {
+    transform: scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fkill * {
+    animation: none !important;
+  }
+}
+
+/* ---------- okvir ---------- */
+#fakBody {
+  padding-top: clamp(8px, 2vw, 20px);
+}
+.fk-hd {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.fk-hd h1,
+.fk-ed-hd h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  margin: 0;
+  animation: fkUp 0.32s var(--ease) backwards;
+}
+.fk-ed-hd {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.fk-ed-hd h1 {
+  font-size: clamp(32px, 4.4vw, 48px);
+}
+.fk-ed-hd .fk-del {
+  margin-left: auto;
+}
+@keyframes fkUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.fk-tabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 5px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  margin-bottom: 22px;
+  animation: fkUp 0.32s 0.04s var(--ease) backwards;
+}
+.fk-tabs::-webkit-scrollbar {
+  display: none;
+}
+.fk-tabs button {
+  padding: 9px 16px;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.fk-tabs button:hover {
+  color: var(--cream);
+}
+.fk-tabs button.on {
+  background: var(--surface-2);
+  color: var(--cream);
+  box-shadow: inset 0 0 0 1px rgba(225, 128, 44, 0.35);
+}
+.fk-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.fk-sub p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 560px;
+}
+.fk-h2 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin: 28px 0 12px;
+  color: var(--muted);
+}
+.fk-load {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 80px 0;
+}
+.fk-load i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--orange);
+  animation: fkDot 0.9s ease-in-out infinite;
+}
+.fk-load i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.fk-load i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes fkDot {
+  50% {
+    opacity: 0.25;
+    transform: translateY(-4px);
+  }
+}
+
+/* dugmad */
+.fk-ib {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.fk-ib:hover {
+  background: var(--surface-2);
+  color: var(--cream);
+}
+.fk-ib svg {
+  width: 19px;
+  height: 19px;
+}
+.fk-ib.fk-del:hover {
+  background: rgba(255, 122, 107, 0.12);
+  color: var(--bad);
+}
+.pill.sm {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 12px;
+}
+.pill.sm svg {
+  width: 15px;
+  height: 15px;
+}
+.busy {
+  position: relative;
+  pointer-events: none;
+}
+.busy > * {
+  opacity: 0;
+}
+.busy::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: fkSpin 0.7s linear infinite;
+}
+.pill.busy {
+  color: transparent;
+}
+.pill.busy::after {
+  border-color: var(--cream);
+  border-right-color: transparent;
+}
+.pill.solid.busy::after {
+  border-color: var(--on-accent);
+  border-right-color: transparent;
+}
+@keyframes fkSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* status */
+.fk-st {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--gold);
+  background: rgba(243, 176, 76, 0.13);
+}
+.fk-st::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.fk-st.nacrt {
+  color: var(--muted);
+  background: rgba(168, 154, 136, 0.13);
+}
+.fk-st.placena {
+  color: #4fd88a;
+  background: rgba(63, 207, 122, 0.13);
+}
+.fk-st.kasni {
+  color: var(--bad);
+  background: rgba(255, 122, 107, 0.14);
+}
+.fk-st.stornirana {
+  color: var(--grey);
+  background: rgba(138, 133, 128, 0.14);
+}
+.fk-st.storno {
+  color: #b9a2ff;
+  background: rgba(160, 128, 255, 0.14);
+}
+
+/* ---------- lista ---------- */
+.fk-tbl {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 6px;
+  animation: fkUp 0.32s 0.06s var(--ease) backwards;
+}
+.fk-tr {
+  display: grid;
+  grid-template-columns: 84px 100px minmax(0, 1fr) 140px 132px 104px 88px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 16px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  animation: fkUp 0.3s var(--ease) backwards;
+}
+.fk-tr + .fk-tr {
+  box-shadow: inset 0 1px 0 var(--line);
+}
+.fk-tr:hover,
+.fk-tr:focus-visible {
+  background: var(--ink);
+  outline: none;
+}
+.fk-tr.fk-th {
+  cursor: default;
+  font-size: 13px;
+  color: var(--muted);
+  padding-block: 8px;
+  background: none;
+  animation: none;
+}
+.fk-tr .r {
+  text-align: right;
+}
+.fk-tr .b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fk-tr .d {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.fk-tr .k {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fk-tr .a {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fk-tr .acts {
+  display: flex;
+  justify-content: flex-end;
+}
+.fk-tr.kasni {
+  background: rgba(255, 122, 107, 0.05);
+  box-shadow: inset 3px 0 0 var(--bad);
+}
+.fk-tr.kasni .d:nth-of-type(6) {
+  color: var(--bad);
+}
+.fk-tr.stornirana .a,
+.fk-tr.stornirana .k {
+  color: var(--grey);
+  text-decoration: line-through;
+  text-decoration-color: rgba(138, 133, 128, 0.6);
+}
+.fk-tr.storno .a {
+  color: #b9a2ff;
+}
+.fk-tr.nacrt .b,
+.fk-tr.nacrt .a {
+  color: var(--muted);
+}
+
+/* ---------- forma + pregled ---------- */
+.fk-ed {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 36px);
+  align-items: start;
+}
+.fk-form {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  animation: fkUp 0.3s var(--ease) backwards;
+}
+.fk-sec {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.fk-sec-h h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.fk-g2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.fk-span2 {
+  grid-column: 1 / -1;
+}
+.fk-f {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.fk-f > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.fk-f > span em {
+  font-style: normal;
+  color: var(--gold);
+  font-size: 12px;
+}
+.fk-f input,
+.fk-f select,
+.fk-f textarea {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  color: var(--cream);
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 11px 13px;
+  transition: border-color 0.15s;
+  color-scheme: dark;
+}
+.fk-f input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 46px;
+  text-align: left;
+}
+.fk-f input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+.fk-f select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a89a88' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px;
+  font-weight: 600;
+}
+.fk-f textarea {
+  resize: none;
+  line-height: 1.4;
+  overflow: hidden;
+}
+.fk-f input:focus,
+.fk-f select:focus,
+.fk-f textarea:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+.fk-kl-l {
+  margin: -2px 2px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.fk-kl-l:empty {
+  display: none;
+}
+.fk-no {
+  display: flex !important;
+  align-items: center;
+  gap: 0 !important;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--ink);
+  transition: border-color 0.15s;
+}
+.fk-no:focus-within {
+  border-color: var(--orange);
+}
+.fk-no input {
+  border: 0 !important;
+  background: none !important;
+  width: calc(2ch + 16px);
+  flex: none;
+  padding-right: 1px !important;
+  text-align: left;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fk-no b {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* stavke */
+.fk-items {
+  display: grid;
+  gap: 10px;
+}
+.fk-it {
+  display: grid;
+  grid-template-columns:
+    20px minmax(0, 1fr) minmax(0, 0.62fr) minmax(0, 1.38fr)
+    40px;
+  grid-template-areas:
+    "n opis opis opis x"
+    ". jm kol cena ."
+    ". iz iz iz .";
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.fk-it-n {
+  grid-area: n;
+  align-self: start;
+  padding-top: 31px;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.fk-it-opis {
+  grid-area: opis;
+}
+.fk-it-jm {
+  grid-area: jm;
+}
+.fk-it-kol {
+  grid-area: kol;
+}
+.fk-it-cena {
+  grid-area: cena;
+}
+.fk-it-x {
+  grid-area: x;
+  align-self: start;
+  margin-top: 22px;
+}
+.fk-it-kol input,
+.fk-it-cena input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fk-it-iz {
+  grid-area: iz;
+  justify-self: end;
+  margin-top: -2px;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fk-it-iz::before {
+  content: "Iznos ";
+  font-family: var(--f-body);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--muted);
+}
+.fk-it.empty .fk-it-iz {
+  visibility: hidden;
+}
+.fk-it.bad .fk-it-iz {
+  color: var(--bad);
+}
+.fk-add {
+  justify-self: start;
+}
+
+/* poruke */
+.fk-msgs {
+  display: grid;
+  gap: 8px;
+}
+.fk-msgs:empty {
+  display: none;
+}
+.fk-msg {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.fk-msg svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 1px;
+}
+.fk-msg.e {
+  color: var(--bad);
+  background: rgba(255, 122, 107, 0.1);
+  border: 1px solid rgba(255, 122, 107, 0.25);
+}
+.fk-msg.w {
+  color: var(--gold);
+  background: rgba(243, 176, 76, 0.09);
+  border: 1px solid rgba(243, 176, 76, 0.25);
+}
+
+/* traka sa ukupnim iznosom i dugmadima */
+.fk-bar {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 12px 12px 20px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(225, 128, 44, 0.28);
+  box-shadow: 0 22px 44px -14px rgba(0, 0, 0, 0.75);
+}
+.fk-tot {
+  display: grid;
+  line-height: 1.15;
+}
+.fk-tot span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.fk-tot b {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.fk-bar-b {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+.fk-bar-b .pill {
+  padding: 12px 16px;
+}
+
+/* pregled (A4) */
+.fk-prev {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+  max-height: calc(100vh - 104px);
+  overflow: auto;
+  border-radius: 10px;
+  scrollbar-width: thin;
+  animation: fkUp 0.34s 0.05s var(--ease) backwards;
+}
+.fk-pages {
+  display: grid;
+  gap: 16px;
+}
+.fk-page {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 30px 60px -24px rgba(0, 0, 0, 0.85);
+}
+
+/* izdata faktura */
+.fk-side {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+  animation: fkUp 0.3s var(--ease) backwards;
+}
+.fk-side .fk-ed-hd {
+  margin: 0;
+}
+.fk-facts {
+  margin: 0;
+  display: grid;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 6px 18px;
+}
+.fk-facts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+}
+.fk-facts > div + div {
+  border-top: 1px solid var(--line);
+}
+.fk-facts dt {
+  color: var(--muted);
+  font-size: 15px;
+}
+.fk-facts dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.fk-facts a {
+  color: var(--gold);
+}
+.fk-amt {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.fk-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fk-lock {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- klijenti ---------- */
+.fk-kgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.fk-kc {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: fkUp 0.3s var(--ease) backwards;
+}
+.fk-kc h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.fk-kc p {
+  margin: 0;
+  font-size: 15px;
+}
+.fk-kc p.m {
+  color: var(--muted);
+  font-size: 14px;
+}
+.fk-kc.arh {
+  opacity: 0.6;
+}
+.fk-kc-b {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+}
+.fk-kc-n {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 14px;
+}
+.fk-kc-b .pill {
+  margin-right: 4px;
+}
+
+/* ---------- podešavanja ---------- */
+.fk-set {
+  display: grid;
+  gap: 16px;
+  max-width: 820px;
+}
+.fk-card {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 3vw, 26px);
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: fkUp 0.3s var(--ease) backwards;
+}
+.fk-card h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+.fk-note {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.fk-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.fk-logo .fk-note {
+  margin: 0;
+  flex-basis: 220px;
+  flex-grow: 1;
+}
+.fk-logo-p {
+  width: 180px;
+  height: 66px;
+  border-radius: 14px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  padding: 8px 12px;
+}
+.fk-logo-p img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.fk-logo-p span {
+  color: #8a8580;
+  font-size: 14px;
+}
+.fk-logo label.pill {
+  cursor: pointer;
+}
+.fk-set-b {
+  display: flex;
+  justify-content: flex-end;
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.fk-err {
+  margin: 0;
+  color: var(--bad);
+  font-size: 15px;
+}
+.fk-err:empty {
+  display: none;
+}
+
+/* ---------- dijalozi ---------- */
+.fk-scrim {
+  z-index: 90;
+}
+.fk-sheet {
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+.fk-sheet.wide {
+  width: min(600px, 100%);
+}
+.fk-sheet .fk-g2 {
+  gap: 10px;
+}
+.fk-sum {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+}
+.fk-sum span {
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fk-sum b {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 22px;
+  white-space: nowrap;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* posle izmene (plaćeno, storno, osvežavanje) ekran se iscrta bez ulaznih animacija */
+.fk-quiet *,
+.fk-quiet *::before {
+  animation: none !important;
+}
+
+/* ---------- pregled: limiti i prihod po klijentu ---------- */
+.fk-ov {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+  animation: fkUp 0.32s 0.05s var(--ease) backwards;
+}
+.fk-ov-m {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.fk-meter,
+.fk-ov-s {
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.fk-meter {
+  --mc: var(--orange);
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.fk-meter.warn {
+  --mc: #ffb020;
+  border-color: rgba(255, 176, 32, 0.35);
+}
+.fk-meter.crit {
+  --mc: var(--bad);
+  border-color: rgba(255, 122, 107, 0.45);
+}
+.fk-meter-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.fk-meter-h .l {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  display: grid;
+  line-height: 1.15;
+}
+.fk-meter-h small,
+.fk-ov-s h2 small {
+  font-family: var(--f-body);
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.fk-meter-h .p {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mc);
+}
+.fk-meter-t {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mc) 16%, transparent);
+  overflow: hidden;
+}
+.fk-meter-t i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--mc);
+  transition: width 0.4s var(--ease);
+}
+.fk-meter-f {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.fk-meter-f b {
+  color: var(--cream);
+  font-weight: 600;
+}
+.fk-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--mc);
+}
+.fk-flag svg,
+.fk-tile small svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.fk-ov-s h2 {
+  margin: 0 0 12px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.fk-share {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.fk-share li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+.fk-share .n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fk-share .v {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fk-share .b {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+  overflow: hidden;
+}
+.fk-share .b i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--orange);
+}
+.fk-none {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- filteri i zbirovi ---------- */
+.fk-filt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  animation: fkUp 0.32s 0.07s var(--ease) backwards;
+}
+.fk-sel {
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--cream);
+  background: var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a89a88' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 10px center / 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 10px 34px 10px 14px;
+  max-width: 260px;
+  min-width: 0;
+  color-scheme: dark;
+  cursor: pointer;
+}
+.fk-sel:focus,
+.fk-q:focus-within {
+  outline: none;
+  border-color: var(--orange);
+}
+.fk-q {
+  flex: 1 1 200px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.fk-q svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+.fk-q input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--cream);
+  background: none;
+  border: 0;
+  padding: 10px 0;
+  outline: none;
+}
+.fk-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.fk-tile {
+  display: grid;
+  gap: 2px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+.fk-tile span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.fk-tile b {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(20px, 2.4vw, 26px);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fk-tile small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.fk-tile.late {
+  border-color: rgba(255, 122, 107, 0.4);
+}
+.fk-tile.late small {
+  color: var(--bad);
+  font-weight: 600;
+}
+.fk-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 36px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 22px;
+  color: var(--muted);
+}
+
+/* ---------- meni radnji ---------- */
+.fk-menu {
+  position: fixed;
+  z-index: 85;
+  min-width: 230px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid rgba(255, 200, 150, 0.14);
+  box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.8);
+  display: grid;
+  animation: fkMenu 0.14s var(--ease);
+}
+@keyframes fkMenu {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+.fk-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 15px;
+  text-align: left;
+  white-space: nowrap;
+}
+.fk-menu button:hover,
+.fk-menu button:focus-visible {
+  background: var(--ink);
+  outline: none;
+}
+.fk-menu button svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--muted);
+}
+.fk-menu button.danger,
+.fk-menu button.danger svg {
+  color: var(--bad);
+}
+.fk-sheet .row2.fk-row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.fk-row3 .pill {
+  justify-content: center;
+}
+.fk-row3 .pill.solid {
+  grid-column: 1 / -1;
+  order: -1;
+}
+
+/* ---------- KPO ---------- */
+.fk-kpo-bar {
+  align-items: center;
+}
+.fk-kpo-bar p {
+  flex: 1 1 260px;
+}
+.fk-exp {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.fk-kpo-meta {
+  margin: 0 0 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 18px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: fkUp 0.3s var(--ease) backwards;
+}
+.fk-kpo-meta .w {
+  grid-column: span 1;
+}
+.fk-kpo-meta dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fk-kpo-meta dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.fk-kpo-wrap {
+  overflow-x: auto;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: fkUp 0.32s 0.04s var(--ease) backwards;
+}
+.fk-kpo {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.fk-kpo th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: left;
+  padding: 14px 14px 6px;
+  vertical-align: bottom;
+}
+.fk-kpo tr.nums th {
+  padding: 0 14px 10px;
+  font-size: 11px;
+  color: var(--grey);
+  border-bottom: 1px solid var(--line);
+}
+.fk-kpo td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.fk-kpo .c {
+  text-align: center;
+  width: 64px;
+}
+.fk-kpo .r {
+  text-align: right;
+  white-space: nowrap;
+  width: 150px;
+}
+.fk-kpo td.b {
+  font-weight: 600;
+}
+.fk-kpo td:nth-child(2) {
+  min-width: 300px;
+}
+.fk-kpo .dt {
+  color: var(--muted);
+  margin-right: 6px;
+}
+.fk-kpo a {
+  color: inherit;
+  text-decoration: none;
+}
+.fk-kpo a:hover {
+  color: var(--gold);
+}
+.fk-kpo tr.st td {
+  color: #b9a2ff;
+}
+.fk-kpo tfoot td {
+  border-bottom: 0;
+  font-weight: 700;
+  padding-block: 14px;
+}
+.fk-kpo tfoot td:last-child {
+  color: var(--gold);
+  font-family: var(--f-display);
+  font-size: 18px;
+}
+
+/* oznaka na kartici dashboarda */
+.fkcard .lmdue {
+  margin-bottom: 4px;
+}
+
+/* ---------- uži ekrani ---------- */
+@media (max-width: 1000px) {
+  .fk-ed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fk-ov {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fk-prev {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+  .fk-vw .fk-prev {
+    order: 2;
+  }
+}
+@media (max-width: 760px) {
+  .fk-tbl {
+    padding: 4px;
+  }
+  .fk-tr.fk-th {
+    display: none;
+  }
+  .fk-tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "b st"
+      "k a"
+      "d acts";
+    gap: 2px 12px;
+    padding: 12px 10px 10px 14px;
+  }
+  .fk-tr > :nth-child(1) {
+    grid-area: b;
+  }
+  .fk-tr > :nth-child(2) {
+    display: none;
+  }
+  .fk-tr > :nth-child(3) {
+    grid-area: k;
+    font-size: 15px;
+  }
+  .fk-tr > :nth-child(4) {
+    grid-area: a;
+  }
+  .fk-tr > :nth-child(5) {
+    grid-area: st;
+    justify-self: end;
+  }
+  .fk-tr > :nth-child(6) {
+    grid-area: d;
+    font-size: 14px;
+  }
+  .fk-tr > :nth-child(6)::before {
+    content: "Rok ";
+  }
+  .fk-tr > :nth-child(7) {
+    grid-area: acts;
+    margin: -6px -2px -6px 0;
+  }
+  .fk-ov-m {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fk-kpo-meta {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fk-kpo-meta .w {
+    grid-column: 1 / -1;
+  }
+  .fk-tiles {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fk-tiles .fk-tile:last-child {
+    grid-column: 1 / -1;
+  }
+  .fk-sel {
+    flex: 1 1 140px;
+    max-width: none;
+  }
+  /* na telefonu je lista na prvom mestu, limiti i udeo klijenata idu ispod nje */
+  #fakBody {
+    display: flex;
+    flex-direction: column;
+  }
+  #fakBody > .fk-ov {
+    order: 10;
+    margin: 18px 0 0;
+  }
+}
+@media (max-width: 600px) {
+  .fk-sec {
+    padding: 14px;
+    border-radius: 20px;
+  }
+  .fk-it {
+    grid-template-columns: 18px minmax(0, 1fr) minmax(0, 0.7fr) 36px;
+    grid-template-areas:
+      "n opis opis x"
+      ". jm kol ."
+      ". cena cena ."
+      ". iz iz .";
+    gap: 8px;
+    padding: 10px;
+  }
+  .fk-bar {
+    padding: 10px 10px 10px 16px;
+  }
+  .fk-tot b {
+    font-size: 22px;
+  }
+  .fk-bar-b .pill {
+    padding: 11px 14px;
+  }
+  .fk-hd .pill {
+    padding: 11px 14px;
+  }
+}
+@media (max-width: 420px) {
+  .fk-g2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fk-sec > .fk-g2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fk-bar-b {
+    width: 100%;
+  }
+  .fk-bar-b .pill {
+    flex: 1;
+    justify-content: center;
+  }
+}

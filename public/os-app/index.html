@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="/os-app/notes.css">
 <link rel="stylesheet" href="/os-app/auth.css">
 <link rel="stylesheet" href="/os-app/motion.css">
+<link rel="stylesheet" href="/os-app/fakture.css">
 <script src="/os-app/motion.js"></script>
 </head>
 <body>
@@ -170,6 +171,15 @@
         <g fill="rgba(255,255,255,.08)"></g>
         <rect x="22" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="51" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="80" y="54" width="20" height="18" rx="5" fill="var(--orange)" class=""/><rect x="109" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="138" y="54" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="22" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="51" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="80" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="109" y="81" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="138" y="81" width="20" height="18" rx="5" fill="var(--orange)" class="cl"/><rect x="22" y="108" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="51" y="108" width="20" height="18" rx="5" fill="var(--orange)" class="cl"/><rect x="80" y="108" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/><rect x="109" y="108" width="20" height="18" rx="5" fill="var(--orange)" class=""/><rect x="138" y="108" width="20" height="18" rx="5" fill="rgba(255,255,255,.08)" class=""/></svg>
       <h2>Skeylo Calendar</h2>
+    </button>
+    <button class="card fincard fkcard" id="fkCard" data-go="fakture" style="animation-delay:.885s">
+      <svg class="fkill" viewBox="0 0 200 170" aria-hidden="true"><defs><linearGradient id="fkg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3b04c"/><stop offset="1" stop-color="#e1802c"/></linearGradient></defs>
+        <g class="fk-p2"><rect x="62" y="22" width="104" height="132" rx="10" fill="#2a2119" stroke="rgba(255,200,150,.14)"/></g>
+        <g class="fk-p1"><rect x="40" y="12" width="108" height="140" rx="10" fill="#f4ebdc"/><rect x="40" y="12" width="108" height="6" rx="3" fill="url(#fkg)"/><rect x="52" y="30" width="34" height="9" rx="3" fill="#e1802c"/><rect x="104" y="30" width="32" height="5" rx="2.5" fill="#1b2328"/><rect x="112" y="39" width="24" height="3.5" rx="1.75" fill="#a89a88"/><rect x="52" y="56" width="40" height="22" rx="4" fill="#e9dfcf"/><rect x="96" y="56" width="40" height="22" rx="4" fill="#e9dfcf"/><rect x="52" y="86" width="84" height="8" rx="2" fill="#1b2328"/><rect x="56" y="101" width="44" height="3.5" rx="1.75" fill="#8a8580"/><rect x="116" y="101" width="20" height="3.5" rx="1.75" fill="#8a8580"/><rect x="88" y="114" width="48" height="13" rx="4" fill="#e9dfcf"/><rect x="104" y="118.5" width="28" height="4" rx="2" fill="url(#fkg)"/></g>
+        <g class="fk-ok"><circle cx="150" cy="128" r="17" fill="url(#fkg)"/><path d="m142 128 5.5 5.5L158 123" fill="none" stroke="#1a0e04" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </svg>
+      <span class="lmdue" id="fkDue" hidden></span>
+      <h2>Fakture</h2>
     </button>
     <button class="card fincard lmcard wide2" id="lmCard" data-go="leads" style="animation-delay:.89s">
       <svg class="lmill" viewBox="0 0 230 140" aria-hidden="true">
@@ -386,6 +396,15 @@
     <button class="pill solid" id="finAdd" hidden></button>
   </div>
   <div id="finBody"></div>
+</div>
+
+<!-- FAKTURE (fakture.js) -->
+<div id="fak" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" id="fkBack" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span id="fkBackLbl">Dashboard</span></button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div id="fakBody"></div>
 </div>
 
 <!-- PERSONAL FINANCE PANEL -->
@@ -673,6 +692,8 @@
 <script src="/os/env.js"></script>
 <script src="/os-app/os-db.js"></script>
 <script src="/os-app/notes.js"></script>
+<script src="/os-app/fakture-doc.js"></script>
+<script src="/os-app/fakture.js"></script>
 <script src="/os-app/auth.js"></script>
 <script src="/os-app/app.js"></script>
 </body>

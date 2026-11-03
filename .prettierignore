@@ -1,2 +1,4 @@
 # gotov build Excalidraw editora (os-draw); prettier bi ga naduvao pri svakom commitu
 public/os-app/draw/
+# pdf-lib i fontkit za Fakture (gotovi minifikovani fajlovi)
+public/os-app/vendor/

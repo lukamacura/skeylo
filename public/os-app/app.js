@@ -367,6 +367,7 @@
     fresh: new Set(),
   };
   let NT = null; // General stranice (notes.js)
+  let FK = null; // Fakture (fakture.js)
   FALLBACK.entities = [];
   FALLBACK.dayItems = [];
   FALLBACK.notes = [
@@ -870,6 +871,7 @@
     "mh",
     "fin",
     "money",
+    "fak",
     "rp",
     "rv",
     "cm",
@@ -930,6 +932,9 @@
     }
     const h = location.hash.slice(1);
     if (NT) NT.leave(h);
+    const fakH =
+      h === "fakture" || h.startsWith("fakture~") || h.startsWith("fak-");
+    if (FK && view.name === "fak" && !fakH) FK.leave();
     if (
       view.name === "ed" &&
       h !== (view.col === "cpages" ? "p-" : "s-") + view.id
@@ -988,6 +993,12 @@
       firstMoney = true;
       moneyYM = null;
       renderMONEY();
+    } else if (fakH) {
+      /* fakture.js: #fakture, #fakture~{tab}, #fak-nova, #fak-{id} */
+      applyTheme(null);
+      if (view.name !== "fak" || $("#fak").hidden) show("fak");
+      view = { name: "fak" };
+      if (FK) FK.route(h);
     } else if (h.startsWith("f-")) {
       view = { name: "fin", id: h.slice(2) };
       show("fin");
@@ -1084,6 +1095,7 @@
       updateDashTasks();
       updateGenAvs();
       updLeadCard();
+      if (FK) FK.warm(); // oznaka "kasni" na kartici Fakture
     }
   }
   var curHash = location.hash.slice(1),
@@ -8726,8 +8738,11 @@
       cal = $("#calCard");
     if (!ck || !cal || !me) return;
     const nina = me.id === "nina";
+    const fk = $("#fkCard");
     ck.hidden = !nina;
-    cal.classList.toggle("wide2", !nina);
+    /* Calendar i Fakture u istom redu; kod Nine je pored Calendar-a Cockpit, pa Fakture idu cele */
+    cal.classList.toggle("wide2", !nina && !fk);
+    if (fk) fk.classList.toggle("wide2", nina);
   }
 
   /* ================= LEAD MANAGER ================= */
@@ -10434,6 +10449,13 @@
       foldDlg: (o) => foldDlg(o),
       foldCols: () => FC_FCOL,
     });
+  /* ---------------- fakture (fakture.js + fakture-doc.js) ---------------- */
+  if (window.SKFakture) {
+    FK = window.SKFakture({ esc, SV, toast, nav });
+    const fc = $("#fkCard");
+    if (fc)
+      fc.addEventListener("pointerenter", () => FK.warm(), { passive: true });
+  }
   /* =====================================================================
    FINAL CREATIVES
    Mihajlo prevuče gotove kreative (pun kvalitet) u mesec → klijent ih

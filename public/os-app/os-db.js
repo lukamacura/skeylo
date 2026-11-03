@@ -120,6 +120,8 @@
     },
   };
   window.OS = OS;
+  /* Fakture (fakture.js) rade nad pravim tabelama šeme os, ne nad os.docs. */
+  OS.sb = sb;
 
   /* ---------- documents ---------- */
   const cols = new Map(); // col -> {docs: Map<id,data>, listeners:Set, loaded}
