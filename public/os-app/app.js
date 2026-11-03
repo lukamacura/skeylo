@@ -4002,7 +4002,7 @@
     const reps = reportsOf(it.id);
     if (!reps.length) {
       root.className = "";
-      root.innerHTML = `<div class="rempty"><div class="arch">${IC_REPORT}</div><b>Još nema izveštaja</b>Otpremi prvi .html izveštaj i dodaj Loom video.<button class="pill solid" data-new-report>Novi izveštaj</button></div>`;
+      root.innerHTML = `<div class="rempty"><div class="arch">${IC_REPORT}</div><b>Još nema izveštaja</b>Otpremi .html izveštaj, Loom video ili oba.<button class="pill solid" data-new-report>Novi izveštaj</button></div>`;
       return;
     }
     root.className = "rgrid";
@@ -4017,7 +4017,7 @@
       <div class="rt">${esc(r.title || "Izveštaj")}</div>
       <div class="rd">${r.createdAt ? fmtFull.format(new Date(r.createdAt)) : ""}</div>
       <div class="racts">
-        <button class="pill" data-go="rv-${esc(r.id)}">${SV('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}Otvori</button>
+        ${hasDoc(r) ? `<button class="pill" data-go="rv-${esc(r.id)}">${SV('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')}Otvori</button>` : ""}
         ${okLink(r.loom) ? `<a class="pill solid" href="${esc(r.loom)}" target="_blank" rel="noopener">${IC_PLAY}Video</a>` : `<button class="pill" data-edit-report="${esc(r.id)}">${IC.plus}Loom link</button>`}
       </div>
     </article>`;
@@ -4026,6 +4026,10 @@
   }
   function okLink(u) {
     return /^https:\/\/[^\s]+$/i.test(u || "");
+  }
+  /* chunks 0 = izveštaj je samo Loom video; stari bez polja imaju HTML */
+  function hasDoc(r) {
+    return r.chunks !== 0;
   }
   $("#rpBack").onclick = () => nav("m-" + view.id);
   $("#newReport").onclick = () => openReportSheet("new");
@@ -4146,6 +4150,12 @@
         shake($("#rsheet"));
         return;
       }
+      if (!hasDoc(rsReport) && !loom) {
+        $("#rerr").textContent =
+          "Ovaj izveštaj je samo video, Loom link mora da ostane.";
+        shake($("#rsheet"));
+        return;
+      }
       try {
         await api.upd("reports", rsReport.id, { title, loom });
         closeReportSheet();
@@ -4156,8 +4166,8 @@
       }
       return;
     }
-    if (!rsHTML) {
-      $("#rerr").textContent = "Prvo izaberi .html izveštaj.";
+    if (!rsHTML && !loom) {
+      $("#rerr").textContent = "Izaberi .html izveštaj ili upiši Loom link.";
       shake($("#rsheet"));
       return;
     }
@@ -4172,6 +4182,7 @@
     }
     const btn = $("#rsOk");
     btn.disabled = true;
+    btn.textContent = "Čuvam…";
     try {
       const id = await saveReport(it, title, loom, rsHTML, (i, n) => {
         btn.textContent = n > 1 ? `Čuvam ${i}/${n}` : "Čuvam…";
@@ -4189,7 +4200,8 @@
   const CHUNK = 80000;
   const htmlCache = new Map();
   async function saveReport(it, title, loom, html, progress) {
-    const n = Math.max(1, Math.ceil(html.length / CHUNK));
+    /* samo Loom: chunks 0, isto kao hasDoc u CRM-u */
+    const n = html ? Math.ceil(html.length / CHUNK) : 0;
     const data = {
       monthId: it.id,
       clientId: it.clientId,
@@ -4282,6 +4294,12 @@
     $("#rvLink").hidden = false;
     $("#rvLink").innerHTML =
       `${SV('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')}<span>${has ? "Uredi" : "Dodaj Loom link"}</span>`;
+    if (!hasDoc(r)) {
+      rvLoaded = null;
+      frame.innerHTML =
+        '<div class="rv-load"><b style="font-family:var(--f-display);font-size:28px;color:var(--cream)">Samo video</b>Ovaj izveštaj nema pisani deo.</div>';
+      return;
+    }
     if (rvLoaded === r.id) return;
     rvLoaded = r.id;
     frame.innerHTML =
