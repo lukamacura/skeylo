@@ -1,33 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, isAuthed } from "@/lib/admin-auth";
 
+// Middleware se vrti samo za /admin: nelogovane šalje na login. Ostale stranice ne
+// prolaze kroz njega, a koje imaju header sajta određuje grupa app/(site).
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  if (req.nextUrl.pathname === "/admin/login") return NextResponse.next();
 
-  // Header da root layout može da sakrije site chrome (/admin, /calculator, /ils, /uml).
-  const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-pathname", pathname);
-
-  const isAdmin = pathname.startsWith("/admin");
-  const isLogin = pathname === "/admin/login";
-  if (isAdmin && !isLogin) {
-    const token = req.cookies.get(SESSION_COOKIE)?.value;
-    if (!(await isAuthed(token))) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/admin/login";
-      return NextResponse.redirect(url);
-    }
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!(await isAuthed(token))) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/admin/login";
+    return NextResponse.redirect(url);
   }
-
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/calculator/:path*",
-    "/calculator",
-    "/ils/:path*",
-    "/uml",
-  ],
+  matcher: ["/admin/:path*"],
 };

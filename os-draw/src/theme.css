@@ -178,10 +178,17 @@ body,
 }
 
 /* ---------- tab Ikone ---------- */
+/* Flex stavke po difoltu ne mogu da budu niže od sadržaja (min-height: auto), pa je lista
+   rasla do 1782px i traka (overflow: hidden) ju je samo sekla: skrol nije postojao.
+   min-height: 0 niz ceo lanac drži listu u visini trake, a .sk-scroll onda skroluje. */
+.excalidraw .sidebar-tabs-root,
+.excalidraw .sidebar-tabs-root [role="tabpanel"] {
+  min-height: 0;
+}
 .sk-icons {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 0;
   min-height: 0;
   padding: 0 12px 12px;
   box-sizing: border-box;
@@ -205,9 +212,11 @@ body,
   border-color: var(--sk-accent);
 }
 .sk-scroll {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }
 .sk-icons h4 {

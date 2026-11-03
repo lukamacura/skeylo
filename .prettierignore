@@ -2,3 +2,5 @@
 public/os-app/draw/
 # pdf-lib i fontkit za Fakture (gotovi minifikovani fajlovi)
 public/os-app/vendor/
+# supabase-js 2.110.7, minifikovan UMD iz node_modules (OS i CRM ga učitavaju na svakom otvaranju)
+public/os-app/supabase.js

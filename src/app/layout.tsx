@@ -1,11 +1,12 @@
 // app/layout.tsx
+// Zajednički okvir za sve stranice: fontovi, metapodaci, analitika. Header i footer sajta
+// su u (site)/layout.tsx, pa stranice bez njih (/admin, /calculator, /ils, /uml,
+// /construction) jednostavno stoje van grupe (site). Ovde se ne čitaju headers() ni
+// cookies(): to bi svaku stranicu pretvorilo u dinamičku (render na svaki zahtev).
 import type { Metadata } from "next";
 import "./globals.css";
 import { Bricolage_Grotesque, Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
-import { headers } from "next/headers";
-import HeaderClient from "@/components/site/HeaderClient";
-import Footer from "@/components/site/Footer";
 
 const display = Bricolage_Grotesque({
   subsets: ["latin", "latin-ext"],
@@ -35,29 +36,15 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const h = await headers();
-  const construction = h.get("x-construction") === "1";
-  const pathname = h.get("x-pathname") ?? "";
-  const isAdmin = pathname.startsWith("/admin");
-  // /calculator je white-label demo za klijente — bez Skeylo headera/footera.
-  const isCalculator = pathname.startsWith("/calculator");
-  // /ils su privatni dokumenti za klijenta — takođe bez site chrome-a.
-  const isIls = pathname.startsWith("/ils");
-  // /uml je prezentacija preko celog ekrana — takođe bez site chrome-a.
-  const isUml = pathname === "/uml";
-  const hideChrome = construction || isAdmin || isCalculator || isIls || isUml;
-
   return (
     <html lang="sr" className={`${display.variable} ${sans.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
-        {!hideChrome && <HeaderClient />}
-        <main>{children}</main>
-        {!hideChrome && <Footer />}
+        {children}
         <Analytics />
       </body>
     </html>

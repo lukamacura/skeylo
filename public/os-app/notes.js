@@ -2433,7 +2433,7 @@ window.SKNotes = function (X) {
       return `<button class="fcf" type="button" data-go="${esc(home + "~" + F.id)}" data-gf="${esc(F.id)}" style="--fc:${esc(fcol(F))};--i:${i}" aria-label="Folder ${esc(F.name || "Folder")}, ${L.length} ${pagesWord(L.length)}">
       <span class="fcf-back" aria-hidden="true"></span>
       <span class="fcf-th" aria-hidden="true">${th.map((n, k) => `<span class="gsh" style="--k:${k};--n:${th.length}"><span class="gsh-i">${n.icon ? emo(n.icon) : I.doc}</span><b>${esc(n.title || "Bez naslova")}</b><i></i><i></i><i></i></span>`).join("")}</span>
-      <span class="fcf-front"><span class="fcf-ic">${I.fold}</span><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${L.length} ${pagesWord(L.length)}</span></span></span>
+      <span class="fcf-front"><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${L.length} ${pagesWord(L.length)}</span></span></span>
     </button>`;
     }).join("")}</div>`;
   }

@@ -3,13 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { animate, motion, useInView, useReducedMotion } from "framer-motion";
-import {
-  TrendingUp,
-  Sparkles,
-  Target,
-  ArrowUpRight,
-  TimerIcon,
-} from "lucide-react";
+import { TrendingUp, Target, ArrowUpRight, TimerIcon } from "lucide-react";
 
 const team = ["/people/luka.webp", "/people/mihac.webp", "/people/filip.webp"];
 

@@ -11033,7 +11033,7 @@
       return `<button class="fcf" type="button" data-fcf="${esc(f.id)}" style="--fc:${esc(fcFCol(f))};--i:${i}" aria-label="Folder ${esc(f.name || "Folder")}, ${L.length} ${fcWord(L.length)}">
       <span class="fcf-back" aria-hidden="true"></span>
       <span class="fcf-th" aria-hidden="true">${th.map((s, k) => `<img src="${esc(s)}" alt="" decoding="async" draggable="false" style="--k:${k};--n:${th.length}">`).join("")}</span>
-      <span class="fcf-front"><span class="fcf-ic">${IC_FOLD}</span><span class="fcf-tx"><span class="fcf-n">${esc(f.name || "Folder")}</span><span class="fcf-c">${L.length} ${fcWord(L.length)}${n ? ` · ${IC.msg}${n}` : ""}</span></span></span>
+      <span class="fcf-front"><span class="fcf-tx"><span class="fcf-n">${esc(f.name || "Folder")}</span><span class="fcf-c">${L.length} ${fcWord(L.length)}${n ? ` · ${IC.msg}${n}` : ""}</span></span></span>
     </button>`;
     }).join("")}</div>`;
   }

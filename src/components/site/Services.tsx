@@ -7,9 +7,6 @@ import {
   Megaphone,
   Globe,
   LineChart,
-  ShieldCheck,
-  Users,
-  Gauge,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,21 +52,6 @@ const services: Service[] = [
     image: analiza,
     alt: "Skeylo tim analizira kampanju",
     position: "object-[50%_42%]",
-  },
-];
-
-const why = [
-  {
-    icon: Users,
-    title: "Jedan tim za sve",
-  },
-  {
-    icon: Gauge,
-    title: "Fokus na profit",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Sistem, ne kampanja",
   },
 ];
 

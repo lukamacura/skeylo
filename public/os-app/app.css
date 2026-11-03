@@ -13251,20 +13251,6 @@ html.fcv-open {
     transform 0.5s var(--spring),
     box-shadow 0.3s;
 }
-.fcf-ic {
-  flex: none;
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  color: color-mix(in srgb, var(--fc) 45%, #fff);
-}
-.fcf-ic svg {
-  width: 20px;
-  height: 20px;
-}
 .fcf-tx {
   display: grid;
   gap: 2px;
@@ -13681,9 +13667,6 @@ html.fcv-open {
     inset: 46% 0 0;
     padding: 10px 12px 12px;
     gap: 9px;
-  }
-  .fcf-ic {
-    display: none;
   }
   .fcf-n {
     font-size: 16px;

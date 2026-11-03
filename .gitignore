@@ -46,3 +46,6 @@ next-env.d.ts
 
 # privatni materijal za /uml (rad koleginice, slajdovi kursa); repo je javan
 /docs/uml/
+
+# Chrome profil iz testova (headless --user-data-dir); ne ide u repo
+/prof/
