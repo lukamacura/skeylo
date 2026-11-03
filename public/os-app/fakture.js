@@ -845,7 +845,8 @@ window.SKFakture = function (X) {
         ["del", I.trash, "Obriši nacrt", "danger"],
       ];
     const out = [["pdf", I.dl, "Preuzmi PDF"]];
-    if (isStorno(f)) return out;
+    const del = canDel(f) && ["del", I.trash, "Obriši fakturu", "danger"];
+    if (isStorno(f)) return del ? [...out, del] : out;
     if (f.status === "izdata")
       out.push(["paid", I.check, "Označi kao plaćenu"]);
     if (f.status === "placena")
@@ -855,8 +856,21 @@ window.SKFakture = function (X) {
     else out.push(["dup", I.copy, "Dupliraj u novu fakturu"]);
     if (f.status === "izdata" || f.status === "placena")
       out.push(["storno", I.storno, "Storniraj", "danger"]);
+    if (del) out.push(del);
     return out;
   }
+  /* izdata se briše samo ako je poslednja izdata u godini (bez rupe u brojevima) i nije na SEF-u;
+     ista pravila proverava i fak_obrisi u bazi */
+  const canDel = (f) =>
+    f.status !== "nacrt" &&
+    f.status !== "stornirana" &&
+    !f.sef_status &&
+    !S.fk.some(
+      (x) =>
+        x.godina === f.godina &&
+        x.redni_broj > f.redni_broj &&
+        x.status !== "nacrt",
+    );
   let menuEl = null;
   function closeMenu() {
     if (!menuEl) return;
@@ -930,7 +944,8 @@ window.SKFakture = function (X) {
     if (a === "paid") return paidSheet(f);
     if (a === "unpaid") return busy(btn, () => setPaid(f, null));
     if (a === "storno") return stornoSheet(f);
-    if (a === "del") return deleteDraft(f);
+    if (a === "del")
+      return f.status === "nacrt" ? deleteDraft(f) : deleteIssued(f);
   }
   /* posle izmene: isti ekran se iscrta bez ulaznih animacija */
   let quiet = false;
@@ -1573,6 +1588,39 @@ window.SKFakture = function (X) {
         toast(`Nacrt ${f.broj} je obrisan.`);
         if (cur === "fakture") rerender();
         else nav("fakture");
+      },
+    );
+  }
+  function deleteIssued(f) {
+    const orig = isStorno(f) ? fkOf(f.storno_za_fakturu_id) : null;
+    const back = orig && (orig.datum_placanja ? "placena" : "izdata");
+    sheet(
+      `<h3>Obriši ${isStorno(f) ? "storno" : "fakturu"} ${esc(f.broj)}?</h3>
+       <div class="fk-sum"><span>${esc(kupacOf(f))}</span><b>${money(f.uk)} RSD</b></div>
+       <p>Briše se zauvek, zajedno sa PDF-om, i nestaje iz KPO knjige. Broj ${esc(f.broj)} dobija sledeća faktura.</p>
+       ${orig ? `<p>Faktura ${esc(orig.broj)} se vraća na ${back === "placena" ? "plaćenu" : "izdatu"}.</p>` : ""}
+       <p class="fk-msg w">${I.warn}Briši samo ono što kupac nije dobio. Ako je faktura poslata, storniraj je.</p>
+       <p class="fk-err"></p>
+       <div class="row2"><button type="button" class="pill" data-close>Otkaži</button><button type="submit" class="pill danger solid">Obriši</button></div>`,
+      async () => {
+        const r = await db().rpc("fak_obrisi", { p_id: f.id });
+        if (r.error) throw r.error;
+        S.fk = S.fk.filter((x) => x.id !== f.id);
+        if (orig) orig.status = back;
+        kpoRows = null;
+        const path = f.pdf_url || pdfPath(f);
+        db()
+          .storage.from("fakture")
+          .remove([path])
+          .then((x) => x.error && console.warn("[fakture] pdf ostao", x.error))
+          .catch((e) => console.warn("[fakture] pdf ostao", e));
+        paintDash();
+        toast(
+          `${isStorno(f) ? "Storno" : "Faktura"} ${f.broj} je obrisan${isStorno(f) ? "" : "a"}.`,
+        );
+        if (cur === "fakture") rerender();
+        else nav("fakture");
+        load(true).catch(() => {});
       },
     );
   }
