@@ -45,6 +45,9 @@ window.SKFakture = function (X) {
       '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
     ),
     storno: SV('<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>'),
+    coin: SV(
+      '<circle cx="12" cy="12" r="9"/><path d="M14.8 9.4c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2 0 2.8 5.6 1.5 5.6 4.3 0 1.2-1.2 2-2.8 2-1.3 0-2.4-.5-2.8-1.5M12 6.5V8M12 16.3V18"/>',
+    ),
   };
 
   /* ---------- pomoćno ---------- */
@@ -185,6 +188,18 @@ window.SKFakture = function (X) {
     }
   }
   const klOf = (id) => S.kl.find((k) => k.id === id) || null;
+  /* faktura kako je vidi Skeylo Finance (finance.js): bez stavki i snimaka */
+  const pub = (f) => ({
+    id: f.id,
+    broj: f.broj,
+    kupac: kupacOf(f),
+    klijentId: f.klijent_id,
+    iznos: f.uk,
+    status: f.status,
+    placena: f.datum_placanja,
+    izdata: f.datum_izdavanja,
+    storno: !!f.storno_za_fakturu_id,
+  });
   const fkOf = (id) => S.fk.find((f) => f.id === id) || null;
   const isStorno = (f) => !!f.storno_za_fakturu_id;
   const kupacOf = (f) =>
@@ -849,8 +864,11 @@ window.SKFakture = function (X) {
     if (isStorno(f)) return del ? [...out, del] : out;
     if (f.status === "izdata")
       out.push(["paid", I.check, "Označi kao plaćenu"]);
-    if (f.status === "placena")
+    if (f.status === "placena") {
+      const fin = X.fin && X.fin();
+      if (fin) out.push(["fin", I.coin, fin.invLabel(pub(f))]);
       out.push(["unpaid", I.undo, "Vrati na neplaćenu"]);
+    }
     if (f.status === "stornirana")
       out.push(["fix", I.copy, "Napravi ispravljenu fakturu"]);
     else out.push(["dup", I.copy, "Dupliraj u novu fakturu"]);
@@ -943,6 +961,10 @@ window.SKFakture = function (X) {
     if (a === "fix") return nav("fak-nova~s" + f.id);
     if (a === "paid") return paidSheet(f);
     if (a === "unpaid") return busy(btn, () => setPaid(f, null));
+    if (a === "fin") {
+      const fin = X.fin && X.fin();
+      return fin && fin.fromInvoice(pub(f)).catch((e) => toast(errText(e)));
+    }
     if (a === "storno") return stornoSheet(f);
     if (a === "del")
       return f.status === "nacrt" ? deleteDraft(f) : deleteIssued(f);
@@ -2177,6 +2199,11 @@ window.SKFakture = function (X) {
 
   return {
     route,
+    /* Skeylo Finance: izdate fakture (plaćene se nude kao uplata); podaci stariji od minuta se osveže */
+    async list() {
+      if (!S.ready || Date.now() - (S.at || 0) > 60000) await load(!!S.ready);
+      return S.fk.filter((f) => f.status !== "nacrt").map(pub);
+    },
     /* dashboard kartica: prefetch podataka da lista stoji odmah */
     warm() {
       if (!S.ready || Date.now() - (S.at || 0) > 60000)

@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="/os-app/auth.css">
 <link rel="stylesheet" href="/os-app/motion.css">
 <link rel="stylesheet" href="/os-app/fakture.css">
+<link rel="stylesheet" href="/os-app/finance.css">
 <script src="/os-app/motion.js"></script>
 </head>
 <body>
@@ -155,7 +156,7 @@
 <path class="spark sp2" d="M30 132 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#ffd28a"/>
 <path class="spark sp3" d="M110 22 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#fff3d6"/>
 </svg>
-      <h2>Finance Panel</h2>
+      <h2>Skeylo<br>Finance</h2>
       <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </button>
     <button class="card fincard ckcard" id="ckCard" data-go="cockpit" style="animation-delay:.85s" hidden>
@@ -193,8 +194,14 @@
       <h2>Lead Manager</h2>
     </button>
     <button class="card gencard" data-go="general" style="animation-delay:.9s">
-      <span class="avstack" id="genAvs" aria-hidden="true"></span>
+      <span class="genfx" id="genFx" aria-hidden="true"></span>
       <h2>General</h2>
+      <p class="gen-sub" id="genSub">Stranice, folderi i fajlovi</p>
+    </button>
+    <button class="card gencard mdlcard" data-go="models" style="animation-delay:.92s">
+      <span class="avstack" id="genAvs" aria-hidden="true"></span>
+      <h2>Models</h2>
+      <p class="gen-sub" id="mdlSub">Modeli za snimanja</p>
     </button>
   </section>
 </div>
@@ -320,12 +327,12 @@
     <h1 id="genH"><span class="w"><span>General</span></span></h1>
     <div class="cm-id" id="genId" hidden></div>
     <div class="tl-actions">
-      <label class="msearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="sr">Pretraga</span><input id="gq" type="search" placeholder="Pretraži stranice" autocomplete="off"></label>
+      <label class="msearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="sr">Pretraga</span><input id="gq" type="search" placeholder="Pretraži stranice i fajlove" autocomplete="off"></label>
+      <button class="pill" id="gUp" type="button" title="Otpremi fajlove ili slike (ili ih prevuci na ekran)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg><span class="lbl">Otpremi</span></button>
       <button class="pill" id="gNewF" type="button" title="Novi folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6l2.2 2.4h7.2A2.5 2.5 0 0 1 21 9.9v7.6a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M12 11v5M9.5 13.5h5"/></svg><span class="lbl">Novi folder</span></button>
       <button class="pill solid" id="gNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nova stranica</button>
     </div>
   </div>
-  <div class="gmods" id="gmods"></div>
   <div id="gpages"></div>
 </div>
 
@@ -356,7 +363,7 @@
 <!-- MODELS -->
 <div id="models" class="screen wrap" hidden>
   <header class="top">
-    <button class="pill" data-go="general"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>General</button>
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
     <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
@@ -393,7 +400,7 @@
   </header>
   <div class="phead">
     <div class="cm-id" id="finId"></div>
-    <button class="pill solid" id="finAdd" hidden></button>
+    <div class="tl-actions"><button class="pill" id="finSplit" hidden></button><button class="pill solid" id="finAdd" hidden></button></div>
   </div>
   <div id="finBody"></div>
 </div>
@@ -597,22 +604,6 @@
   <div class="sheet tdet" id="tdet"></div>
 </div>
 
-<!-- EXPENSE SHEET -->
-<div class="scrim" id="xscrim" hidden>
-  <form class="sheet" id="xsheet" novalidate>
-    <h3>Novi trošak</h3>
-    <div class="lbl">Iznos</div>
-    <input id="xamt" type="text" inputmode="decimal" autocomplete="off" placeholder="0">
-    <div class="seg" id="xseg"><span class="knob"></span><button type="button" class="on" data-cur="RSD">RSD</button><button type="button" data-cur="EUR">EUR</button></div>
-    <div class="lbl">Za šta</div>
-    <input id="xnote" type="text" autocomplete="off" maxlength="60" placeholder="npr. gorivo, oprema">
-    <div class="lbl">Datum</div>
-    <input id="xdate" type="date">
-    <p class="serr" id="xerr"></p>
-    <div class="row2"><button type="button" class="pill" id="xcancel">Otkaži</button><button type="submit" class="pill solid">Dodaj trošak</button></div>
-  </form>
-</div>
-
 <!-- REPORT SHEET -->
 <div class="scrim" id="rscrim" hidden>
   <form class="sheet" id="rsheet" novalidate>
@@ -694,6 +685,7 @@
 <script src="/os-app/notes.js"></script>
 <script src="/os-app/fakture-doc.js"></script>
 <script src="/os-app/fakture.js"></script>
+<script src="/os-app/finance.js"></script>
 <script src="/os-app/auth.js"></script>
 <script src="/os-app/app.js"></script>
 </body>

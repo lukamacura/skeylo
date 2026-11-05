@@ -2422,6 +2422,7 @@ window.SKNotes = function (X) {
       <span class="ci">${n.icon ? emo(n.icon) : I.doc}</span>${n.privateTo ? `<span class="glock" title="Samo ti vidiš ovu stranicu">${I.lock}</span>` : ""}
       <div class="gt-b">${path ? `<div class="gpath">${esc(path)}</div>` : ""}<h3>${esc(n.title || "Bez naslova")}</h3>${ex ? `<p class="gex">${esc(ex)}</p>` : ""}
       <div class="meta2">${u ? `<img src="${esc(X.IMG[u.id])}" alt="" draggable="false">` : ""}<span>${ts ? esc(rel(ts)) : ""}${k ? ` · ${k} ${plural(k, "podstranica", "podstranice", "podstranica")}` : ""}</span></div></div>
+      ${PUP.has(n.id) ? `<span class="gf-up" style="--p:${PUP.get(n.id).p}"><i></i><b>${Math.round(PUP.get(n.id).p * 100)}%</b></span>` : ""}
     </div>`;
   }
   /* red foldera iznad stranica: fascikla iz koje vire listovi poslednjih stranica */
@@ -2429,11 +2430,34 @@ window.SKNotes = function (X) {
     const home = homeOf(hubSpace);
     return `<div class="fcfolders${anim ? " enter" : ""}">${FS.map((F, i) => {
       const L = roots.filter((n) => fidOf(n) === F.id),
-        th = [...L].sort(byUpd).slice(0, 3);
-      return `<button class="fcf" type="button" data-go="${esc(home + "~" + F.id)}" data-gf="${esc(F.id)}" style="--fc:${esc(fcol(F))};--i:${i}" aria-label="Folder ${esc(F.name || "Folder")}, ${L.length} ${pagesWord(L.length)}">
+        FL = filesIn(hubSpace, F.id),
+        th = [
+          ...L.map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
+          ...FL.map((x) => ({ x, t: x.createdAt || 0 })),
+        ]
+          .sort((a, b) => b.t - a.t)
+          .slice(0, 3);
+      const cnt =
+        [
+          L.length ? L.length + " " + pagesWord(L.length) : "",
+          FL.length ? FL.length + " " + filesWord(FL.length) : "",
+        ]
+          .filter(Boolean)
+          .join(" · ") || "prazan";
+      return `<button class="fcf" type="button" data-go="${esc(home + "~" + F.id)}" data-gf="${esc(F.id)}" style="--fc:${esc(fcol(F))};--i:${i}" aria-label="Folder ${esc(F.name || "Folder")}, ${esc(cnt)}">
       <span class="fcf-back" aria-hidden="true"></span>
-      <span class="fcf-th" aria-hidden="true">${th.map((n, k) => `<span class="gsh" style="--k:${k};--n:${th.length}"><span class="gsh-i">${n.icon ? emo(n.icon) : I.doc}</span><b>${esc(n.title || "Bez naslova")}</b><i></i><i></i><i></i></span>`).join("")}</span>
-      <span class="fcf-front"><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${L.length} ${pagesWord(L.length)}</span></span></span>
+      <span class="fcf-th" aria-hidden="true">${th
+        .map(({ n, x }, k) => {
+          const st = `--k:${k};--n:${th.length}`;
+          if (n)
+            return `<span class="gsh" style="${st}"><span class="gsh-i">${n.icon ? emo(n.icon) : I.doc}</span><b>${esc(n.title || "Bez naslova")}</b><i></i><i></i><i></i></span>`;
+          const src = x.thumb || (fkind(x) === "img" ? x.url : "");
+          return src
+            ? `<img class="gsh-ph" src="${esc(src)}" alt="" loading="lazy" decoding="async" draggable="false" style="${st}">`
+            : `<span class="gsh gsh-f" style="${st};--fx:${fcolor(x)}"><span class="gsh-i">${FI.doc}</span><b>${esc(x.name || "Fajl")}</b><em>${esc(fext(x.name))}</em></span>`;
+        })
+        .join("")}</span>
+      <span class="fcf-front"><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${esc(cnt)}</span></span></span>
     </button>`;
     }).join("")}</div>`;
   }
@@ -2443,7 +2467,7 @@ window.SKNotes = function (X) {
       <span class="fcfh-sl" aria-hidden="true">/</span>
       <span class="fcfh-ic" aria-hidden="true">${I.fold}</span>
       <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
-      <span class="fcfh-c">${n} ${pagesWord(n)}</span>
+      <span class="fcfh-c">${typeof n === "string" ? n : n + " " + pagesWord(n)}</span>
       <button class="fcfh-ed" type="button" data-gf-edit="${esc(F.id)}" aria-label="Uredi folder" title="Naziv, boja, brisanje">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
     </div>`;
   }
@@ -2480,24 +2504,60 @@ window.SKNotes = function (X) {
     const all = mine.filter((n) => !n.privateTo).length,
       sec = anim ? "" : "animation:none",
       row = f || !FS.length ? "" : folderRow(FS, roots, anim);
+    /* fajlovi: u otvorenom folderu njegovi, inače oni van foldera; pretraga traži po imenu */
+    const fl = f
+        ? allFiles().filter(
+            (x) => (x.spaceId || null) === hubSpace && fold(x.name).includes(f),
+          )
+        : filesIn(hubSpace, F ? F.id : null),
+      ups = f ? [] : upIn(hubSpace, F ? F.id : null),
+      nAll = allFiles().filter((x) => (x.spaceId || null) === hubSpace).length;
+    /* stranice i fajlovi u jednoj mreži: redom kako su nastali (nova stavka je na kraju,
+       kod pločica za dodavanje); pretraga: najnovije izmenjeno prvo */
+    const items = f
+      ? [
+          ...list.map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
+          ...fl.map((x) => ({ x, t: x.updatedAt || x.createdAt || 0 })),
+        ].sort((a, b) => b.t - a.t)
+      : [
+          ...list.map((n) => ({ n, t: n.order || n.createdAt || 0 })),
+          ...fl.map((x) => ({ x, t: x.order || x.createdAt || 0 })),
+        ].sort((a, b) => a.t - b.t);
+    const nI = items.length + ups.length;
+    if (S.ready) loadUsage();
+    const cnt = (np, nf) =>
+      [np ? np + " " + pagesWord(np) : "", nf ? nf + " " + filesWord(nf) : ""]
+        .filter(Boolean)
+        .join(" · ");
     const html =
       (F && !f
-        ? folderHead(F, list.length, anim)
-        : `<div class="gsec" style="${sec}"><h2>Stranice</h2><span>${all ? all + " " + pagesWord(all) : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje"}</span></div>`) +
+        ? folderHead(F, cnt(list.length, fl.length) || "prazan", anim)
+        : `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2><span>${all || nAll ? cnt(all, nAll) : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje, fajlovi"}</span></div>`) +
       row +
       (row
-        ? `<div class="fcsec gfsec" style="${sec}"><span>Ostale stranice</span><i></i></div>`
+        ? `<div class="fcsec gfsec" style="${sec}"><span>Van foldera</span><i></i></div>`
         : "") +
-      (f && !list.length
-        ? `<div class="state">Nema stranica za „${esc(hq.trim())}“.</div>`
-        : `<div class="cpgrid gpgrid">${list.map((n, i) => tile(n, d(i + 1), !!f)).join("")}${f ? "" : `<button class="cptile add" data-gnew style="${d(list.length + 1)}"><span class="ci">${I.plus}</span>Nova stranica</button>`}</div>`) +
-      (F && !f && !list.length
-        ? `<p class="gf-empty" style="${sec}">Folder je prazan. Napravi stranicu ovde ili premesti postojeću: ${touch() ? "" : "prevuci je na folder u svim stranicama ili "}izaberi folder u meniju stranice (⋯).</p>`
+      (f && !items.length
+        ? `<div class="state">Nema stranica ni fajlova za „${esc(hq.trim())}“.</div>`
+        : `<div class="cpgrid gpgrid">${items
+            .map((it, i) =>
+              it.n
+                ? tile(it.n, d(i + 1), !!f)
+                : fileTile(it.x, d(Math.min(i + 1, 14))),
+            )
+            .join(
+              "",
+            )}${ups.map((u, i) => fileTile(u, d(Math.min(items.length + i + 1, 14)), u)).join("")}${f ? "" : addTiles(d(Math.min(nI + 1, 15)), F)}</div>`) +
+      (F && !f && !nI
+        ? `<p class="gf-empty" style="${sec}">Folder je prazan. ${touch() ? "Dodaj fajl ili sliku, napravi stranicu ovde ili je premesti iz menija stranice (⋯)." : "Prevuci fajlove ili slike na ekran, napravi stranicu ili premesti postojeću: prevuci je na folder ili izaberi folder u meniju stranice (⋯)."}</p>`
         : "") +
       (f || F
         ? ""
         : `<div class="gsec gsec-me" style="${sec}"><h2>Samo za tebe</h2><span>${I.lock}Niko drugi ne vidi ove stranice</span></div>` +
-          `<div class="cpgrid gpgrid">${own.map((n, i) => tile(n, d(list.length + i + 2))).join("")}<button class="cptile add" data-gnew="me" style="${d(list.length + own.length + 2)}"><span class="ci">${I.lock}</span>Privatna stranica</button></div>`);
+          `<div class="cpgrid gpgrid">${own.map((n, i) => tile(n, d(nI + i + 2))).join("")}<button class="cptile add" data-gnew="me" style="${d(nI + own.length + 2)}"><span class="ci">${I.lock}</span>Privatna stranica</button></div>`) +
+      (usage && !f
+        ? `<div class="gstore" style="${sec}" title="Fajlovi u General-u, Final Creatives i slike u stranicama"><span class="gst-b"><i style="width:${Math.min(100, Math.max(0.5, (usage.total / usage.quota) * 100)).toFixed(1)}%"></i></span><span>Skladište: <b>${esc(fsize(usage.total))}</b> od ${esc(fsize(usage.quota))}</span></div>`
+        : "");
     /* isti sadržaj se ne crta ponovo: hover, prevlačenje i animacija foldera ostaju */
     if (html === hubHtml && box.firstChild) return;
     box.innerHTML = hubHtml = html;
@@ -2742,6 +2802,8 @@ window.SKNotes = function (X) {
     paintKids();
   }
   function leave(h) {
+    if (typeof closeFv === "function" && !/^(general|mg-)/.test(h || ""))
+      closeFv();
     if (!cur || h === H.hash + cur) return;
     flush();
     closeAll();
@@ -6383,7 +6445,9 @@ window.SKNotes = function (X) {
       fr.onerror = rej;
       fr.readAsDataURL(f);
     });
-  async function upload(f, kind) {
+  async function upload(f, kind, onP) {
+    const st = store();
+    if (st) return (await st.put(f, { onProgress: onP })).url;
     const A = X.assets();
     if (A) return "/_blob/" + (await A.upload(f)).id;
     if (S.mode === "local")
@@ -6404,7 +6468,14 @@ window.SKNotes = function (X) {
       if (replace && k === 0) after.replaceWith(nb);
       else anchor.after(nb);
       anchor = nb;
-      upload(f, kind).then(
+      upload(f, kind, (p) => {
+        const s = nb.querySelector(".nb-up, .nb-fo");
+        if (s)
+          s.textContent =
+            (kind === "img" ? "Otpremam sliku… " : "Otpremam… ") +
+            Math.round(p * 100) +
+            "%";
+      }).then(
         (url) => {
           if (!nb.isConnected) return;
           nb.replaceWith(make({ t: kind, src: url, name: f.name, alt: "" }));
@@ -6416,7 +6487,7 @@ window.SKNotes = function (X) {
           if (!blocks().length) root.append(make({ t: "p", x: "" }));
           toast(
             e && e.code === "too_large"
-              ? "Fajl je prevelik."
+              ? e.msg || "Fajl je prevelik."
               : e && e.code === "not_granted"
                 ? "Nemaš dozvolu za otpremanje."
                 : "Otpremanje nije uspelo.",
@@ -7357,7 +7428,8 @@ window.SKNotes = function (X) {
       },
       del: async () => {
         const { id, ...data } = F,
-          n = notes().filter((x) => fidOf(x) === id).length;
+          n = notes().filter((x) => fidOf(x) === id).length,
+          nf = allFiles().filter((x) => ffidOf(x) === id).length;
         if (hubFid === id && !$("#general").hidden)
           X.nav(homeOf(F.spaceId || null));
         /* stranice zadržavaju folderId, pa ih „Poništi“ vraća baš u ovaj folder */
@@ -7368,13 +7440,936 @@ window.SKNotes = function (X) {
           return;
         }
         toast(
-          n
-            ? `Folder obrisan. ${n} ${plural(n, "stranica je", "stranice su", "stranica je")} sad u svim stranicama.`
+          n || nf
+            ? `Folder obrisan. ${[n ? n + " " + pagesWord(n) : "", nf ? nf + " " + filesWord(nf) : ""].filter(Boolean).join(" i ")} ${n + nf === 1 ? "je" : "su"} sad van foldera.`
             : "Folder obrisan",
           () => api.set("noteFolders", id, data).catch((e) => toast(errMsg(e))),
         );
       },
     });
+  }
+
+  /* ---------------- fajlovi u General-u (kolekcija "files") ----------------
+     files/{id} = {name, type, size, blob, url, thumb, thumbBlob, w, h, dur, folderId, spaceId,
+                   order, createdAt, createdBy, updatedAt, updatedBy}
+     Original je u bucketu os-assets ("/_blob/<id>", OS.files u os-db.js); slike i video dobiju
+     malu sličicu pri otpremanju, pa mreža i fascikle ostaju brze i sa velikim fajlovima.
+     Fajl je u folderu kao i stranica (folderId); folder koji više ne postoji = van foldera. */
+  const allFiles = () => S.files || [];
+  const fileOf = (id) => allFiles().find((f) => f.id === id);
+  const ffidOf = (f) =>
+    f && folderOf(f.folderId, f.spaceId || null) ? f.folderId : null;
+  const byNew = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
+  const filesIn = (sp, fid) =>
+    allFiles()
+      .filter(
+        (f) =>
+          (f.spaceId || null) === (sp || null) && ffidOf(f) === (fid || null),
+      )
+      .sort(byNew);
+  const filesWord = (n) => plural(n, "fajl", "fajla", "fajlova");
+  const fkind = (f) =>
+    /^image\//.test(f.type || "")
+      ? "img"
+      : /^video\//.test(f.type || "")
+        ? "vid"
+        : /^audio\//.test(f.type || "")
+          ? "aud"
+          : f.type === "application/pdf" || /\.pdf$/i.test(f.name || "")
+            ? "pdf"
+            : "doc";
+  const fext = (n) => {
+    const m = /\.([a-z0-9]{1,5})$/i.exec(n || "");
+    return m ? m[1].toUpperCase() : "FAJL";
+  };
+  const EXTC = {
+    pdf: "#ff6b5b",
+    doc: "#5b9cf0",
+    docx: "#5b9cf0",
+    pages: "#5b9cf0",
+    txt: "#a89a88",
+    md: "#a89a88",
+    xls: "#4fbf7f",
+    xlsx: "#4fbf7f",
+    csv: "#4fbf7f",
+    numbers: "#4fbf7f",
+    ppt: "#f3b04c",
+    pptx: "#f3b04c",
+    key: "#f3b04c",
+    zip: "#d9c35a",
+    rar: "#d9c35a",
+    "7z": "#d9c35a",
+    psd: "#5bc8f0",
+    ai: "#f3a04c",
+    fig: "#a98bff",
+    sketch: "#f3b04c",
+    html: "#e0679a",
+    mp3: "#a98bff",
+    wav: "#a98bff",
+    m4a: "#a98bff",
+  };
+  const fcolor = (f) =>
+    EXTC[fext(f.name).toLowerCase()] ||
+    { img: "#4fbfa8", vid: "#e0679a", aud: "#a98bff", pdf: "#ff6b5b" }[
+      fkind(f)
+    ] ||
+    "#a89a88";
+  function fsize(b) {
+    b = +b || 0;
+    if (b < 1024) return b + " B";
+    if (b < 1048576) return Math.round(b / 1024) + " KB";
+    if (b < 1073741824)
+      return (
+        (b / 1048576).toFixed(b < 10485760 ? 1 : 0).replace(".", ",") + " MB"
+      );
+    return (b / 1073741824).toFixed(1).replace(".", ",") + " GB";
+  }
+  const fdur = (s) =>
+    s > 0
+      ? Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0")
+      : "";
+  const FI = {
+    up: SV('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', 2.2),
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
+    doc: SV(
+      '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+      1.8,
+    ),
+    aud: SV(
+      '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+      1.8,
+    ),
+    x: SV('<path d="M18 6 6 18M6 6l12 12"/>', 2.4),
+    l: SV('<path d="m15 18-6-6 6-6"/>', 2.4),
+    r: SV('<path d="m9 18 6-6-6-6"/>', 2.4),
+    link: SV(
+      '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+    ),
+  };
+  /* otpremanja u toku: id → {id, name, type, size, folderId, spaceId, p, preview} */
+  const UP = new Map();
+  const upIn = (sp, fid) =>
+    [...UP.values()].filter(
+      (u) =>
+        (u.spaceId || null) === (sp || null) &&
+        (u.folderId || null) === (fid || null),
+    );
+  /* fajl u istoj mreži kao stranice: slika/video kao pozadina, ostalo kao ikonica tipa */
+  const baseName = (n) =>
+    String(n || "Fajl").replace(/\.[a-z0-9]{1,5}$/i, "") || n;
+  function fileTile(f, style, up) {
+    const k = fkind(f),
+      u = !up && who(f.createdBy),
+      th = up ? up.preview : f.thumb || (k === "img" ? f.url : ""),
+      media = !!th || (k === "vid" && !up && f.url);
+    const bg = th
+      ? `<img src="${esc(th)}" alt="" loading="lazy" decoding="async" draggable="false">`
+      : media
+        ? `<video src="${esc(f.url)}#t=0.5" preload="metadata" muted playsinline tabindex="-1"></video>`
+        : "";
+    const tag =
+      k === "vid"
+        ? `${FI.play}${f.dur ? fdur(f.dur) : fext(f.name)}`
+        : esc(fext(f.name));
+    const drag = !up && !touch();
+    return `<div class="cptile gfile k-${k}${media ? " media" : ""}${up ? " up" : ""}${!up && S.fresh.has(f.id) ? " new" : ""}" ${up ? `data-upf="${esc(f.id)}"` : `role="button" tabindex="0" data-file="${esc(f.id)}" aria-label="Fajl ${esc(f.name)}"`}${drag ? ' draggable="true"' : ""} style="--c:${fcolor(f)};${style}">
+      ${media ? `<span class="gf-bg">${bg}</span>` : `<span class="ci gf-ci">${k === "aud" ? FI.aud : FI.doc}</span>`}<span class="gf-tag">${tag}</span>
+      <div class="gt-b"><h3 class="gf-n" title="${esc(f.name)}">${esc(baseName(f.name))}</h3>
+      <div class="meta2">${up ? "<span>Otpremam…</span>" : `${u ? `<img src="${esc(X.IMG[u.id])}" alt="" draggable="false">` : ""}<span>${esc(fsize(f.size))}${f.createdAt ? " · " + esc(rel(f.createdAt)) : ""}</span>`}</div></div>
+      ${up ? `<span class="gf-up" style="--p:${up.p || 0}"><i></i><b>${Math.round((up.p || 0) * 100)}%</b></span>` : ""}
+    </div>`;
+  }
+  /* pločice na kraju mreže: nova stranica i fajl (klik ili prevlačenje) */
+  const addTiles = (style, F) =>
+    `<button class="cptile add" data-gnew style="${style}"><span class="ci">${I.plus}</span>Nova stranica</button>` +
+    `<button type="button" class="cptile add gf-add" data-gup style="${style}"><span class="ci">${FI.up}</span><span class="gf-at">${touch() ? "Dodaj fajl ili sliku" : "Dodaj fajl"}<small>${touch() ? "slike, video, PDF…" : "ili prevuci fajlove bilo gde na ekran"}${F ? " · ide u „" + esc(F.name || "Folder") + "“" : ""}</small></span></button>`;
+  /* jedan red u stranici za otpremljen fajl (isti Markdown koji pravi editor) */
+  const fileLine = (name, type, url) =>
+    /^image\//.test(type || "") && !/heic|heif|tiff/i.test(type)
+      ? `![](${url})`
+      : type === "text/html" || /\.html?$/i.test(name || "")
+        ? `::embed[${escPlain(name || "HTML")}](${url})`
+        : `[${escPlain(name || "Fajl")}](${url})`;
+  /* dopiši blokove na kraj stranice (compare-and-set na md; tuđa izmena u međuvremenu = ponovi) */
+  async function addToPage(id, lines) {
+    for (let k = 0; k < 5; k++) {
+      const n = noteOf(id);
+      if (!n) throw { code: "not_found" };
+      const md0 = n.md || "",
+        md =
+          md0.replace(/\s+$/, "") +
+          (md0.trim() ? "\n\n" : "") +
+          lines.join("\n\n") +
+          "\n";
+      const r = await api.updIf(
+        "notes",
+        id,
+        { md, updatedAt: Date.now(), updatedBy: me() ? me().id : null },
+        "md",
+        md0,
+      );
+      if (!r.conflict) return lines.join("\n\n");
+      const loc = noteOf(id);
+      if (loc && r.data && typeof r.data.md === "string") loc.md = r.data.md;
+      await new Promise((ok) => setTimeout(ok, 150));
+    }
+    throw { code: "failed" };
+  }
+  /* „Poništi“: izvadi dopisane blokove ako su još tu */
+  async function takeFromPage(id, chunk) {
+    for (let k = 0; k < 5; k++) {
+      const n = noteOf(id);
+      if (!n) return;
+      const md0 = n.md || "",
+        at = md0.lastIndexOf(chunk);
+      if (at < 0) return;
+      const md = (
+        md0.slice(0, at).replace(/\s+$/, "") +
+        "\n" +
+        md0.slice(at + chunk.length).replace(/^\s+/, "\n")
+      ).replace(/^\s+$/, "");
+      const r = await api.updIf(
+        "notes",
+        id,
+        { md: md.trim() ? md.replace(/\n{3,}/g, "\n\n") : "" },
+        "md",
+        md0,
+      );
+      if (!r.conflict) return;
+      const loc = noteOf(id);
+      if (loc && r.data && typeof r.data.md === "string") loc.md = r.data.md;
+    }
+  }
+  /* otpremanja u stranicu iz huba: id stranice → {p, n} (prsten na pločici) */
+  const PUP = new Map();
+  function pupPaint(id) {
+    const u = PUP.get(id),
+      el = $(`#gpages .gtile[data-gid="${CSS.escape(id)}"] .gf-up`);
+    if (!u || !el) return;
+    el.style.setProperty("--p", u.p);
+    el.lastElementChild.textContent = Math.round(u.p * 100) + "%";
+  }
+  async function uploadToPage(n, list) {
+    const st = store(),
+      max = st ? st.maxBytes : Infinity;
+    const ok = list.filter((f) => f.size > 0 && f.size <= max);
+    if (ok.length < list.length)
+      toast(
+        `${list.length - ok.length} ${filesWord(list.length - ok.length)} veći od ${st ? st.maxLabel : "dozvoljenog"} nije otpremljen.`,
+      );
+    if (!ok.length || !n) return;
+    const tot = ok.reduce((a, f) => a + f.size, 0),
+      got = new Map(),
+      u = { p: 0, n: ok.length };
+    PUP.set(n.id, u);
+    foldUI();
+    try {
+      const urls = await Promise.all(
+        ok.map((f) =>
+          putBlob(f, (p) => {
+            got.set(f, p * f.size);
+            u.p = [...got.values()].reduce((a, v) => a + v, 0) / tot;
+            pupPaint(n.id);
+          }),
+        ),
+      );
+      const chunk = await addToPage(
+        n.id,
+        ok.map((f, i) => fileLine(f.name, f.type, urls[i].url)),
+      );
+      PUP.delete(n.id);
+      foldUI();
+      const t = noteOf(n.id);
+      toast(
+        `Dodato u „${(t && t.title) || "Bez naslova"}“: ${ok.length} ${filesWord(ok.length)}`,
+        () => X.nav("g-" + n.id),
+        "Otvori",
+      );
+      return chunk;
+    } catch (e) {
+      PUP.delete(n.id);
+      foldUI();
+      toast(
+        e && e.code === "too_large"
+          ? e.msg || "Fajl je prevelik."
+          : e && e.code === "not_granted"
+            ? "Nemaš dozvolu za ovu stranicu."
+            : "Otpremanje u stranicu nije uspelo. Probaj ponovo.",
+      );
+    }
+  }
+  /* fajl iz huba prevučen na stranicu: prelazi u stranicu (original ostaje u skladištu) */
+  async function fileIntoPage(f, n) {
+    if (!f || !n) return;
+    const { id, ...data } = f;
+    let chunk;
+    try {
+      chunk = await addToPage(n.id, [fileLine(f.name, f.type, f.url)]);
+      await api.del("files", id);
+    } catch (e) {
+      toast(errMsg(e));
+      return;
+    }
+    foldUI();
+    toast(
+      `„${f.name}“ je sad u stranici „${n.title || "Bez naslova"}“`,
+      async () => {
+        try {
+          await api.set("files", id, data);
+          await takeFromPage(n.id, chunk);
+        } catch (e) {
+          toast(errMsg(e));
+        }
+      },
+    );
+  }
+
+  /* sličica: slika do 520 px (webp ili jpeg), video = kadar sa 10% trajanja */
+  function canvasBlob(c) {
+    return new Promise((res) =>
+      c.toBlob(
+        (b) =>
+          b && b.type === "image/webp"
+            ? res(b)
+            : c.toBlob((j) => res(j), "image/jpeg", 0.82),
+        "image/webp",
+        0.82,
+      ),
+    );
+  }
+  function drawThumb(src, w, h) {
+    const M = 520,
+      r = Math.min(1, M / Math.max(w, h)),
+      c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * r));
+    c.height = Math.max(1, Math.round(h * r));
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    return canvasBlob(c);
+  }
+  async function makeThumb(file) {
+    const k = fkind(file);
+    if (k === "img") {
+      if (/svg|gif/.test(file.type)) return null; // svg se skalira sam, gif zadržava animaciju
+      const url = URL.createObjectURL(file);
+      try {
+        const img = await new Promise((res, rej) => {
+          const i = new Image();
+          i.onload = () => res(i);
+          i.onerror = rej;
+          i.src = url;
+        });
+        const w = img.naturalWidth,
+          h = img.naturalHeight;
+        const blob =
+          file.size > 300 * 1024 || Math.max(w, h) > 1400
+            ? await drawThumb(img, w, h)
+            : null;
+        return { blob, w, h };
+      } catch (e) {
+        return null; // npr. HEIC van Safarija: ostaje ikonica
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+    if (k === "vid") {
+      const url = URL.createObjectURL(file),
+        v = document.createElement("video");
+      try {
+        v.muted = true;
+        v.playsInline = true;
+        v.preload = "auto";
+        v.src = url;
+        await new Promise((res, rej) => {
+          v.onloadeddata = res;
+          v.onerror = rej;
+          setTimeout(() => rej("timeout"), 8000);
+        });
+        const dur = isFinite(v.duration) ? v.duration : 0;
+        v.currentTime = Math.min(2, dur * 0.1 || 0.1);
+        await new Promise((res) => {
+          v.onseeked = res;
+          setTimeout(res, 2500);
+        });
+        const blob = await drawThumb(v, v.videoWidth || 16, v.videoHeight || 9);
+        return { blob, w: v.videoWidth, h: v.videoHeight, dur };
+      } catch (e) {
+        return null;
+      } finally {
+        v.removeAttribute("src");
+        v.load();
+        URL.revokeObjectURL(url);
+      }
+    }
+    return null;
+  }
+  const store = () => (window.OS && window.OS.files) || null;
+  async function putBlob(file, onP) {
+    const st = store();
+    if (st) return st.put(file, { onProgress: onP });
+    if (S.mode === "local") {
+      onP && onP(1);
+      return { id: "", url: URL.createObjectURL(file) };
+    }
+    throw { code: "not_granted" };
+  }
+  function upPaint(u) {
+    const el = $(`#gpages [data-upf="${CSS.escape(u.id)}"] .gf-up`);
+    if (!el) return;
+    el.style.setProperty("--p", u.p);
+    el.lastElementChild.textContent = Math.round(u.p * 100) + "%";
+  }
+  let upQ = [],
+    upRun = 0,
+    upDone = { n: 0, F: null, fail: 0 };
+  /* fajlovi → folder (fid) u trenutnom hubu; najviše 3 otpremanja odjednom */
+  function uploadFiles(list, fid) {
+    const st = store(),
+      max = st ? st.maxBytes : Infinity,
+      sp = hubSpace,
+      F = folderOf(fid, sp);
+    const big = list.filter((f) => f.size > max),
+      ok = list.filter((f) => f.size <= max && f.size > 0);
+    if (big.length)
+      toast(
+        big.length === 1
+          ? `„${big[0].name}“ je veći od ${st.maxLabel}.`
+          : `${big.length} fajla su veća od ${st.maxLabel} i nisu otpremljena.`,
+      );
+    if (!ok.length) return;
+    upDone.F = F;
+    for (const file of ok) {
+      const id =
+        "u" + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+      const u = {
+        id,
+        file,
+        name: file.name || "Fajl",
+        type: file.type || "",
+        size: file.size,
+        folderId: F ? fid : null,
+        spaceId: sp,
+        p: 0,
+        preview:
+          fkind(file) === "img" && !/heic|heif|tiff/i.test(file.type)
+            ? URL.createObjectURL(file)
+            : "",
+      };
+      UP.set(id, u);
+      upQ.push(u);
+    }
+    foldUI();
+    pump();
+  }
+  function pump() {
+    while (upRun < 3 && upQ.length) {
+      const u = upQ.shift();
+      upRun++;
+      upOne(u).finally(() => {
+        upRun--;
+        pump();
+        if (!upRun && !upQ.length) {
+          const { n, F, fail } = upDone;
+          upDone = { n: 0, F: null, fail: 0 };
+          if (n)
+            toast(
+              `Otpremljeno: ${n} ${filesWord(n)}${F ? ` u „${F.name || "Folder"}“` : ""}${fail ? ` · ${fail} nije uspelo` : ""}`,
+            );
+        }
+      });
+    }
+  }
+  async function upOne(u) {
+    const file = u.file;
+    try {
+      const th = await makeThumb(file).catch(() => null);
+      const tb =
+        th && th.blob ? await putBlob(th.blob).catch(() => null) : null;
+      const r = await putBlob(file, (p) => {
+        u.p = p;
+        upPaint(u);
+      });
+      const now = Date.now(),
+        id = "f" + Math.random().toString(36).slice(2, 10) + now.toString(36);
+      const doc = {
+        name: u.name,
+        type: u.type,
+        size: u.size,
+        blob: r.id || null,
+        url: r.url,
+        thumb: tb ? tb.url : null,
+        thumbBlob: tb ? tb.id || null : null,
+        ...(th && th.w ? { w: th.w, h: th.h } : {}),
+        ...(th && th.dur ? { dur: Math.round(th.dur * 10) / 10 } : {}),
+        folderId: u.folderId,
+        spaceId: u.spaceId,
+        order: now,
+        createdAt: now,
+        createdBy: me() ? me().id : null,
+        updatedAt: now,
+        updatedBy: me() ? me().id : null,
+      };
+      X.markFresh(id);
+      UP.delete(u.id);
+      await api.set("files", id, doc);
+      upDone.n++;
+    } catch (e) {
+      UP.delete(u.id);
+      upDone.fail++;
+      toast(
+        e && e.code === "too_large"
+          ? e.msg || "Fajl je prevelik."
+          : e && e.code === "not_granted"
+            ? "Nemaš dozvolu za otpremanje."
+            : `„${u.name}“ nije otpremljen. Proveri internet pa probaj ponovo.`,
+      );
+    } finally {
+      if (u.preview) setTimeout(() => URL.revokeObjectURL(u.preview), 4000);
+      foldUI();
+    }
+  }
+  addEventListener("beforeunload", (e) => {
+    if (UP.size) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+  async function moveFile(f, fid, quiet) {
+    if (!f) return;
+    const to = folderOf(fid, f.spaceId || null) ? fid : null,
+      from = ffidOf(f);
+    if (from === to) return;
+    const p = api.upd("files", f.id, { folderId: to });
+    foldUI();
+    const tile = to && $(`#gpages .fcf[data-gf="${CSS.escape(to)}"]`);
+    if (tile) {
+      tile.classList.add("got");
+      setTimeout(() => tile.classList.remove("got"), 700);
+    }
+    try {
+      await p;
+    } catch (e) {
+      toast(errMsg(e));
+      return;
+    }
+    if (quiet) return;
+    const F = folderOf(to, f.spaceId || null);
+    toast(
+      F
+        ? `„${f.name}“ je u „${F.name || "Folder"}“`
+        : `„${f.name}“ je u svim stranicama`,
+      () => moveFile(fileOf(f.id), from, true),
+    );
+  }
+  async function deleteFile(f) {
+    if (!f) return;
+    const { id, ...data } = f;
+    try {
+      await api.del("files", id);
+    } catch (e) {
+      toast(errMsg(e));
+      return;
+    }
+    let undone = false;
+    toast(`Obrisan fajl „${f.name}“`, () => {
+      undone = true;
+      api.set("files", id, data).catch((e) => toast(errMsg(e)));
+    });
+    /* original se briše iz skladišta tek kad prođe vreme za „Poništi“ */
+    setTimeout(() => {
+      if (undone || fileOf(id) || !store()) return;
+      if (allFiles().some((x) => x.blob === f.blob)) return;
+      store()
+        .remove([f.blob, f.thumbBlob])
+        .catch(() => {});
+    }, 7000);
+  }
+
+  /* ---------------- pregled fajla ---------------- */
+  let FV = null; // {id, list}
+  function fvEl() {
+    let el = $("#gfv");
+    if (el) return el;
+    el = document.createElement("div");
+    el.className = "gfv";
+    el.id = "gfv";
+    el.hidden = true;
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", "Pregled fajla");
+    el.innerHTML = `<div class="gfv-top">
+        <input class="gfv-n" id="gfvN" maxlength="120" spellcheck="false" aria-label="Naziv fajla">
+        <span class="gfv-m" id="gfvM"></span>
+        <span class="gfv-sp"></span>
+        <a class="pill" id="gfvDl" download>${I.dl}<span>Preuzmi</span></a>
+        <button type="button" class="pill" id="gfvLn" title="Kopiraj link">${FI.link}<span>Link</span></button>
+        <label class="pill gfv-fold">${I.fold}<span id="gfvFL">Folder</span><select id="gfvF" aria-label="Premesti u folder"></select></label>
+        <button type="button" class="pill danger" id="gfvDel" aria-label="Obriši fajl">${I.trash}</button>
+        <button type="button" class="gfv-x" id="gfvX" aria-label="Zatvori">${FI.x}</button>
+      </div>
+      <div class="gfv-st" id="gfvS"></div>
+      <button type="button" class="gfv-nav p" id="gfvP" aria-label="Prethodni fajl">${FI.l}</button>
+      <button type="button" class="gfv-nav n" id="gfvNx" aria-label="Sledeći fajl">${FI.r}</button>`;
+    document.body.appendChild(el);
+    $("#gfvX").onclick = closeFv;
+    $("#gfvP").onclick = () => stepFv(-1);
+    $("#gfvNx").onclick = () => stepFv(1);
+    $("#gfvDel").onclick = () => {
+      const f = FV && fileOf(FV.id);
+      if (!f) return;
+      const nx =
+        FV.list[FV.list.indexOf(f.id) + 1] ||
+        FV.list[FV.list.indexOf(f.id) - 1];
+      FV.list = FV.list.filter((x) => x !== f.id);
+      deleteFile(f);
+      if (nx && fileOf(nx)) openFv(nx, FV.list);
+      else closeFv();
+    };
+    $("#gfvLn").onclick = async () => {
+      const f = FV && fileOf(FV.id);
+      if (!f) return;
+      try {
+        await navigator.clipboard.writeText(new URL(f.url, location.href).href);
+        toast("Link je kopiran");
+      } catch (e) {
+        toast("Link nije kopiran");
+      }
+    };
+    $("#gfvF").onchange = (e) => {
+      const f = FV && fileOf(FV.id);
+      if (f) moveFile(f, e.target.value || null);
+      setTimeout(paintFvMeta, 0);
+    };
+    const nm = $("#gfvN");
+    const saveName = () => {
+      const f = FV && fileOf(FV.id),
+        v = nm.value.trim();
+      if (!f || !v || v === f.name) {
+        if (f) nm.value = f.name;
+        return;
+      }
+      api
+        .upd("files", f.id, {
+          name: v,
+          updatedAt: Date.now(),
+          updatedBy: me() ? me().id : null,
+        })
+        .then(() => foldUI())
+        .catch((e) => toast(errMsg(e)));
+    };
+    nm.addEventListener("blur", saveName);
+    nm.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        nm.blur();
+      }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        const f = FV && fileOf(FV.id);
+        if (f) nm.value = f.name;
+        nm.blur();
+      }
+    });
+    el.addEventListener("click", (e) => {
+      if (e.target === el || e.target.id === "gfvS") closeFv();
+    });
+    addEventListener("keydown", (e) => {
+      if (!FV || el.hidden) return;
+      if (e.target.closest && e.target.closest("input,select,textarea")) return;
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        closeFv();
+      } else if (e.key === "ArrowLeft") stepFv(-1);
+      else if (e.key === "ArrowRight") stepFv(1);
+    });
+    return el;
+  }
+  function paintFvMeta() {
+    const f = FV && fileOf(FV.id);
+    if (!f) return;
+    const u = who(f.createdBy),
+      sp = f.spaceId || null,
+      cf = ffidOf(f);
+    $("#gfvM").textContent = [
+      fsize(f.size),
+      u ? u.name : "",
+      f.createdAt ? rel(f.createdAt) : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    $("#gfvF").innerHTML =
+      `<option value="">Bez foldera</option>` +
+      foldersOf(sp)
+        .map(
+          (F) =>
+            `<option value="${esc(F.id)}"${F.id === cf ? " selected" : ""}>${esc(F.name || "Folder")}</option>`,
+        )
+        .join("");
+    const F = folderOf(cf, sp);
+    $("#gfvFL").textContent = F ? F.name || "Folder" : "Bez foldera";
+  }
+  function openFv(id, list) {
+    const f = fileOf(id);
+    if (!f) return;
+    const el = fvEl();
+    FV = { id, list: list || [id] };
+    const k = fkind(f),
+      st = $("#gfvS");
+    $("#gfvN").value = f.name || "";
+    const dl = $("#gfvDl");
+    dl.href = f.url;
+    dl.setAttribute("download", f.name || "fajl");
+    paintFvMeta();
+    st.className = "gfv-st k-" + k;
+    st.innerHTML =
+      k === "img"
+        ? `<img src="${esc(f.url)}" alt="${esc(f.name)}" decoding="async">`
+        : k === "vid"
+          ? `<video src="${esc(f.url)}" controls playsinline preload="metadata"${f.thumb ? ` poster="${esc(f.thumb)}"` : ""}></video>`
+          : k === "aud"
+            ? `<div class="gfv-card" style="--fx:${fcolor(f)}">${FI.aud}<b>${esc(f.name)}</b><audio src="${esc(f.url)}" controls preload="metadata"></audio></div>`
+            : k === "pdf"
+              ? `<iframe src="${esc(f.url)}#view=FitH" title="${esc(f.name)}"></iframe>`
+              : `<div class="gfv-card" style="--fx:${fcolor(f)}"><span class="gf-ic">${FI.doc}<b>${esc(fext(f.name))}</b></span><b>${esc(f.name)}</b><span>${esc(fsize(f.size))} · pregled nije moguć u pregledaču</span><a class="pill solid" href="${esc(f.url)}" download="${esc(f.name)}">${I.dl}<span>Preuzmi fajl</span></a></div>`;
+    const i = FV.list.indexOf(id);
+    $("#gfvP").hidden = i <= 0;
+    $("#gfvNx").hidden = i < 0 || i >= FV.list.length - 1;
+    if (el.hidden) {
+      el.hidden = false;
+      document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => el.classList.add("open"));
+    }
+  }
+  function stepFv(d) {
+    if (!FV) return;
+    const i = FV.list.indexOf(FV.id) + d;
+    if (FV.list[i]) openFv(FV.list[i], FV.list);
+  }
+  function closeFv() {
+    const el = $("#gfv");
+    if (!el || el.hidden) return;
+    const v = el.querySelector("video,audio");
+    if (v) v.pause();
+    el.classList.remove("open");
+    document.body.style.overflow = "";
+    FV = null;
+    setTimeout(
+      () => {
+        if (FV) return;
+        el.hidden = true;
+        $("#gfvS").innerHTML = "";
+      },
+      reduce ? 0 : 200,
+    );
+  }
+  /* fajlovi koji su trenutno na ekranu (redom kao u mreži): strelice u pregledu */
+  const shownFiles = () =>
+    [...document.querySelectorAll("#gpages [data-file]")].map(
+      (e) => e.dataset.file,
+    );
+
+  /* ---------------- prevlačenje fajlova sa računara ---------------- */
+  let dropN = 0,
+    dropT = null;
+  const isFileDrag = (e) =>
+    !dragId &&
+    e.dataTransfer &&
+    [...(e.dataTransfer.types || [])].includes("Files") &&
+    !$("#general").hidden &&
+    (!$("#gfv") || $("#gfv").hidden);
+  const DROP_T = "#gpages .fcf[data-gf], #gpages .gtile[data-gid]";
+  function dropEl() {
+    let el = $("#gdropx");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "gdropx";
+      el.className = "gdropx";
+      el.setAttribute("aria-hidden", "true");
+      el.innerHTML = `<span class="gdx-p">${FI.up}<span id="gdxT"></span></span><i class="gdx-l" id="gdxL"></i>`;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function dropUI(on, t) {
+    const F = t && t.dataset.gf ? folderOf(t.dataset.gf, hubSpace) : null,
+      P = t && t.dataset.gid ? noteOf(t.dataset.gid) : null;
+    const el = dropEl();
+    el.classList.remove("pg");
+    $("#gpages").classList.toggle("fdrag", !!on);
+    if (!on) {
+      el.classList.remove("on");
+      $("#gpages")
+        .querySelectorAll(".drop")
+        .forEach((x) => x.classList.remove("drop"));
+      return;
+    }
+    const cur = folderOf(hubFid, hubSpace),
+      T = F || (!P && cur);
+    el.style.setProperty("--fc", T ? fcol(T) : "var(--orange)");
+    $("#gdxT").textContent = P
+      ? `Pusti u stranicu „${P.title || "Bez naslova"}“`
+      : T
+        ? `Pusti u folder „${T.name || "Folder"}“`
+        : `Pusti da otpremiš u ${X.spaceLabel(hubSpace)}`;
+    el.classList.add("on");
+  }
+  addEventListener("dragenter", (e) => {
+    if (!isFileDrag(e)) return;
+    dropN++;
+    dropUI(true);
+  });
+  addEventListener("dragleave", (e) => {
+    if (!dropN) return;
+    dropN = Math.max(0, dropN - 1);
+    clearTimeout(dropT);
+    if (!dropN) dropT = setTimeout(() => !dropN && dropUI(false), 60);
+  });
+  addEventListener("dragover", (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    const t = e.target.closest && e.target.closest(DROP_T);
+    $("#gpages")
+      .querySelectorAll(".drop")
+      .forEach((x) => x !== t && x.classList.remove("drop"));
+    if (t && !t.classList.contains("drop")) t.classList.add("drop");
+    dropUI(true, t);
+  });
+  addEventListener("drop", (e) => {
+    if (!dropN && !isFileDrag(e)) return;
+    dropN = 0;
+    const ok = isFileDrag(e);
+    const t = e.target.closest && e.target.closest(DROP_T);
+    dropUI(false);
+    if (!ok) return;
+    e.preventDefault();
+    const items = [...(e.dataTransfer.items || [])];
+    const dirs = items.filter(
+      (it) => it.webkitGetAsEntry && (it.webkitGetAsEntry() || {}).isDirectory,
+    ).length;
+    const list = [...(e.dataTransfer.files || [])].filter(
+      (f, i) =>
+        !(
+          items[i] &&
+          items[i].webkitGetAsEntry &&
+          (items[i].webkitGetAsEntry() || {}).isDirectory
+        ),
+    );
+    if (dirs)
+      toast(
+        "Folderi se ne otpremaju: otvori folder i prevuci fajlove iz njega.",
+      );
+    if (!list.length) return;
+    if (t && t.dataset.gid) uploadToPage(noteOf(t.dataset.gid), list);
+    else uploadFiles(list, t ? t.dataset.gf : hubFid);
+  });
+
+  /* ---------------- fajl prevučen na otvorenu stranicu ----------------
+     Editor već prima fajl na blok; ovde je i ostatak ekrana (naslov, margine, prostor ispod
+     poslednjeg bloka), da pregledač ne otvori fajl umesto OS-a. Linija pokazuje gde fajl ide. */
+  let gpN = 0,
+    gpT = null;
+  const isGpDrag = (e) =>
+    e.dataTransfer &&
+    [...(e.dataTransfer.types || [])].includes("Files") &&
+    !$("#gp").hidden &&
+    !!rendered &&
+    !isScript();
+  /* iznad prvog bloka (naslov, ikonica): fajl ide na vrh stranice */
+  const atTop = (y) => {
+    const b0 = blocks()[0];
+    return !!b0 && y < b0.getBoundingClientRect().top;
+  };
+  function gpUI(on, y) {
+    const el = dropEl();
+    if (!on) {
+      el.classList.remove("on", "pg");
+      return;
+    }
+    const p = noteOf(rendered),
+      b = blockAtY(y),
+      ln = $("#gdxL");
+    el.style.setProperty("--fc", "var(--orange)");
+    $("#gdxT").textContent = `Pusti u „${(p && p.title) || "Bez naslova"}“`;
+    if (b) {
+      const r = b.getBoundingClientRect(),
+        top = atTop(y),
+        empty = b.dataset.t === "p" && isEmpty(tOf(b));
+      ln.style.transform = `translate(${Math.round(r.left)}px, ${Math.round(top ? r.top - 4 : empty ? r.top + r.height / 2 : r.bottom + 3)}px)`;
+      ln.style.width = Math.round(r.width) + "px";
+    }
+    el.classList.add("on", "pg");
+  }
+  addEventListener("dragenter", (e) => {
+    if (!isGpDrag(e)) return;
+    gpN++;
+    gpUI(true, e.clientY);
+  });
+  addEventListener("dragleave", () => {
+    if (!gpN) return;
+    gpN = Math.max(0, gpN - 1);
+    clearTimeout(gpT);
+    if (!gpN) gpT = setTimeout(() => !gpN && gpUI(false), 60);
+  });
+  addEventListener("dragover", (e) => {
+    if (!isGpDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    gpUI(true, e.clientY);
+  });
+  addEventListener("drop", (e) => {
+    if (!gpN && !isGpDrag(e)) return;
+    gpN = 0;
+    gpUI(false);
+    if (!isGpDrag(e) || e.defaultPrevented) return; // blok u editoru ga je već primio
+    e.preventDefault();
+    const fs = [...(e.dataTransfer.files || [])];
+    const b = fs.length && blockAtY(e.clientY);
+    if (!b) return;
+    pushUndo();
+    if (atTop(e.clientY) && !(b.dataset.t === "p" && isEmpty(tOf(b)))) {
+      const nb = make({ t: "p", x: "" });
+      root.prepend(nb);
+      uploadInto(fs, nb, true);
+    } else uploadInto(fs, b, b.dataset.t === "p" && isEmpty(tOf(b)));
+  });
+  /* nalepljena slika ili fajl (⌘V) dok je General otvoren */
+  addEventListener("paste", (e) => {
+    if ($("#general").hidden || !e.clipboardData) return;
+    if (
+      e.target.closest &&
+      e.target.closest("input,textarea,[contenteditable]")
+    )
+      return;
+    const list = [...(e.clipboardData.files || [])];
+    if (!list.length) return;
+    e.preventDefault();
+    uploadFiles(
+      list.map((f, i) =>
+        f.name && f.name !== "image.png"
+          ? f
+          : new File(
+              [f],
+              `Snimak ekrana ${new Date().toLocaleString("sr-Latn-RS").replace(/[/:]/g, ".")}${list.length > 1 ? " " + (i + 1) : ""}.${(f.type.split("/")[1] || "png").replace("jpeg", "jpg")}`,
+              { type: f.type },
+            ),
+      ),
+      hubFid,
+    );
+  });
+  /* skladište: koliko je zauzeto (osveži najviše jednom u minuti) */
+  let usage = null,
+    usageAt = 0;
+  function loadUsage() {
+    const st = store();
+    if (!st || !st.usage || Date.now() - usageAt < 60000) return;
+    usageAt = Date.now();
+    st.usage()
+      .then((u) => {
+        if (!u) return;
+        usage = u;
+        if (!$("#general").hidden) hub(false);
+      })
+      .catch(() => {});
   }
 
   /* ---------------- hub controls ---------------- */
@@ -7384,7 +8379,18 @@ window.SKNotes = function (X) {
     hq = e.target.value;
     hub(false);
   });
+  const pickInto = () => pickFiles("", (fs) => uploadFiles(fs, hubFid));
+  $("#gUp") && $("#gUp").addEventListener("click", pickInto);
   $("#gpages").addEventListener("click", (e) => {
+    if (e.target.closest("[data-gup]")) {
+      pickInto();
+      return;
+    }
+    const fe0 = e.target.closest("[data-file]");
+    if (fe0) {
+      openFv(fe0.dataset.file, shownFiles());
+      return;
+    }
     const g = e.target.closest("[data-gnew]");
     if (g) createAndOpen(null, g.dataset.gnew === "me");
     const fe = e.target.closest("[data-gf-edit]");
@@ -7395,6 +8401,13 @@ window.SKNotes = function (X) {
   });
   /* dugmad (folder, „Sve stranice“) Enter već pretvara u klik */
   $("#gpages").addEventListener("keydown", (e) => {
+    const fe =
+      (e.key === "Enter" || e.key === " ") && e.target.closest("[data-file]");
+    if (fe) {
+      e.preventDefault();
+      openFv(fe.dataset.file, shownFiles());
+      return;
+    }
     const t = e.key === "Enter" && e.target.closest("[data-go]:not(button)");
     if (t) X.nav(t.dataset.go);
   });
@@ -7402,7 +8415,11 @@ window.SKNotes = function (X) {
   let dragId = null;
   const dropAt = (e) =>
     dragId && e.target.closest
-      ? e.target.closest("[data-gf], [data-gf-up]")
+      ? e.target.closest(
+          dragId.startsWith("f:")
+            ? "[data-gf], [data-gf-up], .gtile[data-gid]"
+            : "[data-gf], [data-gf-up]",
+        )
       : null;
   const dropOff = () =>
     $("#gpages")
@@ -7414,19 +8431,38 @@ window.SKNotes = function (X) {
     dragId = null;
     dropOff();
     $("#gpages")
-      .querySelectorAll(".gtile.drag")
+      .querySelectorAll(".gtile.drag, .gfile.drag")
       .forEach((x) => x.classList.remove("drag"));
-    $("#gpages").classList.remove("dragging");
+    $("#gpages").classList.remove("dragging", "fdrag");
   }
   $("#gpages").addEventListener("dragstart", (e) => {
-    const t = e.target.closest && e.target.closest(".gtile[draggable=true]");
+    const t =
+      e.target.closest &&
+      e.target.closest(".gtile[draggable=true], .gfile[draggable=true]");
     if (!t || !e.dataTransfer) return;
-    dragId = t.dataset.gid;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/x-skeylo-page", dragId);
+    if (t.dataset.file) {
+      /* fajl: na folder = premesti; na radnu površinu (Chrome) = preuzmi */
+      const f = fileOf(t.dataset.file);
+      if (!f) return;
+      dragId = "f:" + f.id;
+      e.dataTransfer.effectAllowed = "copyMove";
+      e.dataTransfer.setData("text/x-skeylo-file", f.id);
+      try {
+        e.dataTransfer.setData(
+          "DownloadURL",
+          `${f.type || "application/octet-stream"}:${f.name}:${new URL(f.url, location.href).href}`,
+        );
+      } catch (x) {}
+    } else {
+      dragId = t.dataset.gid;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/x-skeylo-page", dragId);
+    }
+    const isF = !!t.dataset.file;
     requestAnimationFrame(() => {
       t.classList.add("drag");
       $("#gpages").classList.add("dragging");
+      $("#gpages").classList.toggle("fdrag", isF);
     });
   });
   $("#gpages").addEventListener("dragend", dragEnd);
@@ -7450,9 +8486,13 @@ window.SKNotes = function (X) {
     const t = dropAt(e);
     if (!t) return;
     e.preventDefault();
-    const n = noteOf(dragId);
+    const id = dragId;
     dragEnd();
-    moveTo(n, t.dataset.gf || null);
+    if (id.startsWith("f:") && t.dataset.gid)
+      fileIntoPage(fileOf(id.slice(2)), noteOf(t.dataset.gid));
+    else if (id.startsWith("f:"))
+      moveFile(fileOf(id.slice(2)), t.dataset.gf || null);
+    else moveTo(noteOf(id), t.dataset.gf || null);
   });
   $("#gpages").addEventListener("pointermove", (e) => {
     const t = e.target.closest(".cptile");

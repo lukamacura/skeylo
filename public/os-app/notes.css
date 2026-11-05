@@ -2454,3 +2454,597 @@ body.nb-dragging * {
     transition: none;
   }
 }
+
+/* ---------- fajlovi u General-u: ista mreža i iste pločice kao stranice ---------- */
+.gfile {
+  min-height: 210px;
+}
+.gfile.new {
+  animation: rowPop 0.8s var(--spring) backwards;
+}
+.gfile[draggable="true"] {
+  -webkit-user-drag: element;
+}
+.gfile.drag,
+.gtile.drag {
+  opacity: 0.35;
+  transform: scale(0.96);
+}
+.gf-tag {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 16%, var(--ink));
+  border: 1px solid color-mix(in srgb, var(--c) 38%, transparent);
+}
+.gf-tag svg {
+  width: 11px;
+  height: 11px;
+}
+.gfile .gf-n {
+  font-size: 22px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+/* slika i video: sličica je cela pločica, naziv na tamnom prelivu */
+.gfile.media {
+  justify-content: flex-end;
+  border-color: transparent;
+  background: var(--ink);
+}
+.gf-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.gf-bg img,
+.gf-bg video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  transition: transform 0.6s var(--ease);
+}
+.gfile.media:hover .gf-bg img,
+.gfile.media:hover .gf-bg video {
+  transform: scale(1.05);
+}
+.gf-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 38%, rgba(0, 0, 0, 0.8));
+}
+.gfile.media .gf-tag {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.gfile.media .gf-n {
+  color: #fff;
+  font-size: 20px;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45);
+}
+.gfile.media .meta2 {
+  color: rgba(255, 255, 255, 0.8);
+}
+/* otpremanje (fajl ili fajlovi koji idu u stranicu): prsten sa procentom */
+.gf-up {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: rgba(8, 6, 4, 0.55);
+}
+.gf-up i {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--orange) calc(var(--p, 0) * 360deg),
+    rgba(255, 255, 255, 0.14) 0
+  );
+  -webkit-mask: radial-gradient(circle, transparent 23px, #000 24px);
+  mask: radial-gradient(circle, transparent 23px, #000 24px);
+}
+.gf-up b {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cream);
+}
+.gfile.up {
+  cursor: progress;
+}
+.gf-add .gf-at {
+  display: grid;
+  gap: 4px;
+}
+.gf-add small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+/* stranica kao cilj: fajl sa računara ili iz mreže ide u nju */
+#gpages.fdrag .gtile[data-gid] {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--orange) 45%, transparent);
+}
+#gpages .gtile.drop {
+  transform: translateY(-6px) scale(1.02);
+  border-color: var(--orange);
+  box-shadow:
+    0 0 0 2px var(--orange),
+    0 30px 60px -30px var(--orange);
+}
+/* listovi u fascikli: slika ili fajl */
+.fcf-th img.gsh-ph {
+  background: var(--ink);
+}
+.gsh.gsh-f .gsh-i {
+  color: var(--fx);
+}
+.gsh.gsh-f em {
+  margin-top: auto;
+  margin-bottom: 8px;
+  align-self: flex-start;
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--fx);
+  color: #140d08;
+}
+/* skladište */
+.gstore {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 36px 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+  animation: fade 0.6s 0.3s var(--ease) backwards;
+}
+.gstore b {
+  color: var(--cream);
+  font-weight: 600;
+}
+.gst-b {
+  width: 140px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.gst-b i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--grad);
+}
+
+/* fajlovi sa računara: okvir preko ekrana dok se prevlači */
+.gdropx {
+  --fc: var(--orange);
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.gdropx::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 28px;
+  border: 2px dashed color-mix(in srgb, var(--fc) 80%, transparent);
+  background: color-mix(in srgb, var(--fc) 6%, transparent);
+}
+.gdropx.on {
+  opacity: 1;
+}
+.gdx-p {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  background: var(--fc);
+  color: #140c06;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+  box-shadow: 0 20px 50px -18px var(--fc);
+  transform: translateX(-50%) translateY(12px);
+  transition: transform 0.25s var(--spring);
+}
+.gdropx.on .gdx-p {
+  transform: translateX(-50%);
+}
+.gdx-l {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: var(--orange);
+  box-shadow: 0 0 14px var(--orange);
+  opacity: 0;
+  transition:
+    transform 0.12s var(--ease),
+    opacity 0.12s;
+}
+.gdropx.pg .gdx-l {
+  opacity: 1;
+}
+.gdx-p svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* pregled fajla */
+.gfv {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: rgba(5, 3, 2, 0.9);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.gfv.open {
+  opacity: 1;
+}
+.gfv-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 10px;
+}
+.gfv-n {
+  flex: 0 1 380px;
+  min-width: 120px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--cream);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.gfv-n:hover {
+  border-color: var(--line);
+}
+.gfv-n:focus {
+  outline: none;
+  border-color: var(--orange);
+  background: var(--ink);
+}
+.gfv-m {
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.gfv-sp {
+  flex: 1;
+}
+.gfv .pill {
+  padding: 9px 13px;
+  font-size: 14px;
+}
+.gfv-fold {
+  position: relative;
+  cursor: pointer;
+  max-width: 220px;
+}
+.gfv-fold span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gfv-fold select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+.gfv-x {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.gfv-x svg {
+  width: 18px;
+  height: 18px;
+}
+.gfv-st {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 6px 72px 24px;
+}
+.gfv-st > img,
+.gfv-st > video {
+  max-width: 100%;
+  max-height: calc(100dvh - 110px);
+  object-fit: contain;
+  border-radius: 14px;
+  box-shadow: 0 30px 80px -30px #000;
+  transform: scale(0.98);
+  transition: transform 0.25s var(--ease);
+}
+.gfv.open .gfv-st > img,
+.gfv.open .gfv-st > video {
+  transform: none;
+}
+.gfv-st > iframe {
+  width: min(1040px, 100%);
+  height: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+}
+.gfv-card {
+  --fx: var(--muted);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-width: 420px;
+  padding: 36px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: center;
+  color: var(--muted);
+}
+.gfv-card > svg {
+  width: 54px;
+  height: 54px;
+  color: var(--fx);
+}
+.gfv-card b {
+  color: var(--cream);
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.gfv-card audio {
+  width: 300px;
+  max-width: 100%;
+}
+.gfv-nav {
+  position: fixed;
+  top: 50%;
+  margin-top: -24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  transition: background 0.15s;
+}
+.gfv-nav:hover {
+  background: var(--surface-2);
+}
+.gfv-nav svg {
+  width: 20px;
+  height: 20px;
+}
+.gfv-nav.p {
+  left: 14px;
+}
+.gfv-nav.n {
+  right: 14px;
+}
+
+/* ---------- dashboard: General (fascikle) i Models ---------- */
+.gencard .gen-sub {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 16px;
+  max-width: 55%;
+}
+.genfx {
+  position: absolute;
+  right: clamp(24px, 4vw, 48px);
+  top: 50%;
+  width: 196px;
+  height: 104px;
+  transform: translateY(-46%);
+  pointer-events: none;
+  z-index: 0;
+}
+.genfx i {
+  --fc: var(--orange);
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--i) * 48px);
+  width: 98px;
+  height: 70px;
+  border-radius: 6px 14px 14px 14px;
+  background: color-mix(in srgb, var(--fc) 32%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--fc) 40%, transparent);
+  box-shadow: 0 16px 30px -18px #000;
+  transform: rotate(calc((var(--i) - 1) * 6deg))
+    translateY(calc(var(--i) * -3px));
+  transition: transform 0.5s var(--spring);
+  animation: avIn 0.7s var(--spring) backwards;
+  animation-delay: calc(0.25s + var(--i) * 0.06s);
+}
+.genfx i::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -10px;
+  width: 40%;
+  height: 14px;
+  border-radius: 8px 10px 0 0;
+  background: inherit;
+  border: inherit;
+  border-bottom: 0;
+}
+.genfx i::after {
+  content: "";
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 7px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--cream);
+  opacity: 0.92;
+  transition: transform 0.5s var(--spring);
+}
+.genfx i b {
+  position: absolute;
+  inset: 36% 0 0;
+  z-index: 1;
+  border-radius: 10px 10px 14px 14px;
+  background: linear-gradient(
+    172deg,
+    color-mix(in srgb, var(--fc) 62%, var(--surface-2)),
+    color-mix(in srgb, var(--fc) 30%, var(--surface))
+  );
+  border-top: 1px solid color-mix(in srgb, var(--fc) 70%, #fff 12%);
+}
+.gencard:hover .genfx i {
+  transform: rotate(calc((var(--i) - 1) * 10deg))
+    translateY(calc(var(--i) * -3px - 6px));
+}
+.gencard:hover .genfx i::after {
+  transform: translateY(-8px);
+}
+.mdlcard:hover .avstack > * {
+  transform: translateY(-6px);
+}
+
+@media (max-width: 600px) {
+  .gfile {
+    min-height: 180px;
+  }
+  .gfv-top {
+    padding: max(10px, env(safe-area-inset-top)) 10px 8px;
+    gap: 6px;
+  }
+  .gfv-n {
+    flex: 1 1 100%;
+    order: -1;
+    font-size: 16px;
+  }
+  .gfv-m {
+    display: none;
+  }
+  .gfv .pill span:not(#gfvFL) {
+    display: none;
+  }
+  .gfv-fold {
+    max-width: 150px;
+  }
+  .gfv-st {
+    padding: 4px 6px 76px;
+  }
+  .gfv-st > img,
+  .gfv-st > video {
+    max-height: calc(100dvh - 190px);
+  }
+  .gfv-nav {
+    top: auto;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    margin-top: 0;
+  }
+  .gfv-nav.p {
+    left: calc(50% - 60px);
+  }
+  .gfv-nav.n {
+    right: calc(50% - 60px);
+  }
+  .genfx {
+    right: 18px;
+    transform: translateY(-46%) scale(0.6);
+    transform-origin: right center;
+  }
+  .gencard .gen-sub {
+    font-size: 14px;
+  }
+  .gdx-p {
+    bottom: 22px;
+    font-size: 15px;
+  }
+}
+.gfv a.pill,
+.gfv-card a.pill {
+  color: var(--cream);
+  text-decoration: none;
+}
+.gfv-card a.pill.solid {
+  color: var(--on-accent);
+}
+.gfile .meta2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  min-width: 0;
+}
+.gfile .meta2 img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  flex: none;
+}
+.gfile .meta2 span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gfile .gt-b {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}

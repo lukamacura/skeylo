@@ -349,6 +349,8 @@
     reports: [],
     finances: [],
     expenses: [],
+    ledger: [],
+    files: [],
     tasks: [],
     models: [],
     cpages: [],
@@ -368,6 +370,7 @@
   };
   let NT = null; // General stranice (notes.js)
   let FK = null; // Fakture (fakture.js)
+  let FN = null; // Skeylo Finance (finance.js)
   FALLBACK.entities = [];
   FALLBACK.dayItems = [];
   FALLBACK.notes = [
@@ -555,6 +558,8 @@
   FALLBACK.reports = [];
   FALLBACK.finances = [];
   FALLBACK.expenses = [];
+  FALLBACK.ledger = [];
+  FALLBACK.files = [];
   FALLBACK.tasks = [];
   FALLBACK.models = [
     {
@@ -705,6 +710,8 @@
       "reports",
       "finances",
       "expenses",
+      "ledger",
+      "files",
       "tasks",
       "models",
       "cpages",
@@ -768,6 +775,8 @@
                 "reports",
                 "finances",
                 "expenses",
+                "ledger",
+                "files",
                 "tasks",
                 "models",
                 "cpages",
@@ -799,6 +808,8 @@
     sub("reports");
     sub("finances");
     sub("expenses");
+    sub("ledger");
+    sub("files");
     sub("tasks");
     sub("models");
     sub("cpages");
@@ -820,7 +831,7 @@
     if (!$("#mh").hidden) renderMH();
     if (!$("#rp").hidden) renderRP();
     if (!$("#fin").hidden && $("#wiz").hidden) renderFIN();
-    if (!$("#money").hidden) renderMONEY();
+    if (FN && !$("#money").hidden) FN.render();
     if (!$("#tasks").hidden && !tBusy) renderTASKS();
     if (!$("#general").hidden) renderGEN();
     if (NT && !$("#gp").hidden) NT.sync();
@@ -936,6 +947,12 @@
       h === "fakture" || h.startsWith("fakture~") || h.startsWith("fak-");
     if (FK && view.name === "fak" && !fakH) FK.leave();
     if (
+      FN &&
+      view.name === "money" &&
+      !(h === "money" || h.startsWith("money~"))
+    )
+      FN.leave();
+    if (
       view.name === "ed" &&
       h !== (view.col === "cpages" ? "p-" : "s-") + view.id
     )
@@ -987,12 +1004,12 @@
       show("tasks");
       firstTasks = true;
       renderTASKS();
-    } else if (h === "money") {
+    } else if (h === "money" || h.startsWith("money~")) {
+      /* finance.js: #money (ceo tim), #money~{član} */
+      const again = view.name === "money" && !$("#money").hidden;
       view = { name: "money" };
       show("money");
-      firstMoney = true;
-      moneyYM = null;
-      renderMONEY();
+      if (FN) FN.route(h, again);
     } else if (fakH) {
       /* fakture.js: #fakture, #fakture~{tab}, #fak-nova, #fak-{id} */
       applyTheme(null);
@@ -1637,40 +1654,9 @@
   function finOf(monthId) {
     return S.finances.find((f) => f.monthId === monthId);
   }
-  function memberEarnings(uid) {
-    return S.finances
-      .filter((f) => f.shares && f.shares[uid] && f.shares[uid].amount)
-      .map((f) => {
-        const it = S.items.find((i) => i.id === f.monthId);
-        const c = S.clients.find((x) => x.id === f.clientId) || {
-          id: "",
-          name: "Klijent",
-        };
-        return {
-          f,
-          it,
-          c,
-          v: f.shares[uid],
-          rsd: toRSD(f.shares[uid]),
-          key: ymKey(f.year, f.month),
-          year: f.year,
-          month: f.month,
-        };
-      });
-  }
-  function memberExpenses(uid) {
-    return S.expenses
-      .filter((x) => x.member === uid)
-      .map((x) => ({ x, rsd: toRSD(x), key: ymKey(x.year, x.month) }));
-  }
+  /* zarada člana u mesecu: knjiga Skeylo Finance (finance.js) + stara podela meseca i troškovi */
   function netFor(uid, key) {
-    const e = memberEarnings(uid)
-      .filter((r) => r.key === key)
-      .reduce((a, r) => a + r.rsd, 0);
-    const x = memberExpenses(uid)
-      .filter((r) => r.key === key)
-      .reduce((a, r) => a + r.rsd, 0);
-    return { earned: e, spent: x, net: e - x };
+    return FN ? FN.net(uid, key) : { earned: 0, spent: 0, net: 0 };
   }
   const thisKey = () => {
     const d = new Date();
@@ -1689,9 +1675,21 @@
     countUp($("#earn"), v);
   }
   function financeCard(it, c, anim) {
-    const f = finOf(it.id);
+    const f = finOf(it.id),
+      lr = FN ? FN.monthRows(it.id) : [];
+    const inR = lr
+      .filter((r) => r.kind === "in")
+      .reduce((a, r) => a + r.rsd, 0);
+    const sum = lr.length ? toRSD(f && f.paid) + inR : 0;
+    const tot = lr.length
+      ? sum
+        ? `<b>${esc(nf.format(Math.round(sum)))}</b>RSD uplaćeno`
+        : `<b>${lr.length}</b>${lr.length % 10 === 1 && lr.length % 100 !== 11 ? "stavka" : "stavke"} u knjizi`
+      : f && f.paid && f.paid.amount
+        ? `<b>${esc(f.paid.cur === "EUR" ? "€" + nf2.format(f.paid.amount) : nf.format(f.paid.amount))}</b>${f.paid.cur === "EUR" ? "uplaćeno" : "RSD uplaćeno"}`
+        : "Još nije upisano";
     return `<button class="mod" data-go="f-${esc(it.id)}" style="--c:${esc(c.color || "#e1802c")};${anim ? `animation-delay:${adl(0.36)}s` : "animation:none"}">
-    <div class="mod-l"><div class="mod-top"><span class="mi">${SV('<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3-1.6M12 6.5V8M12 16.8v1.7"/>')}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Finances</h2><div class="tot">${f && f.paid && f.paid.amount ? `<b>${esc(f.paid.cur === "EUR" ? "€" + nf2.format(f.paid.amount) : nf.format(f.paid.amount))}</b>${f.paid.cur === "EUR" ? "uplaćeno" : "RSD uplaćeno"}` : "Još nije upisano"}</div></div></div>
+    <div class="mod-l"><div class="mod-top"><span class="mi">${SV('<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3-1.6M12 6.5V8M12 16.8v1.7"/>')}</span><span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div><div><h2>Finances</h2><div class="tot">${tot}</div></div></div>
   </button>`;
   }
 
@@ -1712,8 +1710,19 @@
   </button>`;
   }
 
-  /* ---------------- month finances page ---------------- */
+  /* ---------------- month finances page ----------------
+     Podela meseca (finances/{monthId}: paid + shares, čarobnjak ispod) i stavke knjige
+     Skeylo Finance vezane za ovaj mesec (ledger.monthId) se sabiraju u isti prikaz. */
   let firstFIN = true;
+  function finToLedger(it) {
+    if (!FN || !it) return;
+    FN.prefill({
+      clientId: it.clientId,
+      monthId: it.id,
+      key: it.type === "month" && it.year ? ymKey(it.year, it.month) : null,
+    });
+    nav("money");
+  }
   function renderFIN() {
     if ($("#fin").hidden) return;
     const it = S.items.find((i) => i.id === view.id);
@@ -1725,7 +1734,7 @@
     }
     if (!it) {
       $("#finId").innerHTML = "";
-      $("#finAdd").hidden = true;
+      $("#finAdd").hidden = $("#finSplit").hidden = true;
       body.innerHTML =
         '<div class="state"><b>Ovaj mesec ne postoji</b><button class="pill" data-go="projects">Nazad na projekte</button></div>';
       return;
@@ -1738,7 +1747,8 @@
     applyTheme(c.id);
     const anim = firstFIN;
     firstFIN = false;
-    const f = finOf(it.id);
+    const f = finOf(it.id),
+      lr = FN ? FN.monthRows(it.id) : [];
     // ciklus/projekat nema svoj mesec: pokaži u koji mesec se zarada računa
     const perLbl =
       f && f.year && it.type !== "month" ? " · " + ymName(f.year, f.month) : "";
@@ -1747,31 +1757,58 @@
       `${logo(c, "lg-ic")}<div><h1><span class="w"><span>Finances</span></span></h1><div class="sub">${esc(c.name)} · ${esc(it.title)}${esc(perLbl)}</div></div>`;
     if (!anim) $("#finId .w>span").style.animation = "none";
     $("#finBackLbl").textContent = it.title;
-    const btn = $("#finAdd");
-    btn.hidden = false;
-    btn.innerHTML = f
-      ? `${SV('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')}Izmeni`
-      : `${IC.plus}Add Finances`;
-    if (!f) {
-      body.innerHTML = `<div class="fin-empty"><div class="coin">${SV('<path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3-1.6M12 6.5V8M12 16.8v1.7"/>', 2.2)}</div><b>Još nema finansija za ${esc(it.title)}</b>Upiši koliko je klijent platio i kako je novac podeljen.<button class="pill solid" data-fin-add>${IC.plus}Add Finances</button></div>`;
+    const btn = $("#finAdd"),
+      sp = $("#finSplit");
+    btn.hidden = !FN;
+    btn.innerHTML = `${IC.plus}Upiši`;
+    sp.hidden = false;
+    sp.innerHTML = f
+      ? `${SV('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')}Izmeni podelu`
+      : `${SV('<path d="M4 6h16M4 12h10M4 18h6"/>')}Podela meseca`;
+    if (!f && !lr.length) {
+      body.innerHTML = `<div class="fin-empty"><div class="coin">${SV('<path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.6 6 4.6 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3-1.6M12 6.5V8M12 16.8v1.7"/>', 2.2)}</div><b>Još nema finansija za ${esc(it.title)}</b>Upiši ko je koliko dobio u Skeylo Finance: stavka sa klijentom ${esc(c.name)} se sama veže za ovaj mesec.<span class="fin-eb">${FN ? `<button class="pill solid" data-fin-ledger>${IC.plus}Upiši u Skeylo Finance</button>` : ""}<button class="pill" data-fin-add>Podela meseca</button></span></div>`;
       return;
     }
-    const paidR = toRSD(f.paid);
-    const rows = MEMBERS.map((mb) => ({
-      mb,
-      u: TEAM.find((t) => t.id === mb.id),
-      v: f.shares && f.shares[mb.id],
-      r: toRSD(f.shares && f.shares[mb.id]),
-    }));
+    /* samo podela: iznosi u valuti podele; sa stavkama knjige sve se sabira u RSD */
+    const mixed = lr.length > 0;
+    const inR = lr
+      .filter((r) => r.kind === "in")
+      .reduce((a, r) => a + r.rsd, 0);
+    const P = mixed
+      ? { amount: toRSD(f && f.paid) + inR, cur: "RSD" }
+      : { amount: f.paid.amount, cur: f.paid.cur };
+    const paidR = toRSD(P);
+    const rows = MEMBERS.map((mb) => {
+      const sh = f && f.shares && f.shares[mb.id],
+        add = lr
+          .filter((r) => r.kind === "pay" && r.who === mb.id)
+          .reduce((a, r) => a + r.rsd, 0);
+      const v = mixed
+        ? { amount: toRSD(sh) + add, cur: "RSD" }
+        : sh || { amount: 0, cur: P.cur };
+      return { mb, u: TEAM.find((t) => t.id === mb.id), v, r: toRSD(v) };
+    });
     const sumR = rows.reduce((a, r) => a + r.r, 0);
     const rest = paidR - sumR;
     const base = Math.max(paidR, sumR, 1);
     const d = (v) => (anim ? `animation-delay:${adl(v)}s` : "animation:none");
+    const lgRow = (r, i) => {
+      const u = r.who && TEAM.find((t) => t.id === r.who);
+      const ic =
+        r.kind === "in"
+          ? logo(c, "lg-ic")
+          : u
+            ? `<span class="lg-ic"><img src="${IMG[u.id]}" alt=""></span>`
+            : `<span class="lg-ic sk"><img src="${ICON}" alt=""></span>`;
+      const nm =
+        r.kind === "in" ? c.name + " je platio" : u ? u.name : "Trošak firme";
+      return `<button type="button" class="mrow fin-lr k-${r.kind}" data-fin-open="${esc(r.id)}" style="${d(0.6 + i * 0.04)}">${ic}<div><div class="t">${esc(nm)}</div><div class="s">${esc([fmtDay.format(new Date(r.date + "T12:00")), r.kind === "exp" ? "trošak" : "", r.invoiceNo ? "faktura " + r.invoiceNo : "", r.note].filter(Boolean).join(" · "))}</div></div><div class="a">${r.kind === "in" ? "+" : r.kind === "exp" ? "−" : ""}${esc(money(r.amount, r.cur))}</div></button>`;
+    };
     body.innerHTML = `
     <section class="fhero" style="${d(0.08)}">
       <div><div class="flbl">Klijent je platio</div>
-      <div class="fbig"><span id="finPaid">${f.paid.cur === "EUR" ? "€" : ""}0</span><small>${f.paid.cur === "EUR" ? "EUR" : "RSD"}</small></div>
-      ${f.paid.cur === "EUR" ? `<div class="fconv">≈ ${nf.format(Math.round(paidR))} RSD po kursu ${String(RATE).replace(".", ",")}</div>` : ""}</div>
+      <div class="fbig"><span id="finPaid">${P.cur === "EUR" ? "€" : ""}0</span><small>${P.cur === "EUR" ? "EUR" : "RSD"}</small></div>
+      ${P.cur === "EUR" ? `<div class="fconv">≈ ${nf.format(Math.round(paidR))} RSD po kursu ${String(RATE).replace(".", ",")}</div>` : mixed && f && f.paid && f.paid.cur === "EUR" ? `<div class="fconv">EUR iznosi po kursu ${String(RATE).replace(".", ",")}</div>` : ""}</div>
       <div class="split">${rows
         .filter((r) => r.r > 0)
         .map(
@@ -1785,16 +1822,21 @@
     </section>
     <div class="people">${rows.map((r, i) => `<div class="pcard" style="--m:${r.mb.m};${d(0.2 + i * 0.08)}"><div class="pav"><img src="${IMG[r.u.id]}" alt=""></div><div class="nm">${esc(r.u.name)}</div><div class="am">${moneyV(r.v)}</div><div class="pc">${paidR ? Math.round((r.r / paidR) * 100) + "% od uplate" : ""}</div></div>`).join("")}</div>
     <div class="frest" style="${d(0.55)}"><span class="k"><img src="${ICON}" alt="">Ostaje Skeylu</span><span class="v${rest < 0 ? " neg" : ""}">${rest < 0 ? "−" : ""}${nf.format(Math.round(Math.abs(rest)))} RSD</span></div>
-    <div class="fin-foot"><button class="pill danger" data-fin-del>${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši finansije</button></div>`;
-    if (anim)
-      countUpMoney(
-        $("#finPaid"),
-        f.paid.amount,
-        f.paid.cur === "EUR" ? "€" : "",
-      );
+    ${
+      lr.length
+        ? `<section class="mcard fin-lg" style="${d(0.6)}"><div class="mcard-h"><h2>Iz Skeylo Finance</h2><span class="fin-lgn">${lr.length} ${lr.length % 10 === 1 && lr.length % 100 !== 11 ? "stavka" : lr.length % 10 >= 2 && lr.length % 10 <= 4 && (lr.length % 100 < 12 || lr.length % 100 > 14) ? "stavke" : "stavki"}</span></div>${lr
+            .slice()
+            .sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)
+            .map(lgRow)
+            .join("")}</section>`
+        : ""
+    }
+    ${f ? `<div class="fin-foot"><button class="pill danger" data-fin-del>${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši podelu meseca</button></div>` : ""}`;
+    if (anim) countUpMoney($("#finPaid"), P.amount, P.cur === "EUR" ? "€" : "");
     else
       $("#finPaid").textContent =
-        (f.paid.cur === "EUR" ? "€" : "") + nf2.format(f.paid.amount);
+        (P.cur === "EUR" ? "€" : "") +
+        nf2.format(Math.round(P.amount * 100) / 100);
   }
   function countUpMoney(el, to, prefix) {
     if (reduce) {
@@ -1816,9 +1858,15 @@
     requestAnimationFrame(step);
   }
   $("#finBack").onclick = () => nav("m-" + view.id);
-  $("#finAdd").onclick = () => openWizard();
+  $("#finAdd").onclick = () =>
+    finToLedger(S.items.find((i) => i.id === view.id));
+  $("#finSplit").onclick = () => openWizard();
   $("#finBody").addEventListener("click", (e) => {
     if (e.target.closest("[data-fin-add]")) openWizard();
+    if (e.target.closest("[data-fin-ledger]"))
+      finToLedger(S.items.find((i) => i.id === view.id));
+    const fo = e.target.closest("[data-fin-open]");
+    if (fo && FN) FN.open(fo.dataset.finOpen);
     if (e.target.closest("[data-fin-del]")) openSheet("delfin");
   });
 
@@ -2467,6 +2515,7 @@
         : "")
     );
   }
+  /* dashboard: General (fascikle u bojama foldera + broj stranica i fajlova) i Models (lica) */
   function updateGenAvs() {
     const el = $("#genAvs");
     if (!el) return;
@@ -2475,9 +2524,49 @@
       return;
     }
     const sig = S.models.map((m) => m.id + (m.photo ? 1 : 0)).join();
-    if (el.dataset.sig === sig) return;
-    el.dataset.sig = sig;
-    el.innerHTML = avStack(innerWidth < 600 ? 3 : 5);
+    if (el.dataset.sig !== sig) {
+      el.dataset.sig = sig;
+      el.innerHTML = avStack(innerWidth < 600 ? 3 : 5);
+      const n = S.models.length;
+      $("#mdlSub").textContent = n
+        ? `${n} ${n % 10 === 1 && n % 100 !== 11 ? "model" : "modela"} · kontakti i slike`
+        : "Modeli za snimanja";
+    }
+    const main = (x) => !x.spaceId,
+      pages = S.notes.filter((x) => main(x) && !x.privateTo).length,
+      files = (S.files || []).filter(main).length,
+      cols = S.noteFolders
+        .filter(main)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .slice(0, 3)
+        .map((f) => f.color || "#e1802c");
+    for (const c of ["#e1802c", "#5b9cf0", "#4fbfa8", "#a98bff"])
+      if (cols.length < 3 && !cols.includes(c)) cols.push(c);
+    const gsig = cols.join() + "|" + pages + "|" + files,
+      fx = $("#genFx");
+    if (fx && fx.dataset.sig !== gsig) {
+      fx.dataset.sig = gsig;
+      fx.innerHTML = cols
+        .map((c, i) => `<i style="--fc:${esc(c)};--i:${i}"><b></b></i>`)
+        .join("");
+      const pl = (n, a, b, c) =>
+        n % 10 === 1 && n % 100 !== 11
+          ? a
+          : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
+            ? b
+            : c;
+      $("#genSub").textContent =
+        pages || files
+          ? [
+              pages
+                ? `${pages} ${pl(pages, "stranica", "stranice", "stranica")}`
+                : "",
+              files ? `${files} ${pl(files, "fajl", "fajla", "fajlova")}` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : "Stranice, folderi i fajlovi";
+    }
   }
   let firstGen = true;
   function renderGEN() {
@@ -2508,7 +2597,6 @@
       });
     $("#genH").hidden = !!view.id;
     $("#genId").hidden = !view.id;
-    $("#gmods").hidden = !!view.id || !!view.fid;
     $("#genBack").dataset.go = view.id ? "m-" + view.id : "";
     $("#genBackLbl").textContent = view.id
       ? it
@@ -2533,11 +2621,6 @@
       return;
     }
     if (!anim) $("#general .phead .w>span").style.animation = "none";
-    $("#gmods").innerHTML =
-      `<button class="gmod" data-go="models" style="${anim ? `animation-delay:${adl(0.1)}s` : "animation:none"}">
-    <div class="mod-top"><span class="mi">${SV('<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M16 4a4 4 0 0 1 0 8M22 21v-1a7 7 0 0 0-4-6.3"/>')}</span><span class="avstack">${S.ready ? avStack(4) : ""}</span></div>
-    <div><h2>Models</h2><div class="tot"><b>${S.models.length}</b>${S.models.length % 10 === 1 && S.models.length % 100 !== 11 ? "model" : "modela"}</div></div>
-  </button>`;
     if (NT) NT.hub(anim, null, view.fid);
   }
   let firstModels = true,
@@ -3778,208 +3861,6 @@
       toast(errMsg(err));
     }
   }
-
-  /* ---------------- personal finance panel ---------------- */
-  let firstMoney = true,
-    moneyYM = null;
-  function renderMONEY() {
-    if ($("#money").hidden || !me) return;
-    applyTheme(me.id === "nina" ? "nina" : "dark");
-    const body = $("#moneyBody");
-    if (!S.ready) {
-      body.innerHTML = '<div class="state">Učitavam tvoje finansije…</div>';
-      return;
-    }
-    const earns = memberEarnings(me.id),
-      exps = memberExpenses(me.id);
-    const keys = new Set([
-      thisKey(),
-      ...earns.map((r) => r.key),
-      ...exps.map((r) => r.key),
-    ]);
-    const sorted = [...keys].sort((a, b) => a - b);
-    if (moneyYM == null) moneyYM = thisKey();
-    const key = moneyYM,
-      y = Math.floor(key / 12),
-      m = (key % 12) + 1;
-    const tot = netFor(me.id, key);
-    const idx = sorted.indexOf(key);
-    const anim = firstMoney;
-    firstMoney = false;
-    const d = (v) => (anim ? `animation-delay:${adl(v)}s` : "animation:none");
-    // last 6 months ending at max(current, selected)
-    const end = Math.max(thisKey(), key);
-    const span = [];
-    for (let k = end - 5; k <= end; k++) span.push(k);
-    const nets = span.map((k) => Math.max(0, netFor(me.id, k).net));
-    const mx = Math.max(1, ...nets);
-    const monthEarn = earns
-      .filter((r) => r.key === key)
-      .sort((a, b) => b.rsd - a.rsd);
-    const monthExp = exps
-      .filter((r) => r.key === key)
-      .sort((a, b) => xWhen(b.x) - xWhen(a.x));
-    body.innerHTML = `
-    <div class="mhead" style="${d(0)}"><span class="av"><img src="${IMG[me.id]}" alt=""></span><h1><span class="w"><span>Finance Panel</span></span></h1>
-      <div class="mswitch"><button data-mm="-1" ${idx <= 0 ? "disabled" : ""} aria-label="Prethodni mesec">${SV('<path d="m15 18-6-6 6-6"/>', 2.4)}</button><span>${ymName(y, m)}</span><button data-mm="1" ${idx >= sorted.length - 1 ? "disabled" : ""} aria-label="Sledeći mesec">${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}</button></div></div>
-    <section class="mhero" style="${d(0.08)}">
-      <div><div class="flbl">${me.id === "nina" ? "Tvoja zarada, kraljice" : "Tvoja zarada"} · ${MONTHS[m - 1]}</div>
-        <div class="fbig"><span id="mNet">0</span><small>RSD</small></div>
-        <div class="mchips"><span class="mchip up">${SV('<path d="M7 17 17 7M9 7h8v8"/>', 2.4)}Zarađeno ${nf.format(Math.round(tot.earned))}</span><span class="mchip down">${SV('<path d="M7 7l10 10M17 9v8H9"/>', 2.4)}Troškovi ${tot.spent ? "−" : ""}${nf.format(Math.round(tot.spent))}</span></div></div>
-      <div class="mbars">${span.map((k, i) => `<div class="mbar${k === key ? " on" : ""}" data-mk="${k}"><span class="v">${nets[i] ? nf.format(Math.round(nets[i] / 1000)) + "k" : ""}</span><span class="col2"><i style="height:${Math.max(4, (nets[i] / mx) * 100).toFixed(1)}%;${d(0.3 + i * 0.06)}"></i></span><span class="m">${MONTHS[k % 12].slice(0, 3)}</span></div>`).join("")}</div>
-    </section>
-    <div class="mgrid">
-      <section class="mcard" style="${d(0.2)}"><div class="mcard-h"><h2>Projekti</h2></div>
-        ${monthEarn.length ? monthEarn.map((r, i) => `<div class="mrow" style="--c:${esc(r.c.color || "#e1802c")};${d(0.3 + i * 0.05)}">${logo(r.c, "lg-ic")}<div><div class="t">${esc(r.c.name)}</div><div class="s">${esc(r.it ? r.it.title : ymName(r.year, r.month))}</div></div><div class="a">${moneyV(r.v)}${r.v.cur === "EUR" ? `<small>≈ ${nf.format(Math.round(r.rsd))} RSD</small>` : ""}</div></div>`).join("") : `<div class="mnone">Još nema upisane zarade za ${MONTHS[m - 1]}.</div>`}
-      </section>
-      <section class="mcard" style="${d(0.28)}"><div class="mcard-h"><h2>Troškovi</h2><button class="pill" data-exp-add>${IC.plus}Dodaj trošak</button></div>
-        ${monthExp.length ? monthExp.map((r, i) => `<div class="mrow exp" style="${d(0.35 + i * 0.05)}"><span class="ei">${SV('<path d="M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6"/>')}</span><div><div class="t">${esc(r.x.note || "Trošak")}</div><div class="s">${xWhen(r.x) ? fmtDay.format(new Date(xWhen(r.x))) : ""}</div></div><div class="a neg">−${moneyV(r.x)}</div><button class="x" data-exp-del="${esc(r.x.id)}" aria-label="Obriši trošak">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}</button></div>`).join("") : `<div class="mnone">Nema troškova za ${MONTHS[m - 1]}.</div>`}
-      </section>
-    </div>`;
-    if (!anim) $("#moneyBody .w>span").style.animation = "none";
-    const el = $("#mNet");
-    if (anim && tot.net > 0) countUp(el, Math.round(tot.net));
-    else
-      el.textContent =
-        (tot.net < 0 ? "−" : "") + nf.format(Math.abs(Math.round(tot.net)));
-  }
-  $("#moneyBody").addEventListener("click", (e) => {
-    const mm = e.target.closest("[data-mm]");
-    if (mm) {
-      const earns = memberEarnings(me.id),
-        exps = memberExpenses(me.id);
-      const sorted = [
-        ...new Set([
-          thisKey(),
-          ...earns.map((r) => r.key),
-          ...exps.map((r) => r.key),
-        ]),
-      ].sort((a, b) => a - b);
-      const i = sorted.indexOf(moneyYM) + +mm.dataset.mm;
-      if (sorted[i] != null) {
-        moneyYM = sorted[i];
-        firstMoney = true;
-        renderMONEY();
-      }
-      return;
-    }
-    const mk = e.target.closest("[data-mk]");
-    if (mk) {
-      moneyYM = +mk.dataset.mk;
-      firstMoney = true;
-      renderMONEY();
-      return;
-    }
-    if (e.target.closest("[data-exp-add]")) {
-      openExpense();
-      return;
-    }
-    const xd = e.target.closest("[data-exp-del]");
-    if (xd) {
-      const x = S.expenses.find((z) => z.id === xd.dataset.expDel);
-      if (!x) return;
-      const { id, ...data } = x;
-      api
-        .del("expenses", id)
-        .then(() => {
-          if (!DB) S.expenses = S.expenses.filter((z) => z.id !== id);
-          refresh();
-          toast("Trošak obrisan", async () => {
-            try {
-              await api.set("expenses", id, data);
-              refresh();
-            } catch (err) {
-              toast(errMsg(err));
-            }
-          });
-        })
-        .catch((err) => toast(errMsg(err)));
-    }
-  });
-  /* expense sheet */
-  let xCur = "RSD";
-  /* datum troška (x.date "YYYY-MM-DD"); stariji troškovi imaju samo createdAt */
-  function xWhen(x) {
-    return x.date ? new Date(x.date + "T12:00").getTime() : x.createdAt || 0;
-  }
-  function openExpense() {
-    xCur = "RSD";
-    $("#xamt").value = "";
-    $("#xnote").value = "";
-    // predlog: današnji dan u mesecu koji je otvoren u panelu
-    const key = moneyYM ?? thisKey(),
-      y = Math.floor(key / 12),
-      m = (key % 12) + 1,
-      day = Math.min(new Date().getDate(), new Date(y, m, 0).getDate());
-    $("#xdate").value =
-      `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    $("#xerr").textContent = "";
-    setSeg($("#xseg"), "RSD");
-    const s = $("#xscrim");
-    s.hidden = false;
-    requestAnimationFrame(() => s.classList.add("open"));
-    setTimeout(() => $("#xamt").focus(), 60);
-  }
-  function closeExpense() {
-    const s = $("#xscrim");
-    s.classList.remove("open");
-    setTimeout(() => (s.hidden = true), reduce ? 0 : 250);
-  }
-  function setSeg(seg, cur) {
-    seg.classList.toggle("eur", cur === "EUR");
-    seg
-      .querySelectorAll("button")
-      .forEach((b) => b.classList.toggle("on", b.dataset.cur === cur));
-  }
-  $("#xseg").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-cur]");
-    if (b) {
-      xCur = b.dataset.cur;
-      setSeg($("#xseg"), xCur);
-    }
-  });
-  $("#xcancel").onclick = closeExpense;
-  $("#xscrim").addEventListener("click", (e) => {
-    if (e.target.id === "xscrim") closeExpense();
-  });
-  $("#xsheet").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const amount = parseAmount($("#xamt").value);
-    if (!amount) {
-      $("#xerr").textContent = "Upiši iznos troška.";
-      shake($("#xsheet"));
-      return;
-    }
-    const date = $("#xdate").value;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      $("#xerr").textContent = "Izaberi datum troška.";
-      shake($("#xsheet"));
-      return;
-    }
-    const y = +date.slice(0, 4),
-      m = +date.slice(5, 7);
-    try {
-      const id = await api.add("expenses", {
-        member: me.id,
-        amount,
-        cur: xCur,
-        note: $("#xnote").value.trim(),
-        date,
-        year: y,
-        month: m,
-        order: Date.now(),
-        createdAt: Date.now(),
-      });
-      closeExpense();
-      // panel prelazi na mesec u koji je trošak upisan
-      moneyYM = ymKey(y, m);
-      firstMoney = true;
-      refresh();
-      toast("Trošak dodat");
-    } catch (err) {
-      $("#xerr").textContent = errMsg(err);
-    }
-  });
 
   /* ---------------- reporting dashboard ---------------- */
   let firstRP = true;
@@ -6627,7 +6508,6 @@
     if (e.key === "Escape") {
       if (!$("#scrim").hidden) closeSheet();
       if (!$("#rscrim").hidden) closeReportSheet();
-      if (!$("#xscrim").hidden) closeExpense();
       if (!$("#tscrim").hidden) closeTaskDetail();
       if (!$("#mscrim").hidden) closeModelSheet();
       closePops();
@@ -10451,11 +10331,39 @@
     });
   /* ---------------- fakture (fakture.js + fakture-doc.js) ---------------- */
   if (window.SKFakture) {
-    FK = window.SKFakture({ esc, SV, toast, nav });
+    /* fin: plaćena faktura → Skeylo Finance (opciono; fakture rade i bez toga) */
+    FK = window.SKFakture({ esc, SV, toast, nav, fin: () => FN });
     const fc = $("#fkCard");
     if (fc)
       fc.addEventListener("pointerenter", () => FK.warm(), { passive: true });
   }
+  /* ---------------- Skeylo Finance (finance.js) ---------------- */
+  if (window.SKFinance)
+    FN = window.SKFinance({
+      S,
+      api,
+      esc,
+      SV,
+      toast,
+      errMsg,
+      nav,
+      TEAM,
+      IMG,
+      ICON,
+      MEMBERS,
+      RATE,
+      MONTHS,
+      nf,
+      nf2,
+      parseAmount,
+      logo,
+      markFresh,
+      shake,
+      countUp,
+      applyTheme,
+      me: () => me,
+      FK: () => FK,
+    });
   /* =====================================================================
    FINAL CREATIVES
    Mihajlo prevuče gotove kreative (pun kvalitet) u mesec → klijent ih

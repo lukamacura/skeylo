@@ -556,24 +556,24 @@
     if (x.status === 401 || x.status === 403) return { code: "not_granted" };
     return { code: "failed", status: x.status };
   }
-  async function putOnce(file, type, key, onP) {
+  async function putOnce(file, type, key, onP, bucket = BUCKET) {
     const x = await send(
       "POST",
-      `${E.url}/storage/v1/object/${BUCKET}/${encKey(key)}`,
+      `${E.url}/storage/v1/object/${bucket}/${encKey(key)}`,
       {
         ...(await authHeaders()),
         "content-type": type || "application/octet-stream",
         "cache-control": "max-age=31536000",
-        "x-upsert": "true",
+        "x-upsert": bucket === BUCKET ? "true" : "false", // os-assets nema UPDATE pravilo
       },
       file,
       (n) => onP(n / file.size),
     );
     if (x.status < 200 || x.status >= 300) throw failOf(x);
   }
-  async function putResumable(file, type, key, onP) {
+  async function putResumable(file, type, key, onP, bucket = BUCKET) {
     const meta = {
-      bucketName: BUCKET,
+      bucketName: bucket,
       objectName: key,
       contentType: type || "application/octet-stream",
       cacheControl: "31536000",
@@ -585,7 +585,7 @@
       "upload-metadata": Object.entries(meta)
         .map(([k, v]) => k + " " + b64(v))
         .join(","),
-      "x-upsert": "true",
+      "x-upsert": bucket === BUCKET ? "true" : "false", // os-assets nema UPDATE pravilo
     });
     const loc = start.getResponseHeader("location");
     if (start.status !== 201 || !loc) throw failOf(start);
@@ -663,6 +663,34 @@
       if (error) throw { code: "failed", cause: error };
     },
   };
+  /* Fajlovi u General-u (kolekcija "files"): bucket os-assets, isti "/_blob/<id>" kao slike u
+     stranicama, ali sa napretkom i u delovima za veće fajlove (TUS). */
+  OS.files = {
+    maxBytes: MAX_MB * 1024 * 1024,
+    maxLabel: maxLbl,
+    async put(file, { onProgress } = {}) {
+      if (file.size > MAX_MB * 1024 * 1024)
+        throw {
+          code: "too_large",
+          msg: `„${file.name || "Fajl"}“ je veći od ${maxLbl}.`,
+        };
+      const id = newId() + newId().slice(0, 8),
+        type = file.type || "application/octet-stream",
+        onP = (p) => onProgress && onProgress(Math.min(1, Math.max(0, p)));
+      if (file.size <= PART) await putOnce(file, type, id, onP, "os-assets");
+      else await putResumable(file, type, id, onP, "os-assets");
+      onP(1);
+      return { id, url: "/_blob/" + id };
+    },
+    async remove(ids) {
+      const list = (Array.isArray(ids) ? ids : [ids]).filter(Boolean);
+      if (!list.length) return;
+      const { error } = await sb.storage.from("os-assets").remove(list);
+      if (error) throw { code: "failed", cause: error };
+    },
+    usage: () => storage.usage(),
+  };
+
   // app.js postavlja window.SkeyloOS tek kad se učita; tada mu predaj skladište.
   addEventListener("DOMContentLoaded", () => {
     if (window.SkeyloOS && window.SkeyloOS.useStorage)
