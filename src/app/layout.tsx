@@ -5,17 +5,23 @@
 // cookies(): to bi svaku stranicu pretvorilo u dinamičku (render na svaki zahtev).
 import type { Metadata } from "next";
 import "./globals.css";
-import { Bricolage_Grotesque, Geist } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/react";
 
-const display = Bricolage_Grotesque({
-  subsets: ["latin", "latin-ext"],
+// Lokalni fontovi, ne next/font/google: Google ponekad vrati /l/font?kit= URL i
+// Turbopack tada obori ceo build. Fajlovi su zvanični google/fonts izvori, subset na
+// latin + latin-ext, OFL je pored njih. Bricolage je instanciran na opsz=96 i
+// wdth=100, isto kao što ga Google servira kad se traži samo wght.
+const bricolage = localFont({
+  src: "./fonts/BricolageGrotesque.woff2",
+  weight: "200 800",
   variable: "--font-display",
   display: "swap",
 });
 
-const sans = Geist({
-  subsets: ["latin", "latin-ext"],
+const geist = localFont({
+  src: "./fonts/Geist.woff2",
+  weight: "100 900",
   variable: "--font-sans",
   display: "swap",
 });
@@ -42,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sr" className={`${display.variable} ${sans.variable}`}>
+    <html lang="sr" className={`${bricolage.variable} ${geist.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
         {children}
         <Analytics />
