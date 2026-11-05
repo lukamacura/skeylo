@@ -3,6 +3,8 @@
      { kind: "pay" | "in" | "exp" | "skip", who, amount, cur: "RSD" | "EUR", date: "YYYY-MM-DD",
        year, month, clientId, monthId, invoiceId, invoiceNo, fkKlijent, note,
        order, createdAt, createdBy, updatedAt, updatedBy }
+     date = kada je novac stvarno legao/izašao; year + month = mesec kome stavka pripada (obično
+     isti kao datum, ali uplata od 3.11. za oktobarsku fakturu može da se veže za oktobar)
      pay  = isplata članu tima (who)
      in   = uplata klijenta (clientId)
      exp  = trošak (who = član, ili null = firma)
@@ -83,6 +85,10 @@ window.SKFinance = function (X) {
     csv: SV('<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>', 2.2),
     check: SV('<path d="m5 12 5 5L20 7"/>', 2.6),
     split: SV('<path d="M4 6h16M4 12h10M4 18h6"/>', 2.2),
+    back: SV(
+      '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/>',
+      2.2,
+    ),
   };
   const KINDS = {
     pay: { n: "Isplata", d: "Član tima je dobio novac", ic: I.pay },
@@ -109,6 +115,20 @@ window.SKFinance = function (X) {
   const kY = (k) => Math.floor(k / 12),
     kM = (k) => (k % 12) + 1;
   const ymName = (k) => MONTHS[kM(k) - 1] + " " + kY(k);
+  /* „za oktobar“ (godina samo kad nije tekuća) */
+  const zaLbl = (k) =>
+    "za " +
+    MONTHS[kM(k) - 1].toLowerCase() +
+    (kY(k) !== new Date().getFullYear() ? " " + kY(k) : "");
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  /* mesec napisan bez godine („za decembar“) → najbliži datumu: do 10 meseci unazad ili 1 unapred */
+  const nearKey = (m, dk) => {
+    for (let y = kY(dk) - 1; y <= kY(dk) + 1; y++) {
+      const k = ymKey(y, m);
+      if (k >= dk - 10 && k <= dk + 1) return k;
+    }
+    return dk;
+  };
   const fDay = new Intl.DateTimeFormat("sr-Latn-RS", {
     day: "numeric",
     month: "short",
@@ -157,20 +177,23 @@ window.SKFinance = function (X) {
   const clientOf = (id) => (id && S.clients.find((c) => c.id === id)) || null;
   const extClients = () => S.clients.filter((c) => c.kind !== "internal");
   const itemOf = (id) => (id && S.items.find((i) => i.id === id)) || null;
-  /* mesec klijenta u koji pada datum: tako se uplata sama pojavi i na stranici Finances tog meseca */
-  const monthFor = (cid, date) =>
+  /* mesec klijenta kome stavka pripada (k): tako se uplata sama pojavi i na stranici Finances tog meseca */
+  const monthFor = (cid, k) =>
     (cid &&
-      isoOk(date) &&
+      k != null &&
       (
         S.items.find(
           (i) =>
             i.clientId === cid &&
             i.type === "month" &&
-            i.year === +date.slice(0, 4) &&
-            i.month === +date.slice(5, 7),
+            i.year === kY(k) &&
+            i.month === kM(k),
         ) || {}
       ).id) ||
     null;
+  /* mesec kome stavka knjige pripada: year + month, a bez njih mesec datuma */
+  const keyOfDoc = (d) =>
+    +d.year && +d.month ? ymKey(+d.year, +d.month) : keyOf(d.date);
 
   /* ---------------- knjiga: novi i stari podaci kao isti redovi ---------------- */
   let memo = null;
@@ -184,7 +207,8 @@ window.SKFinance = function (X) {
       if (!d || d.kind === "skip" || !(+d.amount > 0) || !isoOk(d.date))
         continue;
       const cur = d.cur === "EUR" ? "EUR" : "RSD",
-        amount = +d.amount;
+        amount = +d.amount,
+        key = keyOfDoc(d);
       out.push({
         id: d.id,
         src: "lg",
@@ -194,7 +218,8 @@ window.SKFinance = function (X) {
         cur,
         rsd: toRSD(amount, cur),
         date: d.date,
-        key: keyOf(d.date),
+        key,
+        shift: key !== keyOf(d.date),
         clientId: d.clientId || null,
         monthId: d.monthId || null,
         invoiceId: d.invoiceId || null,
@@ -251,7 +276,8 @@ window.SKFinance = function (X) {
           ? iso(new Date(x.createdAt))
           : null;
       if (!date) continue;
-      const cur = x.cur === "EUR" ? "EUR" : "RSD";
+      const cur = x.cur === "EUR" ? "EUR" : "RSD",
+        key = x.year && x.month ? ymKey(x.year, x.month) : keyOf(date);
       out.push({
         id: "exp:" + x.id,
         src: "exp",
@@ -262,7 +288,8 @@ window.SKFinance = function (X) {
         cur,
         rsd: toRSD(+x.amount, cur),
         date,
-        key: x.year && x.month ? ymKey(x.year, x.month) : keyOf(date),
+        key,
+        shift: key !== keyOf(date),
         clientId: null,
         monthId: null,
         invoiceId: null,
@@ -425,6 +452,8 @@ window.SKFinance = function (X) {
       date: null,
       inv: null,
       kind: null,
+      mm: null,
+      rel: 0,
       note: "",
     };
     let wExp = false,
@@ -501,16 +530,35 @@ window.SKFinance = function (X) {
           if (i && F[i - 1] === "u") used[i - 1] = true;
           continue;
         }
-        /* samo mesec („oktobar“): tekući mesec = danas, inače poslednji dan tog meseca */
-        const mo = MONW.findIndex((r) => r.test(t));
-        if (mo >= 0) {
+      }
+      /* mesec: „za oktobar“ / „oktobar“ = mesec kome stavka pripada (datum ostaje danas);
+         „u oktobru“ = kada se desilo: tekući mesec = danas, inače poslednji dan tog meseca */
+      const mo = MONW.findIndex((r) => r.test(t));
+      if (mo >= 0) {
+        const inM = i > 0 && F[i - 1] === "u";
+        if (inM && !p.date) {
           const y = guessYear(mo + 1, 1),
             k = ymKey(y, mo + 1);
           p.date = k === thisKey() ? today() : iso(new Date(y, mo + 1, 0, 12));
-          used[i] = true;
-          if (i && /^(za|u)$/.test(F[i - 1])) used[i - 1] = true;
-          continue;
-        }
+        } else if (!inM && p.mm == null && !p.rel) p.mm = mo + 1;
+        else continue;
+        used[i] = true;
+        if (i && /^(za|u)$/.test(F[i - 1])) used[i - 1] = true;
+        continue;
+      }
+      /* „za prošli mesec“, „pretprošli mesec“ */
+      const pm = /^(pret)?prosl(i|og|om|e)$/.exec(t);
+      if (
+        pm &&
+        p.mm == null &&
+        !p.rel &&
+        /^mesec(a|u)?$/.test(F[i + 1] || "")
+      ) {
+        p.rel = pm[1] ? -2 : -1;
+        used[i] = used[i + 1] = true;
+        if (i && F[i - 1] === "za") used[i - 1] = true;
+        i++;
+        continue;
       }
       /* iznos: 15000, 15.000, 1,5k, 200€, €200 (+ „k“ ili valuta kao sledeća reč) */
       const am =
@@ -649,34 +697,52 @@ window.SKFinance = function (X) {
       "clientId" in o
         ? o.clientId
         : p.client || (C.pre && C.pre.clientId) || null;
-    const date = o.date || p.date || today();
+    const date = o.date || p.date || today(),
+      dk = keyOf(date);
+    /* mesec kome stavka pripada: izbor na čipu, pa rečenica („za oktobar“), pa mesec klijenta
+       sa čije stranice je unos otvoren, pa mesec datuma */
+    const pre = C.pre && clientId === C.pre.clientId ? C.pre : null;
+    const mk =
+      "mk" in o
+        ? o.mk == null
+          ? dk
+          : o.mk
+        : p.mm
+          ? nearKey(p.mm, dk)
+          : p.rel
+            ? dk + p.rel
+            : pre && pre.key != null
+              ? pre.key
+              : dk;
     return {
       kind,
       who: who || null,
       cur: o.cur || p.cur || "RSD",
       date,
+      mk,
       clientId,
       amount: p.amount || 0,
       note: p.note,
       inv: p.inv,
       monthId:
-        C.pre && C.pre.monthId && clientId === C.pre.clientId
-          ? C.pre.monthId
-          : monthFor(clientId, date),
+        pre && pre.monthId && (pre.key == null || pre.key === mk)
+          ? pre.monthId
+          : monthFor(clientId, mk),
     };
   }
   /* stavka iz unosa ili sa fakture → dokument knjige */
   function docOf(e, extra) {
     const now = Date.now(),
-      u = me();
+      u = me(),
+      k = e.mk != null ? e.mk : keyOf(e.date);
     return {
       kind: e.kind,
       who: e.kind === "in" ? null : e.who || null,
       amount: Math.round(e.amount * 100) / 100,
       cur: e.cur === "EUR" ? "EUR" : "RSD",
       date: e.date,
-      year: +e.date.slice(0, 4),
-      month: +e.date.slice(5, 7),
+      year: kY(k),
+      month: kM(k),
       clientId: e.clientId || null,
       monthId: e.monthId || null,
       invoiceId: e.inv ? e.inv.id : null,
@@ -696,7 +762,8 @@ window.SKFinance = function (X) {
       c = clientOf(d.clientId);
     const who =
       d.kind === "in" ? (c ? c.name : "Uplata") : u ? u.name : "Firma";
-    return `${who} · ${d.kind === "exp" ? "−" : d.kind === "in" ? "+" : ""}${fmt(d.amount, d.cur)}`;
+    const k = isoOk(d.date) ? keyOfDoc(d) : null;
+    return `${who} · ${d.kind === "exp" ? "−" : d.kind === "in" ? "+" : ""}${fmt(d.amount, d.cur)}${k != null && k !== keyOf(d.date) ? " · " + zaLbl(k) : ""}`;
   }
 
   /* ---------------- fakture (opciono) ---------------- */
@@ -757,7 +824,7 @@ window.SKFinance = function (X) {
       cur: "RSD",
       date,
       clientId,
-      monthId: monthFor(clientId, date),
+      monthId: monthFor(clientId, keyOf(date)),
       inv: f,
       note: "",
     });
@@ -892,6 +959,13 @@ window.SKFinance = function (X) {
     out.push(
       `<label class="sfc date">${I.cal}<span>${esc(dayLbl(e.date))}</span><input type="date" data-date value="${esc(e.date)}" aria-label="Datum"></label>`,
     );
+    /* mesec kome pripada: jedan dodir veže stavku za prošli mesec (novac stiže mesec posle fakture) */
+    const dk = keyOf(e.date);
+    out.push(
+      e.mk !== dk
+        ? `<button type="button" class="sfc mon" data-pop="mon" aria-label="Pripada mesecu: ${esc(ymName(e.mk))}">${I.back}<span>${esc(cap(zaLbl(e.mk)))}</span>${I.dn}</button>`
+        : `<button type="button" class="sfc add" data-mk="${dk - 1}" title="Novac je stigao sada, a pripada prošlom mesecu">${I.back}<span>${esc(cap(zaLbl(dk - 1)))}</span></button>`,
+    );
     if (e.kind !== "in")
       out.push(
         c
@@ -937,7 +1011,23 @@ window.SKFinance = function (X) {
         (e.kind === "exp"
           ? `<button type="button" data-set-who="" class="${!e.who ? "on" : ""}"><img class="sk" src="${esc(ICON)}" alt=""><span><b>Firma</b><small>Trošak Skeyla</small></span></button>`
           : "");
-    else
+    else if (what === "mon") {
+      const dk = keyOf(e.date),
+        ks = [dk, dk - 1, dk - 2, dk - 3],
+        sub = [
+          "mesec datuma",
+          "prošli mesec",
+          "pre dva meseca",
+          "pre tri meseca",
+        ];
+      if (!ks.includes(e.mk)) ks.push(e.mk);
+      h = ks
+        .map(
+          (k, i) =>
+            `<button type="button" data-set-mk="${k === dk ? "" : k}" class="${k === e.mk ? "on" : ""}"><span class="pi">${k === dk ? I.cal : I.back}</span><span><b>${esc(ymName(k))}</b>${sub[i] ? `<small>${sub[i]}</small>` : ""}</span></button>`,
+        )
+        .join("");
+    } else
       h =
         extClients()
           .map(
@@ -969,6 +1059,8 @@ window.SKFinance = function (X) {
       }
       if (b.dataset.setClient !== undefined)
         C.ov.clientId = b.dataset.setClient || null;
+      if (b.dataset.setMk !== undefined)
+        C.ov.mk = b.dataset.setMk ? +b.dataset.setMk : null;
       closePop();
       chips();
       focusQ();
@@ -1025,6 +1117,13 @@ window.SKFinance = function (X) {
       } catch (x) {}
       return;
     }
+    const mk = e.target.closest("[data-mk]");
+    if (mk) {
+      C.ov.mk = +mk.dataset.mk;
+      chips();
+      focusQ();
+      return;
+    }
     const p = e.target.closest("[data-pop]");
     if (p) openPop(p, p.dataset.pop);
   }
@@ -1052,7 +1151,7 @@ window.SKFinance = function (X) {
       pre = C.pre;
     C.busy = true;
     markFresh(id);
-    V.key = keyOf(e.date);
+    V.key = e.mk;
     V.flash = id;
     reset();
     try {
@@ -1104,6 +1203,7 @@ window.SKFinance = function (X) {
     const by = r.src === "lg" && r.by && userOf(r.by);
     const sub = [
       r.kind === "exp" ? "Trošak" : r.kind === "in" ? "Uplata" : "",
+      r.shift ? zaLbl(r.key) : "",
       r.kind !== "in" && c ? c.name : "",
       r.src === "fin" && it ? "podela · " + it.title : "",
       r.invoiceNo ? "Faktura " + r.invoiceNo : "",
@@ -1347,7 +1447,8 @@ window.SKFinance = function (X) {
         .join("")}</div>
       <div class="sf-f" id="sfEdWhoF"><div class="lbl">Ko</div><div class="sf-whos" id="sfEdWho"></div></div>
       <div class="sf-f"><div class="lbl">Iznos</div><div class="sf-amt"><input id="sfEdA" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Iznos"><div class="seg" id="sfEdSeg"><span class="knob"></span><button type="button" data-cur="RSD">RSD</button><button type="button" data-cur="EUR">EUR</button></div></div></div>
-      <div class="sf-2"><label class="sf-f"><span class="lbl">Datum</span><input id="sfEdD" type="date"></label><label class="sf-f"><span class="lbl">Klijent</span><select id="sfEdC"></select></label></div>
+      <div class="sf-2"><label class="sf-f"><span class="lbl">Datum</span><input id="sfEdD" type="date"></label><label class="sf-f"><span class="lbl">Pripada mesecu</span><select id="sfEdMk"></select></label></div>
+      <label class="sf-f"><span class="lbl">Klijent</span><select id="sfEdC"></select></label>
       <label class="sf-f"><span class="lbl">Napomena</span><input id="sfEdN" type="text" maxlength="120" autocomplete="off" placeholder="za šta, npr. montaža 10 videa"></label>
       <p class="sf-meta" id="sfEdM"></p>
       <p class="serr" id="sfEdE"></p>
@@ -1377,6 +1478,13 @@ window.SKFinance = function (X) {
       e.preventDefault();
       saveEd();
     });
+    /* nov datum: lista meseca se pomera za njim; izabran raniji mesec ostaje */
+    $("#sfEdD").addEventListener("change", () => {
+      if (!E) return;
+      const v = $("#sfEdMk").value;
+      E.mk = v ? +v : null;
+      monOpts();
+    });
     $("#sfEdX").onclick = closeEd;
     $("#sfEdDel").onclick = delEd;
     s.addEventListener("click", (e) => {
@@ -1390,11 +1498,35 @@ window.SKFinance = function (X) {
     });
     return s;
   }
+  /* izbor „Pripada mesecu“: mesec datuma ("") i tri pre njega, plus izabrani ako je van toga */
+  function monOpts() {
+    const d = $("#sfEdD").value,
+      dk = keyOf(isoOk(d) ? d : today()),
+      sel = E.mk != null && E.mk !== dk ? E.mk : null,
+      ks = [dk - 1, dk - 2, dk - 3];
+    if (sel != null && !ks.includes(sel)) ks.push(sel);
+    ks.sort((a, b) => b - a);
+    $("#sfEdMk").innerHTML =
+      `<option value="">${esc(ymName(dk))} · kao datum</option>` +
+      ks
+        .map(
+          (k) =>
+            `<option value="${k}"${k === sel ? " selected" : ""}>${esc(ymName(k))}</option>`,
+        )
+        .join("");
+  }
   function edit(r) {
     const s = sheetEl();
-    E = { r, kind: r.kind, who: r.who, cur: r.cur };
+    E = {
+      r,
+      kind: r.kind,
+      who: r.who,
+      cur: r.cur,
+      mk: r.shift ? r.key : null,
+    };
     $("#sfEdA").value = nf2.format(r.amount);
     $("#sfEdD").value = r.date || today();
+    monOpts();
     $("#sfEdN").value = r.note || "";
     $("#sfEdC").innerHTML =
       `<option value="">Bez klijenta</option>` +
@@ -1453,7 +1585,8 @@ window.SKFinance = function (X) {
     const r = E.r,
       amount = parseAmount($("#sfEdA").value),
       date = $("#sfEdD").value,
-      clientId = $("#sfEdC").value || null;
+      clientId = $("#sfEdC").value || null,
+      mkv = $("#sfEdMk").value;
     const err = (t) => {
       $("#sfEdE").textContent = t;
       shake($("#sfEd"));
@@ -1461,6 +1594,7 @@ window.SKFinance = function (X) {
     if (!amount) return err("Upiši iznos.");
     if (!isoOk(date)) return err("Izaberi datum.");
     if (E.kind === "pay" && !E.who) return err("Izaberi ko je dobio novac.");
+    const k = mkv ? +mkv : keyOf(date);
     const old = r.src === "lg" && (S.ledger || []).find((d) => d.id === r.id);
     /* projekat (ciklus) ostaje ako se klijent nije menjao; mesec se računa iz datuma */
     const keepIt =
@@ -1474,10 +1608,10 @@ window.SKFinance = function (X) {
       amount,
       cur: E.cur,
       date,
-      year: +date.slice(0, 4),
-      month: +date.slice(5, 7),
+      year: kY(k),
+      month: kM(k),
       clientId,
-      monthId: keepIt ? old.monthId : monthFor(clientId, date),
+      monthId: keepIt ? old.monthId : monthFor(clientId, k),
       note: $("#sfEdN").value.trim().slice(0, 120),
       updatedAt: Date.now(),
       updatedBy: me() ? me().id : null,
@@ -1500,7 +1634,7 @@ window.SKFinance = function (X) {
         });
         await api.del("expenses", r.ref);
       }
-      V.key = keyOf(date);
+      V.key = k;
       V.flash = r.src === "lg" ? r.id : null;
       closeEd();
       render();
@@ -1547,6 +1681,7 @@ window.SKFinance = function (X) {
     const lines = [
       [
         "Datum",
+        "Za mesec",
         "Vrsta",
         "Ko",
         "Klijent",
@@ -1562,6 +1697,7 @@ window.SKFinance = function (X) {
       list.map((r) =>
         [
           r.date ? r.date.split("-").reverse().join(".") : ymName(k),
+          ymName(r.key),
           KINDS[r.kind].n,
           r.kind === "in" ? "" : (userOf(r.who) || { name: "Firma" }).name,
           (clientOf(r.clientId) || { name: "" }).name,
@@ -1631,7 +1767,11 @@ window.SKFinance = function (X) {
     prefill(o) {
       C.pre =
         o && o.clientId
-          ? { clientId: o.clientId, monthId: o.monthId || null }
+          ? {
+              clientId: o.clientId,
+              monthId: o.monthId || null,
+              key: o.key != null ? o.key : null,
+            }
           : null;
       C.preNow = !!C.pre;
       C.q = "";
@@ -1650,7 +1790,7 @@ window.SKFinance = function (X) {
       if (ex && ex.kind === "skip") await api.del("ledger", ex.id);
       if (!id) id = await recordInv(f, true);
       const d = (S.ledger || []).find((x) => x.id === id);
-      V.next = d && isoOk(d.date) ? keyOf(d.date) : thisKey();
+      V.next = d && isoOk(d.date) ? keyOfDoc(d) : thisKey();
       V.flash = id;
       nav("money");
       if (!ex || ex.kind === "skip")

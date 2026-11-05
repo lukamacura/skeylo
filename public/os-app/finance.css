@@ -233,6 +233,13 @@ label.sfc:active {
 .sfc.inv {
   color: var(--gold);
 }
+.sfc.mon {
+  border-color: color-mix(in srgb, var(--orange) 50%, var(--line));
+  background: color-mix(in srgb, var(--orange) 13%, rgba(0, 0, 0, 0.28));
+}
+.sfc.mon > svg:first-child {
+  color: var(--orange);
+}
 
 .sf-hint:empty {
   display: none;
