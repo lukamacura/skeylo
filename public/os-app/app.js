@@ -1654,18 +1654,11 @@
   function finOf(monthId) {
     return S.finances.find((f) => f.monthId === monthId);
   }
-  /* zarada člana u mesecu: knjiga Skeylo Finance (finance.js) + stara podela meseca i troškovi */
-  function netFor(uid, key) {
-    return FN ? FN.net(uid, key) : { earned: 0, spent: 0, net: 0 };
-  }
-  const thisKey = () => {
-    const d = new Date();
-    return ymKey(d.getFullYear(), d.getMonth() + 1);
-  };
+  /* dashboard: zarada člana za poslednjih 30 dana (finance.js: knjiga + stara podela meseca i troškovi) */
   let earnShown = -1;
   function updateDashEarn() {
     if (!me || $("#dash").hidden) return;
-    const v = S.ready ? Math.round(netFor(me.id, thisKey()).net) : 0;
+    const v = S.ready && FN ? Math.round(FN.netRecent(me.id).net) : 0;
     if (v === earnShown) return;
     if (earnShown < 0 && !S.ready) {
       $("#earn").textContent = "0";

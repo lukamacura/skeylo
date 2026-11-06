@@ -1,0 +1,161 @@
+{
+  "name": "Skeylo OS → Telegram · Pošalji",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "30f460e1-57f4-42e2-9f18-c6cce86de077",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "b56f4460-2513-4c0e-9dee-c3617a21fd5e",
+      "name": "Poruka iz baze",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "30f460e1-57f4-42e2-9f18-c6cce86de077"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "14dbf832-5eda-4d31-b484-8f059d727d4f",
+              "leftValue": "={{ $json.body.task_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "feb1ecfc-7f44-4878-b98f-0e6cf11528f5",
+      "name": "Task? (dugmići)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ String($json.body.chat_id) }}",
+        "text": "={{ $json.body.text }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Gotovo",
+                    "additionalFields": {
+                      "callback_data": "=done:{{ $json.body.task_id }}"
+                    }
+                  },
+                  {
+                    "text": "⏰ Sutra",
+                    "additionalFields": {
+                      "callback_data": "=snooze:{{ $json.body.task_id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_notification": "={{ $json.body.silent }}",
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "5c3d82f3-0e45-4e8c-bc17-68702f358d0f",
+      "name": "Telegram · sa dugmićima",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        500,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ String($json.body.chat_id) }}",
+        "text": "={{ $json.body.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_notification": "={{ $json.body.silent }}",
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "88c3d0b2-6408-4394-b464-dde810ce4461",
+      "name": "Telegram · obična poruka",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        500,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Poruka iz baze": {
+      "main": [
+        [
+          {
+            "node": "Task? (dugmići)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task? (dugmići)": {
+      "main": [
+        [
+          {
+            "node": "Telegram · sa dugmićima",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram · obična poruka",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Belgrade"
+  },
+  "pinData": {}
+}

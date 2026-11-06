@@ -1,0 +1,225 @@
+{
+  "name": "Skeylo OS → Telegram · Dugmići i komande",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "f15f3bf3-9c76-493d-836a-3bd3ea4fbb9b",
+      "name": "Telegram (klik ili komanda)",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ef3568a2-4c0f-477e-ab1c-ddf36d9c1a33"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://genqnvmmykoztpkzrkbo.supabase.co/rest/v1/rpc/tg_in",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_iCbLOFzXqQDVCFFqOOy9pw_Z6tKgXw4"
+            },
+            {
+              "name": "Content-Profile",
+              "value": "os"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_update: $json }) }}",
+        "options": {}
+      },
+      "id": "4fccc694-6d37-4923-8438-6dda3bbaec50",
+      "name": "Supabase · tg_in",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "98e7a273-c006-4555-9d67-a397654a6356",
+              "leftValue": "={{ $json.query_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "f6149336-2175-4e4b-a972-9555c74d514e",
+      "name": "Klik na dugme?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "callback",
+        "operation": "answerQuery",
+        "queryId": "={{ $json.query_id }}",
+        "additionalFields": {
+          "text": "={{ $json.toast }}"
+        }
+      },
+      "id": "49fdbe64-3372-489c-a629-397ab915c580",
+      "name": "Telegram · odgovor na klik",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        740,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0bd0ced-2259-451c-b76f-8d142b1fddd1",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b68584b3-4bdc-45d9-8734-3ca8f9e7590e",
+      "name": "Izmeni poruku?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        740,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "editMessageText",
+        "messageType": "message",
+        "chatId": "={{ String($json.chat_id) }}",
+        "messageId": "={{ String($json.message_id) }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "none",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "c99bc81c-6aac-47cb-9862-8e9c69a353d6",
+      "name": "Telegram · izmeni poruku",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1000,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram (klik ili komanda)": {
+      "main": [
+        [
+          {
+            "node": "Supabase · tg_in",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase · tg_in": {
+      "main": [
+        [
+          {
+            "node": "Klik na dugme?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Klik na dugme?": {
+      "main": [
+        [
+          {
+            "node": "Telegram · odgovor na klik",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Izmeni poruku?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Izmeni poruku?": {
+      "main": [
+        [
+          {
+            "node": "Telegram · izmeni poruku",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Belgrade"
+  },
+  "pinData": {}
+}

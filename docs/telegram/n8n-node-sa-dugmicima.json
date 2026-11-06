@@ -1,0 +1,50 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "-5324949328",
+        "text": "={{ $json.body.text }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Gotovo",
+                    "additionalFields": {
+                      "callback_data": "=done:{{ $json.body.task_id }}"
+                    }
+                  },
+                  {
+                    "text": "⏰ Sutra",
+                    "additionalFields": {
+                      "callback_data": "=snooze:{{ $json.body.task_id }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_notification": "={{ $json.body.silent }}",
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "81a24ed7-a724-4ddf-95d1-a334d9927c97",
+      "name": "Telegram · sa dugmićima",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        700,
+        -120
+      ]
+    }
+  ],
+  "connections": {}
+}

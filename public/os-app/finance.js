@@ -323,6 +323,28 @@ window.SKFinance = function (X) {
     const b = sums(inMonth(k)).by[uid] || { pay: 0, exp: 0 };
     return { earned: b.pay, spent: b.exp, net: b.pay - b.exp };
   }
+  /* zarada člana za poslednjih 30 dana, danas uključen (dashboard): ide po datumu kada je novac
+     legao, ne po mesecu kome stavka pripada, pa se oktobarska isplata od 6.11. vidi odmah.
+     Stara podela meseca (finances) nema datum: računa se poslednjim danom svog meseca, a tekući
+     mesec današnjim danom. */
+  function netRecent(uid, days = 30) {
+    const to = today(),
+      from = addD(to, 1 - days);
+    let pay = 0,
+      exp = 0;
+    for (const r of rows()) {
+      if (r.who !== uid || (r.kind !== "pay" && r.kind !== "exp")) continue;
+      let d = r.date;
+      if (!d) {
+        d = iso(new Date(kY(r.key), kM(r.key), 0, 12));
+        if (d > to) d = to;
+      }
+      if (d < from || d > to) continue;
+      if (r.kind === "pay") pay += r.rsd;
+      else exp += r.rsd;
+    }
+    return { earned: pay, spent: exp, net: pay - exp };
+  }
   /* stavke knjige vezane za mesec/projekat (stranica Finances meseca) */
   const monthRows = (monthId) =>
     rows().filter((r) => r.src === "lg" && r.monthId === monthId);
@@ -1753,6 +1775,7 @@ window.SKFinance = function (X) {
       closeEd();
     },
     net,
+    netRecent,
     monthRows,
     rows,
     /* otvori stavku knjige u njenom mesecu (stranica Finances meseca) */
