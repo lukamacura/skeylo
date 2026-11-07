@@ -11,11 +11,13 @@
 --   • svaki drugi event tih ljudi u OS-u blokira termine (npr. "Nedostupan" ceo dan).
 --
 -- Dodatno uz skeylo-telegram.sql; ponovno pokretanje je bezbedno.
+-- Na Supabase: migracije tg_call_booking, tg_call_booking_today_email,
+-- tg_call_booking_live_weekend (svaki dan + kanal 'live' = uživo).
 -- =====================================================================
 
 insert into tg.cfg (k, v) values
   ('call_who',    'luka'),        -- ko prima pozive (slug-ovi iz os.people, zarezom)
-  ('call_days',   '1,2,3,4,5'),   -- pon–pet (1 = ponedeljak … 7 = nedelja)
+  ('call_days',   '1,2,3,4,5,6,7'), -- svaki dan (1 = ponedeljak … 7 = nedelja)
   ('call_from',   '10:00'),       -- prvi termin
   ('call_to',     '17:00'),       -- poslednji termin se završava do
   ('call_len',    '30'),          -- trajanje poziva u minutima
@@ -111,7 +113,7 @@ begin
   if st is null or length(nm) < 2 or length(nm) > 80 or length(phn) < 8 or length(phn) > 15 or length(ph) > 30
      or (em <> '' and (em !~ '^[^\s@]+@[^\s@]+\.[^\s@]{2,}$' or length(em) > 120))
      or length(co) > 80 or length(nt) > 600
-     or how not in ('phone', 'whatsapp', 'viber', 'meet')
+     or how not in ('phone', 'whatsapp', 'viber', 'meet', 'live')
      or (how = 'meet' and em = '') then
     return jsonb_build_object('ok', false, 'error', 'INVALID');
   end if;
@@ -159,6 +161,7 @@ begin
            when 'whatsapp' then '💬 preko WhatsApp-a'
            when 'viber'    then '💜 preko Vibera'
            when 'meet'     then '🎥 Google Meet (pošalji link na mejl)'
+           when 'live'     then '🤝 uživo (dogovoriti mesto)'
            else                 '☎️ običan telefonski poziv'
          end
       || coalesce(E'\n<i>„' || tg.hn(tg.cut(nt, 400)) || '“</i>', '')
@@ -227,6 +230,7 @@ begin
                     when 'whatsapp' then ' · WhatsApp'
                     when 'viber'    then ' · Viber'
                     when 'meet'     then ' · Google Meet' || coalesce(' → ' || tg.hn(nullif(c->>'email', '')), '')
+                    when 'live'     then ' · uživo'
                     else ' · telefon'
                   end
            end);

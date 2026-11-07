@@ -55,8 +55,8 @@ Od 22h do 8h poruke stižu bez zvuka.
 
 ## Zakazivanje poziva — www.skeylo.com/poziv
 
-Link koji šaljemo ljudima: izaberu dan i vreme, upišu ime, telefon i kanal (telefon, WhatsApp, Viber, Google Meet).
-SQL je u `skeylo-pozivi.sql` (migracije `tg_call_booking` + `tg_call_booking_today_email`), stranica `src/app/poziv/`, API `src/app/api/poziv/`.
+Link koji šaljemo ljudima: izaberu dan i vreme, upišu ime, telefon i kanal (telefon, WhatsApp, Viber, Google Meet ili uživo). Termini su svaki dan, i subotom i nedeljom.
+SQL je u `skeylo-pozivi.sql` (migracije `tg_call_booking`, `tg_call_booking_today_email`, `tg_call_booking_live_weekend`), stranica `src/app/poziv/`, API `src/app/api/poziv/`.
 
 - Zakazan poziv postaje **event u OS-u** (klijent Skeylo, naslov `📞 Poziv · Ime (Firma)`, dodeljen ljudima iz `call_who`). Kontakt je u `data.call`.
 - U grupu odmah stiže **📞 Zakazan poziv** sa datumom, vremenom, telefonom, mejlom, kanalom i porukom. Sat pre poziva stiže običan **⏰ podsetnik**, sa telefonom. Poziv je i u jutarnjem pregledu.
@@ -69,7 +69,7 @@ update tg.cfg set v = 'luka,mihajlo' where k = 'call_who';     -- ko prima poziv
 update tg.cfg set v = '09:00'        where k = 'call_from';    -- prvi termin
 update tg.cfg set v = '18:00'        where k = 'call_to';      -- poslednji se završava do
 update tg.cfg set v = '45'           where k = 'call_len';     -- trajanje u minutima
-update tg.cfg set v = '1,2,3,4'      where k = 'call_days';    -- bez petka
+update tg.cfg set v = '1,2,3,4,5'    where k = 'call_days';    -- samo radni dani (sada: svaki dan)
 update tg.cfg set v = '21'           where k = 'call_ahead';   -- dana unapred
 update tg.cfg set v = '24'           where k = 'call_notice';  -- najmanje sati unapred
 ```

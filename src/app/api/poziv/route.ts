@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-const HOW = new Set(["phone", "whatsapp", "viber", "meet"]);
+const HOW = new Set(["phone", "whatsapp", "viber", "meet", "live"]);
 
 const str = (v: unknown, max: number) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";

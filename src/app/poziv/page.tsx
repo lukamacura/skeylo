@@ -9,7 +9,7 @@ import PozivClient from "./PozivClient";
 export const metadata: Metadata = {
   title: "Zakaži poziv",
   description:
-    "Izaberi dan i vreme za besplatan poziv sa Skeylo timom. 30 minuta, telefonom, WhatsApp-om, Viberom ili preko Google Meet-a.",
+    "Izaberi dan i vreme za besplatan poziv sa Skeylo timom. 30 minuta, telefonom, WhatsApp-om, Viberom, preko Google Meet-a ili uživo.",
   openGraph: {
     title: "Zakaži poziv sa Skeylo timom",
     description:

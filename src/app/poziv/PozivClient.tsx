@@ -17,6 +17,7 @@ import {
   Clock,
   Download,
   Gift,
+  Handshake,
   Loader2,
   MessageCircle,
   MessagesSquare,
@@ -35,7 +36,7 @@ type SlotsRes = {
   len: number; // minuta
   slots: string[]; // YYYY-MM-DDTHH:MM, lokalno vreme u Beogradu
 };
-type How = "phone" | "whatsapp" | "viber" | "meet";
+type How = "phone" | "whatsapp" | "viber" | "meet" | "live";
 type Form = {
   name: string;
   phone: string;
@@ -50,11 +51,23 @@ const EMAIL = "office@skeylo.com";
 const PHONE = "+381 63 1012474";
 const PHONE_HREF = "tel:+381631012474";
 
-const HOWS: { id: How; label: string; Icon: typeof Phone }[] = [
-  { id: "phone", label: "Telefon", Icon: Phone },
-  { id: "whatsapp", label: "WhatsApp", Icon: MessageCircle },
-  { id: "viber", label: "Viber", Icon: MessagesSquare },
-  { id: "meet", label: "Google Meet", Icon: Video },
+// telefon: 2+2+1 (uživo preko cele širine), šire: 3+2
+const HOWS: { id: How; label: string; Icon: typeof Phone; span: string }[] = [
+  { id: "phone", label: "Telefon", Icon: Phone, span: "sm:col-span-2" },
+  {
+    id: "whatsapp",
+    label: "WhatsApp",
+    Icon: MessageCircle,
+    span: "sm:col-span-2",
+  },
+  { id: "viber", label: "Viber", Icon: MessagesSquare, span: "sm:col-span-2" },
+  { id: "meet", label: "Google Meet", Icon: Video, span: "sm:col-span-3" },
+  {
+    id: "live",
+    label: "Uživo",
+    Icon: Handshake,
+    span: "col-span-2 sm:col-span-3",
+  },
 ];
 
 const TEAM = [
@@ -385,7 +398,7 @@ export default function PozivClient() {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Phone className="size-4 shrink-0 text-primary" />
-                  Telefon, WhatsApp, Viber ili Google Meet
+                  Telefon, WhatsApp, Viber, Google Meet ili uživo
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Gift className="size-4 shrink-0 text-primary" />
@@ -671,8 +684,8 @@ export default function PozivClient() {
                         <legend className="mb-1.5 text-sm font-medium">
                           Kako da pričamo?
                         </legend>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                          {HOWS.map(({ id, label, Icon }) => {
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+                          {HOWS.map(({ id, label, Icon, span }) => {
                             const on = form.how === id;
                             return (
                               <button
@@ -681,6 +694,7 @@ export default function PozivClient() {
                                 aria-pressed={on}
                                 onClick={() => set("how", id)}
                                 className={[
+                                  span,
                                   "flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-semibold outline-none transition-[background-color,border-color,color] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
                                   on
                                     ? "border-primary bg-primary/15 text-foreground"
@@ -783,7 +797,10 @@ export default function PozivClient() {
               {EMAIL}
             </a>{" "}
             ·{" "}
-            <a className="hover:text-primary" href={PHONE_HREF}>
+            <a
+              className="whitespace-nowrap hover:text-primary"
+              href={PHONE_HREF}
+            >
               {PHONE}
             </a>
           </p>
@@ -814,10 +831,18 @@ function Done({
         ? "Zvaćemo te preko WhatsApp-a na "
         : form.how === "viber"
           ? "Zvaćemo te preko Vibera na "
-          : "Zvaćemo te na ";
-  const post = form.how === "meet" ? " pre poziva." : ".";
+          : form.how === "live"
+            ? "Javićemo ti se na "
+            : "Zvaćemo te na ";
+  const post =
+    form.how === "meet"
+      ? " pre poziva."
+      : form.how === "live"
+        ? " da dogovorimo gde se vidimo."
+        : ".";
   const how = pre + contact + post;
-  const title = "Poziv sa Skeylo timom";
+  const title =
+    form.how === "live" ? "Sastanak sa Skeylo timom" : "Poziv sa Skeylo timom";
   const details = `${how}\nTreba da pomeriš termin? ${EMAIL} · ${PHONE}`;
 
   const gcal =
@@ -921,7 +946,7 @@ function Done({
         </a>{" "}
         ili pozovi{" "}
         <a
-          className="text-foreground/80 underline-offset-2 hover:underline"
+          className="whitespace-nowrap text-foreground/80 underline-offset-2 hover:underline"
           href={PHONE_HREF}
         >
           {PHONE}
