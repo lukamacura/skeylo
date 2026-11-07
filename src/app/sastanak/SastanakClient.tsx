@@ -167,7 +167,7 @@ const icsStamp = (d: Date) =>
 
 /* ------------------------------------------------------------------ */
 
-export default function PozivClient() {
+export default function SastanakClient() {
   const reduce = useReducedMotion();
   const [data, setData] = useState<SlotsRes | null>(null);
   const [loadErr, setLoadErr] = useState(false);
@@ -198,7 +198,7 @@ export default function PozivClient() {
   const load = useCallback(async (keep: string | null) => {
     setLoadErr(false);
     try {
-      const r = await fetch("/api/poziv", { cache: "no-store" });
+      const r = await fetch("/api/sastanak", { cache: "no-store" });
       const j = (await r.json()) as SlotsRes;
       if (!r.ok || !j.ok) throw new Error("load");
       setData(j);
@@ -304,7 +304,7 @@ export default function PozivClient() {
     if (!slot || Object.keys(errs).length) return;
     setSending(true);
     try {
-      const r = await fetch("/api/poziv", {
+      const r = await fetch("/api/sastanak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, start: slot, source: source.current }),
@@ -328,7 +328,7 @@ export default function PozivClient() {
         wantScroll.current = true;
       } else if (j.error === "ALREADY" && j.start) {
         setFormErr(
-          `Već imaš zakazan poziv: ${longDate(j.start.slice(0, 10))} u ${j.start.slice(11, 16)}. Ako ti treba drugi termin, piši nam na ${EMAIL}.`,
+          `Već imaš zakazan sastanak: ${longDate(j.start.slice(0, 10))} u ${j.start.slice(11, 16)}. Ako ti treba drugi termin, piši nam na ${EMAIL}.`,
         );
       } else if (j.error === "INVALID") {
         setFormErr("Proveri podatke pa pokušaj ponovo.");
@@ -377,13 +377,13 @@ export default function PozivClient() {
           </Link>
 
           <div className="mt-5 overflow-hidden rounded-3xl border border-border bg-card/80 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.8)] sm:mt-7 md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-            {/* ---------- Levo: o pozivu ---------- */}
+            {/* ---------- Levo: o sastanku ---------- */}
             <aside className="relative border-b border-border p-5 sm:p-7 md:border-b-0 md:border-r">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                Besplatan poziv
+                Besplatan sastanak
               </p>
               <h1 className="mt-2 text-balance text-[1.7rem] font-extrabold leading-[1.1] sm:text-4xl">
-                Zakaži poziv sa <span className="text-gradient">Skeylo</span>{" "}
+                Zakaži sastanak sa <span className="text-gradient">Skeylo</span>{" "}
                 timom
               </h1>
               <p className="mt-3 text-pretty text-[0.95rem] leading-relaxed text-muted-foreground">
@@ -775,7 +775,7 @@ export default function PozivClient() {
                             Zakazujem…
                           </>
                         ) : (
-                          <>Zakaži poziv · {slot.slice(11, 16)}</>
+                          <>Zakaži sastanak · {slot.slice(11, 16)}</>
                         )}
                       </button>
                     </form>
@@ -836,13 +836,12 @@ function Done({
             : "Zvaćemo te na ";
   const post =
     form.how === "meet"
-      ? " pre poziva."
+      ? " pre sastanka."
       : form.how === "live"
         ? " da dogovorimo gde se vidimo."
         : ".";
   const how = pre + contact + post;
-  const title =
-    form.how === "live" ? "Sastanak sa Skeylo timom" : "Poziv sa Skeylo timom";
+  const title = "Sastanak sa Skeylo timom";
   const details = `${how}\nTreba da pomeriš termin? ${EMAIL} · ${PHONE}`;
 
   const gcal =
@@ -860,11 +859,11 @@ function Done({
     const body = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//Skeylo//Poziv//SR",
+      "PRODID:-//Skeylo//Sastanak//SR",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
       "BEGIN:VEVENT",
-      `UID:poziv-${slot.replace(/\D/g, "")}-${Math.random().toString(36).slice(2, 10)}@skeylo.com`,
+      `UID:sastanak-${slot.replace(/\D/g, "")}-${Math.random().toString(36).slice(2, 10)}@skeylo.com`,
       `DTSTAMP:${icsStamp(new Date())}`,
       `DTSTART:${icsStamp(start)}`,
       `DTEND:${icsStamp(end)}`,
@@ -884,7 +883,7 @@ function Done({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "skeylo-poziv.ics";
+    a.download = "skeylo-sastanak.ics";
     document.body.appendChild(a);
     a.click();
     a.remove();

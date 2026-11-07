@@ -1,10 +1,10 @@
 -- =====================================================================
--- Zakazivanje poziva sa Skeylo timom (www.skeylo.com/poziv)
+-- Zakazivanje sastanka sa Skeylo timom (www.skeylo.com/sastanak)
 --
---   /poziv ──► /api/poziv ──► os.call_slots()  slobodni termini
---                          └► os.call_book()   upis eventa u OS + 📞 poruka u grupu
+--   /sastanak ──► /api/sastanak ──► os.call_slots()  slobodni termini
+--                                └► os.call_book()   upis eventa u OS + 🗓️ poruka u grupu
 --
--- Zakazan poziv je običan OS event (os.docs, col = 'tasks', kind = 'event',
+-- Zakazan sastanak je običan OS event (os.docs, col = 'tasks', kind = 'event',
 -- klijent Skeylo, dodeljen ljudima iz tg.cfg call_who). Zato:
 --   • tim ga vidi u OS-u, pomera ga ili briše tamo (termin se tada oslobađa),
 --   • stiže postojeći podsetnik 1h pre (tg.scan_events) i ulazi u jutarnji pregled,
@@ -12,15 +12,17 @@
 --
 -- Dodatno uz skeylo-telegram.sql; ponovno pokretanje je bezbedno.
 -- Na Supabase: migracije tg_call_booking, tg_call_booking_today_email,
--- tg_call_booking_live_weekend (svaki dan + kanal 'live' = uživo).
+-- tg_call_booking_live_weekend (svaki dan + kanal 'live' = uživo),
+-- tg_call_booking_sastanak ("poziv" → "sastanak" u porukama i naslovu).
+-- Imena u bazi (os.call_*, tg.cfg call_*) su ostala ista.
 -- =====================================================================
 
 insert into tg.cfg (k, v) values
-  ('call_who',    'luka'),        -- ko prima pozive (slug-ovi iz os.people, zarezom)
+  ('call_who',    'luka'),        -- ko prima sastanke (slug-ovi iz os.people, zarezom)
   ('call_days',   '1,2,3,4,5,6,7'), -- svaki dan (1 = ponedeljak … 7 = nedelja)
   ('call_from',   '10:00'),       -- prvi termin
   ('call_to',     '17:00'),       -- poslednji termin se završava do
-  ('call_len',    '30'),          -- trajanje poziva u minutima
+  ('call_len',    '30'),          -- trajanje sastanka u minutima
   ('call_ahead',  '14'),          -- koliko dana unapred može da se zakaže
   ('call_notice', '3')            -- najmanje sati unapred
 on conflict (k) do nothing;
@@ -72,7 +74,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- API (samo service_role, poziva ga /api/poziv)
+-- API (samo service_role, zove ga /api/sastanak)
 -- ---------------------------------------------------------------------
 create or replace function os.call_slots() returns jsonb
 language sql stable security definer set search_path = '' as $$
@@ -122,7 +124,7 @@ begin
   -- jedan po jedan: dva klika na isti termin ne mogu oba da prođu
   perform pg_advisory_xact_lock(hashtext('skeylo:call_book'));
 
-  -- ista osoba već ima zakazan poziv koji tek predstoji
+  -- ista osoba već ima zakazan sastanak koji tek predstoji
   select d.data->>'start' into prev
   from os.docs d
   where d.col = 'tasks' and d.data->>'kind' = 'event' and not tg.isdone(d.data)
@@ -144,7 +146,7 @@ begin
     exit when not exists (select 1 from os.docs d where d.col = 'tasks' and d.id = nid);
   end loop;
 
-  ttl := '📞 Poziv · ' || nm || coalesce(' (' || nullif(co, '') || ')', '');
+  ttl := '🗓️ Sastanak · ' || nm || coalesce(' (' || nullif(co, '') || ')', '');
   dtxt := case
     when st::date = tg.today() then 'danas'
     when st::date = tg.today() + 1 then 'sutra, ' || tg.d(st::date)
@@ -154,7 +156,7 @@ begin
   -- poruka ide pod ključem 'task:<id>', isti koji koristi docs_tg trigger,
   -- pa obično "📅 Novi event" za ovaj event ne ide (nema duple poruke)
   perform tg.push('task:' || nid, 'call',
-    '📞 <b>Zakazan poziv</b> · ' || tg.h(dtxt) || ' u ' || to_char(st, 'HH24:MI') || '–' || to_char(en, 'HH24:MI')
+    '🗓️ <b>Zakazan sastanak</b> · ' || tg.h(dtxt) || ' u ' || to_char(st, 'HH24:MI') || '–' || to_char(en, 'HH24:MI')
       || E'\n<b>' || tg.h(nm) || '</b>' || coalesce(' · ' || tg.hn(co), '')
       || E'\n📱 ' || tg.h(ph) || coalesce(' · ✉️ ' || tg.hn(nullif(em, '')), '')
       || E'\n' || case how
@@ -162,7 +164,7 @@ begin
            when 'viber'    then '💜 preko Vibera'
            when 'meet'     then '🎥 Google Meet (pošalji link na mejl)'
            when 'live'     then '🤝 uživo (dogovoriti mesto)'
-           else                 '☎️ običan telefonski poziv'
+           else                 '☎️ telefonom'
          end
       || coalesce(E'\n<i>„' || tg.hn(tg.cut(nt, 400)) || '“</i>', '')
       || E'\n👤 ' || tg.whos(who)
@@ -199,7 +201,7 @@ grant execute on function os.call_slots() to service_role;
 grant execute on function os.call_book(jsonb) to service_role;
 
 -- ---------------------------------------------------------------------
--- Podsetnik 1h pre: za poziv sa sajta dodaj telefon i kanal
+-- Podsetnik 1h pre: za sastanak sa sajta dodaj telefon i kanal
 -- (isto kao u skeylo-telegram.sql, plus red 📱 kad event ima data.call)
 -- ---------------------------------------------------------------------
 create or replace function tg.scan_events() returns void

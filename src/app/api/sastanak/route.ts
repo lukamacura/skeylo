@@ -1,6 +1,6 @@
-// /api/poziv — zakazivanje poziva sa Skeylo timom (stranica /poziv).
+// /api/sastanak — zakazivanje sastanka sa Skeylo timom (stranica /sastanak).
 // GET: slobodni termini. POST: zakaži termin.
-// Sva logika je u bazi (docs/telegram/skeylo-pozivi.sql): os.call_slots() računa
+// Sva logika je u bazi (docs/telegram/skeylo-sastanci.sql): os.call_slots() računa
 // termine iz tg.cfg i OS eventa, os.call_book() upisuje event u OS i šalje 📞 poruku
 // u Telegram grupu. Obe funkcije sme da zove samo service_role.
 import { NextRequest, NextResponse } from "next/server";

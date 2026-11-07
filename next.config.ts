@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Zakazivanje je bilo na /poziv pre nego što je preimenovano u sastanak.
+      { source: "/poziv", destination: "/sastanak", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       // Skeylo OS je samostalna aplikacija u public/os-app (hash rute).
