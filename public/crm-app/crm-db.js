@@ -57,16 +57,16 @@
   };
 
   /* ---------- app.js: skida se odmah, izvršava tek kad znamo ko je unutra ---------- */
-  const APP_SRC = fetch("/crm-app/app.js").then((r) => {
-    if (!r.ok) throw new Error("app.js " + r.status);
-    return r.text();
-  });
+  /* index.html ga već skida (<link rel="preload">); <script src> uzima taj isti odgovor,
+     a pregledač ga kompajlira van glavne niti i pamti prevedeni kod za sledeći put */
   let appLoaded = null;
   function loadApp() {
     if (!appLoaded)
-      appLoaded = APP_SRC.then((src) => {
+      appLoaded = new Promise((res, rej) => {
         const s = document.createElement("script");
-        s.textContent = src + "\n//# sourceURL=/crm-app/app.js";
+        s.src = "/crm-app/app.js";
+        s.onload = res;
+        s.onerror = () => rej(new Error("app.js"));
         document.body.appendChild(s);
       });
     return appLoaded;
@@ -667,7 +667,7 @@
   }
 
   /* ulazak u aplikaciju bez trzanja:
-     1) app.js je već skinut (APP_SRC), izvrši se dok je ekran miran
+     1) app.js je već skinut (preload), izvrši se dok je ekran miran
      2) uvodna animacija čeka; dashboard se iscrta ispod zavese
      3) zavesa nestaje na GPU-u, a uvod kreće tačno tada */
   async function enter(connect) {

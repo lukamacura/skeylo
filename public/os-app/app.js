@@ -700,6 +700,8 @@
       refresh();
     },
   };
+  let markReady;
+  const readyP = new Promise((r) => (markReady = r));
   function useLocal() {
     DB = null;
     S.mode = "local";
@@ -733,6 +735,7 @@
         models: x.models ? [...x.models] : undefined,
       }));
     S.ready = true;
+    markReady();
     refresh();
   }
   (async () => {
@@ -795,6 +798,7 @@
               ].every((k) => got[k])
             ) {
               S.ready = true;
+              markReady();
               refresh(col);
             }
           },
@@ -6738,7 +6742,9 @@
     }
   });
 
-  /* ---------------- skeylo symbol grid ---------------- */
+  /* ---------------- skeylo symbol grid ----------------
+     Mirna mreža: crta se jednom (i ponovo pri promeni veličine ili boja teme). Ranije se
+     ceo ekran precrtavao 60 puta u sekundi zbog svetlosnog prelaza i treperenja simbola. */
   (() => {
     const cv = $("#gridfx");
     if (!cv) return;
@@ -6788,7 +6794,6 @@
     let W = 0,
       H = 0,
       dpr = 1,
-      small = false,
       ready = 0,
       accA = [225, 128, 44],
       accB = [243, 176, 68],
@@ -6797,15 +6802,6 @@
       sym = 22,
       cols = 0,
       rows = 0;
-    let base = null,
-      bright = null,
-      glow = null,
-      layerDim = null,
-      layerLit = null,
-      lit = [],
-      last = 0,
-      sweep = null,
-      nextSweep = 2500;
     const raw = {};
     const hex = (c) => {
       const m = c.trim().match(/^#([0-9a-f]{6})$/i);
@@ -6860,31 +6856,22 @@
     }
     function buildLayers() {
       if (ready < 4 || !W) return;
-      base = logoCanvas(sym, rgb(accA));
-      bright = logoCanvas(sym, "grad");
-      glow = logoCanvas(sym, rgb(accB), 6);
-      const mk = (src, a) => {
-        const c = document.createElement("canvas");
-        c.width = W * dpr;
-        c.height = H * dpr;
-        const x = c.getContext("2d");
-        x.globalAlpha = a;
-        for (let j = 0; j < rows; j++)
-          for (let i = 0; i < cols; i++) {
-            const [px, py] = pos(i, j);
-            x.drawImage(
-              src,
-              (px - src.lw / 2) * dpr,
-              (py - src.lh / 2) * dpr,
-              src.lw * dpr,
-              src.lh * dpr,
-            );
-          }
-        return c;
-      };
-      layerDim = mk(base, 0.075);
-      layerLit = mk(bright, 0.42);
-      if (reduce) frame(performance.now());
+      const base = logoCanvas(sym, rgb(accA));
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.globalAlpha = 0.075;
+      for (let j = 0; j < rows; j++)
+        for (let i = 0; i < cols; i++) {
+          const [px, py] = pos(i, j);
+          ctx.drawImage(
+            base,
+            (px - base.lw / 2) * dpr,
+            (py - base.lh / 2) * dpr,
+            base.lw * dpr,
+            base.lh * dpr,
+          );
+        }
+      ctx.globalAlpha = 1;
     }
     function readAcc() {
       const cs = getComputedStyle(document.documentElement);
@@ -6910,114 +6897,29 @@
       i.src = p.p;
       raw[p.k] = i;
     });
-    function spawn(t) {
-      const n = small ? 1 : 2;
-      for (let k = 0; k < n; k++) {
-        if (lit.length > (small ? 8 : 18)) break;
-        const i = Math.floor(Math.random() * cols),
-          j = Math.floor(
-            Math.random() * Math.min(rows, Math.ceil((H * 0.8) / gap)),
-          );
-        lit.push({
-          i,
-          j,
-          t0: t,
-          dur: 2400 + Math.random() * 2400,
-          a: 0.45 + Math.random() * 0.45,
-        });
-      }
-    }
-    function frame(t) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, cv.width, cv.height);
-      if (!layerDim) return;
-      ctx.drawImage(layerDim, 0, 0);
-      // diagonal light sweep across the grid
-      if (!reduce && !sweep && t > nextSweep)
-        sweep = { t0: t, dur: small ? 3800 : 4600 };
-      if (sweep) {
-        const p = (t - sweep.t0) / sweep.dur;
-        if (p >= 1) {
-          sweep = null;
-          nextSweep = t + 6000 + Math.random() * 5000;
-        } else {
-          const diag = (W + H) * dpr,
-            c = -H * dpr * 0.4 + p * (diag + H * dpr * 0.8);
-          [
-            [160, 0.25],
-            [90, 0.45],
-            [40, 0.7],
-          ].forEach(([w, a]) => {
-            ctx.save();
-            ctx.beginPath();
-            const ww = w * dpr;
-            ctx.moveTo(c - ww, 0);
-            ctx.lineTo(c + ww, 0);
-            ctx.lineTo(c + ww - H * dpr, H * dpr);
-            ctx.lineTo(c - ww - H * dpr, H * dpr);
-            ctx.closePath();
-            ctx.clip();
-            ctx.globalAlpha = a * 0.55;
-            ctx.drawImage(layerLit, 0, 0);
-            ctx.restore();
-          });
-        }
-      }
-      // individual symbols lighting up
-      lit = lit.filter((l) => t - l.t0 < l.dur);
-      for (const l of lit) {
-        const e = Math.sin(((t - l.t0) / l.dur) * Math.PI);
-        const [px, py] = pos(l.i, l.j);
-        ctx.globalAlpha = e * l.a * 0.7;
-        ctx.drawImage(
-          glow,
-          (px - glow.lw / 2) * dpr,
-          (py - glow.lh / 2) * dpr,
-          glow.lw * dpr,
-          glow.lh * dpr,
-        );
-        ctx.globalAlpha = e * l.a;
-        ctx.drawImage(
-          bright,
-          (px - bright.lw / 2) * dpr,
-          (py - bright.lh / 2) * dpr,
-          bright.lw * dpr,
-          bright.lh * dpr,
-        );
-      }
-      ctx.globalAlpha = 1;
-    }
-    function loop(t) {
-      if (!document.hidden) {
-        if (t - last > 380) {
-          spawn(t);
-          last = t;
-        }
-        frame(t);
-      }
-      requestAnimationFrame(loop);
-    }
     function size() {
       dpr = Math.min(2, devicePixelRatio || 1);
       W = cv.clientWidth;
       H = cv.clientHeight;
-      small = W < 700;
+      const small = W < 700;
       gap = small ? 52 : 66;
       sym = small ? 17 : 21;
       cols = Math.ceil(W / gap) + 2;
       rows = Math.ceil(H / gap) + 2;
       cv.width = W * dpr;
       cv.height = H * dpr;
-      lit = [];
       buildLayers();
     }
-    addEventListener("resize", size);
+    let rq = 0;
+    addEventListener("resize", () => {
+      cancelAnimationFrame(rq);
+      rq = requestAnimationFrame(size);
+    });
     size();
     new MutationObserver(readAcc).observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
-    if (!reduce) requestAnimationFrame(loop);
   })();
 
   /* ---------------- organisation cockpit + skeylo calendar ---------------- */
@@ -13653,25 +13555,24 @@
       if (NT) NT.flush();
     }
   });
-  /* sesija (a sa njom i podaci) se proverava odmah, dok traje uvodni znak, a ne tek posle
-     njega; znak ostaje dok sesija ne stigne, pa između nema praznog ekrana */
+  /* sesija (a sa njom i podaci) se proverava odmah; tamni ekran sa znakom stoji samo dok
+     ona ne stigne (bez minimalnog trajanja uvoda), pa između nema praznog ekrana */
   const sessP = (async () => OS.session())().catch(() => null);
   async function start() {
     const slug = await sessP;
     const u = TEAM.find((t) => t.id === slug);
-    if (u) store.set(u.id);
-    else store.del();
+    if (u) {
+      store.set(u.id);
+      /* podaci iz lokalnog keša stižu za nekoliko ms: kratko ih sačekaj, da dashboard
+         ne trepne praznim stanjem (prvi put, bez keša, čeka se najviše 300 ms) */
+      await Promise.race([readyP, new Promise((r) => setTimeout(r, 300))]);
+    } else store.del();
+    $("#boot").classList.add("done");
     if (u) login(u);
     else {
       show("login");
       auth.show();
     }
   }
-  Promise.all([
-    sessP,
-    new Promise((r) => setTimeout(r, reduce ? 0 : MT(1100))),
-  ]).then(() => {
-    $("#boot").classList.add("done");
-    start();
-  });
+  start();
 })();

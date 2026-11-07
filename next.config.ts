@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
         source: "/os-app/draw/fonts/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],
       },
+      // Fontovi OS-a i CRM-a (fonts.css): menjaju se samo sa novim imenom fajla.
+      {
+        source: "/os-app/fonts/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],
+      },
     ];
   },
   async rewrites() {

@@ -26,21 +26,136 @@
   const fail = (code, extra) => ({ code, ...extra });
   const netOr = (code) => (navigator.onLine === false ? "network" : code);
 
+  /* Ko je prijavljen na ovom uređaju (uid sesije → slug). Pri sledećem otvaranju OS kreće
+     odmah sa tom osobom, a sesija i članstvo se proveravaju u pozadini (recheck). */
+  const ME_KEY = "skeylo-os-me";
+  const lsJSON = (k) => {
+    try {
+      return JSON.parse(localStorage.getItem(k));
+    } catch (e) {
+      return null;
+    }
+  };
+  const storedUid = () => {
+    const j = lsJSON("skeylo-os-auth"),
+      u = (j && j.user) || (lsJSON("skeylo-os-auth-user") || {}).user;
+    return (j && j.refresh_token && u && u.id) || null;
+  };
+  async function remember(slug) {
+    try {
+      const { data } = await sb.auth.getSession();
+      const uid = data.session && data.session.user.id;
+      if (uid) localStorage.setItem(ME_KEY, JSON.stringify({ uid, slug }));
+    } catch (e) {}
+  }
+  async function forget() {
+    try {
+      localStorage.removeItem(ME_KEY);
+    } catch (e) {}
+    await cacheClear();
+  }
+  async function recheck(slug) {
+    let bad = false;
+    try {
+      const { data, error } = await sb.auth.getSession();
+      if (!data.session)
+        bad = !(
+          error &&
+          (error.name === "AuthRetryableFetchError" ||
+            navigator.onLine === false)
+        );
+      else {
+        const r = await sb.rpc("my_slug");
+        bad = !r.error && r.data !== slug;
+      }
+    } catch (e) {}
+    // sesija istekla ili osoba više nije u timu: obične provere posle ponovnog učitavanja
+    if (bad) {
+      await forget();
+      location.reload();
+    }
+  }
+
+  /* ---------- lokalni keš dokumenata (IndexedDB) ----------
+     Pri otvaranju OS odmah prikaže poslednje poznato stanje, a baza ga odmah zatim
+     osveži (load + realtime, kao i ranije); izmena koje nije bilo ne crta ništa ponovo.
+     Keš je po osobi, sadrži samo ono što RLS toj osobi i inače daje, briše se pri odjavi. */
+  const CACHE_VER = 1;
+  let idbP = null;
+  function idb() {
+    if (!idbP)
+      idbP = new Promise((res) => {
+        try {
+          const r = indexedDB.open("skeylo-os-cache", 1);
+          r.onupgradeneeded = () => {
+            r.result.createObjectStore("docs");
+            r.result.createObjectStore("meta");
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = r.onblocked = () => res(null);
+        } catch (e) {
+          res(null);
+        }
+      });
+    return idbP;
+  }
+  const cacheP = idb()
+    .then(
+      (d) =>
+        d &&
+        new Promise((res) => {
+          const t = d.transaction(["docs", "meta"], "readonly");
+          let meta = null,
+            rows = [];
+          t.objectStore("meta").get("info").onsuccess = (e) =>
+            (meta = e.target.result || null);
+          t.objectStore("docs").getAll().onsuccess = (e) =>
+            (rows = e.target.result || []);
+          t.oncomplete = () => res({ meta, rows });
+          t.onerror = t.onabort = () => res(null);
+        }),
+    )
+    .catch(() => null);
+  async function cacheClear() {
+    const d = await idb();
+    if (!d) return;
+    await new Promise((res) => {
+      try {
+        const t = d.transaction(["docs", "meta"], "readwrite");
+        t.objectStore("docs").clear();
+        t.objectStore("meta").clear();
+        t.oncomplete = t.onerror = t.onabort = res;
+      } catch (e) {
+        res();
+      }
+    });
+  }
+
   /* Sesija važi samo za člana tima (os.people); inače je odmah gasimo. */
   async function member() {
     const { data, error } = await sb.rpc("my_slug");
     if (error) throw fail(netOr("failed"));
     mySlug = data || null;
     if (!mySlug) {
+      await forget();
       await sb.auth.signOut({ scope: "local" });
       throw fail("not_member");
     }
+    remember(mySlug);
     markAuthed();
     return mySlug;
   }
 
   const OS = {
     async session() {
+      const me = lsJSON(ME_KEY),
+        uid = storedUid();
+      if (me && me.slug && uid && me.uid === uid) {
+        mySlug = me.slug;
+        markAuthed();
+        recheck(me.slug);
+        return me.slug;
+      }
       const { data } = await sb.auth.getSession();
       if (!data.session) return null;
       return member().catch(() => null);
@@ -97,6 +212,7 @@
       return (data.session && data.session.user.email) || "";
     },
     async signOut() {
+      await forget();
       await sb.auth.signOut({ scope: "local" });
     },
     /* Potvrda opasne radnje: tvoja lozinka, proverena u zasebnoj sesiji
@@ -129,6 +245,8 @@
   const pending = new Map(); // "col/id" -> broj upisa u toku
   const late = new Map(); // "col/id" -> tuđa izmena stigla dok je naš upis bio u toku
   const tomb = new Map(); // "col/id" -> verzija u trenutku brisanja
+  const srv = new WeakSet(); // podaci koji su stigli iz baze (a ne lokalni upis u toku)
+  const saved = new Map(); // "col/id" -> objekat koji je upisan u keš
 
   const key = (c, id) => c + "/" + id;
   const clone = (x) =>
@@ -171,6 +289,7 @@
   function emit(c) {
     const s = cols.get(c);
     if (!s || !s.loaded || s.queued) return;
+    saveSoon();
     s.queued = true;
     queueMicrotask(() => {
       s.queued = false;
@@ -196,7 +315,9 @@
     if ((known.get(k) || 0) >= row.v) return;
     if (tomb.has(k) && tomb.get(k) >= row.v) return;
     known.set(k, row.v);
-    s.docs.set(row.id, row.data || {});
+    const d = row.data || {};
+    srv.add(d);
+    s.docs.set(row.id, d);
     emit(row.col);
   }
 
@@ -319,20 +440,29 @@
       try {
         const rows = await fetchAll(c);
         const seen = new Set();
+        let changed = !s.loaded;
         for (const r of rows) {
           const k = key(c, r.id);
           seen.add(r.id);
           if (pending.get(k)) continue;
           if ((known.get(k) || 0) > r.v || (tomb.has(k) && tomb.get(k) >= r.v))
             continue;
+          // ista verzija iz baze je već tu (npr. iz keša): ništa se ne crta ponovo
+          if (known.get(k) === r.v && srv.has(s.docs.get(r.id))) continue;
           known.set(k, r.v);
-          s.docs.set(r.id, r.data || {});
+          const d = r.data || {};
+          srv.add(d);
+          s.docs.set(r.id, d);
+          changed = true;
         }
         if (s.loaded)
           for (const id of [...s.docs.keys()])
-            if (!seen.has(id) && !pending.get(key(c, id))) s.docs.delete(id);
+            if (!seen.has(id) && !pending.get(key(c, id))) {
+              s.docs.delete(id);
+              changed = true;
+            }
         s.loaded = true;
-        emit(c);
+        if (changed) emit(c);
         return;
       } catch (e) {
         console.warn("[os] učitavanje", c, e);
@@ -433,7 +563,9 @@
         if ((known.get(k) || 0) <= out.v) {
           known.set(k, out.v);
           if (s && s.loaded) {
-            s.docs.set(id, out.data || {});
+            const d = out.data || {};
+            srv.add(d);
+            s.docs.set(id, d);
             emit(c);
           }
         }
@@ -474,6 +606,90 @@
     };
   }
 
+  /* keš ove osobe: col -> [{id, v, d}], samo kolekcije koje su bile cele učitane */
+  let cached = null,
+    cachedP = null;
+  function cacheFor(slug) {
+    if (!cachedP)
+      cachedP = Promise.race([
+        cacheP,
+        new Promise((r) => setTimeout(() => r(null), 400)), // spor disk: ne čekamo ga
+      ]).then((c) => {
+        cached = new Map();
+        if (!c || !c.meta || c.meta.ver !== CACHE_VER || c.meta.slug !== slug)
+          return;
+        (c.meta.cols || []).forEach((col) => cached.set(col, []));
+        for (const r of c.rows) if (cached.has(r.c)) cached.get(r.c).push(r);
+      });
+    return cachedP;
+  }
+  function fromCache(c, s) {
+    const rows = cached && cached.get(c);
+    if (!rows) return;
+    cached.delete(c);
+    for (const r of rows) {
+      const k = key(c, r.id);
+      if (r.v) {
+        known.set(k, r.v);
+        srv.add(r.d);
+      }
+      s.docs.set(r.id, r.d);
+      saved.set(k, r.d);
+    }
+    s.loaded = true;
+    emit(c);
+  }
+  let saveT = 0;
+  function saveSoon() {
+    if (saveT || !mySlug) return;
+    saveT = setTimeout(() => {
+      (window.requestIdleCallback || ((f) => setTimeout(f, 0)))(saveNow, {
+        timeout: 4000,
+      });
+    }, 1500);
+  }
+  async function saveNow() {
+    saveT = 0;
+    const d = await idb();
+    if (!d || !mySlug) return;
+    const put = [],
+      del = [],
+      now = new Set(),
+      done = [];
+    cols.forEach((s, c) => {
+      if (!s.loaded) return;
+      done.push(c);
+      s.docs.forEach((data, id) => {
+        const k = key(c, id);
+        now.add(k);
+        // lokalni upis bez potvrđene verzije ide sa v=0: sledeće učitavanje ga zameni
+        if (saved.get(k) !== data)
+          put.push([
+            k,
+            { c, id, v: srv.has(data) ? known.get(k) || 0 : 0, d: data },
+          ]);
+      });
+    });
+    saved.forEach((_, k) => now.has(k) || del.push(k));
+    if (!put.length && !del.length && done.length === savedCols) return;
+    try {
+      const t = d.transaction(["docs", "meta"], "readwrite"),
+        ds = t.objectStore("docs");
+      put.forEach(([k, row]) => ds.put(row, k));
+      del.forEach((k) => ds.delete(k));
+      t.objectStore("meta").put(
+        { ver: CACHE_VER, slug: mySlug, cols: done },
+        "info",
+      );
+      t.oncomplete = () => {
+        put.forEach(([k, row]) => saved.set(k, row.d));
+        del.forEach((k) => saved.delete(k));
+        savedCols = done.length;
+      };
+    } catch (e) {}
+  }
+  let savedCols = -1;
+
   function collection(c) {
     const q = {
       doc: (id) => docRef(c, id || newId()),
@@ -484,6 +700,7 @@
         if (s.loaded) emit(c);
         else if (!s.loading) {
           s.loading = true;
+          fromCache(c, s);
           listen(c);
           s.loadP = load(c);
         }
@@ -763,6 +980,7 @@
     async use(name) {
       if (name !== "db" && name !== "assets") return null;
       await authed;
+      if (name === "db") await cacheFor(mySlug);
       return name === "db" ? db : assets;
     },
   };

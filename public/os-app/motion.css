@@ -29,3 +29,93 @@
   animation-duration: 400ms;
   animation-delay: calc(24ms + min(var(--i), 10) * 24ms);
 }
+
+/* ---------- mir: ukrasi ne rade sami od sebe ----------
+   Ilustracije na karticama (novčići, taskovi, kalendar, fakture, lead…) stoje, a oživljavaju
+   dok je miš na kartici. Neke petlje su animirale svojstvo (--o, --a) preko conic gradijenta
+   i senke, pa se element precrtavao u svakom kadru čak i kad niko ne gleda u njega.
+   Signali (tajmer, kasni, upload, spinner) ostaju živi. "html" ispred: fakture.css se učitava
+   posle ovog fajla, a shorthand "animation" bi vratio play-state na running. */
+html .sbg img,
+html .coins .cs1,
+html .coins .cs2,
+html .coins .cs3,
+html .coins .cf1,
+html .coins .cf2,
+html .coins .spark,
+html .tkills .tk,
+html .tkills .tkf,
+html .tkills .tkc,
+html .tkills .tkpen,
+html .calill .cl,
+html .ckill .e1,
+html .ckill .e2,
+html .ckill .e3,
+html .lmill .lmc,
+html .lmill .lmcf,
+html .lmill .lmok,
+html .fkill .fk-p1,
+html .fkill .fk-p2,
+html .fkill .fk-ok,
+html .coin,
+html .ckspark,
+html .rempty .arch,
+html .col::before,
+html .mod::before,
+html .mod::after,
+html .rcard::before,
+html .cptile::before {
+  animation-play-state: paused;
+}
+@media (hover: hover) {
+  html .card:hover .sbg img,
+  html .card:hover .coins *,
+  html .card:hover .tkills *,
+  html .card:hover .calill *,
+  html .card:hover .ckill *,
+  html .card:hover .lmill *,
+  html .card:hover .fkill *,
+  html .coin:hover,
+  html .col:hover::before,
+  html .mod:hover::before,
+  html .mod:hover::after,
+  html .rcard:hover::before,
+  html .cptile:hover::before {
+    animation-play-state: running;
+  }
+}
+/* stalni ukrasi bez interakcije: mirna slika (prsten oko fotografije, sjaj naslova, pozadina teme) */
+html .ring,
+html .pav::before,
+html .wph::before,
+html .wph .glowb,
+html .mhead .av::before,
+html .mhero::before,
+html .mhero::after,
+html .fhero::after,
+html .cks::before,
+html .dwbig .glow,
+html .brring .glow,
+html .ckhero h1,
+html .tpglow,
+html.theme-ils .bg::before,
+html.theme-ils .bg::after,
+html.theme-nina .bg::before,
+html.theme-nina .bg::after {
+  animation: none;
+}
+
+/* uvodni znak: bez okretanja; logo se pojavi samo ako provera prijave potraje */
+#boot {
+  transition:
+    opacity 200ms ease,
+    visibility 200ms;
+}
+#boot img {
+  animation: bootLogo 240ms 350ms ease both;
+}
+@keyframes bootLogo {
+  from {
+    opacity: 0;
+  }
+}

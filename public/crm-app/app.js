@@ -28,10 +28,8 @@ const CRM_MEDIA = {}; // samo demo kreative u pregledu (ime fajla → adresa); p
 const $ = (s) => document.querySelector(s),
   $$ = (s) => [...document.querySelectorAll(s)];
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-/* tempo animacija (motion.js): MT = trajanje po istoj krivoj kao CSS, MLAG = kašnjenje,
-   TEMPO = brzina sata uvodnog amblema */
-const TEMPO = window.CRM_TEMPO || 1,
-  MT = window.CRM_T || ((ms) => ms),
+/* tempo animacija (motion.js): MT = trajanje po istoj krivoj kao CSS, MLAG = kašnjenje */
+const MT = window.CRM_T || ((ms) => ms),
   MLAG = window.CRM_LAG || ((ms) => ms);
 const fine = matchMedia("(hover:hover) and (pointer:fine)").matches;
 const esc = (s) =>
@@ -65,60 +63,29 @@ if (fine) {
   });
 }
 
-/* ---------- ambient: rose arcs, drifting dust that moves away from the cursor, faint laser sweeps ---------- */
+/* ---------- ambijent: ružičasti lukovi i prašina, nacrtani jednom ----------
+   Mirna pozadina: crta se pri učitavanju i promeni veličine prozora, a ne 60 puta u
+   sekundi preko celog ekrana (to je ranije trošilo procesor i kočilo ostale animacije). */
 (function () {
   const c = $("#bg"),
     x = c.getContext("2d");
-  let W,
-    H,
-    parts = [],
-    beams = [],
-    nb = performance.now() + 4200,
-    t0 = performance.now(),
-    sy = 0;
-  function size() {
-    const d = Math.min(1.5, devicePixelRatio || 1);
-    W = innerWidth;
-    H = innerHeight;
+  const arcs = [
+    { cx: -0.15, cy: -0.1, R: 0.75, w: 1.2, o: 0.16 },
+    { cx: 1.12, cy: 1.15, R: 0.62, w: 1.2, o: 0.14 },
+    { cx: -0.25, cy: -0.25, R: 1.05, w: 0.8, o: 0.08 },
+    { cx: 1.25, cy: 1.3, R: 0.9, w: 0.8, o: 0.07 },
+  ];
+  function draw() {
+    const d = Math.min(1.5, devicePixelRatio || 1),
+      W = innerWidth,
+      H = innerHeight,
+      m = Math.max(W, H);
     c.width = W * d;
     c.height = H * d;
     x.setTransform(d, 0, 0, d, 0, 0);
-    const n = Math.round(Math.min(90, (W * H) / 16000));
-    parts = Array.from({ length: n }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: 0,
-      vy: 0,
-      r: 0.4 + Math.random() * 1.5,
-      v: 0.08 + Math.random() * 0.28,
-      p: Math.random() * 6.28,
-    }));
-  }
-  size();
-  addEventListener("resize", size);
-  addEventListener(
-    "scroll",
-    () => {
-      sy = scrollY;
-    },
-    { passive: true },
-  );
-  const arcs = [
-    { cx: -0.15, cy: -0.1, R: 0.75, w: 1.2, s: 0.00004, o: 0.16 },
-    { cx: 1.12, cy: 1.15, R: 0.62, w: 1.2, s: -0.00005, o: 0.14 },
-    { cx: -0.25, cy: -0.25, R: 1.05, w: 0.8, s: 0.00003, o: 0.08 },
-    { cx: 1.25, cy: 1.3, R: 0.9, w: 0.8, s: -0.00003, o: 0.07 },
-  ];
-  function frame(now) {
-    const t = now - t0,
-      m = Math.max(W, H);
-    x.clearRect(0, 0, W, H);
-    arcs.forEach((a, i) => {
-      const cx = a.cx * W + Math.sin(t * a.s * 6 + i) * 24,
-        cy =
-          a.cy * H +
-          Math.cos(t * a.s * 5 + i) * 24 -
-          sy * 0.05 * (i % 2 ? -1 : 1),
+    arcs.forEach((a) => {
+      const cx = a.cx * W,
+        cy = a.cy * H,
         Rr = a.R * m;
       const g = x.createRadialGradient(cx, cy, Rr * 0.92, cx, cy, Rr * 1.08);
       g.addColorStop(0, "rgba(227,169,174,0)");
@@ -135,90 +102,27 @@ if (fine) {
       x.arc(cx, cy, Rr, 0, Math.PI * 2);
       x.stroke();
     });
-    if (!reduce && now > nb) {
-      beams.push({
-        t: now,
-        d: 1700,
-        y0: H * (0.15 + Math.random() * 0.7),
-        ang: (Math.random() - 0.5) * 0.6,
-        dir: Math.random() < 0.5 ? 1 : -1,
-      });
-      nb = now + 7000 + Math.random() * 6000;
-    }
-    beams = beams.filter((b) => now - b.t < b.d);
-    for (const b of beams) {
-      const k = (now - b.t) / b.d,
-        env = Math.sin(Math.PI * k),
-        x0 = -60,
-        x1 = W + 60,
-        yA = b.y0 - (Math.tan(b.ang) * W) / 2,
-        yB = b.y0 + (Math.tan(b.ang) * W) / 2,
-        len = Math.hypot(x1 - x0, yB - yA),
-        ux = (x1 - x0) / len,
-        uy = (yB - yA) / len;
-      x.strokeStyle = `rgba(251,228,223,${(0.05 * env).toFixed(3)})`;
-      x.lineWidth = 1;
-      x.beginPath();
-      x.moveTo(x0, yA);
-      x.lineTo(x1, yB);
-      x.stroke();
-      const u = b.dir > 0 ? k : 1 - k,
-        px = x0 + (x1 - x0) * u,
-        py = yA + (yB - yA) * u,
-        tx = px - ux * 220 * b.dir,
-        ty = py - uy * 220 * b.dir;
-      const lg = x.createLinearGradient(tx, ty, px, py);
-      lg.addColorStop(0, "rgba(255,240,232,0)");
-      lg.addColorStop(1, `rgba(255,240,232,${(0.55 * env).toFixed(3)})`);
-      x.strokeStyle = lg;
-      x.lineWidth = 1.6;
-      x.beginPath();
-      x.moveTo(tx, ty);
-      x.lineTo(px, py);
-      x.stroke();
-      const rg = x.createRadialGradient(px, py, 0, px, py, 46);
-      rg.addColorStop(0, `rgba(255,240,232,${(0.35 * env).toFixed(3)})`);
-      rg.addColorStop(1, "rgba(255,240,232,0)");
-      x.fillStyle = rg;
-      x.beginPath();
-      x.arc(px, py, 46, 0, 6.283);
-      x.fill();
-    }
-    for (const p of parts) {
-      if (!reduce) {
-        p.y -= p.v;
-        p.x += Math.sin(t / 2400 + p.p) * 0.12;
-        if (PTR.in) {
-          const dx = p.x - PTR.x,
-            dy = p.y - PTR.y,
-            d2 = dx * dx + dy * dy;
-          if (d2 < 18000) {
-            const d = Math.sqrt(d2) || 1,
-              f = (1 - d / 134) * 1.5;
-            p.vx += (dx / d) * f;
-            p.vy += (dy / d) * f;
-          }
-        }
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= 0.9;
-        p.vy *= 0.9;
-        if (p.y < -5) {
-          p.y = H + 5;
-          p.x = Math.random() * W;
-        }
-        if (p.x < -5) p.x = W + 5;
-        else if (p.x > W + 5) p.x = -5;
-      }
-      const a = 0.25 + 0.35 * Math.sin(t / 900 + p.p);
+    const n = Math.round(Math.min(90, (W * H) / 16000));
+    for (let i = 0; i < n; i++) {
+      const a = 0.25 + 0.35 * Math.sin(Math.random() * 6.28);
       x.fillStyle = `rgba(251,228,223,${Math.max(0, a).toFixed(3)})`;
       x.beginPath();
-      x.arc(p.x, p.y, p.r, 0, 6.283);
+      x.arc(
+        Math.random() * W,
+        Math.random() * H,
+        0.4 + Math.random() * 1.5,
+        0,
+        6.283,
+      );
       x.fill();
     }
-    if (!reduce) requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  let rq = 0;
+  draw();
+  addEventListener("resize", () => {
+    cancelAnimationFrame(rq);
+    rq = requestAnimationFrame(draw);
+  });
 })();
 
 /* ---------- spotlight + cursor ring ---------- */
@@ -233,8 +137,10 @@ if (fine) {
   let sx = PTR.x,
     sy = PTR.y,
     cx = PTR.x,
-    cy = PTR.y;
-  (function f() {
+    cy = PTR.y,
+    on = false;
+  /* kadrovi idu samo dok se miš pomera i dok svetlo ne stigne kursor; posle miruje */
+  function f() {
     sx += (PTR.x - sx) * 0.08;
     sy += (PTR.y - sy) * 0.08;
     cx += (PTR.x - cx) * 0.24;
@@ -242,8 +148,24 @@ if (fine) {
     spot.style.transform = `translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px)`;
     cu.style.transform = `translate(${cx.toFixed(1)}px,${cy.toFixed(1)}px)`;
     cu.classList.toggle("on", PTR.in);
-    if (!reduce) requestAnimationFrame(f);
-  })();
+    on =
+      !reduce &&
+      Math.abs(PTR.x - sx) +
+        Math.abs(PTR.y - sy) +
+        Math.abs(PTR.x - cx) +
+        Math.abs(PTR.y - cy) >
+        0.6;
+    if (on) requestAnimationFrame(f);
+  }
+  const kick = () => {
+    if (!on) {
+      on = true;
+      requestAnimationFrame(f);
+    }
+  };
+  f();
+  addEventListener("pointermove", kick, { passive: true });
+  document.documentElement.addEventListener("pointerleave", kick);
   document.addEventListener("pointerover", (e) => {
     const t = e.target instanceof Element ? e.target : null;
     cu.classList.toggle(
@@ -464,16 +386,14 @@ const EMB = (function () {
     };
   };
   const OFF = () => (C * 0.18) / 1.36;
+  /* bez uvodnog udara: Skeylo je od prvog kadra u orbiti (mirno kruži) */
   let th = reduce ? 0.35 : Math.PI / 2,
-    v = 0,
+    v = 0.8,
     trail = [],
     parts = [],
-    phase = reduce ? 2 : 0,
-    t0 = performance.now(),
-    last = t0,
-    LAUNCH = 1500,
+    phase = 2,
+    last = performance.now(),
     cur = P(Math.PI / 2),
-    pulseAt = t0 + 6200,
     beam = null;
   function burst(px, py, n) {
     for (let i = 0; i < n; i++) {
@@ -523,25 +443,6 @@ const EMB = (function () {
     fa.classList.remove("go");
     void fa.offsetWidth;
     fa.classList.add("go");
-  }
-  function impact() {
-    const e = P(Math.PI / 2);
-    phase = 2;
-    v = 9;
-    burst(e.x, e.y, 90);
-    shocks(e.x, e.y);
-    zap();
-    flashAll();
-    document.body.classList.add("jolt");
-    setTimeout(() => document.body.classList.remove("jolt"), MT(560));
-    try {
-      if (
-        navigator.vibrate &&
-        (!navigator.userActivation || navigator.userActivation.hasBeenActive)
-      )
-        navigator.vibrate(30);
-    } catch (err) {}
-    api.onImpact && api.onImpact();
   }
   emb.addEventListener("click", () => {
     if (phase !== 2) return;
@@ -613,48 +514,42 @@ const EMB = (function () {
     x.fill();
     x.restore();
   }
-  let paused = false;
+  /* petlja radi samo dok se amblem vidi: dashboard u prvom planu i otvoren tab */
+  let paused = false,
+    running = false;
+  const idle = () => paused || document.hidden;
+  function kick() {
+    if (running || idle()) return;
+    running = true;
+    last = performance.now();
+    requestAnimationFrame(frame);
+  }
   api.pause = (v) => {
     if (paused === v) return;
     paused = v;
-    if (!v) {
-      last = performance.now();
-      if (phase === 0) t0 = last;
-    }
+    kick();
   };
+  document.addEventListener("visibilitychange", kick);
   api.resize = size;
   function frame(now) {
-    if (paused) {
-      if (!reduce) requestAnimationFrame(frame);
+    if (idle()) {
+      running = false;
       return;
     }
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    const t = (now - t0) * TEMPO;
+    /* nagib prati kursor; pozicija se čita pre svih upisa u kadru (bez prisilnog layout-a) */
+    if (fine) {
+      const r = emb.getBoundingClientRect(),
+        dx = (PTR.x - (r.left + r.width / 2)) / innerWidth,
+        dy = (PTR.y - (r.top + r.height / 2)) / innerHeight;
+      emb.style.transform = `rotateX(${(-dy * 16).toFixed(2)}deg) rotateY(${(dx * 20).toFixed(2)}deg)`;
+    }
     bx.clearRect(0, 0, C, C);
     fx.clearRect(0, 0, C, C);
-    const prog = reduce ? 1 : Math.min(1, Math.max(0, (t - 900) / 700));
-    orbitLine(bx, false, prog);
-    orbitLine(fx, true, prog);
-    if (phase === 0 && t >= LAUNCH) phase = 1;
-    if (phase === 1) {
-      const q = Math.min(1, (t - LAUNCH) / 400),
-        e = q * q * q,
-        end = P(Math.PI / 2),
-        sx0 = C * 1.15,
-        sy0 = -C * 0.45;
-      const p = {
-        x: sx0 + (end.x - sx0) * e,
-        y: sy0 + (end.y - sy0) * e,
-        z: 1,
-      };
-      sk.style.opacity = "1";
-      place(p, 2.3 - 1.2 * e, (1 - q) * 7);
-      cur = p;
-      trail.push(p);
-      if (trail.length > 16) trail.shift();
-      if (q >= 1) impact();
-    } else if (phase === 2) {
+    orbitLine(bx, false, 1);
+    orbitLine(fx, true, 1);
+    {
       v += (0.8 - v) * Math.min(1, dt * 2.2);
       if (!reduce) th += v * dt;
       cur = P(th);
@@ -663,10 +558,6 @@ const EMB = (function () {
       sk.style.zIndex = cur.z > 0 ? 4 : 1;
       trail.push(cur);
       if (trail.length > (v > 3 ? 28 : 18)) trail.shift();
-      if (!reduce && now > pulseAt) {
-        fire();
-        pulseAt = now + 6500 + Math.random() * 3500;
-      }
     }
     for (let i = 1; i < trail.length; i++) {
       const a = trail[i - 1],
@@ -706,19 +597,13 @@ const EMB = (function () {
       fx.arc(p.x, p.y, p.r * p.l + 0.3, 0, 6.283);
       fx.fill();
     }
-    if (fine) {
-      const r = emb.getBoundingClientRect(),
-        dx = (PTR.x - (r.left + r.width / 2)) / innerWidth,
-        dy = (PTR.y - (r.top + r.height / 2)) / innerHeight;
-      emb.style.transform = `rotateX(${(-dy * 16).toFixed(2)}deg) rotateY(${(dx * 20).toFixed(2)}deg)`;
-    }
-    if (!reduce) requestAnimationFrame(frame);
+    if (reduce) running = false;
+    else requestAnimationFrame(frame);
   }
-  if (reduce)
-    requestAnimationFrame(() => {
-      sk.style.opacity = "1";
-    });
-  requestAnimationFrame(frame);
+  requestAnimationFrame(() => {
+    sk.style.opacity = "1";
+  });
+  kick();
   api.badge = () => {
     if (phase !== 2) return null;
     const r = sk.getBoundingClientRect();
@@ -729,15 +614,25 @@ const EMB = (function () {
 
 /* intro: after Skeylo hits the orbit, it burns the welcome text in with its laser */
 FX.beamFrom(EMB.badge);
-if (reduce) {
-  $("#ew1").classList.add("done");
-  $("#ew2").classList.add("done");
-} else
-  EMB.onImpact = () =>
-    setTimeout(async () => {
-      await FX.etch($("#ew1"), 760, true);
-      await FX.etch($("#ew2"), 960, true);
-    }, MLAG(140));
+/* pozdrav se pojavi mekano, odmah (ranije: laser ga je upisivao posle uvoda amblema) */
+softTitle($("#ew1"), 0);
+softTitle($("#ew2"), MLAG(60));
+
+/* ukras kartice (JS ciklus) radi samo dok je miš na kartici, kao i CSS petlje u motion.css;
+   na telefonu i uz "smanji pokrete" kartica miruje */
+function whileHover(card, fn, ms) {
+  if (reduce || !fine || !card) return;
+  let t = 0;
+  card.addEventListener("pointerenter", () => {
+    if (t) return;
+    fn();
+    t = setInterval(fn, ms);
+  });
+  card.addEventListener("pointerleave", () => {
+    clearInterval(t);
+    t = 0;
+  });
+}
 
 /* ---------- cards: laser trace outline, reveal, tilt + parallax + magnetic arrow ---------- */
 const NS = "http://www.w3.org/2000/svg";
@@ -824,7 +719,7 @@ $$(".card").forEach(armCard);
 /* reveal: on first load cards come in one after another while the emblem intro plays */
 const dashWake = (function () {
   const T0 = performance.now(),
-    INTRO = reduce ? 0 : 300,
+    INTRO = reduce ? 0 : 120,
     away = () => $("#dash").classList.contains("away");
   let k = 0,
     fb = 0;
@@ -911,10 +806,10 @@ const dashWake = (function () {
     samples.push({ x: q.x, y: q.y });
   }
   const orb = $("#orb"),
-    ring = $("#orbRing"),
-    s0 = performance.now();
-  /* tačka na liniji iz unapred izračunatih uzoraka (getPointAtLength u svakom kadru je skup);
-     svetlo ne radi dok kartica nije na ekranu ili je dashboard sklonjen */
+    ring = $("#orbRing");
+  /* tačka na liniji iz unapred izračunatih uzoraka (getPointAtLength u svakom kadru je skup).
+     Svetlo miruje na vrhu linije, a vozi se samo dok je miš na kartici: SVG se inače
+     precrtavao u svakom kadru, i kad niko ne gleda u karticu. */
   const at = (u) => {
     const f = u * 260,
       i = Math.min(259, Math.floor(f)),
@@ -923,23 +818,38 @@ const dashWake = (function () {
       k = f - i;
     return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
   };
-  let seen = true;
-  new IntersectionObserver((es) => (seen = es[0].isIntersecting)).observe(rep);
-  (function ride(now) {
-    if (seen && !rep.closest(".away")) {
-      const T = 7000,
-        q = ((now - s0) % T) / T,
-        e = q < 0.85 ? q / 0.85 : 1,
-        pt = at(0.55 + 0.45 * (1 - Math.pow(1 - e, 3)));
-      orb.setAttribute("cx", pt.x);
-      orb.setAttribute("cy", pt.y);
-      ring.setAttribute("cx", pt.x);
-      ring.setAttribute("cy", pt.y);
-      ring.setAttribute("r", (10 + Math.sin(now / 300) * 4).toFixed(1));
-      ring.style.strokeOpacity = String(0.35 + 0.35 * Math.sin(now / 300));
+  function put(pt, r, o) {
+    orb.setAttribute("cx", pt.x);
+    orb.setAttribute("cy", pt.y);
+    ring.setAttribute("cx", pt.x);
+    ring.setAttribute("cy", pt.y);
+    ring.setAttribute("r", r.toFixed(1));
+    ring.style.strokeOpacity = String(o);
+  }
+  put(at(1), 12, 0.5);
+  let riding = false,
+    r0 = 0;
+  function ride(now) {
+    if (!riding || rep.closest(".away")) {
+      riding = false;
+      return;
     }
-    if (!reduce) requestAnimationFrame(ride);
-  })(s0);
+    const T = 7000,
+      q = ((now - r0) % T) / T,
+      e = q < 0.85 ? q / 0.85 : 1,
+      pt = at(0.55 + 0.45 * (1 - Math.pow(1 - e, 3)));
+    put(pt, 10 + Math.sin(now / 300) * 4, 0.35 + 0.35 * Math.sin(now / 300));
+    requestAnimationFrame(ride);
+  }
+  if (fine && !reduce) {
+    rep.addEventListener("pointerenter", () => {
+      if (riding) return;
+      riding = true;
+      r0 = performance.now() - 0.85 * 7000; // kreće sa vrha, gde je svetlo stajalo
+      requestAnimationFrame(ride);
+    });
+    rep.addEventListener("pointerleave", () => (riding = false));
+  }
   if (fine) {
     const xv = $("#xv"),
       xd = $("#xd"),
@@ -984,19 +894,22 @@ const dashWake = (function () {
   const setH = () => sheet.style.setProperty("--sh", sheet.offsetHeight + "px");
   setH();
   addEventListener("resize", setH);
-  if (reduce) return;
-  setInterval(() => {
-    i = (i + 1) % st.length;
-    el.classList.remove("fi");
-    el.classList.add("fo");
-    setTimeout(() => {
-      el.textContent = st[i];
-      el.classList.remove("fo");
-      void el.offsetWidth;
-      el.classList.add("fi");
-      dots.forEach((d, k) => d.classList.toggle("on", k <= i));
-    }, 200);
-  }, 1900);
+  whileHover(
+    sheet.closest(".card"),
+    () => {
+      i = (i + 1) % st.length;
+      el.classList.remove("fi");
+      el.classList.add("fo");
+      setTimeout(() => {
+        el.textContent = st[i];
+        el.classList.remove("fo");
+        void el.offsetWidth;
+        el.classList.add("fi");
+        dots.forEach((d, k) => d.classList.toggle("on", k <= i));
+      }, 200);
+    },
+    1900,
+  );
 })();
 
 /* ---------- Organisation: shoot days light up ---------- */
@@ -1015,7 +928,7 @@ const dashWake = (function () {
     i++;
   };
   hop();
-  if (!reduce) setInterval(hop, 1400);
+  whileHover(g.closest(".card"), hop, 1400);
 })();
 
 /* ---------- page takeover: laser cut, the card grows into the page, title gets etched ---------- */
@@ -2941,7 +2854,6 @@ p{line-height:1.65;margin:0}
       : "update";
   }
   function paint(kind) {
-    if (INTRO) INTRO.setP();
     if (rapp.hidden) return;
     if (kind === "update") {
       /* Informacioni sistem ne zavisi od podataka: okvir ostaje, mapa se ne pokreće ponovo */
@@ -5760,45 +5672,6 @@ p{line-height:1.65;margin:0}
     });
   })();
 
-  /* uvod kad klijent otvori link za kreative */
-  let INTRO = null;
-  function runIntro(cb) {
-    const ci = $("#cintro");
-    $("#ciKnot").src = CLIENT.knot;
-    ci.hidden = false;
-    $("#ciT").innerHTML =
-      cur.sec === "org"
-        ? 'Raspored <span class="em">snimanja</span>'
-        : 'Final <span class="em">Creatives</span>';
-    const setP = () => {
-      if (cur.sec === "org") {
-        const o = cur.oid && ST.O.get(cur.oid);
-        $("#ciP").textContent = o
-          ? cap(fmtDayL.format(odate(o.date))) +
-            " · " +
-            fmtODM.format(odate(o.date))
-          : "";
-        return;
-      }
-      const P = cur.pid && ST.P.get(cur.pid);
-      $("#ciP").textContent = P ? periodLabel(P.it) : "";
-    };
-    INTRO = { setP };
-    setP();
-    void ci.offsetWidth;
-    ci.classList.add("go");
-    setTimeout(() => {
-      setP();
-      cb();
-      ci.classList.add("open");
-    }, MT(1800));
-    setTimeout(() => {
-      ci.hidden = true;
-      ci.classList.remove("go", "open");
-      INTRO = null;
-    }, MT(2900));
-  }
-
   /* =========================================================
      ORGANISATION
      raspored snimanja: Nina ga složi u Skeylo OS-u, ovde ga klijent (i modeli preko linka) vide
@@ -6787,10 +6660,7 @@ p{line-height:1.65;margin:0}
       const nt = thOf(cur);
       if (nt) openTheater(nt, null);
     };
-    if ((cur.sec === "cr" || cur.sec === "org") && !reduce) {
-      showApp();
-      runIntro(first);
-    } else first();
+    first(); // link ka kreativama/rasporedu otvara sadržaj odmah, bez uvodnog ekrana
   }
   window.SkeyloCRM = {
     connect(db, clientId, user) {

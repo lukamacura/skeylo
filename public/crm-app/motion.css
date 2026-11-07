@@ -123,3 +123,77 @@
   animation-duration: 360ms;
   animation-delay: calc(var(--i, 0) * 40ms + 40ms);
 }
+
+/* amblem na dashboardu: bez uvodnog otkrivanja maskom (precrtavalo se ~0.6 s); logo klijenta
+   samo mekano uđe, a Skeylo je od prvog kadra u orbiti (app.js, EMB) */
+.knot {
+  -webkit-mask: none;
+  mask: none;
+  animation: knotIn 360ms var(--ease, ease) both;
+}
+@keyframes knotIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .knot {
+    animation: none;
+  }
+}
+
+/* ---------- mir: ukrasi u karticama dashboarda stoje, a oživljavaju pod mišem ----------
+   Ranije je ~40 petlji radilo stalno (skener, sat, dokumenti, magla, sjaj teksta…), i neke
+   su precrtavale delove ekrana u svakom kadru. Ulazne animacije kartica ostaju netaknute.
+   Elementi sa dve animacije (ulaz + petlja) pauziraju samo drugu ("running, paused"). */
+html .ci .sheet::after,
+html .ci .stat b::after,
+html .cr .ph::after,
+html .card.cr .vid b:nth-child(n),
+html .cr .play::before,
+html .cr .ph .bar::after,
+html .org .pin .hh,
+html .org .pin .mh,
+html .gen .doc.dtop,
+html .gen .doc .chart2 b,
+html .gen .doc.fly,
+html .gen .doc.fly::after,
+html .priv .fog,
+html .priv .dots i,
+html .priv .t,
+html .sys .pl path,
+html .sys .orb,
+html .take .tw,
+html .em {
+  animation-play-state: paused;
+}
+html .priv.rv.on .t,
+html .mark .halo {
+  animation-play-state: running, paused;
+}
+@media (hover: hover) {
+  html .ci:hover .sheet::after,
+  html .ci:hover .stat b::after,
+  html .cr:hover .ph::after,
+  html .card.cr:hover .vid b:nth-child(n),
+  html .cr:hover .play::before,
+  html .cr:hover .ph .bar::after,
+  html .org:hover .pin .hh,
+  html .org:hover .pin .mh,
+  html .gen:hover .doc.dtop,
+  html .gen:hover .doc .chart2 b,
+  html .gen:hover .doc.fly,
+  html .gen:hover .doc.fly::after,
+  html .priv:hover .fog,
+  html .priv:hover .dots i,
+  html .priv:hover .t,
+  html .sys:hover .pl path,
+  html .sys:hover .orb,
+  html .take:hover .tw {
+    animation-play-state: running;
+  }
+  html .priv.rv.on:hover .t {
+    animation-play-state: running;
+  }
+}

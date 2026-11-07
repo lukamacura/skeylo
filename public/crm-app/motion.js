@@ -21,7 +21,6 @@
   const dur = (ms) => (ms <= D0 ? ms : D0 + (ms - D0) * KD);
   window.CRM_T = (ms) => Math.round(dur(ms));
   window.CRM_LAG = (ms) => Math.round(ms * KL);
-  window.CRM_TEMPO = 2; // sat uvodnog amblema (canvas u app.js) ide 2× brže od dizajna
 
   const TIME = /^(-?\d*\.?\d+)(ms|s)$/i;
   const isTime = (t) =>
