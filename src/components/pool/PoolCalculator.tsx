@@ -18,7 +18,6 @@ import {
   FileText,
   Flame,
   Info,
-  Layers,
   Lightbulb,
   Loader2,
   Lock,
@@ -340,6 +339,14 @@ export default function PoolCalculator() {
   const [calculating, setCalculating] = useState(false);
   const atResult = step === RESULT;
   const solved = atResult && !calculating;
+  // Cena je zamućena dok posetilac ne ostavi kontakt; ostaje otključana do kraja posete.
+  const [lead, setLead] = useState<Lead | null>(null);
+  const unlocked = lead !== null;
+  const unlock = (l: Lead) => {
+    setLead(l);
+    scroller.current?.scrollTo({ top: 0, behavior: "smooth" });
+    if (!wide) window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const go = (next: number) => {
     setDir(next > step ? 1 : -1);
@@ -425,8 +432,18 @@ export default function PoolCalculator() {
                   align="right"
                   label="Okvirna investicija"
                   tone="accent"
-                  value={shortRange(result.low, result.high)}
-                  sub="bez PDV-a"
+                  value={
+                    <span
+                      aria-hidden={!unlocked}
+                      className={cn(
+                        "inline-block transition-[filter] duration-700",
+                        !unlocked && "select-none blur-[7px]",
+                      )}
+                    >
+                      {shortRange(result.low, result.high)}
+                    </span>
+                  }
+                  sub={unlocked ? "bez PDV-a" : "zaključano"}
                 />
               ) : (
                 <SceneChip
@@ -807,6 +824,8 @@ export default function PoolCalculator() {
                     <Results
                       input={input}
                       result={result}
+                      lead={lead}
+                      onUnlock={unlock}
                       onRestart={() => go(0)}
                       onBack={() => go(RESULT - 1)}
                     />
@@ -1264,18 +1283,9 @@ function equipmentPhrase(i: PoolInput) {
   return "osnovne opreme sa filtracijom";
 }
 
-function Results({
-  input,
-  result,
-  onRestart,
-  onBack,
-}: {
-  input: PoolInput;
-  result: PoolResult;
-  onRestart: () => void;
-  onBack: () => void;
-}) {
-  const reveal = (i: number) => ({
+/** Ulazak redom: svaki sledeći element rezultata kasni 80 ms. */
+function reveal(i: number) {
+  return {
     initial: { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0 },
     transition: {
@@ -1283,8 +1293,25 @@ function Results({
       duration: 0.5,
       ease: [0.16, 1, 0.3, 1] as const,
     },
-  });
+  };
+}
 
+function Results({
+  input,
+  result,
+  lead,
+  onUnlock,
+  onRestart,
+  onBack,
+}: {
+  input: PoolInput;
+  result: PoolResult;
+  lead: Lead | null;
+  onUnlock: (lead: Lead) => void;
+  onRestart: () => void;
+  onBack: () => void;
+}) {
+  const unlocked = lead !== null;
   const parts = [
     {
       label: "Građevinski radovi",
@@ -1337,35 +1364,134 @@ function Results({
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3, type: "spring", stiffness: 140, damping: 16 }}
-        className="mt-1 flex origin-left flex-wrap items-baseline gap-x-3 bg-gradient-to-br from-[#e2fbff] via-[#4fd8eb] to-[#2aa8ff] bg-clip-text font-display text-[44px] font-semibold leading-[1.05] tracking-tighter tabular-nums text-transparent min-[400px]:text-[52px] lg:text-[64px]"
+        className="relative mt-1 origin-left"
       >
-        <Rolling
-          fromZero
-          duration={1.6}
-          value={result.low}
-          format={(v) => num(Math.round(v / 100) * 100)}
-        />
-        <span>–</span>
-        <span className="whitespace-nowrap">
+        {/* Zamućena cena: brojevi se vrte od nule tek kad se otključa. */}
+        <div
+          aria-hidden={!unlocked}
+          className={cn(
+            "flex flex-wrap items-baseline gap-x-3 bg-gradient-to-br from-[#e2fbff] via-[#4fd8eb] to-[#2aa8ff] bg-clip-text font-display text-[44px] font-semibold leading-[1.05] tracking-tighter tabular-nums text-transparent transition-[filter] duration-700 ease-out min-[400px]:text-[52px] lg:text-[64px]",
+            !unlocked && "select-none blur-[14px]",
+          )}
+        >
           <Rolling
-            fromZero
-            duration={1.8}
-            value={result.high}
+            key={unlocked ? "open" : "shut"}
+            fromZero={unlocked}
+            duration={1.6}
+            value={result.low}
             format={(v) => num(Math.round(v / 100) * 100)}
-          />{" "}
-          €
-        </span>
+          />
+          <span>–</span>
+          <span className="whitespace-nowrap">
+            <Rolling
+              key={unlocked ? "open" : "shut"}
+              fromZero={unlocked}
+              duration={1.8}
+              value={result.high}
+              format={(v) => num(Math.round(v / 100) * 100)}
+            />{" "}
+            €
+          </span>
+        </div>
+        <AnimatePresence initial={false}>
+          {!unlocked && (
+            <motion.span
+              key="lock"
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="absolute left-0 top-1/2 inline-flex -translate-y-1/2 items-center gap-2 rounded-full border border-white/15 bg-[#07090d]/85 px-3.5 py-2 text-sm font-semibold text-[#e3e9f1] shadow-lg"
+            >
+              <Lock className="size-4 text-[#4fd8eb]" />
+              Cena je spremna
+            </motion.span>
+          )}
+        </AnimatePresence>
       </motion.div>
       <motion.p {...reveal(3)} className="mt-3 leading-relaxed text-[#aeb8c6]">
-        Na osnovu odabranih dimenzija{" "}
-        <span className="font-semibold text-[#f2f5f9]">({dims})</span> i{" "}
-        {equipmentPhrase(input)}, okvirna procena investicije je{" "}
-        <span className="font-semibold text-[#f2f5f9]">
-          {eur(result.low)} – {eur(result.high)}
-        </span>
-        .
+        {unlocked ? (
+          <>
+            Na osnovu odabranih dimenzija{" "}
+            <span className="font-semibold text-[#f2f5f9]">({dims})</span> i{" "}
+            {equipmentPhrase(input)}, okvirna procena investicije je{" "}
+            <span className="font-semibold text-[#f2f5f9]">
+              {eur(result.low)} – {eur(result.high)}
+            </span>
+            .
+          </>
+        ) : (
+          <>
+            Procena za vaš bazen{" "}
+            <span className="font-semibold text-[#f2f5f9]">{dims}</span> je
+            izračunata. Ostavite ime, broj telefona i mejl i odmah vidite cenu.
+          </>
+        )}
       </motion.p>
 
+      <AnimatePresence mode="wait" initial={false}>
+        {unlocked ? (
+          <motion.div key="details">
+            <ResultDetails
+              input={input}
+              result={result}
+              lead={lead}
+              parts={parts}
+              dims={dims}
+              siteNote={siteNote}
+            />
+          </motion.div>
+        ) : (
+          <GateForm key="gate" onUnlock={onUnlock} reveal={reveal(4)} />
+        )}
+      </AnimatePresence>
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#aeb8c6] outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-[#4fd8eb]"
+        >
+          <ArrowLeft className="size-4" />
+          Izmeni odgovore
+        </button>
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#aeb8c6] outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-[#4fd8eb]"
+        >
+          <RotateCcw className="size-4" />
+          Počni ispočetka
+        </button>
+      </div>
+
+      <p className="mt-4 text-xs leading-relaxed text-[#6f7a8a]">
+        Procena je informativna i odnosi se na armirano-betonski bazen ključ u
+        ruke, bez PDV-a. Tačna cena zavisi od sastava zemljišta, iskopa,
+        pristupa terenu i izbora završne obloge.
+      </p>
+    </div>
+  );
+}
+
+type Part = { label: string; hint: string; value: number; color: string };
+
+/** Sve što stoji ispod cene; prikazuje se tek posle otključavanja. */
+function ResultDetails({
+  input,
+  result,
+  lead,
+  parts,
+  dims,
+  siteNote,
+}: {
+  input: PoolInput;
+  result: PoolResult;
+  lead: Lead;
+  parts: Part[];
+  dims: string;
+  siteNote: string;
+}) {
+  return (
+    <>
       {/* Od čega se sastoji */}
       <motion.div {...reveal(4)} className="mt-6">
         <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-white/10">
@@ -1451,33 +1577,8 @@ function Results({
 
       <Note>{siteNote}</Note>
 
-      <LeadForm input={input} result={result} reveal={reveal(9)} />
-
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#aeb8c6] outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-[#4fd8eb]"
-        >
-          <ArrowLeft className="size-4" />
-          Izmeni odgovore
-        </button>
-        <button
-          type="button"
-          onClick={onRestart}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#aeb8c6] outline-none hover:text-white focus-visible:ring-2 focus-visible:ring-[#4fd8eb]"
-        >
-          <RotateCcw className="size-4" />
-          Počni ispočetka
-        </button>
-      </div>
-
-      <p className="mt-4 text-xs leading-relaxed text-[#6f7a8a]">
-        Procena je informativna i odnosi se na armirano-betonski bazen ključ u
-        ruke, bez PDV-a. Tačna cena zavisi od sastava zemljišta, iskopa,
-        pristupa terenu i izbora završne obloge.
-      </p>
-    </div>
+      <ProcenaSent lead={lead} reveal={reveal(9)} />
+    </>
   );
 }
 
@@ -1578,204 +1679,161 @@ function SeasonStrip({
   );
 }
 
-/** Ostale strane detaljne procene, posle cene po stavkama. */
+/** Kontakt koji otključava cenu. Demo: ništa se ne šalje, samo ostaje u stanju. */
+type Lead = { name: string; phone: string; email: string };
+
+/** Strane detaljne procene koja "stiže na mejl" (samo prezentacija, ništa se ne šalje). */
 const PDF_PAGES = [
+  "Cena stavku po stavku",
   "Oprema za vaš bazen i zašto baš ta",
   "Održavanje: koliko bazen košta godišnje",
   "Plan izgradnje, od iskopa do prvog kupanja",
 ];
 
-/** Stavke čije cene dobijaju tek u detaljnoj proceni; ovde su zamagljene. */
-function specLines(i: PoolInput) {
-  const l = [
-    "Iskop i odvoz zemlje",
-    "Armirano-betonska školjka",
-    "Hidroizolacija i obloga",
-    "Pumpa i peščani filter",
-  ];
-  if (i.heat) l.push("Toplotna pumpa");
-  if (i.salt) l.push("Hidroliza (slana voda)");
-  if (i.cover !== "nema")
-    l.push(i.cover === "roletna" ? "Podvodna roletna" : "Termo prekrivač");
-  if (i.light !== "nema")
-    l.push(i.light === "rgb" ? "RGB LED reflektori" : "LED reflektori");
-  return l.slice(0, 6);
-}
-
-function LeadForm({
-  input,
-  result,
+/**
+ * Forma ispred cene: ime i prezime, telefon, mejl. Za demonstraciju posle
+ * kratke pauze samo otključa cenu; nema poziva ka serveru ni slanja mejla.
+ */
+function GateForm({
+  onUnlock,
   reveal,
 }: {
-  input: PoolInput;
-  result: PoolResult;
+  onUnlock: (lead: Lead) => void;
   reveal: React.ComponentProps<typeof motion.div>;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "done" | "error">(
-    "idle",
-  );
+  const [sending, setSending] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (state === "sending") return;
-    setState("sending");
-    try {
-      const res = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "bazen-kalkulator",
+    if (sending) return;
+    setSending(true);
+    timer.current = window.setTimeout(
+      () =>
+        onUnlock({
           name: name.trim(),
           phone: phone.trim(),
-          contact: email.trim() || undefined,
-          answers: input,
-          estimate: {
-            low: result.low,
-            high: result.high,
-            area: result.area,
-            volume: Math.round(result.volume * 10) / 10,
-          },
+          email: email.trim(),
         }),
-      });
-      setState(res.ok ? "done" : "error");
-    } catch {
-      setState("error");
-    }
+      700,
+    );
   };
 
   const field =
     "min-h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-base text-[#f2f5f9] outline-none placeholder:text-[#6f7a8a] focus:border-[#4fd8eb] focus-visible:ring-2 focus-visible:ring-[#4fd8eb]/40";
 
   return (
+    <motion.form
+      {...(reveal as React.ComponentProps<typeof motion.form>)}
+      exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
+      onSubmit={submit}
+      className="mt-5 rounded-2xl border border-[#4fd8eb]/30 bg-[#4fd8eb]/[0.06] p-4 lg:p-5"
+    >
+      <h2 className="flex items-center gap-2 font-display text-lg font-semibold leading-snug">
+        <Lock className="size-4 shrink-0 text-[#4fd8eb]" />
+        Gde da vam pošaljemo procenu?
+      </h2>
+      <div className="mt-3 grid gap-2.5">
+        <input
+          required
+          aria-label="Ime i prezime"
+          placeholder="Ime i prezime"
+          autoComplete="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={field}
+        />
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <input
+            required
+            type="tel"
+            inputMode="tel"
+            aria-label="Broj telefona"
+            placeholder="Broj telefona"
+            autoComplete="tel"
+            pattern="[0-9+ /\-]{6,}"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={field}
+          />
+          <input
+            required
+            type="email"
+            inputMode="email"
+            aria-label="Email adresa"
+            placeholder="Email adresa"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={field}
+          />
+        </div>
+      </div>
+      <button
+        type="submit"
+        disabled={sending}
+        className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#4fd8eb] px-6 font-semibold text-[#04161c] outline-none transition-colors hover:bg-[#7ae7ff] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-70"
+      >
+        {sending ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : (
+          <Sparkles className="size-4" />
+        )}
+        Prikaži moju cenu
+      </button>
+      <p className="mt-2 text-center text-xs leading-relaxed text-[#8b97a8]">
+        Besplatno. Na mejl stiže i detaljna procena, a inženjer vas zove samo da
+        zakaže obilazak placa.
+      </p>
+    </motion.form>
+  );
+}
+
+/** Potvrda posle otključavanja: šta stiže na mejl. */
+function ProcenaSent({
+  lead,
+  reveal,
+}: {
+  lead: Lead;
+  reveal: React.ComponentProps<typeof motion.div>;
+}) {
+  const first = lead.name.split(/\s+/)[0];
+  return (
     <motion.div
       {...reveal}
-      className="mt-6 overflow-hidden rounded-2xl border border-[#4fd8eb]/30 bg-[#4fd8eb]/[0.06]"
+      className="mt-6 rounded-2xl border border-[#4fd8eb]/30 bg-[#4fd8eb]/[0.06] p-4 lg:p-5"
     >
-      {state === "done" ? (
-        <div className="flex items-start gap-3 p-4 lg:p-5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#3ddc97] text-[#0b0d10]">
-            <Check className="size-5" strokeWidth={3} />
-          </span>
-          <div>
-            <h2 className="font-display text-lg font-semibold">
-              Hvala, detaljna procena stiže na vaš mejl
-            </h2>
-            <p className="mt-0.5 text-sm text-[#aeb8c6]">
-              Šaljemo je na {email.trim()}. Inženjer će vas pozvati da zakaže
-              besplatan obilazak placa.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#3ddc97] text-[#0b0d10]">
+          <Check className="size-5" strokeWidth={3} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-display text-lg font-semibold leading-snug">
+            Hvala{first ? `, ${first}` : ""}! Detaljna procena stiže na mejl
+          </h2>
+          <p className="mt-0.5 break-words text-sm text-[#aeb8c6]">
+            Šaljemo je na {lead.email}. Inženjer će vas pozvati da zakaže
+            besplatan obilazak placa.
+          </p>
         </div>
-      ) : (
-        <>
-          {/* Pregled PDF-a: vide se sve 4 strane, cene tek posle forme */}
-          <div className="border-b border-white/10 bg-black/20 p-4 lg:p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b97a8]">
-              <FileText className="size-4 text-[#4fd8eb]" />
-              Detaljna procena · PDF, 4 strane
-            </div>
-            <ol className="mt-3 space-y-2.5">
-              <li>
-                <PdfPage n={1}>Cena stavku po stavku</PdfPage>
-                <ul className="mt-1.5 space-y-1.5 pl-7">
-                  {specLines(input).map((l, i) => (
-                    <li
-                      key={l}
-                      className="flex items-center justify-between gap-3 text-sm"
-                    >
-                      <span className="text-[#aeb8c6]">{l}</span>
-                      <span
-                        aria-hidden
-                        className="select-none tabular-nums text-[#e3e9f1] blur-[5px]"
-                      >
-                        {num(1200 + ((i * 1733) % 4100))} €
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              {PDF_PAGES.map((t, i) => (
-                <li key={t}>
-                  <PdfPage n={i + 2}>{t}</PdfPage>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-3 flex items-center gap-1.5 text-xs text-[#8b97a8]">
-              <Lock className="size-3.5" />
-              Cene po stavkama otključavate unosom podataka
-            </div>
-          </div>
-
-          <form onSubmit={submit} className="p-4 lg:p-5">
-            <h2 className="font-display text-lg font-semibold leading-snug">
-              Hoćete cenu stavku po stavku?
-            </h2>
-            <p className="mb-4 mt-1 text-sm text-[#aeb8c6]">
-              Šaljemo vam detaljnu procenu za bazen {meters(input.length)}×
-              {meters(input.width)} m na mejl. Besplatno.
-            </p>
-            <div className="grid gap-2.5">
-              <input
-                required
-                aria-label="Ime i prezime"
-                placeholder="Ime i prezime"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={field}
-              />
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <input
-                  required
-                  type="tel"
-                  inputMode="tel"
-                  aria-label="Broj telefona"
-                  placeholder="Broj telefona"
-                  autoComplete="tel"
-                  pattern="[0-9+ /\-]{6,}"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={field}
-                />
-                <input
-                  required
-                  type="email"
-                  inputMode="email"
-                  aria-label="Email adresa"
-                  placeholder="Email adresa"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={field}
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={state === "sending"}
-              className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#4fd8eb] px-6 font-semibold text-[#04161c] outline-none transition-colors hover:bg-[#7ae7ff] focus-visible:ring-2 focus-visible:ring-white disabled:opacity-70"
-            >
-              {state === "sending" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Layers className="size-4" />
-              )}
-              Pošalji mi detaljnu procenu
-            </button>
-            <p className="mt-2 text-center text-xs text-[#8b97a8]">
-              Inženjer vas zove samo da zakaže besplatan obilazak placa.
-            </p>
-            {state === "error" && (
-              <p role="alert" className="mt-2 text-sm text-[#ff8f7a]">
-                Slanje nije uspelo. Pokušajte ponovo.
-              </p>
-            )}
-          </form>
-        </>
-      )}
+      </div>
+      <div className="mt-4 border-t border-white/10 pt-3">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8b97a8]">
+          <FileText className="size-4 text-[#4fd8eb]" />
+          Detaljna procena · PDF, 4 strane
+        </div>
+        <ol className="mt-3 space-y-2">
+          {PDF_PAGES.map((t, i) => (
+            <li key={t}>
+              <PdfPage n={i + 1}>{t}</PdfPage>
+            </li>
+          ))}
+        </ol>
+      </div>
     </motion.div>
   );
 }

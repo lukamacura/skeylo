@@ -2549,7 +2549,7 @@ window.SKNotes = function (X) {
               "",
             )}${ups.map((u, i) => fileTile(u, d(Math.min(items.length + i + 1, 14)), u)).join("")}${f ? "" : addTiles(d(Math.min(nI + 1, 15)), F)}</div>`) +
       (F && !f && !nI
-        ? `<p class="gf-empty" style="${sec}">Folder je prazan. ${touch() ? "Dodaj fajl ili sliku, napravi stranicu ovde ili je premesti iz menija stranice (⋯)." : "Prevuci fajlove ili slike na ekran, napravi stranicu ili premesti postojeću: prevuci je na folder ili izaberi folder u meniju stranice (⋯)."}</p>`
+        ? `<p class="gf-empty" style="${sec}">Folder je prazan. ${touch() ? "Dodaj stranicu, fajl ili sliku preko „Novo“, ili premesti postojeću stranicu iz njenog menija (⋯)." : "Prevuci fajlove ili slike na ekran, dodaj nešto preko „Novo“ ili premesti postojeću stranicu: prevuci je na folder ili izaberi folder u meniju stranice (⋯)."}</p>`
         : "") +
       (f || F
         ? ""
@@ -7579,10 +7579,9 @@ window.SKNotes = function (X) {
       ${up ? `<span class="gf-up" style="--p:${up.p || 0}"><i></i><b>${Math.round((up.p || 0) * 100)}%</b></span>` : ""}
     </div>`;
   }
-  /* pločice na kraju mreže: nova stranica i fajl (klik ili prevlačenje) */
+  /* jedna pločica na kraju mreže: „Novo“ otvara isti meni kao dugme u zaglavlju */
   const addTiles = (style, F) =>
-    `<button class="cptile add" data-gnew style="${style}"><span class="ci">${I.plus}</span>Nova stranica</button>` +
-    `<button type="button" class="cptile add gf-add" data-gup style="${style}"><span class="ci">${FI.up}</span><span class="gf-at">${touch() ? "Dodaj fajl ili sliku" : "Dodaj fajl"}<small>${touch() ? "slike, video, PDF…" : "ili prevuci fajlove bilo gde na ekran"}${F ? " · ide u „" + esc(F.name || "Folder") + "“" : ""}</small></span></button>`;
+    `<button type="button" class="cptile add gf-add" data-gadd aria-haspopup="menu" style="${style}"><span class="ci">${I.plus}</span><span class="gf-at">Novo<small>${touch() ? "stranica, fajl ili slika" : "stranica ili fajl, ili prevuci fajlove na ekran"}${F ? " · ide u „" + esc(F.name || "Folder") + "“" : ""}</small></span></button>`;
   /* jedan red u stranici za otpremljen fajl (isti Markdown koji pravi editor) */
   const fileLine = (name, type, url) =>
     /^image\//.test(type || "") && !/heic|heif|tiff/i.test(type)
@@ -8373,17 +8372,111 @@ window.SKNotes = function (X) {
   }
 
   /* ---------------- hub controls ---------------- */
-  $("#gNew").addEventListener("click", () => createAndOpen(null));
-  $("#gNewF").addEventListener("click", () => newFolder());
   $("#gq").addEventListener("input", (e) => {
     hq = e.target.value;
     hub(false);
   });
   const pickInto = () => pickFiles("", (fs) => uploadFiles(fs, hubFid));
-  $("#gUp") && $("#gUp").addEventListener("click", pickInto);
+  /* „Novo“ (zaglavlje i pločica na kraju mreže): stranica, fajl ili folder.
+     U otvorenom folderu sve ide u njega, a folder u folderu ne postoji. */
+  let amenu = null;
+  function closeAdd(back) {
+    if (!amenu) return;
+    const a = amenu.anchor;
+    amenu.remove();
+    amenu = null;
+    $("#gNew").setAttribute("aria-expanded", "false");
+    if (back && a && a.isConnected) a.focus();
+  }
+  function addMenu(a, kb) {
+    if (amenu) {
+      const same = amenu.anchor === a;
+      closeAdd();
+      if (same) return;
+    }
+    const F = folderOf(hubFid, hubSpace),
+      head = a.id === "gNew";
+    const M = (amenu = document.createElement("div"));
+    M.anchor = a;
+    M.className = "pop nmenu gamenu" + (head ? "" : " at-tile");
+    M.setAttribute("role", "menu");
+    M.innerHTML =
+      `<button type="button" role="menuitem" data-ga="page">${I.doc}<span>Stranica</span></button>` +
+      `<button type="button" role="menuitem" data-ga="file">${FI.up}<span>Fajl ili slika</span>${touch() ? "" : '<span class="kb">ili prevuci</span>'}</button>` +
+      (F
+        ? ""
+        : `<button type="button" role="menuitem" data-ga="fold">${I.fold}<span>Folder</span></button>`);
+    document.body.appendChild(M);
+    const b = a.getBoundingClientRect(),
+      W = Math.min(250, innerWidth - 16),
+      cl = (v, max) => Math.max(8, Math.min(v, max));
+    M.style.width = W + "px";
+    const h = M.offsetHeight;
+    /* zaglavlje: ispod dugmeta, desna ivica uz dugme; pločica: meni na sredini pločice */
+    M.style.left =
+      cl(head ? b.right - W : b.left + (b.width - W) / 2, innerWidth - W - 8) +
+      "px";
+    M.style.top =
+      cl(
+        head ? b.bottom + 8 : b.top + (b.height - h) / 2,
+        innerHeight - h - 8,
+      ) + "px";
+    if (head) a.setAttribute("aria-expanded", "true");
+    if (kb) M.querySelector("button").focus();
+  }
+  $("#gNew").addEventListener("click", (e) =>
+    addMenu(e.currentTarget, e.detail === 0),
+  );
+  document.addEventListener("click", (e) => {
+    const b = amenu && e.target.closest("[data-ga]");
+    if (!b || !amenu.contains(b)) return;
+    const k = b.dataset.ga;
+    closeAdd();
+    if (k === "page") createAndOpen(null);
+    else if (k === "file") pickInto();
+    else newFolder();
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (
+      amenu &&
+      !amenu.contains(e.target) &&
+      !e.target.closest("#gNew, [data-gadd]")
+    )
+      closeAdd();
+  });
+  /* capture: Escape zatvara samo meni, ne i ekran ispod njega */
+  addEventListener(
+    "keydown",
+    (e) => {
+      if (!amenu) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAdd(true);
+      } else if (e.key === "Tab") closeAdd();
+      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const bs = [...amenu.querySelectorAll("button")],
+          i = bs.indexOf(document.activeElement),
+          n = e.key === "ArrowDown" ? i + 1 : i < 0 ? bs.length - 1 : i - 1;
+        bs[(n + bs.length) % bs.length].focus();
+      }
+    },
+    true,
+  );
+  addEventListener(
+    "scroll",
+    (e) => {
+      if (amenu && !amenu.contains(e.target)) closeAdd();
+    },
+    { capture: true, passive: true },
+  );
+  addEventListener("resize", () => closeAdd());
+  addEventListener("hashchange", () => closeAdd());
   $("#gpages").addEventListener("click", (e) => {
-    if (e.target.closest("[data-gup]")) {
-      pickInto();
+    const ad = e.target.closest("[data-gadd]");
+    if (ad) {
+      addMenu(ad, e.detail === 0);
       return;
     }
     const fe0 = e.target.closest("[data-file]");

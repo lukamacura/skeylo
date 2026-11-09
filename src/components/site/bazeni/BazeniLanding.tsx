@@ -17,6 +17,7 @@ import {
   ArrowRight,
   CalendarCheck,
   CalendarRange,
+  Check,
   Clapperboard,
   CodeXml,
   FileSignature,
@@ -47,9 +48,9 @@ import {
 const AQUA = "#4fd8eb";
 const BLUE = "#2aa8ff";
 const WHATSAPP = `https://wa.me/381631012474?text=${encodeURIComponent(
-  "Zdravo Luka, pogledao sam predlog za Pool Service. Hajde da razgovaramo.",
+  "Zdravo Luka, pogledao sam predlog za bazene. Hajde da razgovaramo.",
 )}`;
-const IMG = "/clients/pool-service";
+const IMG = "/clients/bazeni";
 const CALC = "/calculator/bazen";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -239,7 +240,7 @@ function Scene({
 
 /* ───────────── Kartice iz priče ───────────── */
 
-const QUERY = "Koliko košta bazen u Novom Sadu";
+const QUERY = "Koliko košta bazen 8x4 sa ugradnjom";
 
 /** Nikola kuca pitanje i dobija isti odgovor: „zavisi”. */
 function SearchCard() {
@@ -380,7 +381,7 @@ function AdCard() {
           >
             <Waves className="size-3 text-[#04161c]" />
           </span>
-          Pool Service · Sponzorisano
+          Vaša firma · Sponzorisano
         </p>
         <p className="mt-2 text-balance font-display text-lg font-extrabold leading-tight text-white sm:text-xl">
           Koliko će vas <span style={{ color: AQUA }}>koštati bazen</span>?
@@ -410,7 +411,7 @@ function AdCard() {
   );
 }
 
-/** Odjek hero kartice: Nikola sada zna cenu. */
+/** Odjek hero kartice: ostavlja kontakt, cena se odmagli i Nikola zna cenu. */
 function KnowsCard() {
   return (
     <motion.div
@@ -450,18 +451,49 @@ function KnowsCard() {
           style={{ background: `linear-gradient(90deg, ${BLUE}, ${AQUA})` }}
         />
       </div>
-      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-xl bg-white/[0.05] px-3.5 py-2.5">
+      <motion.ul
+        initial="hidden"
+        whileInView="shown"
+        viewport={VIEW}
+        variants={{
+          hidden: {},
+          shown: { transition: { staggerChildren: 0.22, delayChildren: 0.25 } },
+        }}
+        className="mt-4 flex flex-wrap gap-1.5"
+        aria-label="Kontakt koji otključava cenu"
+      >
+        {["Ime i prezime", "Telefon", "Email"].map((t) => (
+          <motion.li
+            key={t}
+            variants={{
+              hidden: { opacity: 0.35 },
+              shown: { opacity: 1, transition: { duration: 0.3 } },
+            }}
+            className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold text-white"
+          >
+            <Check className="size-3" style={{ color: AQUA }} strokeWidth={3} />
+            {t}
+          </motion.li>
+        ))}
+      </motion.ul>
+      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-xl bg-white/[0.05] px-3.5 py-2.5">
         <span className="text-sm text-[#9aa4b4]">Okvirna cena</span>
-        <span className="whitespace-nowrap font-display text-xl font-extrabold text-white">
-          <Count to={17500} delay={0.2} step={100} /> –{" "}
-          <Count to={22500} delay={0.2} step={100} /> €
-        </span>
+        <motion.span
+          initial={{ filter: "blur(9px)" }}
+          whileInView={{ filter: "blur(0px)" }}
+          viewport={VIEW}
+          transition={{ duration: 0.7, delay: 1.1, ease: EASE }}
+          className="whitespace-nowrap font-display text-xl font-extrabold text-white"
+        >
+          <Count to={17500} delay={0.9} step={100} /> –{" "}
+          <Count to={22500} delay={0.9} step={100} /> €
+        </motion.span>
       </div>
     </motion.div>
   );
 }
 
-/** Upit koji stiže Pool Service-u: pada odozgo kao notifikacija. */
+/** Upit koji stiže vama: pada odozgo kao notifikacija. */
 function LeadCard() {
   return (
     <motion.div
@@ -597,7 +629,7 @@ function ProcenaCard() {
   );
 }
 
-/** Pool Service zatvara: poziv, obilazak placa, ugovor — korak po korak. */
+/** Vi zatvarate: poziv, obilazak placa, ugovor — korak po korak. */
 function CloseCard() {
   const steps = [
     { icon: PhoneCall, t: "Poziv", d: "Sreda, 9:15" },
@@ -942,7 +974,7 @@ function Hero() {
             >
               <Waves className="size-4 text-[#04161c]" />
             </span>
-            Predlog za Pool Service Novi Sad · Skeylo
+            Predlog za firme koje grade bazene · Skeylo
           </motion.div>
           <RevealTitle
             as="h1"
@@ -1020,7 +1052,7 @@ function Hero() {
             </div>
             <dl className="mt-3 divide-y divide-white/10 text-[15px]">
               {[
-                ["Kuća", "u izgradnji, Veternik"],
+                ["Kuća", "u izgradnji, predgrađe"],
                 ["Useljenje", "sledećeg proleća"],
                 ["Dvorište", "mesto za bazen 8 × 4"],
               ].map(([k, v]) => (
@@ -1344,7 +1376,7 @@ function FinalCta() {
   );
 }
 
-export default function PoolServiceLanding() {
+export default function BazeniLanding() {
   const [calcOpen, setCalcOpen] = useState(false);
   const storyRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -1398,7 +1430,7 @@ export default function PoolServiceLanding() {
             when="Utorak, 22:10"
             title="Skroluje Instagram."
             accent="Oglas mu kaže ono što niko nije."
-            line="Video sa vašeg gradilišta u Novom Sadu, vaš majstor pored iskopa i jedno pitanje: koliko košta vaš bazen?"
+            line="Video sa vašeg gradilišta, vaš majstor pored iskopa i jedno pitanje: koliko košta vaš bazen?"
             work={[
               { icon: Video, t: "Snimanje na gradilištu" },
               { icon: Mic, t: "Vaš majstor pred kamerom" },
@@ -1418,7 +1450,7 @@ export default function PoolServiceLanding() {
             when="22:11"
             title="Klikne."
             accent="Za minut zna okvirnu cenu."
-            line="Četiri koraka: tip, dimenzije, oprema, teren. Bazen se crta dok bira. Na kraju raspon cene, rok izvođenja i sezona kupanja."
+            line="Četiri koraka: tip, dimenzije, oprema, teren. Bazen se crta dok bira. Cena je zamagljena dok ne ostavi ime, broj i mejl, a onda vidi raspon, rok izvođenja i sezonu kupanja."
             work={[
               { icon: CodeXml, t: "Dizajn i razvoj" },
               { icon: Smartphone, t: "Pravljeno za telefon" },
@@ -1469,10 +1501,10 @@ export default function PoolServiceLanding() {
 
           <Chapter
             n={4}
-            when="22:14"
-            title="Ostavlja broj i email."
-            accent="Hoće cenu stavku po stavku."
-            line="Za to dobija detaljnu procenu: PDF od četiri strane sa vašim logom. Vama stiže upit sa svim što je izabrao, pa znate sve pre prvog poziva."
+            when="22:12"
+            title="Vama stiže upit."
+            accent="Sa svim što je izabrao."
+            line="Nikoli na mejl stiže detaljna procena: PDF od četiri strane sa vašim logom. Vama stižu njegovo ime, broj i svaki izbor iz kalkulatora, pa znate sve pre prvog poziva."
             aside={<ProcenaCard />}
             scene={
               <Scene
@@ -1506,7 +1538,7 @@ export default function PoolServiceLanding() {
             scene={
               <Scene
                 src={`${IMG}/obilazak-placa.webp`}
-                alt="Nikola se rukuje sa majstorom Pool Service-a na placu"
+                alt="Nikola se rukuje sa vašim majstorom na placu"
                 zoom
               />
             }

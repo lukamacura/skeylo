@@ -2582,7 +2582,6 @@
       curHash = view.id ? "mg-" + view.id : "general";
       history.replaceState(null, "", "#" + curHash);
     }
-    $("#gNewF").hidden = !!view.fid;
     /* view.id = mesec/projekat: General tog projekta (#mg-{id}), bez Models kartice */
     const it = view.id && S.items.find((i) => i.id === view.id);
     const c =

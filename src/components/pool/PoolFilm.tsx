@@ -13,9 +13,9 @@ import { motion, useReducedMotion } from "framer-motion";
 /*  ceo, a ostatak prozora popunjava zamućena kopija istog kadra.       */
 /* ------------------------------------------------------------------ */
 
-const FILM = "/clients/pool-service/videos/skimerski.mp4";
+const FILM = "/clients/bazeni/videos/skimerski.mp4";
 /** Poslednji kadar: za smanjeno kretanje i kad pregledač odbije autoplay. */
-const LAST = "/clients/pool-service/videos/skimerski-kraj.webp";
+const LAST = "/clients/bazeni/videos/skimerski-kraj.webp";
 const EASE = [0.22, 1, 0.36, 1] as const;
 /** Ivice kadra se meko utapaju u zamućenu pozadinu. */
 const FEATHER =

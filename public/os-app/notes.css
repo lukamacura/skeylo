@@ -2305,13 +2305,18 @@ body.nb-dragging * {
   height: 15px;
   flex: none;
 }
-@media (max-width: 640px) {
-  #gNewF .lbl {
-    display: none;
-  }
-  #gNewF {
-    padding: 12px 14px;
-  }
+/* „Novo“: jedan meni za stranicu, fajl i folder */
+.gamenu {
+  transform-origin: top right;
+}
+.gamenu.at-tile {
+  transform-origin: center;
+}
+.pop.nmenu.gamenu button {
+  padding: 11px 12px;
+}
+.gamenu .kb {
+  white-space: nowrap;
 }
 
 /* ---------- crtež (Excalidraw) ---------- */
