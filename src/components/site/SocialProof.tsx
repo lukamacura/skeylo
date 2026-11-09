@@ -42,7 +42,7 @@ const testimonials: Testimonial[] = [
   {
     quote:
       "Svaka preporuka za momke, profesionalci u svim poljima. Svaka saradnja sa njima je bila po dogovoru u najboljem mogucem kvalitetu. Ubedljivo No.1 u svom poslu 👌🏻👏🏻",
-    name: "David Markov",
+    name: "Bogdan Ilić",
     role: "Vlasnik, RealReselling",
     result: "+200% prodaje",
     initials: "DM",
