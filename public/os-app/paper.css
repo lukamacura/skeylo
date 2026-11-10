@@ -1,0 +1,1297 @@
+/* Skeylo OS · papirići (2026-11-10)
+   1) Task Board: taskovi su papirići zakačeni čiodom (app.js renderTASKS).
+   2) Top Goals: ciljevi tima kao papirići sa strelom koja leti ka meti (goals.js), na
+      dashboardu (#gdash) i na svom ekranu (#goals).
+   Oba dela koriste isti papir: jedna krem boja, crvena čioda, papirići direktno na tamnoj
+   pozadini (bez plute i bez boja po klijentu ili osobi).
+   Učitava se posle motion.css, pa motion.js ne dira ova trajanja: ovo su konačne vrednosti
+   (ulazi kratki, ~300 ms, kašnjenja male). Boja papira je ista u svim temama; akcenat
+   (strela, dugmad, "+") prati temu kroz var(--orange). */
+
+:root {
+  --paper: #f6ead2;
+  --paper-ink: #2a1f17;
+  --paper-mute: rgba(42, 31, 23, 0.62);
+  --paper-line: rgba(42, 31, 23, 0.16);
+  --paper-red: #c2362a;
+  --paper-green: #2f8a55;
+  --paper-bg:
+    linear-gradient(140deg, transparent 70%, rgba(42, 31, 23, 0.07)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 40%), #f6ead2;
+  --paper-sh:
+    0 1px 1px rgba(0, 0, 0, 0.25), 0 16px 26px -14px rgba(0, 0, 0, 0.8);
+  --paper-sh-up:
+    0 1px 1px rgba(0, 0, 0, 0.22), 0 26px 34px -16px rgba(0, 0, 0, 0.85);
+}
+
+/* ---------- čioda (zajednička) ---------- */
+.pn-pin {
+  position: absolute;
+  z-index: 3;
+  top: -8px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 34% 30%,
+      rgba(255, 255, 255, 0.85) 0 2.2px,
+      transparent 3.4px
+    ),
+    radial-gradient(circle at 50% 56%, #d8412f 0 52%, #6f2118 100%);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    4px 6px 6px -2px rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+}
+
+/* ---------- Task Board ---------- */
+.tboard .state {
+  padding: 40px 0;
+}
+.lane + .lane {
+  margin-top: 52px;
+}
+/* naslov reda: kao "Top Goals" na dashboardu */
+.lane-h {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 26px;
+  animation: laneIn 300ms var(--ease) backwards;
+}
+@keyframes laneIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.lane-h h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(22px, 2.4vw, 27px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--cream);
+}
+.lane-h h2 small {
+  margin-left: 2px;
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.lane-av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  box-shadow: 0 0 0 2px rgba(246, 234, 210, 0.14);
+}
+.lane-h .lg-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 16px;
+  box-shadow: none;
+}
+.lane-h .lg-ic.sk img {
+  width: 17px;
+}
+/* broj otvorenih: mali komad istog papira */
+.lane-h .n {
+  min-width: 28px;
+  padding: 4px 9px 3px;
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transform: rotate(-3deg);
+  box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.7);
+}
+.lane-h .n.z {
+  background: rgba(246, 234, 210, 0.08);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.pnotes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(206px, 1fr));
+  gap: 30px 22px;
+  align-items: start;
+}
+
+/* papirić */
+.pn {
+  --r: 0deg;
+  --y: 0px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 164px;
+  padding: 26px 18px 16px;
+  border-radius: 3px;
+  text-align: left;
+  color: var(--paper-ink);
+  background: var(--paper-bg);
+  box-shadow: var(--paper-sh);
+  transform: translateY(var(--y)) rotate(var(--r));
+  transition:
+    transform 220ms var(--ease),
+    box-shadow 220ms var(--ease);
+  cursor: pointer;
+  outline: none;
+  animation: pnIn 320ms var(--ease) backwards;
+}
+@keyframes pnIn {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--y) + 10px)) rotate(calc(var(--r) - 2deg));
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .pn:not(.pad):not(.mini):hover {
+    transform: translateY(calc(var(--y) - 4px)) rotate(0deg);
+    box-shadow: var(--paper-sh-up);
+    z-index: 2;
+  }
+}
+.pn:focus-visible {
+  box-shadow:
+    0 0 0 3px var(--orange),
+    var(--paper-sh);
+}
+.pn:active:not(.pad) {
+  transform: translateY(var(--y)) rotate(var(--r)) scale(0.985);
+}
+.pn-t {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pn-f {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--paper-mute);
+}
+.pn-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+.pn-when svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+.pn-when.soon {
+  color: var(--paper-ink);
+  font-weight: 800;
+}
+.pn-cl {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  font-weight: 600;
+}
+.pn-cl .ri {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  font-size: 9px;
+  flex: none;
+}
+.pn-avs {
+  display: inline-flex;
+}
+.pn-avs img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  border: 1.5px solid var(--paper);
+}
+.pn-avs img + img {
+  margin-left: -6px;
+}
+/* pečat "kasni N dana": isti pečat kao "Ostvareno" kod ciljeva, samo crven */
+.pn-stamp {
+  display: inline-block;
+  padding: 4px 7px 3px;
+  border: 2px solid var(--paper-red);
+  border-radius: 5px;
+  color: var(--paper-red);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-4deg);
+  opacity: 0.92;
+}
+/* dugme "gotovo" */
+.pn-ck {
+  margin-left: auto;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(42, 31, 23, 0.22);
+  color: transparent;
+  transition:
+    border-color 150ms,
+    color 150ms,
+    background 150ms,
+    transform 150ms var(--ease);
+}
+.pn-ck svg {
+  width: 16px;
+  height: 16px;
+}
+.pn-ck:hover,
+.pn-ck:focus-visible {
+  border-color: var(--paper-green);
+  color: var(--paper-green);
+  outline: none;
+}
+.pn-ck:active {
+  transform: scale(0.9);
+}
+@media (hover: none) {
+  .pn-ck {
+    color: rgba(42, 31, 23, 0.28);
+  }
+}
+
+/* završavanje: kvačica, čioda iskoči, papirić padne */
+.pn.checking .pn-ck {
+  background: var(--paper-green);
+  border-color: var(--paper-green);
+  color: #fff;
+}
+.pn.checking .pn-t {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(42, 31, 23, 0.55);
+}
+.pn.checking .pn-pin {
+  animation: pinOut 260ms 120ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+@keyframes pinOut {
+  to {
+    opacity: 0;
+    transform: translate(10px, -16px) rotate(40deg) scale(1.15);
+  }
+}
+.pn.leaving {
+  pointer-events: none;
+  animation: pnFall 460ms cubic-bezier(0.55, 0, 0.8, 0.3) forwards;
+}
+@keyframes pnFall {
+  0% {
+    opacity: 1;
+    transform: translateY(var(--y)) rotate(var(--r));
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(calc(var(--y) - 4px)) rotate(calc(var(--r) + 4deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(var(--y) + 70px)) rotate(calc(var(--r) + 16deg));
+  }
+}
+/* tek zakačen: padne na tablu, čioda se zabode */
+.pn.new {
+  animation: pnPin 420ms var(--spring) backwards;
+}
+.pn.new .pn-pin {
+  animation: pinIn 300ms 160ms var(--spring) backwards;
+}
+@keyframes pnPin {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--y) - 22px)) rotate(calc(var(--r) - 6deg))
+      scale(1.08);
+  }
+}
+@keyframes pinIn {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.4);
+  }
+}
+
+/* prazan papirić na kraju reda: klik, napiši, Enter (isti kao "Novi cilj") */
+.pn.pad {
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  background: rgba(246, 234, 210, 0.04);
+  border: 2px dashed rgba(246, 234, 210, 0.24);
+  box-shadow: none;
+  color: rgba(246, 234, 210, 0.75);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 17px;
+  transform: none;
+  animation: none;
+  transition:
+    background 150ms,
+    color 150ms,
+    border-color 150ms;
+}
+.pn.pad svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 2px;
+  color: var(--orange);
+}
+.pn.pad:hover,
+.pn.pad:focus-visible {
+  background: rgba(246, 234, 210, 0.09);
+  border-color: rgba(246, 234, 210, 0.45);
+  color: var(--cream);
+}
+.pn.pad.on {
+  align-items: stretch;
+  justify-content: flex-start;
+  border: 0;
+  border-radius: 3px;
+  background: var(--paper-bg);
+  color: var(--paper-ink);
+  box-shadow: var(--paper-sh);
+  transform: rotate(-0.6deg);
+  cursor: text;
+  animation: pnIn 220ms var(--ease) backwards;
+}
+.pn-in {
+  flex: 1;
+  width: 100%;
+  min-height: 72px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--paper-ink);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.22;
+}
+.pn-in::placeholder {
+  color: rgba(42, 31, 23, 0.38);
+}
+.pn-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--paper-mute);
+}
+
+/* završeni: mali papirići ispod reda (kao polica "Ostvareno") */
+.pdone {
+  margin-top: 24px;
+}
+.pdone summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px 7px 9px;
+  border-radius: 999px;
+  background: rgba(246, 234, 210, 0.06);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition:
+    background 150ms,
+    color 150ms;
+}
+.pdone summary::-webkit-details-marker {
+  display: none;
+}
+.pdone summary svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 160ms var(--ease);
+}
+.pdone[open] summary svg {
+  transform: rotate(90deg);
+}
+.pdone summary:hover {
+  background: rgba(246, 234, 210, 0.1);
+  color: var(--cream);
+}
+.pnotes.mini {
+  margin-top: 16px;
+  gap: 12px;
+}
+.pn.mini {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 10px 10px 14px;
+  opacity: 0.7;
+  transform: none;
+  animation: none;
+  box-shadow: 0 8px 14px -10px rgba(0, 0, 0, 0.8);
+  transition: opacity 150ms;
+}
+.pn.mini:hover {
+  opacity: 1;
+}
+.pn.mini .pn-t {
+  flex: 1;
+  font-size: 14.5px;
+  -webkit-line-clamp: 2;
+  text-decoration: line-through;
+  text-decoration-color: rgba(42, 31, 23, 0.45);
+}
+.pn.mini .pn-ck {
+  width: 28px;
+  height: 28px;
+  background: var(--paper-green);
+  border-color: var(--paper-green);
+  color: #fff;
+}
+.pn.mini .pn-ck:hover {
+  background: transparent;
+  color: var(--paper-green);
+}
+.pdone .more {
+  grid-column: 1/-1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* kartica na dashboardu: tri papirića sa čiodama */
+.pnill {
+  position: absolute;
+  z-index: 0;
+  right: clamp(16px, 3vw, 34px);
+  top: 50%;
+  margin-top: -74px;
+  width: min(42%, 196px);
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.55));
+}
+.pnill .lift {
+  transition: transform 260ms var(--ease);
+}
+.taskcard:hover .pnill .l1 {
+  transform: translateY(-3px);
+}
+.taskcard:hover .pnill .l2 {
+  transform: translateY(-5px);
+}
+.taskcard:hover .pnill .l3 {
+  transform: translateY(-2px);
+}
+.taskcard #dashTasks {
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+@media (max-width: 600px) {
+  .lane + .lane {
+    margin-top: 42px;
+  }
+  .lane-h {
+    margin-bottom: 22px;
+  }
+  .lane-av,
+  .lane-h .lg-ic {
+    width: 32px;
+    height: 32px;
+  }
+  .pnotes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 12px;
+  }
+  .pn {
+    min-height: 138px;
+    padding: 22px 13px 13px;
+    gap: 10px;
+  }
+  .pn-t,
+  .pn-in {
+    font-size: 15.5px;
+  }
+  .pn-f {
+    font-size: 12px;
+    gap: 6px 8px;
+  }
+  .pn-stamp {
+    padding: 3px 5px 2px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+  .pn.pad {
+    font-size: 15px;
+  }
+  .pnotes.mini {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pnill {
+    right: 8px;
+    width: 140px;
+    margin-top: -54px;
+  }
+}
+
+/* ---------- Top Goals ---------- */
+/* strela: isprekidana putanja, meta desno, strela dugačka koliko je ostvareno */
+.garrow {
+  --p: 0;
+  position: relative;
+  height: 26px;
+  margin: 2px 0;
+}
+.ga-line {
+  position: absolute;
+  left: 0;
+  right: 12px;
+  top: 50%;
+  border-top: 2px dashed var(--paper-line);
+}
+.ga-tgt {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--paper-red) 0 3px,
+    var(--paper) 3.5px 5.5px,
+    var(--paper-ink) 6px 7.5px,
+    var(--paper) 8px 9.5px,
+    var(--paper-ink) 10px 12px
+  );
+}
+.ga-shot {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 12px;
+  margin-top: -6px;
+  width: max(26px, calc((100% - 12px) * var(--p)));
+  transition: width 560ms var(--spring);
+}
+.ga-sh {
+  position: absolute;
+  left: 4px;
+  right: 9px;
+  top: 4.5px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--orange));
+}
+.ga-hd {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 13px;
+  height: 12px;
+  background: var(--orange);
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 22% 50%);
+}
+.ga-fl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 13px;
+  height: 12px;
+  background:
+    linear-gradient(var(--paper-ink), var(--paper-ink)) 0 0 / 100% 3px no-repeat,
+    linear-gradient(var(--paper-ink), var(--paper-ink)) 0 100% / 100% 3px
+      no-repeat;
+  clip-path: polygon(0 0, 55% 0, 100% 45%, 100% 55%, 55% 100%, 0 100%, 40% 50%);
+  opacity: 0.8;
+}
+.garrow.hit .ga-tgt {
+  animation: tgtHit 420ms 300ms var(--spring) backwards;
+}
+@keyframes tgtHit {
+  40% {
+    transform: scale(1.25);
+  }
+}
+.garrow.fly .ga-shot {
+  animation: gaFly 560ms 120ms var(--ease) backwards;
+}
+@keyframes gaFly {
+  from {
+    opacity: 0;
+    transform: translateX(-36px);
+  }
+}
+
+/* dashboard */
+.gdash {
+  margin: 0 0 26px;
+}
+.gd-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.gd-t {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(24px, 2.6vw, 30px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.gd-t svg {
+  width: 28px;
+  height: 28px;
+  color: var(--orange);
+}
+.gd-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px 8px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 15px;
+  transition: color 150ms;
+}
+.gd-all svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 200ms var(--ease);
+}
+.gd-all:hover {
+  color: var(--cream);
+}
+.gd-all:hover svg {
+  transform: translateX(3px);
+}
+.gd-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  padding-top: 8px;
+}
+.gnote,
+.gcard {
+  --r: 0deg;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 26px 22px 20px;
+  border-radius: 3px;
+  text-align: left;
+  color: var(--paper-ink);
+  background: var(--paper-bg);
+  box-shadow: var(--paper-sh);
+  transform: rotate(var(--r));
+}
+.gnote {
+  min-height: 190px;
+  cursor: pointer;
+  transition:
+    transform 220ms var(--ease),
+    box-shadow 220ms var(--ease);
+  animation: gIn 320ms var(--ease) backwards;
+}
+@keyframes gIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(calc(var(--r) - 2deg));
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .gnote:hover {
+    transform: translateY(-4px) rotate(0deg);
+    box-shadow: var(--paper-sh-up);
+  }
+}
+.gnote:active {
+  transform: rotate(var(--r)) scale(0.985);
+}
+.gn-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gn-num {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 46px;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.gn-num span {
+  font-size: 0.5em;
+  color: var(--paper-mute);
+  letter-spacing: -0.02em;
+}
+.gn-t {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+.gn-f,
+.gc-f {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin-top: auto;
+  font-size: 13.5px;
+  color: var(--paper-mute);
+}
+.gn-f b,
+.gc-f b {
+  color: var(--paper-ink);
+  font-weight: 800;
+}
+.gn-f .late,
+.gc-f .late {
+  color: var(--paper-red);
+  font-weight: 600;
+}
+/* pečat "ostvareno" */
+.gstamp {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  padding: 5px 8px 4px;
+  border: 2.5px solid var(--paper-green);
+  border-radius: 6px;
+  color: var(--paper-green);
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(-10deg);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.win .gstamp {
+  animation: gStamp 380ms var(--spring) backwards;
+}
+@keyframes gStamp {
+  from {
+    opacity: 0;
+    transform: rotate(-10deg) scale(2.2);
+  }
+}
+.gnote.won .ga-sh,
+.gcard.won .ga-sh {
+  background: linear-gradient(90deg, #5fbf86, var(--paper-green));
+}
+.gnote.won .ga-hd,
+.gcard.won .ga-hd {
+  background: var(--paper-green);
+}
+/* prazan papirić: novi cilj */
+.gpad {
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  min-height: 190px;
+  padding: 24px 22px;
+  border-radius: 6px;
+  border: 2px dashed rgba(246, 234, 210, 0.24);
+  background: rgba(246, 234, 210, 0.04);
+  color: rgba(246, 234, 210, 0.75);
+  box-shadow: none;
+  transform: none;
+  text-align: left;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.15;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    color 150ms;
+}
+.gpad svg {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  color: var(--orange);
+}
+.gpad small {
+  font-family: var(--f-body);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--muted);
+}
+.gpad:hover,
+.gpad:focus-visible {
+  background: rgba(246, 234, 210, 0.09);
+  border-color: rgba(246, 234, 210, 0.45);
+  color: var(--cream);
+  outline: none;
+}
+.gdash .gpad:only-child {
+  grid-column: 1/-1;
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+.gdash .gpad:only-child svg {
+  margin: 0;
+}
+
+/* ekran #goals */
+.goals-sub {
+  margin: -18px 0 30px;
+  color: var(--muted);
+  font-size: 16px;
+}
+.ggrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+  gap: 34px 28px;
+  align-items: start;
+}
+.gcard {
+  min-height: 268px;
+  gap: 10px;
+  padding: 30px 26px 22px;
+  animation: gIn 320ms var(--ease) backwards;
+}
+.gcard.new {
+  animation: pnPin 420ms var(--spring) backwards;
+}
+.gc-num {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 72px;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.gc-num span {
+  font-size: 0.42em;
+  color: var(--paper-mute);
+  letter-spacing: -0.02em;
+}
+.gc-num.long {
+  flex-wrap: wrap;
+  font-size: 50px;
+}
+.gn-num.long {
+  font-size: 34px;
+}
+.gc-num b {
+  display: inline-block;
+  font-weight: inherit;
+}
+.gc-num b.bump {
+  animation: gBump 320ms var(--spring);
+}
+@keyframes gBump {
+  40% {
+    transform: scale(1.18) translateY(-3px);
+    color: var(--orange);
+  }
+}
+.gc-t {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 23px;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.gcard .garrow {
+  height: 30px;
+  margin: 6px 0 2px;
+}
+.gc-f {
+  margin-top: 0;
+  font-size: 14.5px;
+}
+.gc-act {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.gc-act button {
+  height: 46px;
+  border-radius: 999px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 18px;
+  transition:
+    background 150ms,
+    color 150ms,
+    border-color 150ms,
+    transform 120ms var(--ease);
+}
+.gc-act button:active {
+  transform: scale(0.94);
+}
+.gminus {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  border: 2px solid rgba(42, 31, 23, 0.22);
+  color: var(--paper-mute);
+}
+.gminus:hover {
+  border-color: var(--paper-ink);
+  color: var(--paper-ink);
+}
+.gminus svg,
+.gplus svg {
+  width: 20px;
+  height: 20px;
+}
+.gplus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.gadd {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0 16px;
+  border: 2px solid rgba(42, 31, 23, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--paper-ink);
+  color-scheme: light;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 17px;
+  outline: none;
+  transition: border-color 150ms;
+}
+.gadd:focus {
+  border-color: var(--orange);
+}
+.gadd::placeholder {
+  color: rgba(42, 31, 23, 0.4);
+  font-weight: 600;
+}
+.gc-act .gadd + .gplus {
+  flex: none;
+}
+.gminus:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.gplus {
+  flex: 1;
+  padding: 0 22px;
+  background: var(--paper-ink);
+  color: var(--paper);
+}
+.gplus:hover {
+  background: var(--orange);
+  color: var(--on-accent);
+}
+.gc-ed {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--paper-mute);
+  transition:
+    background 150ms,
+    color 150ms;
+}
+.gc-ed svg {
+  width: 17px;
+  height: 17px;
+}
+.gc-ed:hover,
+.gc-ed:focus-visible {
+  background: rgba(42, 31, 23, 0.08);
+  color: var(--paper-ink);
+  outline: none;
+}
+.gcard:not(.mini) .gstamp {
+  top: 58px;
+  right: 18px;
+}
+
+/* forma (novi cilj / izmena) na samom papiru */
+.gform {
+  gap: 16px;
+  min-height: 0;
+  transform: none;
+  animation: gIn 220ms var(--ease) backwards;
+}
+.gf-l {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--paper-mute);
+}
+.gf-l small {
+  font-weight: 400;
+}
+.gform input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 0 7px;
+  border: 0;
+  border-bottom: 2px solid var(--paper-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--paper-ink);
+  color-scheme: light;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 18px;
+  outline: none;
+  transition: border-color 150ms;
+}
+.gform input:focus {
+  border-color: var(--orange);
+}
+.gform input::placeholder {
+  color: rgba(42, 31, 23, 0.35);
+  font-weight: 600;
+}
+.gform .gf-t {
+  font-size: 23px;
+}
+.gf-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 14px;
+}
+.gf-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.gf-act .gplus {
+  flex: none;
+  height: 44px;
+  border-radius: 999px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 16px;
+}
+.gf-act .gf-x,
+.gf-act .gf-top,
+.gf-act .gf-del {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--paper-mute);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.gf-act .gf-x:hover,
+.gf-act .gf-top:hover {
+  color: var(--paper-ink);
+  background: rgba(42, 31, 23, 0.07);
+}
+.gf-act .gf-sp {
+  flex: 1;
+}
+.gf-act .gf-del {
+  color: var(--paper-red);
+}
+.gf-act .gf-del:hover {
+  background: rgba(194, 54, 42, 0.1);
+}
+.gform .shake {
+  animation: shake 0.4s;
+}
+
+/* ostvareni: polica ispod */
+.gach-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 56px 0 22px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+.gach-h svg {
+  width: 24px;
+  height: 24px;
+  color: var(--gold);
+}
+.ggrid.ach {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 26px 22px;
+}
+.gcard.mini {
+  min-height: 0;
+  padding: 24px 20px 18px;
+  cursor: pointer;
+  opacity: 0.86;
+  transition:
+    opacity 150ms,
+    transform 200ms var(--ease);
+}
+.gcard.mini:hover {
+  opacity: 1;
+  transform: rotate(0deg) translateY(-3px);
+}
+.gcard.mini .gc-t {
+  font-size: 18px;
+  padding-right: 92px;
+}
+.gcard.mini .gc-f {
+  font-size: 13px;
+}
+.gcard.mini .gstamp {
+  font-size: 11px;
+}
+
+@media (max-width: 860px) {
+  .gd-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  /* telefon: papirić je traka; broj levo, naslov desno, strela ispod */
+  .gnote {
+    min-height: 0;
+    padding: 22px 18px 16px;
+    gap: 6px;
+  }
+  .gn-top {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+  }
+  .gn-top .gn-t {
+    flex: 1 1 150px;
+  }
+  .gnote .gn-num {
+    font-size: 38px;
+  }
+  .gnote .gn-t {
+    font-size: 17px;
+  }
+  .gnote .pn-pin {
+    left: 22px;
+    margin-left: 0;
+  }
+  .gnote .gstamp {
+    top: 10px;
+    right: 10px;
+    font-size: 11px;
+  }
+  .gpad,
+  .gdash .gpad:only-child {
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    font-size: 17px;
+  }
+  .gpad svg {
+    margin: 0;
+    flex: none;
+  }
+  .gcard {
+    min-height: 0;
+  }
+  .gc-num {
+    font-size: 60px;
+  }
+  .gc-num.long {
+    font-size: 40px;
+  }
+  .pn.pad {
+    min-height: 110px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pn,
+  .pn.new,
+  .pn-pin,
+  .gnote,
+  .gcard,
+  .lane-h,
+  .garrow .ga-shot,
+  .garrow .ga-tgt,
+  .gstamp {
+    animation: none !important;
+  }
+  .ga-shot {
+    transition: none;
+  }
+}

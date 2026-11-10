@@ -366,11 +366,13 @@
     creativeComments: [],
     creativeNotes: [],
     schedules: [],
+    goals: [],
     fresh: new Set(),
   };
   let NT = null; // General stranice (notes.js)
   let FK = null; // Fakture (fakture.js)
   let FN = null; // Skeylo Finance (finance.js)
+  let GL = null; // Top Goals (goals.js)
   FALLBACK.entities = [];
   FALLBACK.dayItems = [];
   FALLBACK.notes = [
@@ -559,6 +561,7 @@
   FALLBACK.finances = [];
   FALLBACK.expenses = [];
   FALLBACK.ledger = [];
+  FALLBACK.goals = [];
   FALLBACK.files = [];
   FALLBACK.tasks = [];
   FALLBACK.models = [
@@ -729,6 +732,7 @@
       "creativeComments",
       "creativeNotes",
       "schedules",
+      "goals",
     ])
       S[k] = FALLBACK[k].map((x) => ({
         ...x,
@@ -829,6 +833,7 @@
     sub("creativeComments");
     sub("creativeNotes");
     sub("schedules");
+    sub("goals"); // Top Goals: nije u listi za S.ready, pa nikad ne zadržava OS
   })();
   function refresh(col) {
     if (!$("#pm").hidden) renderPM();
@@ -854,6 +859,7 @@
       updateGenAvs();
       updLeadCard();
     }
+    if (GL) GL.refresh();
     if (!$("#lm").hidden && !ldrag) renderLM();
     if (!$("#ld").hidden) renderLD();
     if (!$("#rv").hidden) renderRV();
@@ -882,6 +888,7 @@
     "gp",
     "models",
     "tasks",
+    "goals",
     "pm",
     "mh",
     "fin",
@@ -1008,6 +1015,12 @@
       show("tasks");
       firstTasks = true;
       renderTASKS();
+    } else if (h === "goals") {
+      /* goals.js: Top Goals */
+      applyTheme(null);
+      view = { name: "goals" };
+      show("goals");
+      if (GL) GL.render(true);
     } else if (h === "money" || h.startsWith("money~")) {
       /* finance.js: #money (ceo tim), #money~{član} */
       const again = view.name === "money" && !$("#money").hidden;
@@ -1116,6 +1129,7 @@
       updateDashTasks();
       updateGenAvs();
       updLeadCard();
+      if (GL) GL.dash();
       if (FK) FK.warm(); // oznaka "kasni" na kartici Fakture
     }
   }
@@ -3156,55 +3170,88 @@
       u + "|" + (d || "9999") + "|" + String(t.createdAt || 0).padStart(15, "0")
     );
   }
-  function dateChip(t) {
+  /* ---- Task Board: papirići zakačeni čiodom (2026-11-10) ----
+     Isti papir kao Top Goals: svi papirići su iste krem boje sa crvenom čiodom, a klijent se
+     vidi samo po logu u dnu (boje papira po klijentu su izbačene). Nagib i pomeraj se
+     računaju iz id-a, pa tabla ne "skače" pri osvežavanju. Na kraju svakog reda je prazan papirić: klik, napiši, Enter → task je
+     zakačen bez roka (rok i klijent se menjaju klikom na papirić, pun unos ostaje "Add Task").
+     Završavanje: kvačica → čioda iskoči i papirić padne; završeni su u fioci ispod reda. */
+  function hashN(s) {
+    let h = 2166136261;
+    for (const ch of String(s)) {
+      h ^= ch.charCodeAt(0);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) / 4294967295;
+  }
+  const dayW = (n) => (n % 10 === 1 && n % 100 !== 11 ? "dan" : "dana");
+  function whenOf(t) {
     if (t.kind === "task" && t.due) {
       const td = todayStr();
-      const cls = t.done
-        ? ""
-        : t.due < td
-          ? "late"
-          : t.due === td
-            ? "soon"
-            : "";
-      const lbl =
-        t.due < td
-          ? "Kasni · " + fmtD(t.due)
-          : t.due === td
-            ? "Danas"
-            : "Rok " + fmtD(t.due);
-      return `<span class="tchip ${cls}">${SV('<path d="M5 21V4h11l-1 4 4 0-1 4H5"/>')}${lbl}</span>`;
+      const ic = SV('<path d="M5 21V4h11l-1 4 4 0-1 4H5"/>', 2.2);
+      if (t.done || t.due > td)
+        return { cls: "", ic, txt: "Rok " + fmtD(t.due) };
+      if (t.due === td) return { cls: "soon", ic, txt: "Danas" };
+      const n = Math.max(
+        1,
+        Math.round((Date.parse(td) - Date.parse(t.due)) / 864e5),
+      );
+      return { cls: "late", ic, txt: `Kasni ${n} ${dayW(n)}` };
     }
     if (t.kind === "event" && t.start) {
-      const sameDay = (t.end || "").slice(0, 10) === t.start.slice(0, 10);
-      const lbl =
-        fmtD(t.start) +
-        " " +
-        fmtT(t.start) +
-        (t.end
-          ? " – " + (sameDay ? fmtT(t.end) : fmtD(t.end) + " " + fmtT(t.end))
-          : "");
-      return `<span class="tchip ev">${SV('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>')}${lbl}</span>`;
+      const today = t.start.slice(0, 10) === todayStr();
+      return {
+        cls: today ? "soon" : "",
+        ic: SV(
+          '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+          2.2,
+        ),
+        txt:
+          (today ? "Danas" : fmtD(t.start)) +
+          (fmtT(t.start) ? " " + fmtT(t.start) : ""),
+      };
     }
-    return `<span class="tchip nh">${SV('<path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/>')}No hurry</span>`;
+    return { cls: "", ic: "", txt: "Bez roka" };
   }
-  function stripe(ids) {
-    const cs = (ids || [])
-      .map((i) => (TBLACK[i] ? "#000" : TCOL[i]))
-      .filter(Boolean);
-    if (cs.length < 2) return cs[0] || "var(--orange)";
-    return `linear-gradient(180deg,${cs.map((c, i) => `${c} ${(i / cs.length) * 100}% ${((i + 1) / cs.length) * 100}%`).join(",")})`;
-  }
-  function tcardHTML(t, colColor, mode, delay) {
+  const CK = SV('<path d="m5 12 5 5L20 7"/>', 3);
+  function pnHTML(t, mode, i, anim) {
     const tc = taskClient(t);
-    const others = mode === "member" ? t.assignees || [] : t.assignees || [];
-    const showAvs = mode === "proj" || others.length > 1;
+    const w = whenOf(t);
+    const late = w.cls === "late";
     const fresh = S.fresh.has(t.id);
-    return `<div class="tcard${t.done ? " done" : ""}${fresh ? " new" : ""}" data-task="${esc(t.id)}" style="--c:${colColor};--stripe:${stripe(t.assignees)};${fresh ? "" : delay != null ? `animation-delay:${adl(delay)}s` : "animation:none"}">
-    <button class="tck" data-tck="${esc(t.id)}" aria-label="${t.done ? "Vrati task" : "Završi task"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></button>
-    <div class="tbody"><div class="ttl">${esc(t.title)}</div>
-      <div class="tmeta">${mode === "member" ? `<span class="tchip proj" style="--c:${esc(tc.color || "#888")}">${logo(tc, "ri")}${esc(cName(tc))}</span>` : ""}${dateChip(t)}${showAvs ? `<span class="avs">${others.map((i) => (IMG[i] ? `<img src="${IMG[i]}" alt="${esc(i)}">` : "")).join("")}</span>` : ""}</div>
-    </div>
-  </div>`;
+    const r = ((hashN(t.id) - 0.5) * 2.6).toFixed(2);
+    const y = (hashN(t.id + "~") * 4).toFixed(1);
+    const avs = t.assignees || [];
+    const showAvs = mode === "proj" || avs.length > 1;
+    const st = `--r:${r}deg;--y:${y}px;${fresh ? "" : anim ? `animation-delay:${adl(0.04 + i * 0.03)}s` : "animation:none"}`;
+    return `<div class="pn${late ? " late" : ""}${fresh ? " new" : ""}" data-task="${esc(t.id)}" tabindex="0" style="${st}">
+      <i class="pn-pin" aria-hidden="true"></i>
+      <div class="pn-t">${esc(t.title)}</div>
+      <div class="pn-f">${late ? `<span class="pn-stamp">${esc(w.txt)}</span>` : `<span class="pn-when ${w.cls}">${w.ic}${esc(w.txt)}</span>`}${mode === "member" && tc.id !== "skeylo" ? `<span class="pn-cl">${logo(tc, "ri")}${esc(cName(tc))}</span>` : ""}${showAvs ? `<span class="pn-avs">${avs.map((a) => (IMG[a] ? `<img src="${IMG[a]}" alt="${esc(a)}">` : "")).join("")}</span>` : ""}<button type="button" class="pn-ck" data-tck="${esc(t.id)}" aria-label="Završi task">${CK}</button></div>
+    </div>`;
+  }
+  function pnMini(t) {
+    return `<div class="pn mini" data-task="${esc(t.id)}" tabindex="0"><div class="pn-t">${esc(t.title)}</div><button type="button" class="pn-ck" data-tck="${esc(t.id)}" aria-label="Vrati task">${CK}</button></div>`;
+  }
+  /* prazan papirić: padK = red u kome se piše, padTxt = tekst (preživi osvežavanje table) */
+  let padK = null,
+    padTxt = "";
+  function padHTML(k) {
+    if (padK === k)
+      return `<div class="pn pad on" data-pad="${esc(k)}"><i class="pn-pin" aria-hidden="true"></i><textarea class="pn-in" rows="3" maxlength="200" placeholder="Šta treba uraditi?" aria-label="Novi task">${esc(padTxt)}</textarea><div class="pn-hint">Enter = zakači · Esc = odustani</div></div>`;
+    return `<button type="button" class="pn pad" data-pad="${esc(k)}">${SV('<path d="M12 5v14M5 12h14"/>', 2.4)}<span>Novi papirić</span></button>`;
+  }
+  function swapPad(k, focus) {
+    const el = $(`#tboard [data-pad="${CSS.escape(k)}"]`);
+    if (!el) return;
+    el.outerHTML = padHTML(k);
+    if (focus) {
+      const ta = $(`#tboard [data-pad="${CSS.escape(k)}"] .pn-in`);
+      if (ta) {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      }
+    }
   }
   function renderTASKS() {
     if ($("#tasks").hidden || !me) return;
@@ -3218,53 +3265,99 @@
     firstTasks = false;
     const openStates = {};
     root
-      .querySelectorAll(".tdone")
+      .querySelectorAll(".pdone")
       .forEach((d) => (openStates[d.dataset.k] = d.open));
-    let cols;
+    const typing =
+      document.activeElement &&
+      document.activeElement.classList.contains("pn-in");
+    let lanes;
     if (tView === "member") {
       const order = [
         me.id,
         ...MEMBERS.map((m) => m.id).filter((i) => i !== me.id),
       ];
-      cols = order.map((id) => {
+      lanes = order.map((id) => {
         const u = TEAM.find((t) => t.id === id);
         return {
           k: id,
-          color: TCOL[id],
-          head: `<img class="tav" src="${IMG[id]}" alt=""><h2>${esc(u.name)}${id === me.id ? ' <span style="color:var(--muted);font-weight:500;font-size:16px">(ti)</span>' : ""}</h2>`,
+          head: `<img class="lane-av" src="${IMG[id]}" alt=""><h2>${esc(u.name)}${id === me.id ? " <small>(ti)</small>" : ""}</h2>`,
           list: S.tasks.filter((t) => (t.assignees || []).includes(id)),
-          pre: { who: [id] },
         };
       });
     } else {
-      cols = [...S.clients]
+      lanes = [...S.clients]
         .sort((a, b) => (a.order || 0) - (b.order || 0))
         .map((c) => ({
           k: c.id,
-          color: c.color || "#e1802c",
           head: `${logo(c, "lg-ic")}<h2>${esc(cName(c))}</h2>`,
           list: S.tasks.filter((t) => taskClient(t).id === c.id),
-          pre: { client: c.id },
         }));
     }
-    const sl = root.scrollLeft;
-    root.innerHTML = cols
-      .map((col, ci) => {
-        const open = col.list
+    if (padK && !lanes.some((L) => L.k === padK)) padK = null;
+    let n = 0;
+    root.innerHTML = `<div class="tlanes">${lanes
+      .map((L, li) => {
+        const open = L.list
           .filter((t) => !t.done)
           .sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : 1));
-        const done = col.list
+        const done = L.list
           .filter((t) => t.done)
           .sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-        const d = (i) => (anim ? 0.18 + ci * 0.07 + i * 0.05 : null);
-        return `<section class="col tcol${TBLACK[col.k] && tView === "member" ? " blk" : ""}" data-k="${esc(col.k)}" style="--c:${col.color};${anim ? `animation-delay:${adl(0.05 + ci * 0.07)}s` : "animation:none"}">
-      <div class="col-h">${col.head}<span class="n">${open.length}</span><button class="plus" data-tadd='${esc(JSON.stringify(col.pre))}' aria-label="Add Task">${IC.plus}</button></div>
-      <div class="trows">${open.length ? open.map((t, i) => tcardHTML(t, col.color, tView, d(i))).join("") : '<div class="tnone">Nema otvorenih taskova</div>'}</div>
-      ${done.length ? `<details class="tdone" data-k="${esc(col.k)}"${openStates[col.k] ? " open" : ""}><summary>${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}Završeno · ${done.length}</summary><div class="trows">${done.map((t) => tcardHTML(t, col.color, tView, null)).join("")}</div></details>` : ""}
+        const MAXD = 40;
+        return `<section class="lane" data-k="${esc(L.k)}">
+      <div class="lane-h"${anim ? ` style="animation-delay:${adl(li * 0.05)}s"` : ' style="animation:none"'}>${L.head}<span class="n${open.length ? "" : " z"}">${open.length}</span></div>
+      <div class="pnotes">${open.map((t) => pnHTML(t, tView, n++, anim)).join("")}${padHTML(L.k)}</div>
+      ${done.length ? `<details class="pdone" data-k="${esc(L.k)}"${openStates[L.k] ? " open" : ""}><summary>${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}Završeno · ${done.length}</summary><div class="pnotes mini">${done.slice(0, MAXD).map(pnMini).join("")}${done.length > MAXD ? `<div class="more">+ još ${done.length - MAXD} starijih</div>` : ""}</div></details>` : ""}
     </section>`;
       })
-      .join("");
-    root.scrollLeft = sl;
+      .join("")}</div>`;
+    if (padK && typing) {
+      const ta = root.querySelector(".pn-in");
+      if (ta) {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      }
+    }
+  }
+  async function quickAdd() {
+    const title = padTxt.trim().replace(/\s+/g, " ");
+    const k = padK;
+    if (!title || !k || !me) return;
+    const who = tView === "member" ? k : me.id;
+    const data = {
+      title,
+      assignees: [who],
+      clientId: tView === "member" ? "skeylo" : k,
+      projectId: "",
+      kind: "none",
+      due: "",
+      start: "",
+      end: "",
+      done: false,
+      doneAt: null,
+      createdBy: me.id,
+      createdAt: Date.now(),
+      order: Date.now(),
+    };
+    padTxt = "";
+    const ta = $("#tboard .pn-in");
+    if (ta) ta.value = "";
+    try {
+      const id = await api.add("tasks", data);
+      markFresh(id);
+      renderTASKS();
+      updateDashTasks();
+      const u = TEAM.find((x) => x.id === who);
+      toast(
+        who === me.id
+          ? "Papirić zakačen"
+          : `Papirić zakačen za ${u ? u.name : who}`,
+      );
+    } catch (err) {
+      padTxt = title;
+      swapPad(k, true);
+      toast(errMsg(err));
+    }
   }
   function setTseg() {
     const seg = $("#tview");
@@ -3280,11 +3373,12 @@
     try {
       localStorage.setItem("skeylo-tview", tView);
     } catch (err) {}
+    padK = null;
+    padTxt = "";
     firstTasks = true;
     renderTASKS();
   });
   $("#addTask").onclick = () => openTaskWizard({});
-  dragScroll($("#tboard"), ".tcard");
   $("#tboard").addEventListener("click", (e) => {
     const ck = e.target.closest("[data-tck]");
     if (ck) {
@@ -3292,26 +3386,67 @@
       toggleTask(ck.dataset.tck, ck);
       return;
     }
-    const a = e.target.closest("[data-tadd]");
-    if (a) {
-      try {
-        openTaskWizard(JSON.parse(a.dataset.tadd));
-      } catch (err) {
-        openTaskWizard({});
-      }
+    const pad = e.target.closest("[data-pad]");
+    if (pad) {
+      if (pad.classList.contains("on")) return;
+      const prev = padK;
+      padK = pad.dataset.pad;
+      padTxt = "";
+      if (prev && prev !== padK) swapPad(prev, false);
+      swapPad(padK, true);
       return;
     }
     const c = e.target.closest("[data-task]");
     if (c) openTaskDetail(c.dataset.task);
   });
+  $("#tboard").addEventListener("input", (e) => {
+    if (e.target.classList.contains("pn-in")) {
+      padTxt = e.target.value;
+      autoGrow(e.target);
+    }
+  });
+  $("#tboard").addEventListener("keydown", (e) => {
+    if (e.target.classList.contains("pn-in")) {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        quickAdd();
+      } else if (e.key === "Escape") {
+        e.stopPropagation();
+        const k = padK;
+        padK = null;
+        padTxt = "";
+        swapPad(k, false);
+      }
+      return;
+    }
+    if (
+      (e.key === "Enter" || e.key === " ") &&
+      e.target.matches(".pn[data-task]")
+    ) {
+      e.preventDefault();
+      openTaskDetail(e.target.dataset.task);
+    }
+  });
+  /* prazan papirić bez teksta se vrati u "+ Novi papirić" čim se klikne negde drugde */
+  $("#tboard").addEventListener("focusout", (e) => {
+    if (!e.target.classList.contains("pn-in") || padTxt.trim()) return;
+    const k = padK;
+    setTimeout(() => {
+      if (padK !== k || padTxt.trim()) return;
+      const a = document.activeElement;
+      if (a && a.classList && a.classList.contains("pn-in")) return;
+      padK = null;
+      swapPad(k, false);
+    }, 0);
+  });
   async function toggleTask(id, btn) {
     const t = S.tasks.find((x) => x.id === id);
     if (!t) return;
     const done = !t.done;
-    const card = btn && btn.closest(".tcard");
+    const card = btn && btn.closest(".pn:not(.mini)");
     if (card && done) {
-      card.classList.add("done");
-      miniBurst(btn, card.style.getPropertyValue("--c"));
+      card.classList.add("checking");
+      miniBurst(btn, "#2f8a55");
       tBusy = true;
       setTimeout(() => {
         card.classList.add("leaving");
@@ -10257,6 +10392,22 @@
       applyTheme,
       me: () => me,
       FK: () => FK,
+    });
+  /* ---------------- Top Goals (goals.js) ---------------- */
+  if (window.SKGoals)
+    GL = window.SKGoals({
+      S,
+      api,
+      esc,
+      SV,
+      toast,
+      errMsg,
+      nav,
+      markFresh,
+      shake,
+      nf,
+      burst: (el, c) => miniBurst(el, c),
+      me: () => me,
     });
   /* =====================================================================
    FINAL CREATIVES

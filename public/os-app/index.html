@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="/os-app/motion.css">
 <link rel="stylesheet" href="/os-app/fakture.css">
 <link rel="stylesheet" href="/os-app/finance.css">
+<link rel="stylesheet" href="/os-app/paper.css">
 <script src="/os-app/motion.js"></script>
 </head>
 <body>
@@ -92,6 +93,8 @@
       <div class="ring front"></div>
     </div>
   </section>
+  <!-- Top Goals (goals.js): prva tri cilja tima kao papirići sa strelom -->
+  <section class="gdash" id="gdash" aria-label="Top Goals" hidden></section>
   <section class="cards">
     <button class="card start" data-go="projects" style="animation-delay:.6s">
       <span class="sbg" aria-hidden="true"><img src="/os-app/img/654312f796.jpg" alt=""></span>
@@ -100,46 +103,13 @@
       <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </button>
     <button class="card fincard taskcard" data-go="tasks" style="animation-delay:.7s">
-      <svg class="tkills" viewBox="0 0 200 160" aria-hidden="true">
-<defs>
-<linearGradient id="tkCard" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a1f17"/><stop offset="1" stop-color="#16100c"/></linearGradient>
-<radialGradient id="tkGlow"><stop offset="0" stop-color="#e1802c" stop-opacity=".45"/><stop offset="1" stop-color="#e1802c" stop-opacity="0"/></radialGradient>
-</defs>
-<ellipse cx="108" cy="86" rx="82" ry="66" fill="url(#tkGlow)"/>
-<g transform="translate(26 16) rotate(-6 75 60)">
-<g transform="translate(0 0)"><g class="tk tk1">
-<rect x="0" y="0" width="150" height="34" rx="11" fill="url(#tkCard)" stroke="rgba(255,255,255,.10)"/>
-<rect x="0" y="6" width="3.5" height="22" rx="1.75" fill="#ff7eb6"/>
-<circle cx="20" cy="17" r="8" fill="none" stroke="#ff7eb6" stroke-width="2"/>
-<circle class="tkf" cx="20" cy="17" r="8" fill="#ff7eb6"/>
-<path class="tkc" d="M16 17.2l2.8 2.8 5.4-5.6" fill="none" stroke="#120d0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="36" y="11" width="74" height="5" rx="2.5" fill="rgba(244,235,220,.55)"/>
-<rect x="36" y="20" width="41" height="4" rx="2" fill="rgba(244,235,220,.22)"/>
-</g></g>
-<g transform="translate(0 44)"><g class="tk tk2">
-<rect x="0" y="0" width="150" height="34" rx="11" fill="url(#tkCard)" stroke="rgba(255,255,255,.10)"/>
-<rect x="0" y="6" width="3.5" height="22" rx="1.75" fill="#4fbf7f"/>
-<circle cx="20" cy="17" r="8" fill="none" stroke="#4fbf7f" stroke-width="2"/>
-<circle class="tkf" cx="20" cy="17" r="8" fill="#4fbf7f"/>
-<path class="tkc" d="M16 17.2l2.8 2.8 5.4-5.6" fill="none" stroke="#120d0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="36" y="11" width="60" height="5" rx="2.5" fill="rgba(244,235,220,.55)"/>
-<rect x="36" y="20" width="33" height="4" rx="2" fill="rgba(244,235,220,.22)"/>
-</g></g>
-<g transform="translate(0 88)"><g class="tk tk3">
-<rect x="0" y="0" width="150" height="34" rx="11" fill="url(#tkCard)" stroke="rgba(255,255,255,.10)"/>
-<rect x="0" y="6" width="3.5" height="22" rx="1.75" fill="#5b9cf0"/>
-<circle cx="20" cy="17" r="8" fill="none" stroke="#5b9cf0" stroke-width="2"/>
-<circle class="tkf" cx="20" cy="17" r="8" fill="#5b9cf0"/>
-<path class="tkc" d="M16 17.2l2.8 2.8 5.4-5.6" fill="none" stroke="#120d0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="36" y="11" width="82" height="5" rx="2.5" fill="rgba(244,235,220,.55)"/>
-<rect x="36" y="20" width="45" height="4" rx="2" fill="rgba(244,235,220,.22)"/>
-</g></g>
-</g>
-<g class="tkpen"><rect x="-5" y="-26" width="10" height="38" rx="3" fill="#f3b04c"/><rect x="-5" y="-26" width="10" height="8" rx="2" fill="#e1802c"/><path d="M-5 12 L0 22 L5 12z" fill="#f4ebdc"/><path d="M-1.6 18.6 L0 22 L1.6 18.6z" fill="#2a1f17"/></g>
-<path class="spark sp1" d="M172 40 l3 9 9 3 -9 3 -3 9 -3 -9 -9 -3 9 -3z" fill="#fff3d6"/>
-<path class="spark sp2" d="M22 150 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#ffd28a"/>
+      <svg class="pnill" viewBox="0 0 200 160" aria-hidden="true">
+<g transform="rotate(-6 56 60)"><g class="lift l1"><rect x="18" y="24" width="76" height="72" rx="2" fill="#f6ead2"/><rect x="28" y="42" width="52" height="5" rx="2.5" fill="rgba(42,31,23,.7)"/><rect x="28" y="53" width="36" height="5" rx="2.5" fill="rgba(42,31,23,.32)"/><rect x="28" y="74" width="34" height="11" rx="2.5" fill="none" stroke="#c2362a" stroke-width="1.8" transform="rotate(-4 45 80)"/><circle cx="80" cy="81" r="6" fill="none" stroke="rgba(42,31,23,.25)" stroke-width="1.7"/><circle cx="56" cy="26" r="5.4" fill="#d8412f"/><circle cx="54.4" cy="24.4" r="1.7" fill="rgba(255,255,255,.85)"/></g></g>
+<g transform="rotate(5 142 54)"><g class="lift l2"><rect x="104" y="18" width="76" height="72" rx="2" fill="#f6ead2"/><rect x="114" y="36" width="48" height="5" rx="2.5" fill="rgba(42,31,23,.7)"/><rect x="114" y="47" width="54" height="5" rx="2.5" fill="rgba(42,31,23,.7)"/><rect x="114" y="58" width="28" height="5" rx="2.5" fill="rgba(42,31,23,.32)"/><circle cx="166" cy="76" r="6" fill="none" stroke="rgba(42,31,23,.25)" stroke-width="1.7"/><circle cx="142" cy="20" r="5.4" fill="#d8412f"/><circle cx="140.4" cy="18.4" r="1.7" fill="rgba(255,255,255,.85)"/></g></g>
+<g transform="rotate(-2 100 118)"><g class="lift l3"><rect x="60" y="92" width="80" height="56" rx="2" fill="#f6ead2"/><rect x="70" y="108" width="44" height="5" rx="2.5" fill="rgba(42,31,23,.7)"/><rect x="70" y="119" width="30" height="5" rx="2.5" fill="rgba(42,31,23,.32)"/><circle cx="126" cy="134" r="6.5" fill="#2f8a55"/><path d="m122.8 134 2.2 2.2 4-4.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="94" r="5.4" fill="#d8412f"/><circle cx="98.4" cy="92.4" r="1.7" fill="rgba(255,255,255,.85)"/></g></g>
 </svg>
-      <h2>Task List</h2>
+      <h2>Task Board</h2>
+      <p id="dashTasks">Tvoji zadaci</p>
       <span class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </button>
     <button class="card fincard" data-go="money" style="animation-delay:.8s">
@@ -384,13 +354,27 @@
     <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
   </header>
   <div class="phead">
-    <h1><span class="w"><span>Task</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">List</span></span></h1>
+    <h1><span class="w"><span>Task</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Board</span></span></h1>
     <div class="tl-actions">
       <div class="tseg" id="tview"><span class="knob"></span><button type="button" class="on" data-tv="member">Po članu</button><button type="button" data-tv="proj">Po klijentu</button></div>
       <button class="pill solid" id="addTask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add Task</button>
     </div>
   </div>
-  <div id="tboard" class="board"></div>
+  <div id="tboard" class="tboard"></div>
+</div>
+
+<!-- TOP GOALS (goals.js) -->
+<div id="goals" class="screen wrap" hidden>
+  <header class="top">
+    <button class="pill" data-go=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Dashboard</button>
+    <button class="me" data-logout title="Promeni osobu"><img class="meImg" alt=""><span class="meName"></span></button>
+  </header>
+  <div class="phead">
+    <h1><span class="w"><span>Top</span></span> <span class="w"><span class="grad" style="animation-delay:.08s">Goals</span></span></h1>
+    <button class="pill solid" data-gnew><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Novi cilj</button>
+  </div>
+  <p class="goals-sub">Veliki ciljevi tima. Svaki korak napred je +1, a strela pokazuje koliko je ostalo do mete.</p>
+  <div id="goalsBody"></div>
 </div>
 
 <!-- MONTH FINANCES -->
@@ -687,6 +671,7 @@
 <script src="/os-app/fakture-doc.js"></script>
 <script src="/os-app/fakture.js"></script>
 <script src="/os-app/finance.js"></script>
+<script src="/os-app/goals.js"></script>
 <script src="/os-app/auth.js"></script>
 <script src="/os-app/app.js"></script>
 </body>
