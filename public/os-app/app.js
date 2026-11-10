@@ -3185,49 +3185,56 @@
     return (h >>> 0) / 4294967295;
   }
   const dayW = (n) => (n % 10 === 1 && n % 100 !== 11 ? "dan" : "dana");
+  /* šta piše na papiriću: samo ono što menja šta danas radiš. Kasni / danas = pečat,
+     sledeći rok ili sastanak = jedna tiha linija, bez roka = ništa. Klijent, ljudi i ostalo
+     su u izmeni (klik na papirić). */
   function whenOf(t) {
+    const td = todayStr();
+    const n1 = new Date(Date.parse(td) + 864e5).toISOString().slice(0, 10);
+    const day = (d) => (d === td ? "Danas" : d === n1 ? "Sutra" : fmtD(d));
     if (t.kind === "task" && t.due) {
-      const td = todayStr();
-      const ic = SV('<path d="M5 21V4h11l-1 4 4 0-1 4H5"/>', 2.2);
-      if (t.done || t.due > td)
-        return { cls: "", ic, txt: "Rok " + fmtD(t.due) };
-      if (t.due === td) return { cls: "soon", ic, txt: "Danas" };
-      const n = Math.max(
-        1,
-        Math.round((Date.parse(td) - Date.parse(t.due)) / 864e5),
-      );
-      return { cls: "late", ic, txt: `Kasni ${n} ${dayW(n)}` };
+      if (t.due < td && !t.done) {
+        const n = Math.max(
+          1,
+          Math.round((Date.parse(td) - Date.parse(t.due)) / 864e5),
+        );
+        return { cls: "late", txt: `Kasni ${n} ${dayW(n)}` };
+      }
+      if (t.due === td) return { cls: "now", txt: "Danas" };
+      return { cls: "", txt: t.due === n1 ? "Sutra" : "do " + fmtD(t.due) };
     }
     if (t.kind === "event" && t.start) {
-      const today = t.start.slice(0, 10) === todayStr();
+      const d = t.start.slice(0, 10);
       return {
-        cls: today ? "soon" : "",
-        ic: SV(
-          '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
-          2.2,
-        ),
-        txt:
-          (today ? "Danas" : fmtD(t.start)) +
-          (fmtT(t.start) ? " " + fmtT(t.start) : ""),
+        cls: d === td ? "now" : "",
+        ev: true,
+        txt: day(d) + (fmtT(t.start) ? " · " + fmtT(t.start) : ""),
       };
     }
-    return { cls: "", ic: "", txt: "Bez roka" };
+    return null;
   }
+  const CLOCK = SV(
+    '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    2.2,
+  );
   const CK = SV('<path d="m5 12 5 5L20 7"/>', 3);
   function pnHTML(t, mode, i, anim) {
-    const tc = taskClient(t);
     const w = whenOf(t);
-    const late = w.cls === "late";
+    const late = !!w && w.cls === "late";
     const fresh = S.fresh.has(t.id);
     const r = ((hashN(t.id) - 0.5) * 2.6).toFixed(2);
     const y = (hashN(t.id + "~") * 4).toFixed(1);
-    const avs = t.assignees || [];
-    const showAvs = mode === "proj" || avs.length > 1;
+    const avs = mode === "proj" ? t.assignees || [] : [];
+    const meta = !w
+      ? ""
+      : w.cls
+        ? `<span class="pn-stamp ${w.cls}">${esc(w.txt)}</span>`
+        : `<span class="pn-when">${w.ev ? CLOCK : ""}${esc(w.txt)}</span>`;
     const st = `--r:${r}deg;--y:${y}px;${fresh ? "" : anim ? `animation-delay:${adl(0.04 + i * 0.03)}s` : "animation:none"}`;
     return `<div class="pn${late ? " late" : ""}${fresh ? " new" : ""}" data-task="${esc(t.id)}" tabindex="0" style="${st}">
       <i class="pn-pin" aria-hidden="true"></i>
       <div class="pn-t">${esc(t.title)}</div>
-      <div class="pn-f">${late ? `<span class="pn-stamp">${esc(w.txt)}</span>` : `<span class="pn-when ${w.cls}">${w.ic}${esc(w.txt)}</span>`}${mode === "member" && tc.id !== "skeylo" ? `<span class="pn-cl">${logo(tc, "ri")}${esc(cName(tc))}</span>` : ""}${showAvs ? `<span class="pn-avs">${avs.map((a) => (IMG[a] ? `<img src="${IMG[a]}" alt="${esc(a)}">` : "")).join("")}</span>` : ""}<button type="button" class="pn-ck" data-tck="${esc(t.id)}" aria-label="Završi task">${CK}</button></div>
+      <div class="pn-f">${meta}${avs.length ? `<span class="pn-avs">${avs.map((a) => (IMG[a] ? `<img src="${IMG[a]}" alt="${esc(a)}">` : "")).join("")}</span>` : ""}<button type="button" class="pn-ck" data-tck="${esc(t.id)}" aria-label="Završi task">${CK}</button></div>
     </div>`;
   }
   function pnMini(t) {
@@ -3548,7 +3555,8 @@
     if (!cs.some((c) => c.id === E.client))
       cs.unshift({ id: E.client, name: taskClient(t).name });
     $("#tdet").innerHTML =
-      `<textarea class="tdtl" id="etitle" rows="1" maxlength="200" placeholder="Opiši task…">${esc(E.title)}</textarea>
+      `<i class="pn-pin" aria-hidden="true"></i><button type="button" class="pns-x" data-tdx aria-label="Zatvori">${SV('<path d="M18 6 6 18M6 6l12 12"/>', 2.4)}</button>
+    <textarea class="tdtl" id="etitle" rows="1" maxlength="200" placeholder="Opiši task…">${esc(E.title)}</textarea>
     <div class="lbl">Ko radi</div>
     <div class="tdwho">${["luka", "mihajlo", "nina", "filip"]
       .map((uid) => {
@@ -3572,7 +3580,7 @@
     <div id="ewhen">${eWhenHTML()}</div>
     ${by ? `<div class="r">Dodao/la: ${esc(by.name)}${t.createdAt ? " · " + fmtDay.format(new Date(t.createdAt)) : ""}</div>` : ""}
     <button class="pill solid" id="esave">Sačuvaj izmene</button>
-    <div class="row2"><button class="pill danger" data-tdel="${esc(t.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši</button><button class="pill" data-tdone="${esc(t.id)}">${t.done ? "Vrati u otvorene" : "Završi task"}</button></div>`;
+    <div class="row2"><button class="pill danger" data-tdel="${esc(t.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši</button><button class="pill" data-tdone="${esc(t.id)}">${t.done ? "Vrati u otvorene" : SV('<path d="m5 12 5 5L20 7"/>', 2.6) + "Završi task"}</button></div>`;
     updESave();
     const s = $("#tscrim");
     s.hidden = false;
@@ -3667,7 +3675,7 @@
     if (e.key === "Escape" && E) closeTaskDetail();
   });
   $("#tscrim").addEventListener("click", async (e) => {
-    if (e.target.id === "tscrim") {
+    if (e.target.id === "tscrim" || e.target.closest("[data-tdx]")) {
       closeTaskDetail();
       return;
     }
