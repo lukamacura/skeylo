@@ -1342,7 +1342,8 @@
       ? "Baza je puna. Obriši stare stavke."
       : "Nemaš dozvolu za ovu izmenu.";
   }
-  function dragScroll(b, ignore) {
+  /* on: dodatni uslov (tabla taskova prevlači samo u starom izgledu sa kolonama) */
+  function dragScroll(b, ignore, on) {
     let down = false,
       moved = false,
       x0 = 0,
@@ -1351,6 +1352,7 @@
       if (
         e.pointerType !== "mouse" ||
         e.button !== 0 ||
+        (on && !on()) ||
         (ignore && e.target.closest(ignore))
       )
         return;
@@ -3059,6 +3061,27 @@
   try {
     tView = localStorage.getItem("skeylo-tview") || "member";
   } catch (e) {}
+  /* izgled table: "paper" = papirići zakačeni čiodom, "cards" = stare kolone sa karticama.
+     Luki su papirići podrazumevani, ostalima stari izgled; izbor se pamti po osobi i
+     pregledaču, pa isti računar može da ima dva izgleda za dve osobe. */
+  let tStyle = "";
+  const tsKey = () => "skeylo-tstyle-" + (me ? me.id : "");
+  function tStyleGet() {
+    if (!tStyle && me) {
+      let v = "";
+      try {
+        v = localStorage.getItem(tsKey()) || "";
+      } catch (e) {}
+      tStyle =
+        v === "paper" || v === "cards"
+          ? v
+          : me.id === "luka"
+            ? "paper"
+            : "cards";
+    }
+    return tStyle || "paper";
+  }
+  const paper = () => tStyleGet() === "paper";
   const todayStr = () => {
     const d = new Date();
     return (
@@ -3240,6 +3263,57 @@
   function pnMini(t) {
     return `<div class="pn mini" data-task="${esc(t.id)}" tabindex="0"><div class="pn-t">${esc(t.title)}</div><button type="button" class="pn-ck" data-tck="${esc(t.id)}" aria-label="Vrati task">${CK}</button></div>`;
   }
+  /* ---- stari izgled table (toggle "Kartice"): kolone sa karticama ---- */
+  function dateChip(t) {
+    if (t.kind === "task" && t.due) {
+      const td = todayStr();
+      const cls = t.done
+        ? ""
+        : t.due < td
+          ? "late"
+          : t.due === td
+            ? "soon"
+            : "";
+      const lbl =
+        t.due < td
+          ? "Kasni · " + fmtD(t.due)
+          : t.due === td
+            ? "Danas"
+            : "Rok " + fmtD(t.due);
+      return `<span class="tchip ${cls}">${SV('<path d="M5 21V4h11l-1 4 4 0-1 4H5"/>')}${lbl}</span>`;
+    }
+    if (t.kind === "event" && t.start) {
+      const sameDay = (t.end || "").slice(0, 10) === t.start.slice(0, 10);
+      const lbl =
+        fmtD(t.start) +
+        " " +
+        fmtT(t.start) +
+        (t.end
+          ? " – " + (sameDay ? fmtT(t.end) : fmtD(t.end) + " " + fmtT(t.end))
+          : "");
+      return `<span class="tchip ev">${SV('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>')}${lbl}</span>`;
+    }
+    return `<span class="tchip nh">${SV('<path d="M12 21c-4-3-7-6-7-10a7 7 0 0 1 14 0c0 4-3 7-7 10z"/>')}No hurry</span>`;
+  }
+  function stripe(ids) {
+    const cs = (ids || [])
+      .map((i) => (TBLACK[i] ? "#000" : TCOL[i]))
+      .filter(Boolean);
+    if (cs.length < 2) return cs[0] || "var(--orange)";
+    return `linear-gradient(180deg,${cs.map((c, i) => `${c} ${(i / cs.length) * 100}% ${((i + 1) / cs.length) * 100}%`).join(",")})`;
+  }
+  function tcardHTML(t, colColor, mode, delay) {
+    const tc = taskClient(t);
+    const others = mode === "member" ? t.assignees || [] : t.assignees || [];
+    const showAvs = mode === "proj" || others.length > 1;
+    const fresh = S.fresh.has(t.id);
+    return `<div class="tcard${t.done ? " done" : ""}${fresh ? " new" : ""}" data-task="${esc(t.id)}" style="--c:${colColor};--stripe:${stripe(t.assignees)};${fresh ? "" : delay != null ? `animation-delay:${adl(delay)}s` : "animation:none"}">
+    <button class="tck" data-tck="${esc(t.id)}" aria-label="${t.done ? "Vrati task" : "Završi task"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></button>
+    <div class="tbody"><div class="ttl">${esc(t.title)}</div>
+      <div class="tmeta">${mode === "member" ? `<span class="tchip proj" style="--c:${esc(tc.color || "#888")}">${logo(tc, "ri")}${esc(cName(tc))}</span>` : ""}${dateChip(t)}${showAvs ? `<span class="avs">${others.map((i) => (IMG[i] ? `<img src="${IMG[i]}" alt="${esc(i)}">` : "")).join("")}</span>` : ""}</div>
+    </div>
+  </div>`;
+  }
   /* prazan papirić: padK = red u kome se piše, padTxt = tekst (preživi osvežavanje table) */
   let padK = null,
     padTxt = "";
@@ -3264,12 +3338,19 @@
     if ($("#tasks").hidden || !me) return;
     const root = $("#tboard");
     setTseg();
+    const pap = paper();
+    root.classList.toggle("tboard", pap);
+    root.classList.toggle("board", !pap);
     if (!S.ready) {
       root.innerHTML = '<div class="state">Učitavam taskove…</div>';
       return;
     }
     const anim = firstTasks;
     firstTasks = false;
+    if (pap) renderPaper(root, anim);
+    else renderCards(root, anim);
+  }
+  function renderPaper(root, anim) {
     const openStates = {};
     root
       .querySelectorAll(".pdone")
@@ -3326,6 +3407,57 @@
       }
     }
   }
+  function renderCards(root, anim) {
+    const openStates = {};
+    root
+      .querySelectorAll(".tdone")
+      .forEach((d) => (openStates[d.dataset.k] = d.open));
+    let cols;
+    if (tView === "member") {
+      const order = [
+        me.id,
+        ...MEMBERS.map((m) => m.id).filter((i) => i !== me.id),
+      ];
+      cols = order.map((id) => {
+        const u = TEAM.find((t) => t.id === id);
+        return {
+          k: id,
+          color: TCOL[id],
+          head: `<img class="tav" src="${IMG[id]}" alt=""><h2>${esc(u.name)}${id === me.id ? ' <span style="color:var(--muted);font-weight:500;font-size:16px">(ti)</span>' : ""}</h2>`,
+          list: S.tasks.filter((t) => (t.assignees || []).includes(id)),
+          pre: { who: [id] },
+        };
+      });
+    } else {
+      cols = [...S.clients]
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map((c) => ({
+          k: c.id,
+          color: c.color || "#e1802c",
+          head: `${logo(c, "lg-ic")}<h2>${esc(cName(c))}</h2>`,
+          list: S.tasks.filter((t) => taskClient(t).id === c.id),
+          pre: { client: c.id },
+        }));
+    }
+    const sl = root.scrollLeft;
+    root.innerHTML = cols
+      .map((col, ci) => {
+        const open = col.list
+          .filter((t) => !t.done)
+          .sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : 1));
+        const done = col.list
+          .filter((t) => t.done)
+          .sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+        const d = (i) => (anim ? 0.18 + ci * 0.07 + i * 0.05 : null);
+        return `<section class="col tcol${TBLACK[col.k] && tView === "member" ? " blk" : ""}" data-k="${esc(col.k)}" style="--c:${col.color};${anim ? `animation-delay:${adl(0.05 + ci * 0.07)}s` : "animation:none"}">
+      <div class="col-h">${col.head}<span class="n">${open.length}</span><button class="plus" data-tadd='${esc(JSON.stringify(col.pre))}' aria-label="Add Task">${IC.plus}</button></div>
+      <div class="trows">${open.length ? open.map((t, i) => tcardHTML(t, col.color, tView, d(i))).join("") : '<div class="tnone">Nema otvorenih taskova</div>'}</div>
+      ${done.length ? `<details class="tdone" data-k="${esc(col.k)}"${openStates[col.k] ? " open" : ""}><summary>${SV('<path d="m9 18 6-6-6-6"/>', 2.4)}Završeno · ${done.length}</summary><div class="trows">${done.map((t) => tcardHTML(t, col.color, tView, null)).join("")}</div></details>` : ""}
+    </section>`;
+      })
+      .join("");
+    root.scrollLeft = sl;
+  }
   async function quickAdd() {
     const title = padTxt.trim().replace(/\s+/g, " ");
     const k = padK;
@@ -3372,6 +3504,12 @@
     seg
       .querySelectorAll("button")
       .forEach((b) => b.classList.toggle("on", b.dataset.tv === tView));
+    const sg = $("#tstyle"),
+      st = tStyleGet();
+    sg.classList.toggle("pos2", st === "cards");
+    sg.querySelectorAll("button").forEach((b) =>
+      b.classList.toggle("on", b.dataset.ts === st),
+    );
   }
   $("#tview").addEventListener("click", (e) => {
     const b = e.target.closest("[data-tv]");
@@ -3385,12 +3523,34 @@
     firstTasks = true;
     renderTASKS();
   });
+  $("#tstyle").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ts]");
+    if (!b || b.dataset.ts === tStyleGet()) return;
+    tStyle = b.dataset.ts;
+    try {
+      localStorage.setItem(tsKey(), tStyle);
+    } catch (err) {}
+    padK = null;
+    padTxt = "";
+    firstTasks = true;
+    renderTASKS();
+  });
   $("#addTask").onclick = () => openTaskWizard({});
+  dragScroll($("#tboard"), ".tcard", () => !paper());
   $("#tboard").addEventListener("click", (e) => {
     const ck = e.target.closest("[data-tck]");
     if (ck) {
       e.stopPropagation();
       toggleTask(ck.dataset.tck, ck);
+      return;
+    }
+    const a = e.target.closest("[data-tadd]");
+    if (a) {
+      try {
+        openTaskWizard(JSON.parse(a.dataset.tadd));
+      } catch (err) {
+        openTaskWizard({});
+      }
       return;
     }
     const pad = e.target.closest("[data-pad]");
@@ -3450,10 +3610,12 @@
     const t = S.tasks.find((x) => x.id === id);
     if (!t) return;
     const done = !t.done;
-    const card = btn && btn.closest(".pn:not(.mini)");
+    const card =
+      btn && (btn.closest(".pn:not(.mini)") || btn.closest(".tcard"));
+    const pn = !!card && card.classList.contains("pn");
     if (card && done) {
-      card.classList.add("checking");
-      miniBurst(btn, "#2f8a55");
+      card.classList.add(pn ? "checking" : "done");
+      miniBurst(btn, pn ? "#2f8a55" : card.style.getPropertyValue("--c"));
       tBusy = true;
       setTimeout(() => {
         card.classList.add("leaving");

@@ -128,6 +128,10 @@ window.SKNotes = function (X) {
       '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 15V9l2.5 3L11 9v6M17 9v6M14.5 12.5 17 15l2.5-2.5"/>',
     ),
     dl: SV('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+    pdf: SV(
+      '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 17v-4h1.4a1.3 1.3 0 0 1 0 2.6H9M14 17v-4h1.6a1.2 1.2 0 0 1 1.2 1.2v1.6a1.2 1.2 0 0 1-1.2 1.2z"/>',
+      1.9,
+    ),
     open: SV('<path d="M7 17 17 7M9 7h8v8"/>', 2.2),
     kb: SV('<path d="m6 9 6 6 6-6"/>', 2.4),
     dice: SV(
@@ -2144,7 +2148,8 @@ window.SKNotes = function (X) {
     dirtyTitle = false,
     pendingRemote = false,
     composing = false,
-    kidsT = 0;
+    kidsT = 0,
+    pgRefs = new Set(); // ref-ovi blokova podstranica u editoru, od zadnjeg crtanja
   const DOCS = new Map(), // "col/id" -> D
     queued = new Map(); // D -> posao koji još nije poslat
   let running = null,
@@ -2177,7 +2182,10 @@ window.SKNotes = function (X) {
     saveT = setTimeout(flush, 700);
     solo();
     clearTimeout(kidsT);
-    kidsT = setTimeout(paintKids, 300);
+    kidsT = setTimeout(() => {
+      syncSubs();
+      paintKids();
+    }, 300);
   }
   function titleChanged() {
     dirtyTitle = true;
@@ -2350,6 +2358,7 @@ window.SKNotes = function (X) {
         saveT = setTimeout(flush, 700);
       }
     }
+    pgRefs = refsNow();
     paintKids();
   }
 
@@ -2667,6 +2676,7 @@ window.SKNotes = function (X) {
       clearTimeout(saveT);
       renderBlocks(domBase);
       rendered = cur;
+      pgRefs = refsNow();
       return;
     }
     $("#gpMain").hidden = !ok;
@@ -2689,6 +2699,7 @@ window.SKNotes = function (X) {
     setSave(busyD(D));
     renderBlocks(domBase);
     rendered = cur;
+    pgRefs = refsNow();
     paintKids();
     here();
     [$("#gpHead"), root].forEach((el) => {
@@ -2732,6 +2743,72 @@ window.SKNotes = function (X) {
       hereMe = slug;
       paintHere();
     });
+  /* ---- podstranice i njihovi blokovi ----
+     Blok podstranice u tekstu je mesto te podstranice: kad se blok obriše, sa njim ide
+     i stranica (sa svojim podstranicama), uz „Vrati“ u toastu. Ctrl+Z vraća blok, pa se
+     tada i stranica vrati sama. Blok koji je samo veza ka stranici koja nije podstranica
+     ove stranice briše se kao običan tekst. */
+  const refsNow = () =>
+    new Set(
+      blocks()
+        .filter((b) => b.dataset.t === "page")
+        .map((b) => b.dataset.ref)
+        .filter(Boolean),
+    );
+  const dropped = new Map(); // ref -> dokumenti obrisani zajedno sa blokom
+  function subTree(id) {
+    const ids = [id];
+    for (let k = 0; k < ids.length; k++)
+      kidsOf(ids[k]).forEach((n) => ids.push(n.id));
+    return ids
+      .map(noteOf)
+      .filter(Boolean)
+      .map(({ id: i, ...data }) => ({
+        id: i,
+        data: JSON.parse(JSON.stringify(data)),
+      }));
+  }
+  async function dropSub(id) {
+    const p = noteOf(id);
+    if (!p) return;
+    const docs = subTree(id);
+    dropped.set(id, docs);
+    try {
+      for (const d of docs) await api.del("notes", d.id);
+    } catch (e) {
+      dropped.delete(id);
+      toast(errMsg(e));
+      return;
+    }
+    const more = docs.length - 1;
+    toast(
+      `Obrisano: ${p.title || "Bez naslova"}${more ? ` (+${more} ${plural(more, "podstranica", "podstranice", "podstranica")})` : ""}`,
+      () => undrop(id),
+    );
+  }
+  async function undrop(id) {
+    const docs = dropped.get(id);
+    if (!docs) return;
+    dropped.delete(id);
+    try {
+      for (const d of docs) await api.set("notes", d.id, d.data);
+      X.refresh();
+    } catch (e) {
+      toast(errMsg(e));
+    }
+  }
+  function syncSubs() {
+    if (!cur || isScript() || rendered !== cur) return;
+    const now = refsNow();
+    for (const ref of pgRefs) {
+      if (now.has(ref)) continue;
+      const n = noteOf(ref);
+      if (n && n.parentId === cur) dropSub(ref);
+    }
+    for (const ref of now)
+      if (!pgRefs.has(ref) && dropped.has(ref)) undrop(ref);
+    pgRefs = now;
+  }
   function paintKids() {
     const box = $("#gpKids");
     if (!cur || isScript()) return;
@@ -2881,10 +2958,7 @@ window.SKNotes = function (X) {
     }
   }
   function download() {
-    const name =
-      fold(titleEl.textContent.trim() || "stranica")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") || "stranica";
+    const name = slugOf(titleEl.textContent.trim());
     const a = document.createElement("a");
     a.href = URL.createObjectURL(
       new Blob([pageMd()], { type: "text/markdown;charset=utf-8" }),
@@ -2896,6 +2970,60 @@ window.SKNotes = function (X) {
       URL.revokeObjectURL(a.href);
       a.remove();
     }, 0);
+  }
+  const slugOf = (t) =>
+    fold(t || "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "stranica";
+  const ymd = (ts) => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const fmtLong = new Intl.DateTimeFormat("sr-Latn-RS", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  /* Preuzmi .pdf: ista stranica kroz print dijalog ("Sačuvaj kao PDF"). Tako u PDF
+     odu i slike, crteži, tabele i emoji, bez drugog renderera. Naslov dokumenta je
+     predloženo ime fajla (naslov + dan snimanja), a dan snimanja se vidi i u PDF-u. */
+  let pdfEnd = null;
+  function downloadPdf() {
+    const p = docOf(cur);
+    if (!p || isScript() || pdfEnd) return;
+    /* nesnimljene izmene idu u bazu sad, pa je dan snimanja danas */
+    const fresh = dirtyMd || dirtyTitle || busyD(D);
+    flush();
+    const ts = fresh ? Date.now() : p.updatedAt || p.createdAt || Date.now();
+    const u = who(p.updatedBy || p.createdBy);
+    const stamp = document.createElement("div");
+    stamp.className = "gp-pstamp";
+    stamp.textContent =
+      "Snimljeno " + fmtLong.format(new Date(ts)) + (u ? " · " + u.name : "");
+    $("#gpHead").appendChild(stamp);
+    const docTitle = document.title;
+    document.title =
+      slugOf(titleEl.textContent.trim() || "stranica") + "-" + ymd(ts);
+    document.documentElement.classList.add("gp-print");
+    pdfEnd = () => {
+      if (!pdfEnd) return;
+      pdfEnd = null;
+      document.documentElement.classList.remove("gp-print");
+      document.title = docTitle;
+      stamp.remove();
+    };
+    const mine = pdfEnd;
+    const end = () => pdfEnd === mine && mine();
+    addEventListener("afterprint", end, { once: true });
+    /* Safari ne javlja afterprint: povratak fokusa na stranicu je znak da je dijalog zatvoren */
+    addEventListener("focus", () => setTimeout(end, 300), { once: true });
+    setTimeout(() => {
+      try {
+        print();
+      } catch (e) {
+        end();
+      }
+    }, 60);
   }
 
   /* ---------------- block operations ---------------- */
@@ -7282,7 +7410,7 @@ window.SKNotes = function (X) {
         p && !p.parentId && (p.privateTo || (me() && p.createdBy === me().id)),
       F = p && folderOf(fidOf(p), spaceOf(p));
     /* folder biraju samo glavne stranice vidljive timu */
-    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${p && !p.parentId && !p.privateTo ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
+    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${p && !p.parentId && !p.privateTo ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><button type="button" data-pm="pdf">${I.pdf}Preuzmi .pdf</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
     document.body.appendChild(M);
     const W = Math.min(260, innerWidth - 16);
     M.style.width = W + "px";
@@ -7314,6 +7442,7 @@ window.SKNotes = function (X) {
     } else if (a === "copy")
       copyText(pageMd(), "Stranica kopirana kao Markdown");
     else if (a === "dl") download();
+    else if (a === "pdf") downloadPdf();
     else if (a === "del") delPage(cur);
     else if (a === "priv" || a === "share") setPrivate(cur, a === "priv");
   });

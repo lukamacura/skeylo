@@ -129,12 +129,8 @@ window.SKGoals = function (X) {
       ...achieved().filter((g) => g.doneAt && now - g.doneAt < WEEK),
     ].slice(0, 3);
     const anim = dashAnim && !$("#dash").hidden;
-    const pad =
-      shown.length < 3
-        ? `<button type="button" class="gpad" data-gnew>${I.plus}<span>${shown.length ? "Novi cilj" : "Postavi prvi cilj"}${shown.length ? "" : "<small><br>npr. 3 high ticket klijenta do kraja godine</small>"}</span></button>`
-        : "";
     const more = act.length > 3 ? ` · još ${act.length - 3}` : "";
-    const html = `<div class="gd-h"><h2 class="gd-t">${I.target}Top Goals</h2><button type="button" class="gd-all" data-go="goals">${shown.length ? "Svi ciljevi" + more : "Otvori"}${I.go}</button></div><div class="gd-row">${shown.map((g, i) => dashNote(g, i, anim)).join("")}${pad}</div>`;
+    const html = `<div class="gd-h"><h2 class="gd-t">${I.target}Top Goals</h2><button type="button" class="gd-all" data-go="goals">${shown.length ? "Svi ciljevi" + more : "Otvori"}${I.go}</button></div>${shown.length ? `<div class="gd-row">${shown.map((g, i) => dashNote(g, i, anim)).join("")}</div>` : ""}`;
     el.hidden = false;
     /* isti sadržaj → ne diraj DOM (hover i animacije ostaju) */
     const key = html.replace(
@@ -218,14 +214,18 @@ window.SKGoals = function (X) {
       .map((g, i) => (editId === g.id ? formHTML(g) : cardHTML(g, i, anim)))
       .join("");
     if (editId === "new") cards = formHTML(null) + cards;
-    else
-      cards += `<button type="button" class="gpad" data-gnew>${I.plus}<span>${act.length ? "Novi cilj" : "Postavi prvi cilj"}<small><br>${act.length ? "Prva tri su na dashboardu" : "npr. 3 high ticket klijenta do kraja godine"}</small></span></button>`;
     const focused = document.activeElement;
     const fName =
       focused && focused.closest && focused.closest(".gform")
         ? focused.name
         : null;
-    root.innerHTML = `<div class="ggrid">${cards}</div>${ach.length ? `<h3 class="gach-h">${I.trophy}Ostvareno · ${ach.length}</h3><div class="ggrid ach">${ach.map(achHTML).join("")}</div>` : ""}`;
+    root.innerHTML =
+      (cards
+        ? `<div class="ggrid">${cards}</div>`
+        : `<div class="state">Još nema ciljeva. Zakači prvi preko „Novi cilj“.</div>`) +
+      (ach.length
+        ? `<h3 class="gach-h">${I.trophy}Ostvareno · ${ach.length}</h3><div class="ggrid ach">${ach.map(achHTML).join("")}</div>`
+        : "");
     const f = root.querySelector(".gform");
     if (f) {
       const inp = f.querySelector(`[name="${fName || "t"}"]`);

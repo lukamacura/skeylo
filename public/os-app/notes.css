@@ -3053,3 +3053,99 @@ body.nb-dragging * {
   z-index: 1;
   min-width: 0;
 }
+
+/* ================= Preuzmi .pdf (print → „Sačuvaj kao PDF“) =================
+   Štampa se samo otvorena General stranica: bez app chrome-a, ručica blokova i
+   dugmića za izmenu, na beloj podlozi. Paleta se za štampu obrne preko istih
+   promenljivih, pa blokovi ne moraju da se crtaju drugi put. Datum snimanja je
+   .gp-pstamp (vidi se samo u PDF-u). */
+.gp-pstamp {
+  display: none;
+}
+@media print {
+  html.gp-print {
+    --ink: #fff;
+    --surface: #fff;
+    --surface-2: #f5f2ec;
+    --line: rgba(20, 16, 12, 0.16);
+    --cream: #15120e;
+    --muted: #5d564d;
+    --grey: #6b645c;
+    --glow: transparent;
+    --on-accent: #fff;
+    color-scheme: light;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  html.gp-print,
+  html.gp-print body {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+  html.gp-print body > *:not(#gp) {
+    display: none !important;
+  }
+  html.gp-print #gp {
+    display: block !important;
+  }
+  html.gp-print #gp.wrap {
+    max-width: none;
+    padding: 0;
+  }
+  html.gp-print .doc.gp-doc {
+    max-width: none;
+  }
+  html.gp-print #gp > .top,
+  html.gp-print #gpCrumbs,
+  html.gp-print #gpAddIcon,
+  html.gp-print #gpHere,
+  html.gp-print #gpMeta,
+  html.gp-print #gpFill,
+  html.gp-print .nb-g,
+  html.gp-print .nb-cbar,
+  html.gp-print .nb-rz,
+  html.gp-print .nb-de,
+  html.gp-print .nb-dx,
+  html.gp-print .nb-up,
+  html.gp-print .nb-ex,
+  html.gp-print .tb-rh,
+  html.gp-print .tb-cb,
+  html.gp-print .tb-ti,
+  html.gp-print .tb-foot,
+  html.gp-print .tb-fx.add {
+    display: none !important;
+  }
+  html.gp-print .gp-pstamp {
+    display: block;
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  /* bez animacija ulaza i bez senki koje u PDF-u ispadnu kao sive mrlje */
+  html.gp-print #gp *,
+  html.gp-print #gp *::before,
+  html.gp-print #gp *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+  }
+  /* blok se ne lomi na pola strane; naslov ostaje uz svoj tekst */
+  html.gp-print .nb {
+    break-inside: avoid;
+  }
+  html.gp-print .nb[data-t="h1"],
+  html.gp-print .nb[data-t="h2"],
+  html.gp-print .nb[data-t="h3"] {
+    break-after: avoid;
+  }
+  html.gp-print .nb-iw img,
+  html.gp-print .nb-img img,
+  html.gp-print .nb-draw img {
+    max-width: 100%;
+    height: auto;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

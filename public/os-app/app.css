@@ -3454,7 +3454,8 @@ form {
   background: var(--grad);
   transition: transform 0.45s var(--spring);
 }
-.tseg.proj .knob {
+.tseg.proj .knob,
+.tseg.pos2 .knob {
   transform: translateX(100%);
 }
 .tl-actions {
