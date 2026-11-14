@@ -3001,11 +3001,11 @@ window.SKNotes = function (X) {
     const docTitle = document.title;
     document.title =
       slugOf(titleEl.textContent.trim() || "stranica") + "-" + ymd(ts);
-    document.documentElement.classList.add("gp-print");
+    document.documentElement.classList.add("os-print", "gp-print");
     pdfEnd = () => {
       if (!pdfEnd) return;
       pdfEnd = null;
-      document.documentElement.classList.remove("gp-print");
+      document.documentElement.classList.remove("os-print", "gp-print");
       document.title = docTitle;
       stamp.remove();
     };

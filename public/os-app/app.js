@@ -4505,8 +4505,9 @@
     ${s.angle ? `<div class="meta">${IC.angle}<span>${esc(s.angle)}</span></div>` : ""}
     ${s.format ? `<span class="fpill" style="--f:${fmtColor(s.format)}">${esc(s.format)}</span>` : ""}
     ${
+      /* samo slike: imena su prelazila preko njih, pa su u title (hover) i aria-label */
       models.length
-        ? `<div class="mavs"><span class="st2">${models
+        ? `<div class="mavs" title="${esc(models.map((r) => r.name).join(", "))}" aria-label="${esc(models.map((r) => r.name).join(", "))}"><span class="st2">${models
             .slice(0, 4)
             .map((r) =>
               r.photo
@@ -4515,7 +4516,7 @@
             )
             .join(
               "",
-            )}</span><span>${models.map((r) => esc(r.name)).join(", ")}</span></div>`
+            )}${models.length > 4 ? `<i>+${models.length - 4}</i>` : ""}</span></div>`
         : ""
     }
   </div>`;
@@ -5040,11 +5041,13 @@
         : '<div class="state">Učitavam…</div>';
       editor.hidden = edRoot.hidden = true;
       $("#delScript").hidden = true;
+      $("#edPdf").hidden = true;
       return;
     }
     editor.hidden = !isPage;
     edRoot.hidden = isPage;
     $("#delScript").hidden = false;
+    $("#edPdf").hidden = isPage;
     applyTheme(s.clientId);
     const restart = edId !== id;
     edId = id;
@@ -5080,6 +5083,84 @@
     const s = curScript();
     nav("cm-" + (s ? s.monthId : edReturn || ""));
   };
+
+  /* Preuzmi .pdf: isto kao General stranica (notes.js downloadPdf) — ekran skripte ide
+     kroz print dijalog ("Sačuvaj kao PDF"), bez app chrome-a, na beloj podlozi.
+     U PDF ide naslov, popunjena polja (bez faze izrade) i tekst; ime fajla je naslov + datum. */
+  let pdfEnd = null;
+  const pdfDate = new Intl.DateTimeFormat("sr-Latn-RS", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  function scriptPdf() {
+    const s = curScript();
+    if (!s || pdfEnd) return;
+    flushSave();
+    if (NT) NT.flush();
+    const it = S.items.find((i) => i.id === s.monthId);
+    const c = S.clients.find((x) => x.id === s.clientId);
+    const now = new Date();
+    const has = {
+      model: (s.models || []).length,
+      angle: s.angle,
+      format: s.format,
+      loc: (s.location || "").trim(),
+      props: (s.props || "").trim(),
+    };
+    $$("#props .prop[data-k]").forEach((p) =>
+      p.classList.toggle("pe", !has[p.dataset.k]),
+    );
+    /* polja za unos u PDF-u zadrže visinu i prelom sa ekrana, pa vrednost ide kao običan tekst */
+    const plain = ["#locIn", "#propsIn"]
+      .map((q) => $(q))
+      .filter(Boolean)
+      .map((f) => {
+        const d = document.createElement("div");
+        d.className = "pv-t";
+        d.textContent = f.value;
+        f.after(d);
+        return d;
+      });
+    const stamp = document.createElement("div");
+    stamp.className = "gp-pstamp";
+    stamp.textContent = [c && c.name, it && it.title, pdfDate.format(now)]
+      .filter(Boolean)
+      .join(" · ");
+    edTitle.after(stamp);
+    const docTitle = document.title;
+    const slug =
+      String(edTitle.textContent.trim() || "skripta")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/đ/g, "dj")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "skripta";
+    document.title = `${slug}-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    document.documentElement.classList.add("os-print", "ed-print");
+    pdfEnd = () => {
+      if (!pdfEnd) return;
+      pdfEnd = null;
+      document.documentElement.classList.remove("os-print", "ed-print");
+      document.title = docTitle;
+      stamp.remove();
+      plain.forEach((d) => d.remove());
+    };
+    const mine = pdfEnd;
+    const end = () => pdfEnd === mine && mine();
+    addEventListener("afterprint", end, { once: true });
+    /* Safari ne javlja afterprint: povratak fokusa na stranicu je znak da je dijalog zatvoren */
+    addEventListener("focus", () => setTimeout(end, 300), { once: true });
+    setTimeout(() => {
+      try {
+        print();
+      } catch (e) {
+        end();
+      }
+    }, 60);
+  }
+  $("#edPdf").onclick = scriptPdf;
 
   function syncEditorFromStore() {
     const s = edDoc();
@@ -5236,8 +5317,8 @@
     lastPropsSig = sig;
     const models = s.models || [];
     $("#props").innerHTML = `
-    <div class="prop"><div class="k">${IC.status}Faza izrade</div><div class="v"><button class="vbtn" data-pop="status"><span class="stag" style="--c:${st.c}">${st.name}</span></button></div></div>
-    <div class="prop"><div class="k">${IC.model}Model</div><div class="v">${models
+    <div class="prop" data-k="status"><div class="k">${IC.status}Faza izrade</div><div class="v"><button class="vbtn" data-pop="status"><span class="stag" style="--c:${st.c}">${st.name}</span></button></div></div>
+    <div class="prop" data-k="model"><div class="k">${IC.model}Model</div><div class="v">${models
       .map((v) => {
         const r = modelRef(v);
         return `<button class="mchip2" data-open-pick title="Izmeni modele">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : `<span class="i">${esc(initials(r.name))}</span>`}${esc(r.name)}</button>`;
@@ -5245,10 +5326,10 @@
       .join(
         "",
       )}<button class="mbtn" data-open-pick>${models.length ? SV('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>') : IC.plus}${models.length ? "Izmeni" : "Izaberi modele"}</button></div></div>
-    <div class="prop"><div class="k">${IC.angle}Angle</div><div class="v"><button class="vbtn" data-pop="angle">${s.angle ? `<span class="achip-v">${IC.angle}${esc(s.angle)}</span>` : '<span class="empty-v">Izaberi ugao</span>'}</button></div></div>
-    <div class="prop"><div class="k">${IC.format}Format</div><div class="v"><button class="vbtn" data-pop="format">${s.format ? `<span class="fpill" style="--f:${fmtColor(s.format)}">${esc(s.format)}</span>` : '<span class="empty-v">Prazno</span>'}</button></div></div>
-    <div class="prop"><div class="k">${IC.pin}Lokacija</div><div class="v"><input class="txt" id="locIn" value="${esc(s.location || "")}" placeholder="Prazno" autocomplete="off"></div></div>
-    <div class="prop"><div class="k">${IC.box}Rekviziti</div><div class="v"><textarea id="propsIn" rows="1" placeholder="Prazno">${esc(s.props || "")}</textarea></div></div>`;
+    <div class="prop" data-k="angle"><div class="k">${IC.angle}Angle</div><div class="v"><button class="vbtn" data-pop="angle">${s.angle ? `<span class="achip-v">${IC.angle}${esc(s.angle)}</span>` : '<span class="empty-v">Izaberi ugao</span>'}</button></div></div>
+    <div class="prop" data-k="format"><div class="k">${IC.format}Format</div><div class="v"><button class="vbtn" data-pop="format">${s.format ? `<span class="fpill" style="--f:${fmtColor(s.format)}">${esc(s.format)}</span>` : '<span class="empty-v">Prazno</span>'}</button></div></div>
+    <div class="prop" data-k="loc"><div class="k">${IC.pin}Lokacija</div><div class="v"><input class="txt" id="locIn" value="${esc(s.location || "")}" placeholder="Prazno" autocomplete="off"></div></div>
+    <div class="prop" data-k="props"><div class="k">${IC.box}Rekviziti</div><div class="v"><textarea id="propsIn" rows="1" placeholder="Prazno">${esc(s.props || "")}</textarea></div></div>`;
     autoGrow($("#propsIn"));
   }
   function autoGrow(t) {

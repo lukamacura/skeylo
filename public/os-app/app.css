@@ -4743,6 +4743,7 @@ form {
 }
 .scard .mavs .st2 {
   display: flex;
+  flex: none;
 }
 .scard .mavs img,
 .scard .mavs i {
@@ -4765,10 +4766,6 @@ form {
 }
 .scard .mavs .st2 > *:first-child {
   margin-left: 0;
-}
-.scard .mavs span {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 /* ---------- client platform ---------- */
@@ -10458,6 +10455,19 @@ body.lgrab * {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+/* skripta: PDF + brisanje na telefonu; povratak se skraćuje, a „Sačuvano“ ostaje tačka */
+#ed > .top #edBack {
+  min-width: 0;
+}
+#edBackLbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 460px) {
+  #saveState > span {
+    display: none;
+  }
 }
 .save {
   font-size: 15px;
