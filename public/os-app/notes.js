@@ -1592,7 +1592,7 @@ window.SKNotes = function (X) {
     if (!a) return;
     const n = noteOf(el.dataset.ref);
     a.classList.toggle("gone", !n);
-    a.innerHTML = `<span class="pi">${n && n.icon ? emo(n.icon) : I.doc}</span><span class="pn">${esc(n ? n.title || "Bez naslova" : el.dataset.name || "Obrisana stranica")}</span>${n ? `<span class="pa">${I.open}</span>` : ""}`;
+    a.innerHTML = `<span class="pi">${n && n.icon ? emo(n.icon) : I.doc}</span><span class="nb-pt">${esc(n ? n.title || "Bez naslova" : el.dataset.name || "Obrisana stranica")}</span>${n ? `<span class="pa">${I.open}</span>` : ""}`;
   }
   function paintRel(a) {
     const h = relIn(a.dataset.ref, a.dataset.name);
@@ -2380,19 +2380,27 @@ window.SKNotes = function (X) {
     return X.fmtEdit.format(new Date(ts));
   }
   /* ---------------- folderi ----------------
-     noteFolders/{id} = {name, color, order, spaceId, createdAt, createdBy}; glavna stranica
-     ima folderId. Podstranica, privatna stranica i stranica čiji folder više ne postoji su
-     van foldera (brisanje foldera ne dira stranice, pa ih „Poništi“ vraća baš u taj folder). */
-  const foldersOf = (sp) =>
+     noteFolders/{id} = {name, color, order, spaceId, privateTo, createdAt, createdBy}; glavna
+     stranica ima folderId. „Samo za tebe“ je isti General: privatni folderi, stranice i fajlovi
+     imaju privateTo (RLS u bazi ih ne šalje drugima). Stranica ili fajl je u folderu samo ako
+     je iste privatnosti kao folder. Podstranica i stranica čiji folder više ne postoji su van
+     foldera (brisanje foldera ne dira stranice, pa ih „Poništi“ vraća baš u taj folder). */
+  const samePv = (a, b) => !(a && a.privateTo) === !(b && b.privateTo);
+  /* pv: undefined = svi folderi, true = samo moji privatni, false = timski */
+  const foldersOf = (sp, pv) =>
     (S.noteFolders || [])
-      .filter((f) => (f.spaceId || null) === (sp || null))
+      .filter(
+        (f) =>
+          (f.spaceId || null) === (sp || null) &&
+          (pv === undefined || !f.privateTo === !pv),
+      )
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   const folderOf = (fid, sp) =>
     (fid && foldersOf(sp).find((f) => f.id === fid)) || null;
-  const fidOf = (n) =>
-    n && !n.parentId && !n.privateTo && folderOf(n.folderId, spaceOf(n))
-      ? n.folderId
-      : null;
+  const fidOf = (n) => {
+    const F = n && !n.parentId && folderOf(n.folderId, spaceOf(n));
+    return F && samePv(F, n) ? F.id : null;
+  };
   const fcol = (F) => (F && F.color) || X.foldCols()[0];
   const pagesWord = (n) => plural(n, "stranica", "stranice", "stranica");
   /* glavna stranica (koren) kojoj pripada n */
@@ -2426,34 +2434,35 @@ window.SKNotes = function (X) {
     const ex = plainOf(n.md).slice(0, 140);
     const path = withPath ? pathOf(n) : "";
     /* mišem se glavna stranica prevlači na folder */
-    const drag = !touch() && !n.parentId && !n.privateTo;
+    const drag = !touch() && !n.parentId;
     return `<div class="cptile gtile${S.fresh.has(n.id) ? " new" : ""}" role="button" tabindex="0" data-go="g-${esc(n.id)}" data-gid="${esc(n.id)}"${drag ? ' draggable="true"' : ""} style="${style}">
-      <span class="ci">${n.icon ? emo(n.icon) : I.doc}</span>${n.privateTo ? `<span class="glock" title="Samo ti vidiš ovu stranicu">${I.lock}</span>` : ""}
+      <span class="ci">${n.icon ? emo(n.icon) : I.doc}</span>${n.privateTo && withPath ? `<span class="glock" title="Samo za tebe">${I.lock}</span>` : ""}
       <div class="gt-b">${path ? `<div class="gpath">${esc(path)}</div>` : ""}<h3>${esc(n.title || "Bez naslova")}</h3>${ex ? `<p class="gex">${esc(ex)}</p>` : ""}
       <div class="meta2">${u ? `<img src="${esc(X.IMG[u.id])}" alt="" draggable="false">` : ""}<span>${ts ? esc(rel(ts)) : ""}${k ? ` · ${k} ${plural(k, "podstranica", "podstranice", "podstranica")}` : ""}</span></div></div>
       ${PUP.has(n.id) ? `<span class="gf-up" style="--p:${PUP.get(n.id).p}"><i></i><b>${Math.round(PUP.get(n.id).p * 100)}%</b></span>` : ""}
     </div>`;
   }
   /* red foldera iznad stranica: fascikla iz koje vire listovi poslednjih stranica */
-  function folderRow(FS, roots, anim) {
+  function folderRow(FS, roots, anim, own) {
     const home = homeOf(hubSpace);
-    return `<div class="fcfolders${anim ? " enter" : ""}">${FS.map((F, i) => {
-      const L = roots.filter((n) => fidOf(n) === F.id),
-        FL = filesIn(hubSpace, F.id),
-        th = [
-          ...L.map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
-          ...FL.map((x) => ({ x, t: x.createdAt || 0 })),
-        ]
-          .sort((a, b) => b.t - a.t)
-          .slice(0, 3);
-      const cnt =
-        [
-          L.length ? L.length + " " + pagesWord(L.length) : "",
-          FL.length ? FL.length + " " + filesWord(FL.length) : "",
-        ]
-          .filter(Boolean)
-          .join(" · ") || "prazan";
-      return `<button class="fcf" type="button" data-go="${esc(home + "~" + F.id)}" data-gf="${esc(F.id)}" style="--fc:${esc(fcol(F))};--i:${i}" aria-label="Folder ${esc(F.name || "Folder")}, ${esc(cnt)}">
+    return `<div class="fcfolders${anim ? " enter" : ""}"${own ? " data-gme" : ""}>${FS.map(
+      (F, i) => {
+        const L = roots.filter((n) => fidOf(n) === F.id),
+          FL = filesIn(hubSpace, F.id),
+          th = [
+            ...L.map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
+            ...FL.map((x) => ({ x, t: x.createdAt || 0 })),
+          ]
+            .sort((a, b) => b.t - a.t)
+            .slice(0, 3);
+        const cnt =
+          [
+            L.length ? L.length + " " + pagesWord(L.length) : "",
+            FL.length ? FL.length + " " + filesWord(FL.length) : "",
+          ]
+            .filter(Boolean)
+            .join(" · ") || "prazan";
+        return `<button class="fcf" type="button" data-go="${esc(home + "~" + F.id)}" data-gf="${esc(F.id)}"${F.privateTo ? " data-gpv" : ""} style="--fc:${esc(fcol(F))};--i:${i}" aria-label="Folder ${esc(F.name || "Folder")}, ${esc(cnt)}">
       <span class="fcf-back" aria-hidden="true"></span>
       <span class="fcf-th" aria-hidden="true">${th
         .map(({ n, x }, k) => {
@@ -2468,7 +2477,8 @@ window.SKNotes = function (X) {
         .join("")}</span>
       <span class="fcf-front"><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${esc(cnt)}</span></span></span>
     </button>`;
-    }).join("")}</div>`;
+      },
+    ).join("")}</div>`;
   }
   function folderHead(F, n, anim) {
     return `<div class="fcfh gfh${anim ? " enter" : ""}" style="--fc:${esc(fcol(F))}">
@@ -2476,7 +2486,7 @@ window.SKNotes = function (X) {
       <span class="fcfh-sl" aria-hidden="true">/</span>
       <span class="fcfh-ic" aria-hidden="true">${I.fold}</span>
       <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
-      <span class="fcfh-c">${typeof n === "string" ? n : n + " " + pagesWord(n)}</span>
+      <span class="fcfh-c">${F.privateTo ? `<span class="gfh-lk" title="Samo za tebe">${I.lock}</span>` : ""}${typeof n === "string" ? n : n + " " + pagesWord(n)}</span>
       <button class="fcfh-ed" type="button" data-gf-edit="${esc(F.id)}" aria-label="Uredi folder">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
     </div>`;
   }
@@ -2494,94 +2504,133 @@ window.SKNotes = function (X) {
       box.innerHTML = hubHtml = "";
       return;
     }
-    const F = folderOf(hubFid, hubSpace),
-      FS = F ? [] : foldersOf(hubSpace);
+    const F = folderOf(hubFid, hubSpace);
     const f = fold(hq.trim());
     const mine = notes().filter((n) => spaceOf(n) === hubSpace),
-      roots = kidsOf(null).filter((n) => !n.privateTo);
-    const list = f
-      ? mine
-          .filter(
-            (n) => fold(n.title).includes(f) || fold(plainOf(n.md)).includes(f),
-          )
-          .sort(byUpd)
-      : roots.filter((n) => fidOf(n) === (F ? F.id : null));
-    /* privatne stranice (privateTo) su u svojoj sekciji; tuđe baza ni ne šalje */
-    const own = f || F ? [] : kidsOf(null).filter((n) => n.privateTo);
+      roots = kidsOf(null),
+      sfiles = allFiles().filter((x) => (x.spaceId || null) === hubSpace);
     const d = (i) =>
       anim ? `animation-delay:${adl(0.16 + i * 0.05)}s` : "animation:none";
-    const all = mine.filter((n) => !n.privateTo).length,
-      sec = anim ? "" : "animation:none",
-      row = f || !FS.length ? "" : folderRow(FS, roots, anim);
-    /* fajlovi: u otvorenom folderu njegovi, inače oni van foldera; pretraga traži po imenu */
-    const fl = f
-        ? allFiles().filter(
-            (x) => (x.spaceId || null) === hubSpace && fold(x.name).includes(f),
-          )
-        : filesIn(hubSpace, F ? F.id : null),
-      ups = f ? [] : upIn(hubSpace, F ? F.id : null),
-      nAll = allFiles().filter((x) => (x.spaceId || null) === hubSpace).length;
-    /* stranice i fajlovi u jednoj mreži: redom kako su nastali (nova stavka je na kraju,
-       kod pločica za dodavanje); pretraga: najnovije izmenjeno prvo */
-    const items = f
-      ? [
-          ...list.map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
-          ...fl.map((x) => ({ x, t: x.updatedAt || x.createdAt || 0 })),
-        ].sort((a, b) => b.t - a.t)
-      : [
-          ...list.map((n) => ({ n, t: n.order || n.createdAt || 0 })),
-          ...fl.map((x) => ({ x, t: x.order || x.createdAt || 0 })),
-        ].sort((a, b) => a.t - b.t);
-    const nI = items.length + ups.length;
+    const sec = anim ? "" : "animation:none";
     if (S.ready) loadUsage();
     const cnt = (np, nf) =>
       [np ? np + " " + pagesWord(np) : "", nf ? nf + " " + filesWord(nf) : ""]
         .filter(Boolean)
         .join(" · ");
-    const html =
-      (F && !f
-        ? folderHead(F, cnt(list.length, fl.length) || "prazan", anim)
-        : `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2>${all || nAll ? `<span>${cnt(all, nAll)}</span>` : ""}</div>`) +
-      row +
-      (row
-        ? `<div class="fcsec gfsec" style="${sec}"><span>Van foldera</span><i></i></div>`
-        : "") +
-      (f && !items.length
-        ? `<div class="state">Nema stranica ni fajlova za „${esc(hq.trim())}“.</div>`
-        : `<div class="cpgrid gpgrid">${items
-            .map((it, i) =>
-              it.n
-                ? tile(it.n, d(i + 1), !!f)
-                : fileTile(it.x, d(Math.min(i + 1, 14))),
-            )
-            .join(
-              "",
-            )}${ups.map((u, i) => fileTile(u, d(Math.min(items.length + i + 1, 14)), u)).join("")}${f ? "" : addTiles(d(Math.min(nI + 1, 15)))}</div>`) +
-      (f || F
-        ? ""
-        : `<div class="gsec gsec-me" style="${sec}"><h2>Samo za tebe</h2></div>` +
-          `<div class="cpgrid gpgrid">${own.map((n, i) => tile(n, d(nI + i + 2))).join("")}<button class="cptile add" data-gnew="me" style="${d(nI + own.length + 2)}"><span class="ci">${I.lock}</span>Privatna stranica</button></div>`) +
-      (usage && !f
+    /* stranice i fajlovi u jednoj mreži, redom kako su nastali (nova stavka je na kraju, kod
+       pločice „Novo“); i0 = od kog mesta teče kašnjenje ulaska */
+    const grid = (pages, fl, ups, i0, own) => {
+      const items = [
+        ...pages.map((n) => ({ n, t: n.order || n.createdAt || 0 })),
+        ...fl.map((x) => ({ x, t: x.order || x.createdAt || 0 })),
+      ].sort((a, b) => a.t - b.t);
+      const k = i0 + items.length + ups.length;
+      return {
+        n: k + 1,
+        html: `<div class="cpgrid gpgrid"${own ? " data-gme" : ""}>${items
+          .map((it, i) =>
+            it.n
+              ? tile(it.n, d(i0 + i + 1))
+              : fileTile(it.x, d(Math.min(i0 + i + 1, 14))),
+          )
+          .join(
+            "",
+          )}${ups.map((u, i) => fileTile(u, d(Math.min(i0 + items.length + i + 1, 14)), u)).join("")}${addTiles(d(Math.min(k + 1, 15)), own)}</div>`,
+      };
+    };
+    /* jedna sekcija: folderi, „Van foldera“ i mreža. Tim i „Samo za tebe“ izgledaju isto */
+    const part = (own, i0) => {
+      const FS = foldersOf(hubSpace, own),
+        row = FS.length ? folderRow(FS, roots, anim, own) : "",
+        g = grid(
+          roots.filter((n) => !n.privateTo === !own && !fidOf(n)),
+          filesIn(hubSpace, null, own),
+          upIn(hubSpace, null, own),
+          i0,
+          own,
+        );
+      return {
+        n: g.n,
+        html:
+          row +
+          (row
+            ? `<div class="fcsec gfsec" style="${sec}"${own ? " data-gme" : ""}><span>Van foldera</span><i></i></div>`
+            : "") +
+          g.html,
+      };
+    };
+    let html;
+    if (f) {
+      /* pretraga: stranice (i podstranice) i fajlovi oba dela, najnovije izmenjeno prvo */
+      const items = [
+        ...mine
+          .filter(
+            (n) => fold(n.title).includes(f) || fold(plainOf(n.md)).includes(f),
+          )
+          .map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
+        ...sfiles
+          .filter((x) => fold(x.name).includes(f))
+          .map((x) => ({ x, t: x.updatedAt || x.createdAt || 0 })),
+      ].sort((a, b) => b.t - a.t);
+      html =
+        `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2></div>` +
+        (items.length
+          ? `<div class="cpgrid gpgrid">${items
+              .map((it, i) =>
+                it.n
+                  ? tile(it.n, d(i + 1), true)
+                  : fileTile(it.x, d(Math.min(i + 1, 14))),
+              )
+              .join("")}</div>`
+          : `<div class="state">Nema stranica ni fajlova za „${esc(hq.trim())}“.</div>`);
+    } else if (F) {
+      const own = !!F.privateTo,
+        pages = roots.filter((n) => fidOf(n) === F.id),
+        fl = filesIn(hubSpace, F.id);
+      html =
+        folderHead(F, cnt(pages.length, fl.length) || "prazan", anim) +
+        grid(pages, fl, upIn(hubSpace, F.id, own), 0, own).html;
+    } else {
+      const team = part(false, 0),
+        mineP = part(true, team.n),
+        np = (pv) => mine.filter((n) => !n.privateTo === !pv).length,
+        nf = (pv) => sfiles.filter((x) => !x.privateTo === !pv).length,
+        ct = cnt(np(false), nf(false)),
+        cm = cnt(np(true), nf(true));
+      html =
+        `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2>${ct ? `<span>${ct}</span>` : ""}</div>` +
+        team.html +
+        `<div class="gsec gsec-me" style="${sec}" data-gme><h2>Samo za tebe</h2>${cm ? `<span>${cm}</span>` : ""}</div>` +
+        mineP.html;
+    }
+    html +=
+      usage && !f
         ? `<div class="gstore" style="${sec}" title="Fajlovi u General-u, Final Creatives i slike u stranicama"><span class="gst-b"><i style="width:${Math.min(100, Math.max(0.5, (usage.total / usage.quota) * 100)).toFixed(1)}%"></i></span><span>Skladište: <b>${esc(fsize(usage.total))}</b> od ${esc(fsize(usage.quota))}</span></div>`
-        : "");
+        : "";
     /* isti sadržaj se ne crta ponovo: hover, prevlačenje i animacija foldera ostaju */
     if (html === hubHtml && box.firstChild) return;
     box.innerHTML = hubHtml = html;
   }
   /* priv: nova stranica u "Samo za tebe"; podstranica nasleđuje privatnost roditelja;
-     glavna stranica napravljena u otvorenom folderu ide u taj folder */
+     glavna stranica napravljena u otvorenom folderu ide u taj folder (i njegovu privatnost) */
   async function newPage(parentId, priv) {
     const now = Date.now(),
       par = parentId && noteOf(parentId),
-      fid = !par && !priv && folderOf(hubFid, hubSpace) ? hubFid : null;
+      F = !par && folderOf(hubFid, hubSpace);
     const id = await api.add("notes", {
       title: "",
       icon: "",
       md: "",
       parentId: parentId || null,
       spaceId: parentId ? spaceOf(par) : hubSpace,
-      privateTo: par ? par.privateTo || null : priv && me() ? me().id : null,
-      ...(fid ? { folderId: fid } : {}),
+      privateTo: par
+        ? par.privateTo || null
+        : F
+          ? F.privateTo || null
+          : priv && me()
+            ? me().id
+            : null,
+      ...(F ? { folderId: F.id } : {}),
       order: now,
       createdAt: now,
       createdBy: me() ? me().id : null,
@@ -2821,7 +2870,7 @@ window.SKNotes = function (X) {
         ks
           .map(
             (n) =>
-              `<button type="button" class="gk" data-go="g-${esc(n.id)}"><span class="pi">${n.icon ? emo(n.icon) : I.doc}</span><span class="pn">${esc(n.title || "Bez naslova")}</span></button>`,
+              `<button type="button" class="gk" data-go="g-${esc(n.id)}"><span class="pi">${n.icon ? emo(n.icon) : I.doc}</span><span class="nb-pt">${esc(n.title || "Bez naslova")}</span><span class="pa">${I.open}</span></button>`,
           )
           .join("")
       : "";
@@ -7406,8 +7455,8 @@ window.SKNotes = function (X) {
       canPriv =
         p && !p.parentId && (p.privateTo || (me() && p.createdBy === me().id)),
       F = p && folderOf(fidOf(p), spaceOf(p));
-    /* folder biraju samo glavne stranice vidljive timu */
-    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${p && !p.parentId && !p.privateTo ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><button type="button" data-pm="pdf">${I.pdf}Preuzmi .pdf</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
+    /* folder biraju glavne stranice (privatna samo među privatnim folderima) */
+    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${p && !p.parentId ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><button type="button" data-pm="pdf">${I.pdf}Preuzmi .pdf</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
     document.body.appendChild(M);
     const W = Math.min(260, innerWidth - 16);
     M.style.width = W + "px";
@@ -7477,7 +7526,7 @@ window.SKNotes = function (X) {
     M.innerHTML =
       `<div class="nm-h">Premesti u folder</div>` +
       `<button type="button" data-pm="mv" data-f="">${I.doc}<span>Bez foldera</span>${cf ? "" : ck}</button>` +
-      foldersOf(spaceOf(p))
+      foldersOf(spaceOf(p), !!p.privateTo)
         .map(
           (F) =>
             `<button type="button" data-pm="mv" data-f="${esc(F.id)}" class="gm-fold" style="--fc:${esc(fcol(F))}">${I.fold}<span>${esc(F.name || "Folder")}</span>${F.id === cf ? ck : ""}</button>`,
@@ -7486,8 +7535,9 @@ window.SKNotes = function (X) {
       `<div class="nm-sep"></div><button type="button" data-pm="mvnew">${I.plus}<span>Novi folder…</span></button>`;
   }
   async function moveTo(n, fid, quiet) {
-    if (!n || n.parentId || n.privateTo) return;
-    const to = folderOf(fid, spaceOf(n)) ? fid : null,
+    if (!n || n.parentId) return;
+    const T = folderOf(fid, spaceOf(n)),
+      to = T && samePv(T, n) ? fid : null,
       from = fidOf(n);
     if (from === to) return;
     const p = api.upd("notes", n.id, { folderId: to });
@@ -7508,13 +7558,18 @@ window.SKNotes = function (X) {
     if (quiet) return;
     const F = folderOf(to, spaceOf(n));
     toast(
-      F ? `Premešteno u „${F.name || "Folder"}“` : "Premešteno u sve stranice",
+      F
+        ? `Premešteno u „${F.name || "Folder"}“`
+        : n.privateTo
+          ? "Premešteno u „Samo za tebe“"
+          : "Premešteno u sve stranice",
       () => moveTo(noteOf(n.id), from, true),
     );
   }
-  /* move: stranica koja odmah ide u novi folder (meni stranice) */
-  function newFolder(move) {
+  /* move: stranica koja odmah ide u novi folder (meni stranice); priv: folder u „Samo za tebe“ */
+  function newFolder(move, priv) {
     const sp = move ? spaceOf(move) : hubSpace,
+      pv = move ? move.privateTo || null : priv && me() ? me().id : null,
       cols = X.foldCols();
     X.foldDlg({
       color: cols[foldersOf(sp).length % cols.length],
@@ -7526,6 +7581,7 @@ window.SKNotes = function (X) {
             name,
             color,
             spaceId: sp,
+            ...(pv ? { privateTo: pv } : {}),
             order: now,
             createdAt: now,
             createdBy: me() ? me().id : null,
@@ -7583,14 +7639,19 @@ window.SKNotes = function (X) {
      Fajl je u folderu kao i stranica (folderId); folder koji više ne postoji = van foldera. */
   const allFiles = () => S.files || [];
   const fileOf = (id) => allFiles().find((f) => f.id === id);
-  const ffidOf = (f) =>
-    f && folderOf(f.folderId, f.spaceId || null) ? f.folderId : null;
+  const ffidOf = (f) => {
+    const F = f && folderOf(f.folderId, f.spaceId || null);
+    return F && samePv(F, f) ? F.id : null;
+  };
   const byNew = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
-  const filesIn = (sp, fid) =>
+  /* van foldera (fid null) pv bira deo: tim ili „Samo za tebe“; u folderu odlučuje folder */
+  const filesIn = (sp, fid, pv) =>
     allFiles()
       .filter(
         (f) =>
-          (f.spaceId || null) === (sp || null) && ffidOf(f) === (fid || null),
+          (f.spaceId || null) === (sp || null) &&
+          ffidOf(f) === (fid || null) &&
+          (fid || !f.privateTo === !pv),
       )
       .sort(byNew);
   const filesWord = (n) => plural(n, "fajl", "fajla", "fajlova");
@@ -7670,11 +7731,12 @@ window.SKNotes = function (X) {
   };
   /* otpremanja u toku: id → {id, name, type, size, folderId, spaceId, p, preview} */
   const UP = new Map();
-  const upIn = (sp, fid) =>
+  const upIn = (sp, fid, pv) =>
     [...UP.values()].filter(
       (u) =>
         (u.spaceId || null) === (sp || null) &&
-        (u.folderId || null) === (fid || null),
+        (u.folderId || null) === (fid || null) &&
+        !u.privateTo === !pv,
     );
   /* fajl u istoj mreži kao stranice: slika/video kao pozadina, ostalo kao ikonica tipa */
   const baseName = (n) =>
@@ -7701,9 +7763,10 @@ window.SKNotes = function (X) {
       ${up ? `<span class="gf-up" style="--p:${up.p || 0}"><i></i><b>${Math.round((up.p || 0) * 100)}%</b></span>` : ""}
     </div>`;
   }
-  /* jedna pločica na kraju mreže: „Novo“ otvara isti meni kao dugme u zaglavlju */
-  const addTiles = (style) =>
-    `<button type="button" class="cptile add gf-add" data-gadd aria-haspopup="menu" style="${style}"><span class="ci">${I.plus}</span>Novo</button>`;
+  /* jedna pločica na kraju mreže: „Novo“ otvara isti meni kao dugme u zaglavlju;
+     own: pločica u „Samo za tebe“ (sve što napravi je privatno) */
+  const addTiles = (style, own) =>
+    `<button type="button" class="cptile add gf-add" data-gadd${own ? '="me"' : ""} aria-haspopup="menu" style="${style}"><span class="ci">${I.plus}</span>Novo</button>`;
   /* jedan red u stranici za otpremljen fajl (isti Markdown koji pravi editor) */
   const fileLine = (name, type, url) =>
     /^image\//.test(type || "") && !/heic|heif|tiff/i.test(type)
@@ -7942,12 +8005,14 @@ window.SKNotes = function (X) {
   let upQ = [],
     upRun = 0,
     upDone = { n: 0, F: null, fail: 0 };
-  /* fajlovi → folder (fid) u trenutnom hubu; najviše 3 otpremanja odjednom */
-  function uploadFiles(list, fid) {
+  /* fajlovi → folder (fid) u trenutnom hubu; najviše 3 otpremanja odjednom.
+     priv: van foldera, u „Samo za tebe“; u folderu privatnost daje folder */
+  function uploadFiles(list, fid, priv) {
     const st = store(),
       max = st ? st.maxBytes : Infinity,
       sp = hubSpace,
-      F = folderOf(fid, sp);
+      F = folderOf(fid, sp),
+      pv = F ? F.privateTo || null : priv && me() ? me().id : null;
     const big = list.filter((f) => f.size > max),
       ok = list.filter((f) => f.size <= max && f.size > 0);
     if (big.length)
@@ -7969,6 +8034,7 @@ window.SKNotes = function (X) {
         size: file.size,
         folderId: F ? fid : null,
         spaceId: sp,
+        privateTo: pv,
         p: 0,
         preview:
           fkind(file) === "img" && !/heic|heif|tiff/i.test(file.type)
@@ -8023,6 +8089,7 @@ window.SKNotes = function (X) {
         ...(th && th.dur ? { dur: Math.round(th.dur * 10) / 10 } : {}),
         folderId: u.folderId,
         spaceId: u.spaceId,
+        ...(u.privateTo ? { privateTo: u.privateTo } : {}),
         order: now,
         createdAt: now,
         createdBy: me() ? me().id : null,
@@ -8056,7 +8123,8 @@ window.SKNotes = function (X) {
   });
   async function moveFile(f, fid, quiet) {
     if (!f) return;
-    const to = folderOf(fid, f.spaceId || null) ? fid : null,
+    const T = folderOf(fid, f.spaceId || null),
+      to = T && samePv(T, f) ? fid : null,
       from = ffidOf(f);
     if (from === to) return;
     const p = api.upd("files", f.id, { folderId: to });
@@ -8077,7 +8145,9 @@ window.SKNotes = function (X) {
     toast(
       F
         ? `„${f.name}“ je u „${F.name || "Folder"}“`
-        : `„${f.name}“ je u svim stranicama`,
+        : f.privateTo
+          ? `„${f.name}“ je u „Samo za tebe“`
+          : `„${f.name}“ je u svim stranicama`,
       () => moveFile(fileOf(f.id), from, true),
     );
   }
@@ -8219,7 +8289,7 @@ window.SKNotes = function (X) {
       .join(" · ");
     $("#gfvF").innerHTML =
       `<option value="">Bez foldera</option>` +
-      foldersOf(sp)
+      foldersOf(sp, !!f.privateTo)
         .map(
           (F) =>
             `<option value="${esc(F.id)}"${F.id === cf ? " selected" : ""}>${esc(F.name || "Folder")}</option>`,
@@ -8298,6 +8368,9 @@ window.SKNotes = function (X) {
     !$("#general").hidden &&
     (!$("#gfv") || $("#gfv").hidden);
   const DROP_T = "#gpages .fcf[data-gf], #gpages .gtile[data-gid]";
+  /* fajl pušten u „Samo za tebe“ (van foldera i stranica) postaje privatan */
+  const inMe = (e) =>
+    !!(e.target && e.target.closest && e.target.closest("#gpages [data-gme]"));
   function dropEl() {
     let el = $("#gdropx");
     if (!el) {
@@ -8310,7 +8383,7 @@ window.SKNotes = function (X) {
     }
     return el;
   }
-  function dropUI(on, t) {
+  function dropUI(on, t, own) {
     const F = t && t.dataset.gf ? folderOf(t.dataset.gf, hubSpace) : null,
       P = t && t.dataset.gid ? noteOf(t.dataset.gid) : null;
     const el = dropEl();
@@ -8330,7 +8403,9 @@ window.SKNotes = function (X) {
       ? `Pusti u stranicu „${P.title || "Bez naslova"}“`
       : T
         ? `Pusti u folder „${T.name || "Folder"}“`
-        : `Pusti u ${X.spaceLabel(hubSpace)}`;
+        : own
+          ? "Pusti u „Samo za tebe“"
+          : `Pusti u ${X.spaceLabel(hubSpace)}`;
     el.classList.add("on");
   }
   addEventListener("dragenter", (e) => {
@@ -8353,13 +8428,14 @@ window.SKNotes = function (X) {
       .querySelectorAll(".drop")
       .forEach((x) => x !== t && x.classList.remove("drop"));
     if (t && !t.classList.contains("drop")) t.classList.add("drop");
-    dropUI(true, t);
+    dropUI(true, t, !t && inMe(e));
   });
   addEventListener("drop", (e) => {
     if (!dropN && !isFileDrag(e)) return;
     dropN = 0;
     const ok = isFileDrag(e);
-    const t = e.target.closest && e.target.closest(DROP_T);
+    const t = e.target.closest && e.target.closest(DROP_T),
+      own = !t && inMe(e);
     dropUI(false);
     if (!ok) return;
     e.preventDefault();
@@ -8381,7 +8457,7 @@ window.SKNotes = function (X) {
       );
     if (!list.length) return;
     if (t && t.dataset.gid) uploadToPage(noteOf(t.dataset.gid), list);
-    else uploadFiles(list, t ? t.dataset.gf : hubFid);
+    else uploadFiles(list, t ? t.dataset.gf : hubFid, own);
   });
 
   /* ---------------- fajl prevučen na otvorenu stranicu ----------------
@@ -8498,9 +8574,11 @@ window.SKNotes = function (X) {
     hq = e.target.value;
     hub(false);
   });
-  const pickInto = () => pickFiles("", (fs) => uploadFiles(fs, hubFid));
+  const pickInto = (priv) =>
+    pickFiles("", (fs) => uploadFiles(fs, hubFid, priv));
   /* „Novo“ (zaglavlje i pločica na kraju mreže): stranica, fajl ili folder.
-     U otvorenom folderu sve ide u njega, a folder u folderu ne postoji. */
+     U otvorenom folderu sve ide u njega, a folder u folderu ne postoji. Pločica u
+     „Samo za tebe“ pravi privatne stvari; u folderu privatnost daje folder. */
   let amenu = null;
   function closeAdd(back) {
     if (!amenu) return;
@@ -8520,6 +8598,7 @@ window.SKNotes = function (X) {
       head = a.id === "gNew";
     const M = (amenu = document.createElement("div"));
     M.anchor = a;
+    M.priv = a.dataset.gadd === "me";
     M.className = "pop nmenu gamenu" + (head ? "" : " at-tile");
     M.setAttribute("role", "menu");
     M.innerHTML =
@@ -8552,11 +8631,12 @@ window.SKNotes = function (X) {
   document.addEventListener("click", (e) => {
     const b = amenu && e.target.closest("[data-ga]");
     if (!b || !amenu.contains(b)) return;
-    const k = b.dataset.ga;
+    const k = b.dataset.ga,
+      priv = amenu.priv;
     closeAdd();
-    if (k === "page") createAndOpen(null);
-    else if (k === "file") pickInto();
-    else newFolder();
+    if (k === "page") createAndOpen(null, priv);
+    else if (k === "file") pickInto(priv);
+    else newFolder(null, priv);
   });
   document.addEventListener("pointerdown", (e) => {
     if (
@@ -8606,8 +8686,6 @@ window.SKNotes = function (X) {
       openFv(fe0.dataset.file, shownFiles());
       return;
     }
-    const g = e.target.closest("[data-gnew]");
-    if (g) createAndOpen(null, g.dataset.gnew === "me");
     const fe = e.target.closest("[data-gf-edit]");
     if (fe) {
       const F = folderOf(fe.dataset.gfEdit, hubSpace);
@@ -8628,14 +8706,25 @@ window.SKNotes = function (X) {
   });
   /* prevlačenje stranice (miš) na folder, ili na „Sve stranice“ dok je folder otvoren */
   let dragId = null;
-  const dropAt = (e) =>
-    dragId && e.target.closest
-      ? e.target.closest(
-          dragId.startsWith("f:")
-            ? "[data-gf], [data-gf-up], .gtile[data-gid]"
-            : "[data-gf], [data-gf-up]",
-        )
-      : null;
+  /* cilj mora biti u istom delu kao ono što se vuče: timsko ne ulazi u privatni folder
+     (ni privatno u timski), da se vidljivost ne promeni usput */
+  const dropAt = (e) => {
+    if (!dragId || !e.target.closest) return null;
+    const isF = dragId.startsWith("f:"),
+      t = e.target.closest(
+        isF
+          ? "[data-gf], [data-gf-up], .gtile[data-gid]"
+          : "[data-gf], [data-gf-up]",
+      );
+    if (!t) return null;
+    const x = isF ? fileOf(dragId.slice(2)) : noteOf(dragId),
+      y = t.dataset.gf
+        ? folderOf(t.dataset.gf, hubSpace)
+        : t.dataset.gid
+          ? noteOf(t.dataset.gid)
+          : null;
+    return y && !samePv(x, y) ? null : t;
+  };
   const dropOff = () =>
     $("#gpages")
       .querySelectorAll(".drop")

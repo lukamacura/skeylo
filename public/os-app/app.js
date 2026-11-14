@@ -2547,9 +2547,9 @@
     }
     const main = (x) => !x.spaceId,
       pages = S.notes.filter((x) => main(x) && !x.privateTo).length,
-      files = (S.files || []).filter(main).length,
+      files = (S.files || []).filter((x) => main(x) && !x.privateTo).length,
       cols = S.noteFolders
-        .filter(main)
+        .filter((x) => main(x) && !x.privateTo)
         .sort((a, b) => (a.order || 0) - (b.order || 0))
         .slice(0, 3)
         .map((f) => f.color || "#e1802c");
