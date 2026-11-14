@@ -3314,25 +3314,11 @@
     </div>
   </div>`;
   }
-  /* prazan papirić: padK = red u kome se piše, padTxt = tekst (preživi osvežavanje table) */
-  let padK = null,
-    padTxt = "";
+  /* "Novi papirić" na kraju reda otvara isti list kao klik na papirić (Ko radi, Klijent, Rok),
+     sa osobom ili klijentom tog reda već izabranim. Ranije je dugme postajalo prazan papir za
+     kucanje, a to se nije razlikovalo od zakačenog taska (2026-11-14). */
   function padHTML(k) {
-    if (padK === k)
-      return `<div class="pn pad on" data-pad="${esc(k)}"><i class="pn-pin" aria-hidden="true"></i><textarea class="pn-in" rows="3" maxlength="200" placeholder="Šta treba uraditi?" aria-label="Novi task">${esc(padTxt)}</textarea><div class="pn-hint">Enter = zakači · Esc = odustani</div></div>`;
     return `<button type="button" class="pn pad" data-pad="${esc(k)}">${SV('<path d="M12 5v14M5 12h14"/>', 2.4)}<span>Novi papirić</span></button>`;
-  }
-  function swapPad(k, focus) {
-    const el = $(`#tboard [data-pad="${CSS.escape(k)}"]`);
-    if (!el) return;
-    el.outerHTML = padHTML(k);
-    if (focus) {
-      const ta = $(`#tboard [data-pad="${CSS.escape(k)}"] .pn-in`);
-      if (ta) {
-        ta.focus();
-        ta.setSelectionRange(ta.value.length, ta.value.length);
-      }
-    }
   }
   function renderTASKS() {
     if ($("#tasks").hidden || !me) return;
@@ -3355,9 +3341,6 @@
     root
       .querySelectorAll(".pdone")
       .forEach((d) => (openStates[d.dataset.k] = d.open));
-    const typing =
-      document.activeElement &&
-      document.activeElement.classList.contains("pn-in");
     let lanes;
     if (tView === "member") {
       const order = [
@@ -3381,7 +3364,6 @@
           list: S.tasks.filter((t) => taskClient(t).id === c.id),
         }));
     }
-    if (padK && !lanes.some((L) => L.k === padK)) padK = null;
     let n = 0;
     root.innerHTML = `<div class="tlanes">${lanes
       .map((L, li) => {
@@ -3399,13 +3381,6 @@
     </section>`;
       })
       .join("")}</div>`;
-    if (padK && typing) {
-      const ta = root.querySelector(".pn-in");
-      if (ta) {
-        ta.focus();
-        ta.setSelectionRange(ta.value.length, ta.value.length);
-      }
-    }
   }
   function renderCards(root, anim) {
     const openStates = {};
@@ -3458,46 +3433,6 @@
       .join("");
     root.scrollLeft = sl;
   }
-  async function quickAdd() {
-    const title = padTxt.trim().replace(/\s+/g, " ");
-    const k = padK;
-    if (!title || !k || !me) return;
-    const who = tView === "member" ? k : me.id;
-    const data = {
-      title,
-      assignees: [who],
-      clientId: tView === "member" ? "skeylo" : k,
-      projectId: "",
-      kind: "none",
-      due: "",
-      start: "",
-      end: "",
-      done: false,
-      doneAt: null,
-      createdBy: me.id,
-      createdAt: Date.now(),
-      order: Date.now(),
-    };
-    padTxt = "";
-    const ta = $("#tboard .pn-in");
-    if (ta) ta.value = "";
-    try {
-      const id = await api.add("tasks", data);
-      markFresh(id);
-      renderTASKS();
-      updateDashTasks();
-      const u = TEAM.find((x) => x.id === who);
-      toast(
-        who === me.id
-          ? "Papirić zakačen"
-          : `Papirić zakačen za ${u ? u.name : who}`,
-      );
-    } catch (err) {
-      padTxt = title;
-      swapPad(k, true);
-      toast(errMsg(err));
-    }
-  }
   function setTseg() {
     const seg = $("#tview");
     seg.classList.toggle("proj", tView === "proj");
@@ -3518,8 +3453,6 @@
     try {
       localStorage.setItem("skeylo-tview", tView);
     } catch (err) {}
-    padK = null;
-    padTxt = "";
     firstTasks = true;
     renderTASKS();
   });
@@ -3530,8 +3463,6 @@
     try {
       localStorage.setItem(tsKey(), tStyle);
     } catch (err) {}
-    padK = null;
-    padTxt = "";
     firstTasks = true;
     renderTASKS();
   });
@@ -3555,37 +3486,13 @@
     }
     const pad = e.target.closest("[data-pad]");
     if (pad) {
-      if (pad.classList.contains("on")) return;
-      const prev = padK;
-      padK = pad.dataset.pad;
-      padTxt = "";
-      if (prev && prev !== padK) swapPad(prev, false);
-      swapPad(padK, true);
+      openNewTask(pad.dataset.pad);
       return;
     }
     const c = e.target.closest("[data-task]");
     if (c) openTaskDetail(c.dataset.task);
   });
-  $("#tboard").addEventListener("input", (e) => {
-    if (e.target.classList.contains("pn-in")) {
-      padTxt = e.target.value;
-      autoGrow(e.target);
-    }
-  });
   $("#tboard").addEventListener("keydown", (e) => {
-    if (e.target.classList.contains("pn-in")) {
-      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
-        e.preventDefault();
-        quickAdd();
-      } else if (e.key === "Escape") {
-        e.stopPropagation();
-        const k = padK;
-        padK = null;
-        padTxt = "";
-        swapPad(k, false);
-      }
-      return;
-    }
     if (
       (e.key === "Enter" || e.key === " ") &&
       e.target.matches(".pn[data-task]")
@@ -3593,18 +3500,6 @@
       e.preventDefault();
       openTaskDetail(e.target.dataset.task);
     }
-  });
-  /* prazan papirić bez teksta se vrati u "+ Novi papirić" čim se klikne negde drugde */
-  $("#tboard").addEventListener("focusout", (e) => {
-    if (!e.target.classList.contains("pn-in") || padTxt.trim()) return;
-    const k = padK;
-    setTimeout(() => {
-      if (padK !== k || padTxt.trim()) return;
-      const a = document.activeElement;
-      if (a && a.classList && a.classList.contains("pn-in")) return;
-      padK = null;
-      swapPad(k, false);
-    }, 0);
   });
   async function toggleTask(id, btn) {
     const t = S.tasks.find((x) => x.id === id);
@@ -3712,10 +3607,41 @@
       ed: ev && t.end ? t.end.slice(0, 10) : "",
       et: ev && t.end ? t.end.slice(11, 16) : "",
     };
-    const by = TEAM.find((u) => u.id === t.createdBy);
+    openTaskSheet(t);
+  }
+  /* novi papirić iz reda k: u redu osobe radi ta osoba (klijent Skeylo), u redu klijenta radiš ti */
+  function openNewTask(k) {
+    if (!me) return;
+    const member = tView === "member";
+    E = {
+      id: null,
+      title: "",
+      who: new Set([member ? k : me.id]),
+      client: member ? "skeylo" : k,
+      kind: "none",
+      due: "",
+      sd: "",
+      st: "",
+      ed: "",
+      et: "",
+    };
+    openTaskSheet(null);
+    const ta = $("#etitle");
+    if (ta) ta.focus({ preventScroll: true });
+  }
+  /* t = task koji se menja, null = novi papirić */
+  function openTaskSheet(t) {
+    const by = t && TEAM.find((u) => u.id === t.createdBy);
     const cs = [...S.clients].sort((a, b) => (a.order || 0) - (b.order || 0));
     if (!cs.some((c) => c.id === E.client))
-      cs.unshift({ id: E.client, name: taskClient(t).name });
+      cs.unshift({
+        id: E.client,
+        name: t
+          ? taskClient(t).name
+          : E.client === "skeylo"
+            ? "Skeylo"
+            : "Klijent",
+      });
     $("#tdet").innerHTML =
       `<i class="pn-pin" aria-hidden="true"></i><button type="button" class="pns-x" data-tdx aria-label="Zatvori">${SV('<path d="M18 6 6 18M6 6l12 12"/>', 2.4)}</button>
     <textarea class="tdtl" id="etitle" rows="1" maxlength="200" placeholder="Opiši task…">${esc(E.title)}</textarea>
@@ -3741,8 +3667,9 @@
       .join("")}</div>
     <div id="ewhen">${eWhenHTML()}</div>
     ${by ? `<div class="r">Dodao/la: ${esc(by.name)}${t.createdAt ? " · " + fmtDay.format(new Date(t.createdAt)) : ""}</div>` : ""}
-    <button class="pill solid" id="esave">Sačuvaj izmene</button>
-    <div class="row2"><button class="pill danger" data-tdel="${esc(t.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši</button><button class="pill" data-tdone="${esc(t.id)}">${t.done ? "Vrati u otvorene" : SV('<path d="m5 12 5 5L20 7"/>', 2.6) + "Završi task"}</button></div>`;
+    <button class="pill solid" id="esave">${t ? "Sačuvaj izmene" : "Zakači papirić"}</button>
+    ${t ? `<div class="row2"><button class="pill danger" data-tdel="${esc(t.id)}">${SV('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>')}Obriši</button><button class="pill" data-tdone="${esc(t.id)}">${t.done ? "Vrati u otvorene" : SV('<path d="m5 12 5 5L20 7"/>', 2.6) + "Završi task"}</button></div>` : ""}`;
+    $("#tdet").setAttribute("aria-label", t ? "Izmena taska" : "Novi papirić");
     updESave();
     const s = $("#tscrim");
     s.hidden = false;
@@ -3783,6 +3710,36 @@
     if (data.kind === "event" && data.end && data.end < data.start)
       data.end = data.start;
     const id = E.id;
+    if (!id) {
+      const now = Date.now();
+      Object.assign(data, {
+        title: data.title.replace(/\s+/g, " "),
+        clientId: E.client,
+        projectId: "",
+        done: false,
+        doneAt: null,
+        createdBy: me.id,
+        createdAt: now,
+        order: now,
+      });
+      closeTaskDetail();
+      try {
+        const nid = await api.add("tasks", data);
+        markFresh(nid);
+        renderTASKS();
+        updateDashTasks();
+        const others = data.assignees.filter((x) => x !== me.id);
+        const u = others.length === 1 && TEAM.find((x) => x.id === others[0]);
+        toast(
+          u && data.assignees.length === 1
+            ? `Papirić zakačen za ${u.name}`
+            : "Papirić zakačen",
+        );
+      } catch (err) {
+        toast(errMsg(err));
+      }
+      return;
+    }
     const t = S.tasks.find((x) => x.id === id);
     if (t && taskClient(t).id !== E.client) {
       data.clientId = E.client;

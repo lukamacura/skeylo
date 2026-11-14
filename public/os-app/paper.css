@@ -345,7 +345,7 @@
   }
 }
 
-/* prazan papirić na kraju reda: klik, napiši, Enter (isti kao "Novi cilj") */
+/* "Novi papirić" na kraju reda: otvara list novog taska (#tdet) */
 .pn.pad {
   align-items: flex-start;
   justify-content: center;
@@ -377,42 +377,6 @@
   border-color: rgba(246, 234, 210, 0.45);
   color: var(--cream);
 }
-.pn.pad.on {
-  align-items: stretch;
-  justify-content: flex-start;
-  border: 0;
-  border-radius: 3px;
-  background: var(--paper-bg);
-  color: var(--paper-ink);
-  box-shadow: var(--paper-sh);
-  transform: rotate(-0.6deg);
-  cursor: text;
-  animation: pnIn 220ms var(--ease) backwards;
-}
-.pn-in {
-  flex: 1;
-  width: 100%;
-  min-height: 72px;
-  padding: 0;
-  border: 0;
-  outline: none;
-  resize: none;
-  background: transparent;
-  color: var(--paper-ink);
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1.22;
-}
-.pn-in::placeholder {
-  color: rgba(42, 31, 23, 0.38);
-}
-.pn-hint {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--paper-mute);
-}
-
 /* završeni: mali papirići ispod reda (kao polica "Ostvareno") */
 .pdone {
   margin-top: 24px;
@@ -542,8 +506,7 @@
     padding: 22px 13px 12px;
     gap: 10px;
   }
-  .pn-t,
-  .pn-in {
+  .pn-t {
     font-size: 15.5px;
   }
   .pn-f {
