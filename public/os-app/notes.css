@@ -27,14 +27,31 @@
 .gtile.new {
   animation: rowPop 0.8s var(--spring) backwards;
 }
+/* ikonica stranice kao „PDF“ na fajlu: krupna, u boji, bez okvira */
 .gtile .ci {
-  font-size: 30px;
+  width: auto;
+  height: auto;
+  align-self: flex-start;
+  place-items: start;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 42px;
   line-height: 1;
+  transform-origin: 0 100%;
+}
+.gtile .ci svg {
+  width: 44px;
+  height: 44px;
 }
 .gtile .ci img.emo {
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
   vertical-align: 0;
+}
+.cptile.gtile:hover .ci {
+  transform: rotate(-4deg) scale(1.06);
 }
 .gt-b {
   min-width: 0;
@@ -61,12 +78,13 @@
 .gtile .meta2 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
 }
 .gtile .meta2 img {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   object-fit: cover;
   object-position: 50% 18%;
@@ -3132,13 +3150,14 @@ body.nb-dragging * {
 .gfile .meta2 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
   min-width: 0;
+  font-size: 12px;
 }
 .gfile .meta2 img {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   object-fit: cover;
   object-position: 50% 18%;
