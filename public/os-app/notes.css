@@ -2112,12 +2112,6 @@ body.nb-dragging * {
 }
 
 /* ---------- privatne stranice (privateTo) ---------- */
-.gsec-me span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.gsec-me span svg,
 .gp-priv svg {
   width: 15px;
   height: 15px;
@@ -2264,16 +2258,8 @@ body.nb-dragging * {
 .gfh {
   margin-top: clamp(28px, 4vw, 44px);
 }
-.gfsec,
-.gf-empty {
+.gfsec {
   animation: fade 0.6s 0.2s var(--ease) backwards;
-}
-.gf-empty {
-  max-width: 560px;
-  margin: 18px 4px 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.5;
 }
 /* prevlačenje stranice na folder */
 .gtile[draggable="true"] {
@@ -2314,9 +2300,6 @@ body.nb-dragging * {
 }
 .pop.nmenu.gamenu button {
   padding: 11px 12px;
-}
-.gamenu .kb {
-  white-space: nowrap;
 }
 
 /* ---------- crtež (Excalidraw) ---------- */
@@ -2505,6 +2488,80 @@ body.nb-dragging * {
   overflow: hidden;
   overflow-wrap: anywhere;
 }
+/* fajl bez sličice je list papira: gornji desni ćošak je presavijen, tip fajla piše krupno.
+   clip-path seče ćošak; tačke van pločice ostavljaju senku na hover netaknutu.
+   Na hover se ćošak savije još malo (polygon i preklop idu istim springom). */
+.gfile.gf-sheet {
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--c) 17%, var(--surface)),
+    color-mix(in srgb, var(--c) 5%, var(--surface)) 72%
+  );
+  border-color: color-mix(in srgb, var(--c) 24%, transparent);
+  clip-path: polygon(
+    -90px -90px,
+    calc(100% - 44px) -90px,
+    calc(100% - 44px) 0,
+    100% 44px,
+    calc(100% + 90px) 44px,
+    calc(100% + 90px) calc(100% + 90px),
+    -90px calc(100% + 90px)
+  );
+  transition:
+    transform 0.45s var(--ease),
+    box-shadow 0.45s,
+    border-color 0.3s,
+    clip-path 0.5s var(--spring);
+}
+.gf-fold {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border-bottom-left-radius: 9px;
+  background: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    color-mix(in srgb, var(--c) 40%, var(--surface-2)) calc(50% + 0.5px)
+  );
+  filter: drop-shadow(-4px 5px 6px rgba(0, 0, 0, 0.4));
+  transition:
+    width 0.5s var(--spring),
+    height 0.5s var(--spring);
+}
+.gf-ext {
+  align-self: flex-start;
+  font-family: var(--f-display);
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  color: var(--c);
+  transform-origin: 0 100%;
+  transition: transform 0.6s var(--spring);
+}
+@media (hover: hover) {
+  .gfile.gf-sheet:hover {
+    clip-path: polygon(
+      -90px -90px,
+      calc(100% - 56px) -90px,
+      calc(100% - 56px) 0,
+      100% 56px,
+      calc(100% + 90px) 56px,
+      calc(100% + 90px) calc(100% + 90px),
+      -90px calc(100% + 90px)
+    );
+  }
+  .gfile.gf-sheet:hover .gf-fold {
+    width: 56px;
+    height: 56px;
+  }
+  .gfile.gf-sheet:hover .gf-ext {
+    transform: rotate(-4deg) scale(1.06);
+  }
+}
 /* slika i video: sličica je cela pločica, naziv na tamnom prelivu */
 .gfile.media {
   justify-content: flex-end;
@@ -2583,15 +2640,6 @@ body.nb-dragging * {
 .gfile.up {
   cursor: progress;
 }
-.gf-add .gf-at {
-  display: grid;
-  gap: 4px;
-}
-.gf-add small {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--muted);
-}
 /* stranica kao cilj: fajl sa računara ili iz mreže ide u nju */
 #gpages.fdrag .gtile[data-gid] {
   border-style: dashed;
@@ -2608,20 +2656,40 @@ body.nb-dragging * {
 .fcf-th img.gsh-ph {
   background: var(--ink);
 }
-.gsh.gsh-f .gsh-i {
-  color: var(--fx);
+/* fajl u fascikli: isti list sa presavijenim ćoškom kao u mreži, tip fajla umesto ikonice */
+.fcf-th .gsh.gsh-f {
+  clip-path: polygon(
+    -30px -30px,
+    calc(100% - 12px) -30px,
+    calc(100% - 12px) 0,
+    100% 12px,
+    calc(100% + 30px) 12px,
+    calc(100% + 30px) calc(100% + 30px),
+    -30px calc(100% + 30px)
+  );
+}
+.gsh.gsh-f::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-bottom-left-radius: 2px;
+  background: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    color-mix(in srgb, var(--fx) 38%, #c9bba6) calc(50% + 0.5px)
+  );
 }
 .gsh.gsh-f em {
-  margin-top: auto;
-  margin-bottom: 8px;
-  align-self: flex-start;
   font-style: normal;
-  font-size: 8px;
+  font-family: var(--f-display);
+  font-size: 15px;
   font-weight: 800;
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: var(--fx);
-  color: #140d08;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--fx) 82%, #000);
 }
 /* skladište */
 .gstore {
@@ -2849,6 +2917,36 @@ body.nb-dragging * {
   height: 54px;
   color: var(--fx);
 }
+/* fajl koji pregledač ne otvara: isti list sa presavijenim ćoškom kao u mreži */
+.gfv-sh {
+  position: relative;
+  width: 86px;
+  height: 108px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-family: var(--f-display);
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--fx);
+  background: color-mix(in srgb, var(--fx) 16%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--fx) 30%, transparent);
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%);
+}
+.gfv-sh i {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 24px;
+  height: 24px;
+  border-bottom-left-radius: 6px;
+  background: linear-gradient(
+    to bottom left,
+    transparent calc(50% - 0.5px),
+    color-mix(in srgb, var(--fx) 42%, var(--surface-2)) calc(50% + 0.5px)
+  );
+}
 .gfv-card b {
   color: var(--cream);
   font-size: 18px;
@@ -2970,6 +3068,9 @@ body.nb-dragging * {
 @media (max-width: 600px) {
   .gfile {
     min-height: 180px;
+  }
+  .gf-ext {
+    font-size: 40px;
   }
   .gfv-top {
     padding: max(10px, env(safe-area-inset-top)) 10px 8px;

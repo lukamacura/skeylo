@@ -2463,7 +2463,7 @@ window.SKNotes = function (X) {
           const src = x.thumb || (fkind(x) === "img" ? x.url : "");
           return src
             ? `<img class="gsh-ph" src="${esc(src)}" alt="" loading="lazy" decoding="async" draggable="false" style="${st}">`
-            : `<span class="gsh gsh-f" style="${st};--fx:${fcolor(x)}"><span class="gsh-i">${FI.doc}</span><b>${esc(x.name || "Fajl")}</b><em>${esc(fext(x.name))}</em></span>`;
+            : `<span class="gsh gsh-f" style="${st};--fx:${fcolor(x)}"><em>${esc(fext(x.name))}</em><b>${esc(baseName(x.name))}</b></span>`;
         })
         .join("")}</span>
       <span class="fcf-front"><span class="fcf-tx"><span class="fcf-n">${esc(F.name || "Folder")}</span><span class="fcf-c">${esc(cnt)}</span></span></span>
@@ -2472,12 +2472,12 @@ window.SKNotes = function (X) {
   }
   function folderHead(F, n, anim) {
     return `<div class="fcfh gfh${anim ? " enter" : ""}" style="--fc:${esc(fcol(F))}">
-      <button class="fcfh-up" type="button" data-go="${esc(homeOf(hubSpace))}" data-gf-up title="Nazad na sve stranice · prevuci stranicu ovde da je izvadiš iz foldera">${SV('<path d="M19 12H5M11 18l-6-6 6-6"/>', 2.2)}<span>Sve stranice</span></button>
+      <button class="fcfh-up" type="button" data-go="${esc(homeOf(hubSpace))}" data-gf-up>${SV('<path d="M19 12H5M11 18l-6-6 6-6"/>', 2.2)}<span>Sve stranice</span></button>
       <span class="fcfh-sl" aria-hidden="true">/</span>
       <span class="fcfh-ic" aria-hidden="true">${I.fold}</span>
       <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
       <span class="fcfh-c">${typeof n === "string" ? n : n + " " + pagesWord(n)}</span>
-      <button class="fcfh-ed" type="button" data-gf-edit="${esc(F.id)}" aria-label="Uredi folder" title="Naziv, boja, brisanje">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
+      <button class="fcfh-ed" type="button" data-gf-edit="${esc(F.id)}" aria-label="Uredi folder">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
     </div>`;
   }
   let hubHtml = "";
@@ -2541,7 +2541,7 @@ window.SKNotes = function (X) {
     const html =
       (F && !f
         ? folderHead(F, cnt(list.length, fl.length) || "prazan", anim)
-        : `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2><span>${all || nAll ? cnt(all, nAll) : hubSpace ? "Marketing plan, optimizacije, CRO fajlovi" : "Beleške, procesi, ideje, fajlovi"}</span></div>`) +
+        : `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2>${all || nAll ? `<span>${cnt(all, nAll)}</span>` : ""}</div>`) +
       row +
       (row
         ? `<div class="fcsec gfsec" style="${sec}"><span>Van foldera</span><i></i></div>`
@@ -2556,13 +2556,10 @@ window.SKNotes = function (X) {
             )
             .join(
               "",
-            )}${ups.map((u, i) => fileTile(u, d(Math.min(items.length + i + 1, 14)), u)).join("")}${f ? "" : addTiles(d(Math.min(nI + 1, 15)), F)}</div>`) +
-      (F && !f && !nI
-        ? `<p class="gf-empty" style="${sec}">Folder je prazan. ${touch() ? "Dodaj stranicu, fajl ili sliku preko „Novo“, ili premesti postojeću stranicu iz njenog menija (⋯)." : "Prevuci fajlove ili slike na ekran, dodaj nešto preko „Novo“ ili premesti postojeću stranicu: prevuci je na folder ili izaberi folder u meniju stranice (⋯)."}</p>`
-        : "") +
+            )}${ups.map((u, i) => fileTile(u, d(Math.min(items.length + i + 1, 14)), u)).join("")}${f ? "" : addTiles(d(Math.min(nI + 1, 15)))}</div>`) +
       (f || F
         ? ""
-        : `<div class="gsec gsec-me" style="${sec}"><h2>Samo za tebe</h2><span>${I.lock}Niko drugi ne vidi ove stranice</span></div>` +
+        : `<div class="gsec gsec-me" style="${sec}"><h2>Samo za tebe</h2></div>` +
           `<div class="cpgrid gpgrid">${own.map((n, i) => tile(n, d(nI + i + 2))).join("")}<button class="cptile add" data-gnew="me" style="${d(nI + own.length + 2)}"><span class="ci">${I.lock}</span>Privatna stranica</button></div>`) +
       (usage && !f
         ? `<div class="gstore" style="${sec}" title="Fajlovi u General-u, Final Creatives i slike u stranicama"><span class="gst-b"><i style="width:${Math.min(100, Math.max(0.5, (usage.total / usage.quota) * 100)).toFixed(1)}%"></i></span><span>Skladište: <b>${esc(fsize(usage.total))}</b> od ${esc(fsize(usage.quota))}</span></div>`
@@ -7539,7 +7536,7 @@ window.SKNotes = function (X) {
         }
         foldUI();
         if (move) moveTo(noteOf(move.id), id);
-        else toast(`Folder „${name}“ je spreman. Prevuci stranice na njega.`);
+        else toast(`Folder „${name}“ je spreman.`);
       },
     });
   }
@@ -7660,10 +7657,6 @@ window.SKNotes = function (X) {
   const FI = {
     up: SV('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', 2.2),
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
-    doc: SV(
-      '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
-      1.8,
-    ),
     aud: SV(
       '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
       1.8,
@@ -7696,21 +7689,21 @@ window.SKNotes = function (X) {
       : media
         ? `<video src="${esc(f.url)}#t=0.5" preload="metadata" muted playsinline tabindex="-1"></video>`
         : "";
-    const tag =
-      k === "vid"
-        ? `${FI.play}${f.dur ? fdur(f.dur) : fext(f.name)}`
-        : esc(fext(f.name));
+    /* bez sličice: list papira sa presavijenim ćoškom, a na njemu tip fajla (PDF, XLSX…) */
+    const face = media
+      ? `<span class="gf-bg">${bg}</span>${k === "vid" ? `<span class="gf-tag">${FI.play}${f.dur ? fdur(f.dur) : esc(fext(f.name))}</span>` : ""}`
+      : `<span class="gf-fold" aria-hidden="true"></span><span class="gf-ext" aria-hidden="true">${esc(fext(f.name))}</span>`;
     const drag = !up && !touch();
-    return `<div class="cptile gfile k-${k}${media ? " media" : ""}${up ? " up" : ""}${!up && S.fresh.has(f.id) ? " new" : ""}" ${up ? `data-upf="${esc(f.id)}"` : `role="button" tabindex="0" data-file="${esc(f.id)}" aria-label="Fajl ${esc(f.name)}"`}${drag ? ' draggable="true"' : ""} style="--c:${fcolor(f)};${style}">
-      ${media ? `<span class="gf-bg">${bg}</span>` : `<span class="ci gf-ci">${k === "aud" ? FI.aud : FI.doc}</span>`}<span class="gf-tag">${tag}</span>
+    return `<div class="cptile gfile k-${k}${media ? " media" : " gf-sheet"}${up ? " up" : ""}${!up && S.fresh.has(f.id) ? " new" : ""}" ${up ? `data-upf="${esc(f.id)}"` : `role="button" tabindex="0" data-file="${esc(f.id)}" aria-label="Fajl ${esc(f.name)}"`}${drag ? ' draggable="true"' : ""} style="--c:${fcolor(f)};${style}">
+      ${face}
       <div class="gt-b"><h3 class="gf-n" title="${esc(f.name)}">${esc(baseName(f.name))}</h3>
       <div class="meta2">${up ? "<span>Otpremam…</span>" : `${u ? `<img src="${esc(X.IMG[u.id])}" alt="" draggable="false">` : ""}<span>${esc(fsize(f.size))}${f.createdAt ? " · " + esc(rel(f.createdAt)) : ""}</span>`}</div></div>
       ${up ? `<span class="gf-up" style="--p:${up.p || 0}"><i></i><b>${Math.round((up.p || 0) * 100)}%</b></span>` : ""}
     </div>`;
   }
   /* jedna pločica na kraju mreže: „Novo“ otvara isti meni kao dugme u zaglavlju */
-  const addTiles = (style, F) =>
-    `<button type="button" class="cptile add gf-add" data-gadd aria-haspopup="menu" style="${style}"><span class="ci">${I.plus}</span><span class="gf-at">Novo<small>${touch() ? "stranica, fajl ili slika" : "stranica ili fajl, ili prevuci fajlove na ekran"}${F ? " · ide u „" + esc(F.name || "Folder") + "“" : ""}</small></span></button>`;
+  const addTiles = (style) =>
+    `<button type="button" class="cptile add gf-add" data-gadd aria-haspopup="menu" style="${style}"><span class="ci">${I.plus}</span>Novo</button>`;
   /* jedan red u stranici za otpremljen fajl (isti Markdown koji pravi editor) */
   const fileLine = (name, type, url) =>
     /^image\//.test(type || "") && !/heic|heif|tiff/i.test(type)
@@ -8257,7 +8250,7 @@ window.SKNotes = function (X) {
             ? `<div class="gfv-card" style="--fx:${fcolor(f)}">${FI.aud}<b>${esc(f.name)}</b><audio src="${esc(f.url)}" controls preload="metadata"></audio></div>`
             : k === "pdf"
               ? `<iframe src="${esc(f.url)}#view=FitH" title="${esc(f.name)}"></iframe>`
-              : `<div class="gfv-card" style="--fx:${fcolor(f)}"><span class="gf-ic">${FI.doc}<b>${esc(fext(f.name))}</b></span><b>${esc(f.name)}</b><span>${esc(fsize(f.size))} · pregled nije moguć u pregledaču</span><a class="pill solid" href="${esc(f.url)}" download="${esc(f.name)}">${I.dl}<span>Preuzmi fajl</span></a></div>`;
+              : `<div class="gfv-card" style="--fx:${fcolor(f)}"><span class="gfv-sh" aria-hidden="true"><i></i>${esc(fext(f.name))}</span><b>${esc(f.name)}</b><span>${esc(fsize(f.size))}</span><a class="pill solid" href="${esc(f.url)}" download="${esc(f.name)}">${I.dl}<span>Preuzmi</span></a></div>`;
     const i = FV.list.indexOf(id);
     $("#gfvP").hidden = i <= 0;
     $("#gfvNx").hidden = i < 0 || i >= FV.list.length - 1;
@@ -8337,7 +8330,7 @@ window.SKNotes = function (X) {
       ? `Pusti u stranicu „${P.title || "Bez naslova"}“`
       : T
         ? `Pusti u folder „${T.name || "Folder"}“`
-        : `Pusti da otpremiš u ${X.spaceLabel(hubSpace)}`;
+        : `Pusti u ${X.spaceLabel(hubSpace)}`;
     el.classList.add("on");
   }
   addEventListener("dragenter", (e) => {
@@ -8531,7 +8524,7 @@ window.SKNotes = function (X) {
     M.setAttribute("role", "menu");
     M.innerHTML =
       `<button type="button" role="menuitem" data-ga="page">${I.doc}<span>Stranica</span></button>` +
-      `<button type="button" role="menuitem" data-ga="file">${FI.up}<span>Fajl ili slika</span>${touch() ? "" : '<span class="kb">ili prevuci</span>'}</button>` +
+      `<button type="button" role="menuitem" data-ga="file">${FI.up}<span>Fajl</span></button>` +
       (F
         ? ""
         : `<button type="button" role="menuitem" data-ga="fold">${I.fold}<span>Folder</span></button>`);
