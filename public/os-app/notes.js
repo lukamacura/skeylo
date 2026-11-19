@@ -2380,8 +2380,9 @@ window.SKNotes = function (X) {
     return X.fmtEdit.format(new Date(ts));
   }
   /* ---------------- folderi ----------------
-     noteFolders/{id} = {name, color, order, spaceId, privateTo, createdAt, createdBy}; glavna
-     stranica ima folderId. „Samo za tebe“ je isti General: privatni folderi, stranice i fajlovi
+     noteFolders/{id} = {name, color, order, spaceId, privateTo, folderId | pageId, createdAt,
+     createdBy}: folder je u korenu huba, u drugom folderu (folderId) ili u stranici (pageId);
+     glavna stranica ima folderId. „Samo za tebe“ je isti General: privatni folderi, stranice i fajlovi
      imaju privateTo (RLS u bazi ih ne šalje drugima). Stranica ili fajl je u folderu samo ako
      je iste privatnosti kao folder. Podstranica i stranica čiji folder više ne postoji su van
      foldera (brisanje foldera ne dira stranice, pa ih „Poništi“ vraća baš u taj folder). */
@@ -2401,8 +2402,95 @@ window.SKNotes = function (X) {
     const F = n && !n.parentId && folderOf(n.folderId, spaceOf(n));
     return F && samePv(F, n) ? F.id : null;
   };
+  /* Folder može biti u folderu (folderId) ili u stranici (pageId). Roditelj koji više ne
+     postoji ili je druge privatnosti = folder je u korenu huba (kao stranica bez foldera).
+     Vraća {f: folder} | {p: stranica} | null. */
+  function fUp(F) {
+    if (!F) return null;
+    const sp = F.spaceId || null;
+    if (F.folderId) {
+      const P = folderOf(F.folderId, sp);
+      if (P && P.id !== F.id && samePv(P, F)) return { f: P };
+    }
+    if (F.pageId) {
+      const n = noteOf(F.pageId);
+      if (n && spaceOf(n) === sp && samePv(n, F)) return { p: n };
+    }
+    return null;
+  }
+  /* folderi u korenu huba, u folderu (fid) ili u stranici (pid) */
+  const rootFolders = (sp, pv) => foldersOf(sp, pv).filter((F) => !fUp(F));
+  const subFolders = (fid, sp) =>
+    foldersOf(sp).filter((F) => {
+      const u = fUp(F);
+      return u && u.f && u.f.id === fid;
+    });
+  const pageFolders = (pid, sp) =>
+    foldersOf(sp).filter((F) => {
+      const u = fUp(F);
+      return u && u.p && u.p.id === pid;
+    });
+  /* jedan korak naviše: stranica → roditeljska stranica ili njen folder; folder → fUp */
+  function upOf(it) {
+    if (it.f) return fUp(it.f);
+    const n = it.p;
+    if (n.parentId) {
+      const q = noteOf(n.parentId);
+      return q ? { p: q } : null;
+    }
+    const F = folderOf(fidOf(n), spaceOf(n));
+    return F ? { f: F } : null;
+  }
+  /* sve iznad (od korena huba naniže), bez same stavke */
+  function trail(it) {
+    const out = [];
+    let q = upOf(it),
+      g = 0;
+    while (q && g++ < 30) {
+      out.unshift(q);
+      q = upOf(q);
+    }
+    return out;
+  }
+  const itName = (it) =>
+    it.f ? it.f.name || "Folder" : it.p.title || "Bez naslova";
+  const itGo = (it) =>
+    it.f ? homeOf(it.f.spaceId || null) + "~" + it.f.id : "g-" + it.p.id;
+  /* folder fid je u stablu stranice n (pa n ne sme u njega: krug) */
+  const inPage = (fid, n) =>
+    trail({ f: folderOf(fid, spaceOf(n)) || { id: fid } }).some(
+      (q) => q.p && q.p.id === n.id,
+    );
   const fcol = (F) => (F && F.color) || X.foldCols()[0];
   const pagesWord = (n) => plural(n, "stranica", "stranice", "stranica");
+  const foldersWord = (n) => plural(n, "folder", "foldera", "foldera");
+  /* folderi istog dela (tim / samo ja) po stablu, sa putanjom: za „Premesti u folder“ */
+  function folderList(sp, pv, skip) {
+    const out = [],
+      seen = new Set();
+    const walk = (F, pre, d) => {
+      if (seen.has(F.id) || d > 30) return;
+      seen.add(F.id);
+      if (!skip || !skip(F)) out.push({ F, path: pre + (F.name || "Folder") });
+      subFolders(F.id, sp).forEach((C) =>
+        walk(C, pre + (F.name || "Folder") + " / ", d + 1),
+      );
+    };
+    foldersOf(sp, pv).forEach((F) => {
+      const u = fUp(F);
+      if (!u) walk(F, "", 0);
+      else if (u.p)
+        walk(
+          F,
+          trail({ p: u.p })
+            .concat({ p: u.p })
+            .map((q) => itName(q) + " / ")
+            .join(""),
+          0,
+        );
+    });
+    return out;
+  }
   /* glavna stranica (koren) kojoj pripada n */
   function rootOf(n) {
     let q = n,
@@ -2415,18 +2503,7 @@ window.SKNotes = function (X) {
     const f = fidOf(rootOf(n));
     return homeOf(spaceOf(n)) + (f ? "~" + f : "");
   }
-  function pathOf(n) {
-    const out = [];
-    let q = n.parentId && noteOf(n.parentId),
-      g = 0;
-    while (q && g++ < 20) {
-      out.unshift(q.title || "Bez naslova");
-      q = q.parentId && noteOf(q.parentId);
-    }
-    const F = folderOf(fidOf(rootOf(n)), spaceOf(n));
-    if (F) out.unshift(F.name || "Folder");
-    return out.join(" / ");
-  }
+  const pathOf = (n) => trail({ p: n }).map(itName).join(" / ");
   function tile(n, style, withPath) {
     const k = kidsOf(n.id).length;
     const u = who(n.updatedBy || n.createdBy);
@@ -2449,6 +2526,7 @@ window.SKNotes = function (X) {
       (F, i) => {
         const L = roots.filter((n) => fidOf(n) === F.id),
           FL = filesIn(hubSpace, F.id),
+          nf = subFolders(F.id, hubSpace).length,
           th = [
             ...L.map((n) => ({ n, t: n.updatedAt || n.createdAt || 0 })),
             ...FL.map((x) => ({ x, t: x.createdAt || 0 })),
@@ -2457,6 +2535,7 @@ window.SKNotes = function (X) {
             .slice(0, 3);
         const cnt =
           [
+            nf ? nf + " " + foldersWord(nf) : "",
             L.length ? L.length + " " + pagesWord(L.length) : "",
             FL.length ? FL.length + " " + filesWord(FL.length) : "",
           ]
@@ -2480,9 +2559,16 @@ window.SKNotes = function (X) {
       },
     ).join("")}</div>`;
   }
+  /* „nazad“ vodi jedan nivo naviše: u roditeljski folder (i on je cilj za prevlačenje),
+     u stranicu u kojoj je folder, ili u sve stranice */
   function folderHead(F, n, anim) {
+    const u = fUp(F),
+      back = SV('<path d="M19 12H5M11 18l-6-6 6-6"/>', 2.2);
+    const up = u
+      ? `<button class="fcfh-up" type="button" data-go="${esc(itGo(u))}"${u.f ? ` data-gf="${esc(u.f.id)}"` : ""}>${back}<span>${esc(itName(u))}</span></button>`
+      : `<button class="fcfh-up" type="button" data-go="${esc(homeOf(hubSpace))}" data-gf-up>${back}<span>Sve stranice</span></button>`;
     return `<div class="fcfh gfh${anim ? " enter" : ""}" style="--fc:${esc(fcol(F))}">
-      <button class="fcfh-up" type="button" data-go="${esc(homeOf(hubSpace))}" data-gf-up>${SV('<path d="M19 12H5M11 18l-6-6 6-6"/>', 2.2)}<span>Sve stranice</span></button>
+      ${up}
       <span class="fcfh-sl" aria-hidden="true">/</span>
       <span class="fcfh-ic" aria-hidden="true">${I.fold}</span>
       <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
@@ -2517,8 +2603,8 @@ window.SKNotes = function (X) {
       [np ? np + " " + pagesWord(np) : "", nf ? nf + " " + filesWord(nf) : ""]
         .filter(Boolean)
         .join(" · ");
-    /* stranice i fajlovi u jednoj mreži, redom kako su nastali (nova stavka je na kraju, kod
-       pločice „Novo“); i0 = od kog mesta teče kašnjenje ulaska */
+    /* stranice i fajlovi u jednoj mreži, redom kako su nastali (nova stavka je na kraju);
+       i0 = od kog mesta teče kašnjenje ulaska. Prazna mreža se ne crta. */
     const grid = (pages, fl, ups, i0, own) => {
       const items = [
         ...pages.map((n) => ({ n, t: n.order || n.createdAt || 0 })),
@@ -2527,20 +2613,24 @@ window.SKNotes = function (X) {
       const k = i0 + items.length + ups.length;
       return {
         n: k + 1,
-        html: `<div class="cpgrid gpgrid"${own ? " data-gme" : ""}>${items
-          .map((it, i) =>
-            it.n
-              ? tile(it.n, d(i0 + i + 1))
-              : fileTile(it.x, d(Math.min(i0 + i + 1, 14))),
-          )
-          .join(
-            "",
-          )}${ups.map((u, i) => fileTile(u, d(Math.min(i0 + items.length + i + 1, 14)), u)).join("")}${addTiles(d(Math.min(k + 1, 15)), own)}</div>`,
+        empty: !items.length && !ups.length,
+        html:
+          items.length || ups.length
+            ? `<div class="cpgrid gpgrid"${own ? " data-gme" : ""}>${items
+                .map((it, i) =>
+                  it.n
+                    ? tile(it.n, d(i0 + i + 1))
+                    : fileTile(it.x, d(Math.min(i0 + i + 1, 14))),
+                )
+                .join(
+                  "",
+                )}${ups.map((u, i) => fileTile(u, d(Math.min(i0 + items.length + i + 1, 14)), u)).join("")}</div>`
+            : "",
       };
     };
     /* jedna sekcija: folderi, „Van foldera“ i mreža. Tim i „Samo za tebe“ izgledaju isto */
     const part = (own, i0) => {
-      const FS = foldersOf(hubSpace, own),
+      const FS = rootFolders(hubSpace, own),
         row = FS.length ? folderRow(FS, roots, anim, own) : "",
         g = grid(
           roots.filter((n) => !n.privateTo === !own && !fidOf(n)),
@@ -2551,9 +2641,10 @@ window.SKNotes = function (X) {
         );
       return {
         n: g.n,
+        empty: !row && g.empty,
         html:
           row +
-          (row
+          (row && !g.empty
             ? `<div class="fcsec gfsec" style="${sec}"${own ? " data-gme" : ""}><span>Van foldera</span><i></i></div>`
             : "") +
           g.html,
@@ -2584,13 +2675,27 @@ window.SKNotes = function (X) {
               .join("")}</div>`
           : `<div class="state">Nema stranica ni fajlova za „${esc(hq.trim())}“.</div>`);
     } else if (F) {
+      /* otvoren folder: njegovi folderi, pa stranice i fajlovi */
       const own = !!F.privateTo,
         pages = roots.filter((n) => fidOf(n) === F.id),
-        fl = filesIn(hubSpace, F.id);
+        fl = filesIn(hubSpace, F.id),
+        FS = subFolders(F.id, hubSpace),
+        g = grid(pages, fl, upIn(hubSpace, F.id, own), 0, own);
       html =
-        folderHead(F, cnt(pages.length, fl.length) || "prazan", anim) +
-        grid(pages, fl, upIn(hubSpace, F.id, own), 0, own).html;
+        folderHead(
+          F,
+          [
+            FS.length ? FS.length + " " + foldersWord(FS.length) : "",
+            cnt(pages.length, fl.length),
+          ]
+            .filter(Boolean)
+            .join(" · ") || "prazan",
+          anim,
+        ) +
+        (FS.length ? folderRow(FS, roots, anim, own) : "") +
+        g.html;
     } else {
+      /* „Samo za tebe“ se pojavi kad u njemu nešto postoji (pravi se iz „Novo“ → Samo za mene) */
       const team = part(false, 0),
         mineP = part(true, team.n),
         np = (pv) => mine.filter((n) => !n.privateTo === !pv).length,
@@ -2600,8 +2705,10 @@ window.SKNotes = function (X) {
       html =
         `<div class="gsec" style="${sec}"><h2>Stranice i fajlovi</h2>${ct ? `<span>${ct}</span>` : ""}</div>` +
         team.html +
-        `<div class="gsec gsec-me" style="${sec}" data-gme><h2>Samo za tebe</h2>${cm ? `<span>${cm}</span>` : ""}</div>` +
-        mineP.html;
+        (mineP.empty
+          ? ""
+          : `<div class="gsec gsec-me" style="${sec}" data-gme><h2>Samo za tebe</h2>${cm ? `<span>${cm}</span>` : ""}</div>` +
+            mineP.html);
     }
     html +=
       usage && !f
@@ -2653,40 +2760,25 @@ window.SKNotes = function (X) {
   /* ---------------- page screen ---------------- */
   let backTo = "general";
   function head(p) {
-    const par = p.parentId && noteOf(p.parentId);
     const home = homeOf(spaceOf(p)),
       homeLbl = X.spaceLabel(spaceOf(p));
-    const chain = [];
-    let q = par,
-      g = 0;
-    while (q && g++ < 20) {
-      chain.unshift(q);
-      q = q.parentId && noteOf(q.parentId);
-    }
-    /* glavna stranica u folderu: folder je u putanji, a „nazad“ vodi u njega */
-    const F = folderOf(fidOf(chain[0] || p), spaceOf(p)),
-      fhome = F ? home + "~" + F.id : home;
-    backTo = par ? "g-" + par.id : fhome;
-    $("#gpBackLbl").textContent = par
-      ? par.title || "Bez naslova"
-      : F
-        ? F.name || "Folder"
-        : homeLbl;
+    /* sve iznad stranice (folderi i stranice, i ugnežđeni); „nazad“ vodi jedan nivo naviše */
+    const chain = trail({ p }),
+      up = chain[chain.length - 1];
+    backTo = up ? itGo(up) : home;
+    $("#gpBackLbl").textContent = up ? itName(up) : homeLbl;
     const cr = $("#gpCrumbs");
-    cr.hidden = !chain.length && !F;
-    cr.innerHTML =
-      chain.length || F
-        ? `<button type="button" data-go="${esc(home)}">${esc(homeLbl)}</button>` +
-          (F
-            ? `<i aria-hidden="true">/</i><button type="button" class="gp-cf" data-go="${esc(fhome)}" style="--fc:${esc(fcol(F))}">${I.fold}<span>${esc(F.name || "Folder")}</span></button>`
-            : "") +
-          chain
-            .map(
-              (n) =>
-                `<i aria-hidden="true">/</i><button type="button" data-go="g-${esc(n.id)}">${n.icon ? emo(n.icon) : ""}<span>${esc(n.title || "Bez naslova")}</span></button>`,
-            )
-            .join("")
-        : "";
+    cr.hidden = !chain.length;
+    cr.innerHTML = chain.length
+      ? `<button type="button" data-go="${esc(home)}">${esc(homeLbl)}</button>` +
+        chain
+          .map((q) =>
+            q.f
+              ? `<i aria-hidden="true">/</i><button type="button" class="gp-cf" data-go="${esc(itGo(q))}" style="--fc:${esc(fcol(q.f))}">${I.fold}<span>${esc(itName(q))}</span></button>`
+              : `<i aria-hidden="true">/</i><button type="button" data-go="${esc(itGo(q))}">${q.p.icon ? emo(q.p.icon) : ""}<span>${esc(itName(q))}</span></button>`,
+          )
+          .join("")
+      : "";
     const ic = $("#gpIcon");
     ic.hidden = !p.icon;
     if (p.icon && ic.dataset.ch !== p.icon) {
@@ -2727,6 +2819,7 @@ window.SKNotes = function (X) {
     }
     $("#gpMain").hidden = !ok;
     $("#gpState").hidden = ok;
+    $("#gpNew").hidden = !ok;
     if (!ok) {
       rendered = null;
       $("#gpBackLbl").textContent = "General";
@@ -2863,17 +2956,31 @@ window.SKNotes = function (X) {
         .filter((b) => b.dataset.t === "page")
         .map((b) => b.dataset.ref),
     );
-    const ks = kidsOf(cur).filter((n) => !linked.has(n.id));
-    box.hidden = !ks.length;
-    box.innerHTML = ks.length
-      ? `<div class="gk-h">Podstranice</div>` +
-        ks
-          .map(
-            (n) =>
-              `<button type="button" class="gk" data-go="g-${esc(n.id)}"><span class="pi">${n.icon ? emo(n.icon) : I.doc}</span><span class="nb-pt">${esc(n.title || "Bez naslova")}</span><span class="pa">${I.open}</span></button>`,
-          )
-          .join("")
-      : "";
+    const ks = kidsOf(cur).filter((n) => !linked.has(n.id)),
+      p = noteOf(cur),
+      fs = p ? pageFolders(cur, spaceOf(p)) : [];
+    /* folderi u stranici pa podstranice, isti tihi red */
+    const html =
+      (fs.length
+        ? `<div class="gk-h">Folderi</div>` +
+          fs
+            .map(
+              (F) =>
+                `<button type="button" class="gk gk-f" data-go="${esc(homeOf(spaceOf(p)) + "~" + F.id)}" style="--fc:${esc(fcol(F))}"><span class="pi">${I.fold}</span><span class="nb-pt">${esc(F.name || "Folder")}</span><span class="pa">${I.open}</span></button>`,
+            )
+            .join("")
+        : "") +
+      (ks.length
+        ? `<div class="gk-h${fs.length ? " gk-h2" : ""}">Podstranice</div>` +
+          ks
+            .map(
+              (n) =>
+                `<button type="button" class="gk" data-go="g-${esc(n.id)}"><span class="pi">${n.icon ? emo(n.icon) : I.doc}</span><span class="nb-pt">${esc(n.title || "Bez naslova")}</span><span class="pa">${I.open}</span></button>`,
+            )
+            .join("")
+        : "");
+    box.hidden = !html;
+    if (box._h !== html) box.innerHTML = box._h = html;
   }
   /* kind: "page" (General, #gp) ili "script" (#ed) */
   function open(id, kind = "page") {
@@ -7456,7 +7563,7 @@ window.SKNotes = function (X) {
         p && !p.parentId && (p.privateTo || (me() && p.createdBy === me().id)),
       F = p && folderOf(fidOf(p), spaceOf(p));
     /* folder biraju glavne stranice (privatna samo među privatnim folderima) */
-    M.innerHTML = `<button type="button" data-pm="sub">${I.doc}Nova podstranica</button>${p && !p.parentId ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><button type="button" data-pm="pdf">${I.pdf}Preuzmi .pdf</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
+    M.innerHTML = `${p && !p.parentId ? `<button type="button" data-pm="fold" class="gm-fold"${F ? ` style="--fc:${esc(fcol(F))}"` : ""}>${I.fold}<span>${F ? "Folder: " + esc(F.name || "Folder") : "Premesti u folder"}</span></button>` : ""}${canPriv ? (p.privateTo ? `<button type="button" data-pm="share">${I.unlock}Podeli sa timom</button>` : `<button type="button" data-pm="priv">${I.lock}Samo za mene</button>`) : ""}<button type="button" data-pm="copy">${I.md}Kopiraj kao Markdown</button><button type="button" data-pm="dl">${I.dl}Preuzmi .md fajl</button><button type="button" data-pm="pdf">${I.pdf}Preuzmi .pdf</button><div class="nm-sep"></div><button type="button" data-pm="del" class="danger">${I.trash}Obriši stranicu</button>`;
     document.body.appendChild(M);
     const W = Math.min(260, innerWidth - 16);
     M.style.width = W + "px";
@@ -7481,26 +7588,50 @@ window.SKNotes = function (X) {
     pmenu.remove();
     pmenu = null;
     if (a === "mv") moveTo(noteOf(cur), b.dataset.f || null);
-    else if (a === "mvnew") newFolder(noteOf(cur));
-    else if (a === "sub") {
-      flush();
-      createAndOpen(cur);
-    } else if (a === "copy")
-      copyText(pageMd(), "Stranica kopirana kao Markdown");
+    else if (a === "mvnew") newFolder({ move: noteOf(cur) });
+    else if (a === "copy") copyText(pageMd(), "Stranica kopirana kao Markdown");
     else if (a === "dl") download();
     else if (a === "pdf") downloadPdf();
     else if (a === "del") delPage(cur);
     else if (a === "priv" || a === "share") setPrivate(cur, a === "priv");
   });
-  /* privatna stranica: samo autor je vidi (RLS u bazi), zajedno sa podstranicama */
+  /* sve što je u stranici id: podstranice, folderi u njoj i sve u tim folderima (i dublje) */
+  function pageTree(id) {
+    const P = new Set([id]),
+      Fs = new Set();
+    for (let grew = true, g = 0; grew && g < 40; g++) {
+      grew = false;
+      for (const n of notes())
+        if (
+          !P.has(n.id) &&
+          (n.parentId ? P.has(n.parentId) : n.folderId && Fs.has(n.folderId))
+        ) {
+          P.add(n.id);
+          grew = true;
+        }
+      for (const F of S.noteFolders || [])
+        if (
+          !Fs.has(F.id) &&
+          (F.folderId ? Fs.has(F.folderId) : F.pageId && P.has(F.pageId))
+        ) {
+          Fs.add(F.id);
+          grew = true;
+        }
+    }
+    const Xs = allFiles()
+      .filter((f) => f.folderId && Fs.has(f.folderId))
+      .map((f) => f.id);
+    return { P: [...P], Fs: [...Fs], Xs };
+  }
+  /* privatna stranica: samo autor je vidi (RLS u bazi), zajedno sa svim što je u njoj */
   async function setPrivate(id, on) {
     if (!noteOf(id) || !me()) return;
-    const ids = [id];
-    for (let k = 0; k < ids.length; k++)
-      kidsOf(ids[k]).forEach((n) => ids.push(n.id));
+    const t = pageTree(id),
+      pv = { privateTo: on ? me().id : null };
     try {
-      for (const i of ids)
-        await api.upd("notes", i, { privateTo: on ? me().id : null });
+      for (const i of t.P) await api.upd("notes", i, pv);
+      for (const i of t.Fs) await api.upd("noteFolders", i, pv);
+      for (const i of t.Xs) await api.upd("files", i, pv);
       if (id === cur) head(noteOf(id));
       toast(
         on
@@ -7523,13 +7654,14 @@ window.SKNotes = function (X) {
     if (!p) return;
     const cf = fidOf(p),
       ck = `<span class="check">${I.check}</span>`;
+    /* folderi u samoj stranici (i dublje) ne nude se: stranica bi bila u sebi */
     M.innerHTML =
       `<div class="nm-h">Premesti u folder</div>` +
       `<button type="button" data-pm="mv" data-f="">${I.doc}<span>Bez foldera</span>${cf ? "" : ck}</button>` +
-      foldersOf(spaceOf(p), !!p.privateTo)
+      folderList(spaceOf(p), !!p.privateTo, (F) => inPage(F.id, p))
         .map(
-          (F) =>
-            `<button type="button" data-pm="mv" data-f="${esc(F.id)}" class="gm-fold" style="--fc:${esc(fcol(F))}">${I.fold}<span>${esc(F.name || "Folder")}</span>${F.id === cf ? ck : ""}</button>`,
+          ({ F, path }) =>
+            `<button type="button" data-pm="mv" data-f="${esc(F.id)}" class="gm-fold" style="--fc:${esc(fcol(F))}" title="${esc(path)}">${I.fold}<span>${esc(path)}</span>${F.id === cf ? ck : ""}</button>`,
         )
         .join("") +
       `<div class="nm-sep"></div><button type="button" data-pm="mvnew">${I.plus}<span>Novi folder…</span></button>`;
@@ -7537,9 +7669,9 @@ window.SKNotes = function (X) {
   async function moveTo(n, fid, quiet) {
     if (!n || n.parentId) return;
     const T = folderOf(fid, spaceOf(n)),
-      to = T && samePv(T, n) ? fid : null,
+      to = T && samePv(T, n) && !inPage(fid, n) ? fid : null,
       from = fidOf(n);
-    if (from === to) return;
+    if (from === to || (fid && !to)) return;
     const p = api.upd("notes", n.id, { folderId: to });
     foldUI();
     const tile = to && $(`#gpages .fcf[data-gf="${CSS.escape(to)}"]`);
@@ -7566,13 +7698,27 @@ window.SKNotes = function (X) {
       () => moveTo(noteOf(n.id), from, true),
     );
   }
-  /* move: stranica koja odmah ide u novi folder (meni stranice); priv: folder u „Samo za tebe“ */
-  function newFolder(move, priv) {
-    const sp = move ? spaceOf(move) : hubSpace,
-      pv = move ? move.privateTo || null : priv && me() ? me().id : null,
-      cols = X.foldCols();
+  /* move: stranica koja odmah ide u novi folder (meni stranice, folder u korenu);
+     inF / inP: folder u folderu / u stranici (privatnost i prostor od njih);
+     priv: folder u korenu, u „Samo za tebe“ */
+  function newFolder({ move, priv, inF, inP } = {}) {
+    const host = move || inP,
+      sp = host ? spaceOf(host) : inF ? inF.spaceId || null : hubSpace,
+      pv = host
+        ? host.privateTo || null
+        : inF
+          ? inF.privateTo || null
+          : priv && me()
+            ? me().id
+            : null,
+      cols = X.foldCols(),
+      sibs = inF
+        ? subFolders(inF.id, sp)
+        : inP
+          ? pageFolders(inP.id, sp)
+          : rootFolders(sp);
     X.foldDlg({
-      color: cols[foldersOf(sp).length % cols.length],
+      color: cols[sibs.length % cols.length],
       save: async (name, color) => {
         const id = "f" + Math.random().toString(36).slice(2, 11),
           now = Date.now();
@@ -7582,6 +7728,8 @@ window.SKNotes = function (X) {
             color,
             spaceId: sp,
             ...(pv ? { privateTo: pv } : {}),
+            ...(inF ? { folderId: inF.id } : {}),
+            ...(inP ? { pageId: inP.id } : {}),
             order: now,
             createdAt: now,
             createdBy: me() ? me().id : null,
@@ -7592,7 +7740,12 @@ window.SKNotes = function (X) {
         }
         foldUI();
         if (move) moveTo(noteOf(move.id), id);
-        else toast(`Folder „${name}“ je spreman.`);
+        else
+          toast(
+            `Folder „${name}“ je spreman.`,
+            () => X.nav(homeOf(sp) + "~" + id),
+            "Otvori",
+          );
       },
     });
   }
@@ -7610,22 +7763,92 @@ window.SKNotes = function (X) {
       },
       del: async () => {
         const { id, ...data } = F,
-          n = notes().filter((x) => fidOf(x) === id).length,
-          nf = allFiles().filter((x) => ffidOf(x) === id).length;
-        if (hubFid === id && !$("#general").hidden)
-          X.nav(homeOf(F.spaceId || null));
-        /* stranice zadržavaju folderId, pa ih „Poništi“ vraća baš u ovaj folder */
+          sp = F.spaceId || null,
+          up = fUp(F),
+          P = notes().filter((x) => fidOf(x) === id),
+          Xf = allFiles().filter((x) => ffidOf(x) === id),
+          Fs = subFolders(id, sp),
+          n = P.length,
+          nf = Xf.length,
+          nfo = Fs.length;
+        /* Folder u korenu: sadržaj zadržava folderId, pa je van foldera, a „Poništi“ ga vraća
+           baš u ovaj folder. Ugnežđen folder: sadržaj se seli jedan nivo naviše (u stranici
+           stranice postaju podstranice, a fajlovi idu van foldera), „Poništi“ ga vraća. */
+        const mv = [];
+        if (up && up.f)
+          for (const [col, L] of [
+            ["notes", P],
+            ["files", Xf],
+            ["noteFolders", Fs],
+          ])
+            L.forEach((x) =>
+              mv.push([col, x.id, { folderId: up.f.id }, { folderId: id }]),
+            );
+        else if (up && up.p) {
+          P.forEach((x) =>
+            mv.push([
+              "notes",
+              x.id,
+              { folderId: null, parentId: up.p.id },
+              { folderId: id, parentId: null },
+            ]),
+          );
+          Xf.forEach((x) =>
+            mv.push(["files", x.id, { folderId: null }, { folderId: id }]),
+          );
+          Fs.forEach((x) =>
+            mv.push([
+              "noteFolders",
+              x.id,
+              { folderId: null, pageId: up.p.id },
+              { folderId: id, pageId: x.pageId || null },
+            ]),
+          );
+        }
+        /* prvo izađi iz foldera (hashchange stiže kasnije), pa tek onda briši; inače bi
+           renderGEN video da otvoren folder ne postoji i vratio na sve stranice */
+        if (hubFid === id && !$("#general").hidden) {
+          X.nav(up ? itGo(up) : homeOf(sp));
+          for (let k = 0; k < 30 && hubFid === id; k++)
+            await new Promise((r) => setTimeout(r, 10));
+        }
         try {
+          for (const [col, i, patch] of mv) await api.upd(col, i, patch);
           await api.del("noteFolders", id);
         } catch (e) {
           toast(errMsg(e));
           return;
         }
+        const what = [
+            nfo ? nfo + " " + foldersWord(nfo) : "",
+            n ? n + " " + pagesWord(n) : "",
+            nf ? nf + " " + filesWord(nf) : "",
+          ].filter(Boolean),
+          one = nfo + n + nf === 1;
         toast(
-          n || nf
-            ? `Folder obrisan. ${[n ? n + " " + pagesWord(n) : "", nf ? nf + " " + filesWord(nf) : ""].filter(Boolean).join(" i ")} ${n + nf === 1 ? "je" : "su"} sad van foldera.`
-            : "Folder obrisan",
-          () => api.set("noteFolders", id, data).catch((e) => toast(errMsg(e))),
+          !what.length
+            ? "Folder obrisan"
+            : up && up.f
+              ? `Folder obrisan. Sadržaj je sad u „${itName(up)}“.`
+              : up && up.p && (n || nfo)
+                ? `Folder obrisan. Sadržaj je sad u „${itName(up)}“${nf ? ", a fajlovi van foldera" : ""}.`
+                : `Folder obrisan. ${what.slice(0, -1).join(", ")}${what.length > 1 ? " i " : ""}${what[what.length - 1]} ${one ? "je" : "su"} sad van foldera.`,
+          async () => {
+            try {
+              await api.set("noteFolders", id, data);
+              for (const [col, i, , back] of mv)
+                if (
+                  col === "notes"
+                    ? noteOf(i)
+                    : col === "files"
+                      ? fileOf(i)
+                      : (S.noteFolders || []).some((f) => f.id === i)
+                )
+                  await api.upd(col, i, back);
+            } catch (e) {
+              toast(errMsg(e));
+            }
+          },
         );
       },
     });
@@ -7763,10 +7986,6 @@ window.SKNotes = function (X) {
       ${up ? `<span class="gf-up" style="--p:${up.p || 0}"><i></i><b>${Math.round((up.p || 0) * 100)}%</b></span>` : ""}
     </div>`;
   }
-  /* jedna pločica na kraju mreže: „Novo“ otvara isti meni kao dugme u zaglavlju;
-     own: pločica u „Samo za tebe“ (sve što napravi je privatno) */
-  const addTiles = (style, own) =>
-    `<button type="button" class="cptile add gf-add" data-gadd${own ? '="me"' : ""} aria-haspopup="menu" style="${style}"><span class="ci">${I.plus}</span>Novo</button>`;
   /* jedan red u stranici za otpremljen fajl (isti Markdown koji pravi editor) */
   const fileLine = (name, type, url) =>
     /^image\//.test(type || "") && !/heic|heif|tiff/i.test(type)
@@ -8289,10 +8508,10 @@ window.SKNotes = function (X) {
       .join(" · ");
     $("#gfvF").innerHTML =
       `<option value="">Bez foldera</option>` +
-      foldersOf(sp, !!f.privateTo)
+      folderList(sp, !!f.privateTo)
         .map(
-          (F) =>
-            `<option value="${esc(F.id)}"${F.id === cf ? " selected" : ""}>${esc(F.name || "Folder")}</option>`,
+          ({ F, path }) =>
+            `<option value="${esc(F.id)}"${F.id === cf ? " selected" : ""}>${esc(path)}</option>`,
         )
         .join("");
     const F = folderOf(cf, sp);
@@ -8576,17 +8795,18 @@ window.SKNotes = function (X) {
   });
   const pickInto = (priv) =>
     pickFiles("", (fs) => uploadFiles(fs, hubFid, priv));
-  /* „Novo“ (zaglavlje i pločica na kraju mreže): stranica, fajl ili folder.
-     U otvorenom folderu sve ide u njega, a folder u folderu ne postoji. Pločica u
-     „Samo za tebe“ pravi privatne stvari; u folderu privatnost daje folder. */
+  /* „Novo“: jedno dugme u zaglavlju Generala (#gNew) i otvorene stranice (#gpNew).
+     General: stranica, folder ili fajl. U otvorenom folderu sve ide u njega (i privatnost je
+     njegova); u korenu „Samo za mene“ pravi stvar u „Samo za tebe“. Stranica: podstranica
+     ili folder u njoj (fajl prevučen u stranicu ostaje pregled u samoj stranici). */
   let amenu = null;
   function closeAdd(back) {
     if (!amenu) return;
     const a = amenu.anchor;
     amenu.remove();
     amenu = null;
-    $("#gNew").setAttribute("aria-expanded", "false");
-    if (back && a && a.isConnected) a.focus();
+    a.setAttribute("aria-expanded", "false");
+    if (back && a.isConnected) a.focus();
   }
   function addMenu(a, kb) {
     if (amenu) {
@@ -8594,55 +8814,70 @@ window.SKNotes = function (X) {
       closeAdd();
       if (same) return;
     }
-    const F = folderOf(hubFid, hubSpace),
-      head = a.id === "gNew";
+    const pg = a.id === "gpNew",
+      F = pg ? null : folderOf(hubFid, hubSpace);
     const M = (amenu = document.createElement("div"));
     M.anchor = a;
-    M.priv = a.dataset.gadd === "me";
-    M.className = "pop nmenu gamenu" + (head ? "" : " at-tile");
+    M.pg = pg;
+    M.F = F;
+    M.priv = false;
+    M.className = "pop nmenu gamenu";
     M.setAttribute("role", "menu");
     M.innerHTML =
       `<button type="button" role="menuitem" data-ga="page">${I.doc}<span>Stranica</span></button>` +
-      `<button type="button" role="menuitem" data-ga="file">${FI.up}<span>Fajl</span></button>` +
-      (F
+      `<button type="button" role="menuitem" data-ga="fold">${I.fold}<span>Folder</span></button>` +
+      (pg
         ? ""
-        : `<button type="button" role="menuitem" data-ga="fold">${I.fold}<span>Folder</span></button>`);
+        : `<button type="button" role="menuitem" data-ga="file">${FI.up}<span>Fajl</span></button>`) +
+      (pg || F
+        ? ""
+        : `<div class="nm-sep"></div><button type="button" role="menuitemcheckbox" aria-checked="false" class="ga-pv" data-ga-pv>${I.lock}<span>Samo za mene</span><i class="ga-sw" aria-hidden="true"></i></button>`);
     document.body.appendChild(M);
     const b = a.getBoundingClientRect(),
-      W = Math.min(250, innerWidth - 16),
-      cl = (v, max) => Math.max(8, Math.min(v, max));
+      W = Math.min(230, innerWidth - 16);
     M.style.width = W + "px";
     const h = M.offsetHeight;
-    /* zaglavlje: ispod dugmeta, desna ivica uz dugme; pločica: meni na sredini pločice */
+    /* ispod dugmeta, desna ivica uz dugme */
     M.style.left =
-      cl(head ? b.right - W : b.left + (b.width - W) / 2, innerWidth - W - 8) +
-      "px";
+      Math.max(8, Math.min(b.right - W, innerWidth - W - 8)) + "px";
     M.style.top =
-      cl(
-        head ? b.bottom + 8 : b.top + (b.height - h) / 2,
-        innerHeight - h - 8,
-      ) + "px";
-    if (head) a.setAttribute("aria-expanded", "true");
+      Math.max(8, Math.min(b.bottom + 8, innerHeight - h - 8)) + "px";
+    a.setAttribute("aria-expanded", "true");
     if (kb) M.querySelector("button").focus();
   }
   $("#gNew").addEventListener("click", (e) =>
     addMenu(e.currentTarget, e.detail === 0),
   );
+  $("#gpNew").addEventListener("click", (e) =>
+    addMenu(e.currentTarget, e.detail === 0),
+  );
   document.addEventListener("click", (e) => {
+    const pv = amenu && e.target.closest("[data-ga-pv]");
+    if (pv && amenu.contains(pv)) {
+      amenu.priv = !amenu.priv;
+      pv.setAttribute("aria-checked", String(amenu.priv));
+      return;
+    }
     const b = amenu && e.target.closest("[data-ga]");
     if (!b || !amenu.contains(b)) return;
     const k = b.dataset.ga,
-      priv = amenu.priv;
+      { pg, F, priv } = amenu;
     closeAdd();
-    if (k === "page") createAndOpen(null, priv);
+    if (pg) {
+      const p = noteOf(cur);
+      if (!p) return;
+      flush();
+      if (k === "page") createAndOpen(p.id);
+      else newFolder({ inP: p });
+    } else if (k === "page") createAndOpen(null, priv);
     else if (k === "file") pickInto(priv);
-    else newFolder(null, priv);
+    else newFolder(F ? { inF: F } : { priv });
   });
   document.addEventListener("pointerdown", (e) => {
     if (
       amenu &&
       !amenu.contains(e.target) &&
-      !e.target.closest("#gNew, [data-gadd]")
+      !e.target.closest("#gNew, #gpNew")
     )
       closeAdd();
   });
@@ -8676,11 +8911,6 @@ window.SKNotes = function (X) {
   addEventListener("resize", () => closeAdd());
   addEventListener("hashchange", () => closeAdd());
   $("#gpages").addEventListener("click", (e) => {
-    const ad = e.target.closest("[data-gadd]");
-    if (ad) {
-      addMenu(ad, e.detail === 0);
-      return;
-    }
     const fe0 = e.target.closest("[data-file]");
     if (fe0) {
       openFv(fe0.dataset.file, shownFiles());

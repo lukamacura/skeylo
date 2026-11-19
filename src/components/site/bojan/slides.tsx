@@ -478,7 +478,7 @@ const CREW: {
   },
 ];
 
-function Crew() {
+export function Crew() {
   return (
     <Slide id="crew" theme="paper">
       <Headline>Vaš marketing tim. [[Šest ljudi.]]</Headline>
@@ -545,7 +545,7 @@ function Crew() {
 /* 03  The website and the catalogue                                          */
 /* ------------------------------------------------------------------------ */
 
-function Web() {
+export function Web() {
   return (
     <Slide id="web" theme="light">
       <WebBody />
@@ -636,7 +636,7 @@ function WebBody() {
   );
 }
 
-function DemoPhone() {
+export function DemoPhone() {
   return (
     <Slide
       id="demo-phone"
@@ -686,7 +686,7 @@ function Pulse({ color, children }: { color: string; children: ReactNode }) {
   );
 }
 
-function Creatives() {
+export function Creatives() {
   const kinds: {
     label: string;
     title: string;
@@ -833,7 +833,7 @@ function Worker({
 
 /* The line runs down the faces on a phone and across them on a desktop,
    and the dot follows whichever way it runs. */
-function Production() {
+export function Production() {
   return (
     <Slide id="production" theme="paper">
       <ProductionBody />
@@ -951,7 +951,7 @@ function TheApp() {
   );
 }
 
-function AppPhone() {
+export function AppPhone() {
   return (
     <Slide
       id="app-phone"

@@ -2549,7 +2549,7 @@
       pages = S.notes.filter((x) => main(x) && !x.privateTo).length,
       files = (S.files || []).filter((x) => main(x) && !x.privateTo).length,
       cols = S.noteFolders
-        .filter((x) => main(x) && !x.privateTo)
+        .filter((x) => main(x) && !x.privateTo && !x.folderId && !x.pageId)
         .sort((a, b) => (a.order || 0) - (b.order || 0))
         .slice(0, 3)
         .map((f) => f.color || "#e1802c");

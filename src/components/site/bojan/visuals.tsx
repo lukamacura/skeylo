@@ -107,8 +107,14 @@ const TOWNS = [
   "Sremski Karlovci",
 ];
 
-export function Ticker({ className = "" }: { className?: string }) {
-  const track = [...TOWNS, ...TOWNS];
+export function Ticker({
+  className = "",
+  items = TOWNS,
+}: {
+  className?: string;
+  items?: string[];
+}) {
+  const track = [...items, ...items];
   return (
     <div
       aria-hidden
