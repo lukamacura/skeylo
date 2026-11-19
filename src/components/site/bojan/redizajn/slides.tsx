@@ -5,33 +5,41 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   BadgePercent,
+  Bell,
   Check,
   BarChart3,
   Clapperboard,
+  CreditCard,
   Database,
   DatabaseBackup,
   DoorOpen,
   Download,
+  Gift,
   Globe,
   Hammer,
   HardHat,
   Lightbulb,
+  ListChecks,
   Lock,
+  MapPin,
   Megaphone,
   PartyPopper,
   PencilRuler,
   Plus,
   QrCode,
   ReceiptText,
+  Repeat,
   ScanBarcode,
   Search,
   ShieldCheck,
   Signpost,
+  SlidersHorizontal,
   Smartphone,
   Store,
   Tag,
   Target,
   UserCheck,
+  Users,
   Video,
 } from "lucide-react";
 import type { DeckSlide } from "../Deck";
@@ -58,10 +66,13 @@ import {
   FIRST_BUY_OFF,
   LOCATION,
   MONTHS,
+  SPOTS,
   type Person,
+  type Spot,
 } from "./data";
-import { AppCard, FloorPlan, QrSticker, Receipt, StoreReel } from "./scenes";
+import { AppCard, FloorPlan, QrSticker, Receipt } from "./scenes";
 import { KnowledgeFlow, KnowledgeSearch } from "./knowledge";
+import { Compare } from "./compare";
 /* The first offer's slides, word for word: the team, the site and its
    catalogue demo, the creatives, how they are made and the app demo. */
 import {
@@ -292,7 +303,7 @@ function CoverBody() {
             style={{ color: "#CFCFCF" }}
             {...fade(1.45)}
           >
-            Lokal, sajt, aplikacija, baza znanja i marketing. Jedan tim.
+            Aplikacija, lokal, sajt, baza znanja i marketing. Jedan tim.
           </motion.p>
           <motion.p
             className="mt-[2vh] text-center text-[13px]"
@@ -314,20 +325,46 @@ function CoverBody() {
 /* 02  Everything in the three months                                        */
 /* ------------------------------------------------------------------------ */
 
+/* The app leads: it is the biggest piece of work in the three months and
+   the one that keeps paying after them. The QR codes are how people get
+   it, so they live in its line. */
 const SCOPE: [IconType, string, string][] = [
   [Store, "Redizajn lokala", "Novi izgled, Neto boje"],
   [Globe, "Sajt + katalog", "Akcije uvek ažurne"],
-  [Smartphone, "Aplikacija", `Bar kod, −${FIRST_BUY_OFF}% prva kupovina`],
   [Database, "Baza znanja", "Sve jednim klikom"],
   [Clapperboard, "Kreative i oglasi", "Plaćeni i organski"],
-  [QrCode, "QR kod svuda", "Od izloga do kase"],
 ];
 
 function Scope() {
   return (
     <Slide id="scope" theme="red">
       <Headline>Šta radimo [[za tri meseca.]]</Headline>
-      <Visual className="!mt-5 grid grid-cols-2 gap-2 md:!mt-8 md:gap-4 lg:grid-cols-3">
+      <Visual className="!mt-5 grid grid-cols-2 gap-2 md:!mt-8 md:gap-4 lg:grid-cols-4">
+        <motion.div
+          variants={pop}
+          custom={-1}
+          className="col-span-2 flex items-center gap-3 bg-black p-3 text-white [--h:50px] md:gap-5 md:p-5 md:[--h:64px] lg:col-span-4"
+          style={{ borderRadius: NETO_RADIUS }}
+        >
+          <IconTile icon={Smartphone} size={26} />
+          <span className="min-w-0 flex-1">
+            <span
+              className="block text-[10px] uppercase tracking-[0.16em] md:text-[11px]"
+              style={{ fontFamily: MONO, color: "#FF4B42" }}
+            >
+              Glavni deo
+            </span>
+            <b className="block text-[20px] font-black italic leading-[1.05] md:text-[28px]">
+              Neto aplikacija
+            </b>
+            <span
+              className="mt-0.5 block text-[11.5px] leading-[1.25] md:text-[15px]"
+              style={{ color: "#CFCFCF" }}
+            >
+              iOS i Android · QR, bar kod, −{FIRST_BUY_OFF}% prva kupovina
+            </span>
+          </span>
+        </motion.div>
         {SCOPE.map(([Icon, title, hint], i) => (
           <motion.div
             key={title}
@@ -356,104 +393,69 @@ function Scope() {
 }
 
 /* ------------------------------------------------------------------------ */
-/* 04-05  Before and after                                                   */
+/* The store today, spot by spot                                             */
 /* ------------------------------------------------------------------------ */
 
-/* Two halves of one pill, the same on both slides, so the pair reads as a
-   before and an after. */
-function PrePosle({ on }: { on: "pre" | "posle" }) {
-  const t = useTheme();
+/* What changes in that spot. Chips under the photo on a phone, a list
+   beside it on a wide screen. */
+function Fixes({ fixes }: { fixes: Spot["fixes"] }) {
   return (
-    <motion.div
-      variants={item}
-      className="mt-3 inline-flex self-start rounded-full p-[3px] text-[10.5px] font-semibold uppercase tracking-[0.16em] md:mt-4 md:text-[11.5px]"
-      style={{ fontFamily: MONO, border: `1px solid ${t.line}` }}
-    >
-      {(["pre", "posle"] as const).map((k) => (
-        <span
-          key={k}
-          className="rounded-full px-3.5 py-1"
+    <div className="flex flex-wrap justify-center gap-1.5 lg:flex-col lg:items-stretch lg:gap-2">
+      <motion.span
+        variants={item}
+        className="mb-1 hidden text-[11px] uppercase tracking-[0.16em] lg:block"
+        style={{ fontFamily: MONO, color: "#8A8A8A" }}
+      >
+        Posle redizajna
+      </motion.span>
+      {fixes.map(([Icon, label], i) => (
+        <motion.span
+          key={label}
+          variants={pop}
+          custom={i % 2 ? 1.5 : -1.5}
+          className="inline-flex items-center gap-1.5 px-2.5 py-[6px] text-[12.5px] font-bold leading-[1.15] md:text-[14px] lg:gap-2.5 lg:px-3.5 lg:py-3 lg:text-[16px]"
           style={{
-            background: on === k ? RED : "transparent",
-            color: on === k ? "#fff" : t.muted,
+            border: "1px solid #333",
+            borderRadius: NETO_RADIUS,
+            background: "rgba(255,255,255,0.06)",
           }}
         >
-          {k}
-        </span>
+          <Icon size={15} className="flex-none" style={{ color: "#FF4B42" }} />
+          {label}
+        </motion.span>
       ))}
-    </motion.div>
+    </div>
   );
 }
 
-const BEFORE: { src: string; alt: string; w: number; h: number }[] = [
-  {
-    src: "/clients/neto/pre-1.webp",
-    alt: "Fasada lokala danas",
-    w: 900,
-    h: 1206,
-  },
-  {
-    src: "/clients/neto/pre-2.webp",
-    alt: "Ulaz i rafovi sa kućnom hemijom danas",
-    w: 1280,
-    h: 714,
-  },
-  {
-    src: "/clients/neto/pre-3.webp",
-    alt: "Prolaz sa slatkišima danas",
-    w: 1280,
-    h: 714,
-  },
-  {
-    src: "/clients/neto/pre-4.webp",
-    alt: "Pića i frižider danas",
-    w: 1280,
-    h: 714,
-  },
-];
-
-function Before() {
+function SpotSlide({ spot }: { spot: Spot }) {
   return (
-    <Slide id="before" theme="light">
-      <Headline>Evo kako [[sad izgleda.]]</Headline>
-      <PrePosle on="pre" />
-      <Visual className="!mt-4 grid grid-cols-2 gap-2 [grid-template-rows:118px_118px_150px] md:!mt-6 md:h-[min(560px,calc(100svh-310px))] md:grid-cols-[0.8fr_1fr_1fr] md:gap-3 md:[grid-template-rows:repeat(2,minmax(0,1fr))]">
-        {BEFORE.map((b, i) => (
-          <motion.div
-            key={b.src}
-            variants={pop}
-            custom={i % 2 ? 1.5 : -1.5}
-            className={`relative overflow-hidden bg-[#eee] ${i === 0 ? "row-span-2" : ""} ${i === 3 ? "col-span-2" : ""}`}
-            style={{ borderRadius: i === 0 ? "4px 22px 4px 4px" : 4 }}
-          >
-            <Image
-              src={b.src}
-              alt={b.alt}
-              fill
-              sizes={
-                i === 0
-                  ? "(min-width: 768px) 30vw, 45vw"
-                  : "(min-width: 768px) 40vw, 90vw"
-              }
-              className="object-cover"
-            />
-          </motion.div>
-        ))}
+    <Slide id={spot.id} theme="dark">
+      <Headline>{spot.title}</Headline>
+      <Visual className="!mt-3 flex flex-col items-center gap-3 md:!mt-6 md:gap-4 lg:flex-row lg:gap-8">
+        <div className="flex w-full justify-center lg:w-auto lg:flex-none">
+          <Compare
+            pre={spot.pre}
+            posle={spot.posle}
+            alt={spot.alt}
+            w={spot.w}
+            h={spot.h}
+          />
+        </div>
+        <div className="w-full lg:w-[280px] lg:flex-none">
+          <Fixes fixes={spot.fixes} />
+        </div>
       </Visual>
     </Slide>
   );
 }
 
-function After() {
-  return (
-    <Slide id="after" theme="dark">
-      <Headline>Ovako će [[izgledati.]]</Headline>
-      <PrePosle on="posle" />
-      <Visual className="!mt-4 md:!mt-6">
-        <StoreReel className="aspect-square w-full sm:aspect-[4/3] md:aspect-video md:max-w-[min(100%,calc((100svh-340px)*16/9))]" />
-      </Visual>
-    </Slide>
-  );
+/* One deck slide per spot, each with a named component. */
+function spotSlide(spot: Spot): DeckSlide {
+  function SpotN() {
+    return <SpotSlide spot={spot} />;
+  }
+  return { id: spot.id, label: spot.label, theme: "dark", Component: SpotN };
 }
 
 /* ------------------------------------------------------------------------ */
@@ -729,6 +731,108 @@ function TheApp() {
 }
 
 /* ------------------------------------------------------------------------ */
+/* What the app does, and what it does for Neto                              */
+/* ------------------------------------------------------------------------ */
+
+/* Every tile is a screen the demo phone two slides on really has. */
+const APP_FEATURES: [IconType, string, string][] = [
+  [CreditCard, "Neto kartica", "Bar kod na kasi, u Wallet-u"],
+  [Tag, "Akcije nedelje", "Isti katalog kao na sajtu"],
+  [Bell, "Obaveštenja", "Nova akcija stiže odmah"],
+  [Gift, "Neto Klub", "Poeni i vaučeri"],
+  [ListChecks, "Lista za kupovinu", "Vidi koliko štedi"],
+  [MapPin, "Tvoj Neto", "Mapa, poziv, navigacija"],
+];
+
+function AppFeatures() {
+  return (
+    <Slide id="app-features" theme="paper">
+      <Headline>Neto u džepu. [[Sve na jednom mestu.]]</Headline>
+      <Visual className="!mt-4 grid grid-cols-2 gap-2 md:!mt-7 md:gap-4 lg:grid-cols-3">
+        {APP_FEATURES.map(([Icon, title, hint], i) => (
+          <motion.div
+            key={title}
+            variants={pop}
+            custom={i % 2 ? 1.5 : -1.5}
+            className="flex flex-col items-start gap-2 bg-white p-2.5 [--h:40px] md:flex-row md:items-center md:gap-4 md:p-4 md:[--h:52px]"
+            style={{ border: "2px solid #000", borderRadius: NETO_RADIUS }}
+          >
+            <IconTile icon={Icon} size={20} />
+            <span className="min-w-0">
+              <b className="block text-[14px] font-extrabold leading-[1.15] md:text-[18px]">
+                {title}
+              </b>
+              <span
+                className="mt-0.5 block text-[11.5px] leading-[1.2] md:text-[14px]"
+                style={{ color: RED }}
+              >
+                {hint}
+              </span>
+            </span>
+          </motion.div>
+        ))}
+      </Visual>
+      <motion.p
+        variants={item}
+        className="mt-3 flex items-center gap-2 text-[12.5px] md:mt-5 md:text-[14px]"
+        style={{ color: "#6B6B6B" }}
+      >
+        <Smartphone size={15} className="flex-none" style={{ color: RED }} />
+        iOS i Android, objavljena na App Store i Google Play.
+      </motion.p>
+    </Slide>
+  );
+}
+
+const APP_VALUE: [IconType, string, string][] = [
+  [Users, "Baza kupaca", "Ko kupuje, koliko često, gde"],
+  [Bell, "Vaš kanal", "Obaveštenje umesto letka"],
+  [Repeat, "Kupci se vraćaju", "Poeni i vaučeri"],
+  [BarChart3, "Sve se meri", "Preuzimanja, poeni, kodovi"],
+  [SlidersHorizontal, "Vi upravljate", "Akcije iz admin panela"],
+  [Store, "Svaki Neto", "Jedna aplikacija za sve radnje"],
+];
+
+function AppValue() {
+  return (
+    <Slide id="app-value" theme="red">
+      <Headline>Svaki kupac. [[Vaš kontakt.]]</Headline>
+      <Visual className="!mt-4 grid grid-cols-2 gap-2 md:!mt-7 md:gap-4 lg:grid-cols-3">
+        {APP_VALUE.map(([Icon, title, hint], i) => (
+          <motion.div
+            key={title}
+            variants={pop}
+            custom={i % 2 ? 1.5 : -1.5}
+            className="flex flex-col items-start gap-2 bg-white p-2.5 text-black [--h:40px] md:flex-row md:items-center md:gap-4 md:p-4 md:[--h:52px]"
+            style={{ borderRadius: NETO_RADIUS }}
+          >
+            <IconTile icon={Icon} size={20} />
+            <span className="min-w-0">
+              <b className="block text-[14px] font-extrabold leading-[1.15] md:text-[18px]">
+                {title}
+              </b>
+              <span
+                className="mt-0.5 block text-[11.5px] leading-[1.2] md:text-[14px]"
+                style={{ color: RED }}
+              >
+                {hint}
+              </span>
+            </span>
+          </motion.div>
+        ))}
+      </Visual>
+      <motion.p
+        variants={item}
+        className="mt-3 px-3 py-2.5 text-center text-[14px] font-extrabold italic leading-[1.2] md:mt-5 md:py-3 md:text-[19px]"
+        style={{ background: "rgba(0,0,0,0.18)", borderRadius: NETO_RADIUS }}
+      >
+        Letak završi u kanti. Aplikacija ostaje u telefonu.
+      </motion.p>
+    </Slide>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
 /* Neto's knowledge base                                                     */
 /* ------------------------------------------------------------------------ */
 
@@ -794,15 +898,16 @@ const PLAN: { title: string; does: [IconType, string][] }[] = [
   {
     title: "Projekat",
     does: [
+      [Smartphone, "Dizajn aplikacije"],
       [PencilRuler, "Arhitekta crta"],
       [Globe, "Sajt i katalog"],
       [Database, "Prikupljamo dokumente"],
-      [Smartphone, "Kreće aplikacija"],
     ],
   },
   {
     title: "Radovi",
     does: [
+      [Smartphone, "Aplikacija u testu"],
       [HardHat, "Majstori rade"],
       [Clapperboard, "Snimamo promenu"],
       [Search, "Baza u testu"],
@@ -812,8 +917,8 @@ const PLAN: { title: string; does: [IconType, string][] }[] = [
   {
     title: "Otvaranje",
     does: [
-      [PartyPopper, "Novi lokal"],
       [Smartphone, "Aplikacija uživo"],
+      [PartyPopper, "Novi lokal"],
       [BadgePercent, `−${FIRST_BUY_OFF}% prva kupovina`],
       [Megaphone, "Kampanja otvaranja"],
     ],
@@ -928,7 +1033,6 @@ function MonthsBody() {
 const INCLUDED: [IconType, string][] = [
   [Store, "Redizajn lokala"],
   [Globe, "Sajt + Interaktivni katalog"],
-  [Smartphone, "Aplikacija sa bar kodom"],
   [Database, "Neto baza znanja"],
   [Clapperboard, "Kreative: plaćene i organske"],
   [QrCode, "QR kod na svakom koraku"],
@@ -955,7 +1059,35 @@ function Price() {
           <h2 className="mt-0.5 text-[22px] font-black italic leading-[1.05] md:mt-1 md:text-[28px]">
             Sve iz prve ponude, i više
           </h2>
-          <ul className="mt-2.5 grid gap-1 md:mt-5 md:gap-2">
+          <div
+            className="mt-2.5 flex items-center gap-2.5 bg-white px-2.5 py-2 text-black md:mt-5 md:gap-3.5 md:px-3.5 md:py-3"
+            style={{ borderRadius: NETO_RADIUS }}
+          >
+            <span
+              className="grid h-9 w-9 flex-none place-items-center text-white md:h-11 md:w-11"
+              style={{ background: RED, borderRadius: TILE_RADIUS }}
+            >
+              <Smartphone size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="block text-[16px] font-black italic leading-[1.1] md:text-[20px]">
+                Neto aplikacija
+              </b>
+              <span
+                className="block text-[11.5px] leading-[1.2] md:text-[13.5px]"
+                style={{ color: RED }}
+              >
+                iOS i Android · kartica, klub, obaveštenja
+              </span>
+            </span>
+            <span
+              className="hidden flex-none rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white md:inline"
+              style={{ background: "#000", fontFamily: MONO }}
+            >
+              Glavni deo
+            </span>
+          </div>
+          <ul className="mt-2.5 grid gap-1 md:mt-4 md:gap-2">
             {INCLUDED.map(([Icon, label]) => (
               <li
                 key={label}
@@ -1011,8 +1143,7 @@ export const SLIDES: DeckSlide[] = [
   { id: "cover", label: "Neto × Skeylo", theme: "dark", Component: Cover },
   { id: "scope", label: "Šta radimo", theme: "red", Component: Scope },
   { id: "crew", label: "Vaš tim", theme: "paper", Component: Team },
-  { id: "before", label: "Lokal: pre", theme: "light", Component: Before },
-  { id: "after", label: "Lokal: posle", theme: "dark", Component: After },
+  ...SPOTS.map(spotSlide),
   { id: "redesign", label: "Redizajn", theme: "paper", Component: Redesign },
   {
     id: "builders",
@@ -1024,10 +1155,22 @@ export const SLIDES: DeckSlide[] = [
   { id: "qr", label: "QR kod svuda", theme: "paper", Component: QrEverywhere },
   { id: "app", label: "Neto aplikacija", theme: "dark", Component: TheApp },
   {
+    id: "app-features",
+    label: "Aplikacija: šta radi",
+    theme: "paper",
+    Component: AppFeatures,
+  },
+  {
     id: "app-phone",
     label: "Aplikacija: demo",
     theme: "dark",
     Component: AppPhone,
+  },
+  {
+    id: "app-value",
+    label: "Aplikacija: šta Neto dobija",
+    theme: "red",
+    Component: AppValue,
   },
   { id: "web", label: "Sajt i katalog", theme: "light", Component: Web },
   {

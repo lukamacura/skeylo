@@ -4896,6 +4896,47 @@ html.noscroll {
   background: rgba(240, 138, 46, 0.3);
   color: #1d0f14;
 }
+/* boja teksta/pozadine iz OS editora (span[data-c], "-bg" = pozadina); Notion paleta za papir */
+.pbody span[data-c^="gray"] {
+  --tc: #787774;
+}
+.pbody span[data-c^="brown"] {
+  --tc: #9f6b53;
+}
+.pbody span[data-c^="orange"] {
+  --tc: #d9730d;
+}
+.pbody span[data-c^="yellow"] {
+  --tc: #cb912f;
+}
+.pbody span[data-c^="green"] {
+  --tc: #448361;
+}
+.pbody span[data-c^="blue"] {
+  --tc: #337ea9;
+}
+.pbody span[data-c^="purple"] {
+  --tc: #9065b0;
+}
+.pbody span[data-c^="pink"] {
+  --tc: #c14c8a;
+}
+.pbody span[data-c^="red"] {
+  --tc: #d44c47;
+}
+.pbody span[data-c]:not([data-c$="-bg"]) {
+  --tcf: var(--tc);
+}
+.pbody span[data-c]:not([data-c$="-bg"]),
+.pbody span[data-c]:not([data-c$="-bg"]) * {
+  color: var(--tcf);
+}
+.pbody span[data-c$="-bg"] {
+  background: color-mix(in srgb, var(--tc) 18%, transparent);
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 .pempty {
   display: grid;
   justify-items: center;

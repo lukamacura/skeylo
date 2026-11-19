@@ -279,11 +279,31 @@ window.SKNotes = function (X) {
   const URLG = /https?:\/\/[^\s<>"]*[^\s<>"'.,;:!?)\]}*_~]/g;
   const URLY = /https?:\/\/[^\s<>"]*[^\s<>"'.,;:!?)\]}*_~]/y;
   const WORD = /[\p{L}\p{N}]/u;
+  /* boja teksta i pozadine kao u Notion-u: u md-u <span data-c="red">…</span>, a "-bg"
+     na kraju naziva je pozadina. Čuva se naziv, nijanse crtaju notes.css, PDF i CRM.
+     Tekst koji sam liči na taj tag dobija \< (escPlain), pa ostaje tekst */
+  const TCS = [
+    ["gray", "Siva"],
+    ["brown", "Braon"],
+    ["orange", "Narandžasta"],
+    ["yellow", "Žuta"],
+    ["green", "Zelena"],
+    ["blue", "Plava"],
+    ["purple", "Ljubičasta"],
+    ["pink", "Roze"],
+    ["red", "Crvena"],
+  ];
+  const TCN = TCS.map((c) => c[0]).join("|");
+  const TCRE = new RegExp("^(" + TCN + ")(-bg)?$");
+  const TCOPEN = new RegExp('<span data-c="((?:' + TCN + ')(?:-bg)?)">', "y");
+  const tcOk = (v) => typeof v === "string" && TCRE.test(v);
   function escPlain(t) {
-    return t.replace(/[\\`*[]|~(?=~)|(?<=~)~|_/g, (c, i, s) =>
-      c === "_" && WORD.test(s[i - 1] || "") && WORD.test(s[i + 1] || "")
-        ? c
-        : "\\" + c,
+    return t.replace(
+      /[\\`*[]|~(?=~)|(?<=~)~|_|<(?=\/?span[\s>])/g,
+      (c, i, s) =>
+        c === "_" && WORD.test(s[i - 1] || "") && WORD.test(s[i + 1] || "")
+          ? c
+          : "\\" + c,
     );
   }
   /* URL-ovi ostaju sirovi da bi bili klikabilni u bilo kom Markdown pregledu */
@@ -405,6 +425,8 @@ window.SKNotes = function (X) {
       if (it && !o.i)
         inner = wrapM(inner, WORD.test(out.slice(-1)) ? "*" : "_");
       if (b && !o.b) inner = wrapM(inner, "**");
+      if (tag === "SPAN" && tcOk(n.dataset.c) && inner.trim())
+        inner = `<span data-c="${n.dataset.c}">${inner}</span>`;
       out += inner;
     }
     return out;
@@ -583,10 +605,47 @@ window.SKNotes = function (X) {
           continue;
         }
       }
+      if (c === "<") {
+        TCOPEN.lastIndex = i;
+        const m = TCOPEN.exec(s),
+          j = m ? tcEnd(s, i + m[0].length) : -1;
+        if (j > 0) {
+          out += `<span class="nb-tc" data-c="${m[1]}">${mdInline(s.slice(i + m[0].length, j))}</span>`;
+          i = j + 7;
+          continue;
+        }
+      }
       out += esc(c);
       i++;
     }
     return out;
+  }
+  /* zatvarajući </span> za obojen deo; preskače ugnježdene boje, \znakove i `kod` */
+  function tcEnd(s, from) {
+    let depth = 0;
+    for (let j = from; j < s.length; j++) {
+      const c = s[j];
+      if (c === "\\") {
+        j++;
+        continue;
+      }
+      if (c === "`") {
+        let k = j;
+        while (s[k] === "`") k++;
+        const e = s.indexOf(s.slice(j, k), k);
+        j = e > 0 ? e + (k - j) - 1 : k - 1;
+        continue;
+      }
+      if (c !== "<") continue;
+      if (s.startsWith("</span>", j)) {
+        if (!depth) return j;
+        depth--;
+      } else {
+        TCOPEN.lastIndex = j;
+        if (TCOPEN.test(s)) depth++;
+      }
+    }
+    return -1;
   }
   function plainOf(md) {
     return relFresh(String(md || ""))
@@ -608,6 +667,7 @@ window.SKNotes = function (X) {
       )
       .join(" ")
       .replace(/\[((?:\\.|[^\]\\])*)\]\([^)]*\)/g, "$1")
+      .replace(/(?<!\\)<\/?span(?: data-c="[a-z-]+")?>/g, "")
       .replace(/\\(.)/g, "$1")
       .replace(/[*_~`]+/g, "")
       .replace(/\s+/g, " ")
@@ -6066,6 +6126,9 @@ window.SKNotes = function (X) {
       } else if (low === "a") {
         e.preventDefault();
         spanAll();
+      } else if (e.shiftKey && low === "h") {
+        e.preventDefault();
+        if (tcLast) tcApply(tcLast.kind, tcLast.v);
       } else if ("uek".includes(low) || low === "d") e.preventDefault();
     }
   });
@@ -6113,6 +6176,7 @@ window.SKNotes = function (X) {
     ["strikeThrough", "<s>S</s>", "Precrtano (" + MOD + "⇧S)"],
     ["code", "&lt;/&gt;", "Kod (" + MOD + "E)"],
     ["link", I.link, "Link (" + MOD + "K)"],
+    ["color", '<span class="nb-tc ntc-a">A</span>', "Boja"],
   ];
   FBX.innerHTML = FBB.map(
     (b, i) =>
@@ -6186,11 +6250,16 @@ window.SKNotes = function (X) {
       "--ax",
       Math.max(16, Math.min(w - 16, cx - x)) + "px",
     );
+    const fg = tcNow().fg,
+      ca = FBX.querySelector(".ntc-a");
+    if (fg) ca.dataset.c = fg;
+    else delete ca.dataset.c;
     FBX.querySelectorAll("[data-nf]").forEach((b) => {
       const id = b.dataset.nf;
       let on = false;
       try {
-        if (id === "code") on = !!inTag(r.startContainer, "code");
+        if (id === "color") on = !TCP.hidden;
+        else if (id === "code") on = !!inTag(r.startContainer, "code");
         else if (id === "link") on = !!inTag(r.startContainer, "a");
         else on = document.queryCommandState(id);
       } catch (e) {}
@@ -6199,6 +6268,7 @@ window.SKNotes = function (X) {
   }
   function fbHide() {
     if (!fbShown) return;
+    tcClose();
     fbShown = false;
     FBX.hidden = true;
     FBX.classList.remove("show");
@@ -6208,6 +6278,16 @@ window.SKNotes = function (X) {
     const b = e.target.closest("[data-nf]");
     if (!b) return;
     const id = b.dataset.nf;
+    if (id === "color") {
+      if (!TCP.hidden) tcClose();
+      else
+        tcOpen(() => [
+          FBX.getBoundingClientRect(),
+          !FBX.classList.contains("below"),
+        ]);
+      b.classList.toggle("on", !TCP.hidden);
+      return;
+    }
     if (id === "code") markCode();
     else if (id === "link") linkPrompt();
     else mark(id);
@@ -6263,6 +6343,237 @@ window.SKNotes = function (X) {
     s.addRange(q);
     changed();
   }
+
+  /* ---------------- boja teksta (kao Notion) ----------------
+     Pozicije su u znakovima, kao caretOff. Sve boje bloka se skinu, označenim
+     listovima (tekst, kod, emoji, čip) promeni se boja, pa se svaki list ponovo
+     obavije. tcTidy spaja susede iste boje i diže boju iznad b/i/s/a, da md ostane
+     kratak: <span data-c="red">a**b**</span>. Boja slova je spolja, pozadina unutra. */
+  const tcKind = (v) => (/-bg$/.test(v) ? "bg" : "fg");
+  const tcAtom = (n) =>
+    n.nodeType === 1 && (/^(CODE|KBD|SAMP|IMG)$/.test(n.nodeName) || isRel(n));
+  function tcLeaves(t) {
+    const out = [];
+    let pos = 0;
+    const w = (x) => {
+      for (const c of x.childNodes) {
+        if (c.nodeType === 3)
+          out.push({ n: c, a: pos, z: (pos += c.nodeValue.length) });
+        else if (c.nodeType !== 1) continue;
+        else if (c.nodeName === "BR") pos += 1;
+        else if (tcAtom(c))
+          out.push({
+            n: c,
+            a: pos,
+            z: (pos += c.nodeName === "IMG" || isRel(c) ? 1 : lenOf(c)),
+          });
+        else w(c);
+      }
+    };
+    w(t);
+    return out;
+  }
+  function tcColors(n, t) {
+    const o = { fg: "", bg: "" };
+    for (let e = n.parentElement; e && e !== t; e = e.parentElement)
+      if (e.nodeName === "SPAN" && tcOk(e.dataset.c)) {
+        const k = tcKind(e.dataset.c);
+        if (!o[k]) o[k] = e.dataset.c;
+      }
+    return o;
+  }
+  function offIn(t, node, off) {
+    const q = document.createRange();
+    q.selectNodeContents(t);
+    q.setEnd(node, off);
+    return lenOf(q.cloneContents());
+  }
+  function tcWrap(n, v) {
+    const sp = document.createElement("span");
+    sp.className = "nb-tc";
+    sp.dataset.c = v;
+    n.before(sp);
+    sp.append(n);
+    return sp;
+  }
+  function tcTidy(t) {
+    for (let k = 0; k < 40; k++) {
+      let ch = false;
+      for (const sp of t.querySelectorAll("span[data-c]")) {
+        if (!sp.isConnected) continue;
+        let nx = sp.nextSibling;
+        while (nx && nx.nodeType === 3 && !nx.nodeValue) nx = nx.nextSibling;
+        if (nx && nx.nodeName === "SPAN" && nx.dataset.c === sp.dataset.c) {
+          sp.append(...nx.childNodes);
+          nx.remove();
+          ch = true;
+        }
+      }
+      for (const e of t.querySelectorAll(
+        "b,strong,i,em,s,del,strike,u,a:not(.nb-rel)",
+      )) {
+        const kids = [...e.childNodes].filter(
+          (c) => c.nodeType !== 3 || c.nodeValue,
+        );
+        const sp = kids[0];
+        if (kids.length === 1 && sp.nodeName === "SPAN" && tcOk(sp.dataset.c)) {
+          e.before(sp);
+          e.append(...sp.childNodes);
+          sp.append(e);
+          ch = true;
+        }
+      }
+      if (!ch) break;
+    }
+  }
+  function tcSplit(t, off) {
+    const L = tcLeaves(t).find(
+      (L) => L.n.nodeType === 3 && L.a < off && off < L.z,
+    );
+    if (L) L.n.splitText(off - L.a);
+  }
+  const tcIn = (L, a, z) =>
+    L.n.nodeType === 3 ? L.a >= a && L.z <= z && L.z > L.a : L.a < z && L.z > a;
+  function tcPaint(t, a, z, kind, v) {
+    tcSplit(t, z);
+    tcSplit(t, a);
+    const ls = tcLeaves(t).map((L) => Object.assign(L, tcColors(L.n, t)));
+    ls.forEach((L) => tcIn(L, a, z) && (L[kind] = v));
+    t.querySelectorAll("span[data-c]").forEach((e) =>
+      e.replaceWith(...e.childNodes),
+    );
+    for (const L of ls) {
+      if (L.z === L.a) continue;
+      let n = L.n;
+      if (L.bg) n = tcWrap(n, L.bg);
+      if (L.fg) tcWrap(n, L.fg);
+    }
+    tcTidy(t);
+  }
+  /* označeno po tekstualnim poljima: [{ t, a, z }] (blok, ćelija tabele ili više blokova) */
+  function tcSel() {
+    const s = getSelection();
+    if (!s.rangeCount || s.isCollapsed) return [];
+    const part = (t, r) => ({
+      t,
+      a: offIn(t, r.startContainer, r.startOffset),
+      z: offIn(t, r.endContainer, r.endOffset),
+    });
+    if (SP)
+      return spanParts()
+        .filter((p) => !p.r.collapsed && p.el.dataset.t !== "code")
+        .map((p) => part(p.t, p.r))
+        .filter((p) => p.z > p.a);
+    const r = selBlockRange();
+    if (!r) return [];
+    const t = cellOf(r.startContainer) || tOf(blockOf(r.startContainer));
+    if (!t || t.parentElement.dataset.t === "code") return [];
+    const p = part(t, r);
+    return p.z > p.a ? [p] : [];
+  }
+  function tcNow() {
+    const p = tcSel()[0],
+      L = p && tcLeaves(p.t).find((L) => L.a < p.z && L.z > p.a);
+    return L ? tcColors(L.n, p.t) : { fg: "", bg: "" };
+  }
+  let tcLast = null;
+  function tcApply(kind, v) {
+    const ps = tcSel();
+    if (!ps.length) return;
+    pushUndo();
+    ps.forEach((p) => tcPaint(p.t, p.a, p.z, kind, v));
+    const f = ps[0],
+      l = ps[ps.length - 1],
+      A = pointAt(f.t, f.a),
+      Z = pointAt(l.t, l.z);
+    getSelection().setBaseAndExtent(A[0], A[1], Z[0], Z[1]);
+    if (v) tcLast = { kind, v };
+    changed();
+  }
+  /* meni: red za slova i red za pozadinu; "A" u njemu je isti span kao u tekstu */
+  const TCP = document.createElement("div");
+  TCP.className = "ntc";
+  TCP.hidden = true;
+  TCP.setAttribute("role", "menu");
+  TCP.setAttribute("aria-label", "Boja");
+  const tcRow = (kind) =>
+    [["", "Osnovna"], ...TCS]
+      .map(([id, l]) => {
+        const v = id && kind === "bg" ? id + "-bg" : id;
+        return `<button type="button" role="menuitem" data-tk="${kind}" data-tv="${v}" title="${l}" aria-label="${kind === "bg" ? "Pozadina" : "Tekst"}: ${l}"><span class="nb-tc"${v ? ` data-c="${v}"` : ""}>A</span></button>`;
+      })
+      .join("");
+  TCP.innerHTML = `<div class="ntc-h">Tekst</div><div class="ntc-r">${tcRow("fg")}</div><div class="ntc-h">Pozadina</div><div class="ntc-r">${tcRow("bg")}</div>`;
+  document.body.appendChild(TCP);
+  let tcAnchor = null,
+    tcR = null;
+  function tcPlace() {
+    if (TCP.hidden || !tcAnchor) return;
+    const [rc, above] = tcAnchor(),
+      w = TCP.offsetWidth,
+      h = TCP.offsetHeight;
+    let y = above ? rc.top - h - 8 : rc.bottom + 8;
+    if (above && y < 8) y = rc.bottom + 8;
+    else if (!above && y + h > innerHeight - 8) y = Math.max(8, rc.top - h - 8);
+    const x = Math.max(
+      8,
+      Math.min(innerWidth - w - 8, rc.left + rc.width / 2 - w / 2),
+    );
+    TCP.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
+  }
+  function tcOpen(anchor) {
+    const now = tcNow();
+    TCP.querySelectorAll("[data-tk]").forEach((b) =>
+      b.classList.toggle("on", now[b.dataset.tk] === b.dataset.tv),
+    );
+    const s = getSelection();
+    tcR = s.rangeCount ? s.getRangeAt(0).cloneRange() : null;
+    tcAnchor = anchor;
+    TCP.hidden = false;
+    TCP.classList.remove("show");
+    void TCP.offsetWidth;
+    TCP.classList.add("show");
+    tcPlace();
+  }
+  function tcClose() {
+    if (TCP.hidden) return;
+    TCP.hidden = true;
+    tcAnchor = tcR = null;
+  }
+  TCP.addEventListener("pointerdown", (e) => e.preventDefault());
+  TCP.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tk]");
+    if (!b) return;
+    tcApply(b.dataset.tk, b.dataset.tv);
+    tcClose();
+    requestAnimationFrame(() => {
+      fbPlace();
+      mbarSync();
+    });
+  });
+  /* drugačija selekcija zatvara meni; ista (posle bojenja ili tastature) ga ne dira */
+  document.addEventListener("selectionchange", () => {
+    if (TCP.hidden) return;
+    const s = getSelection(),
+      r = s.rangeCount ? s.getRangeAt(0) : null;
+    if (
+      !r ||
+      !tcR ||
+      r.compareBoundaryPoints(Range.START_TO_START, tcR) ||
+      r.compareBoundaryPoints(Range.END_TO_END, tcR)
+    )
+      tcClose();
+  });
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "Escape" || TCP.hidden) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      tcClose();
+    },
+    true,
+  );
   const LK = document.createElement("form");
   LK.className = "nlink";
   LK.hidden = true;
@@ -6383,6 +6694,7 @@ window.SKNotes = function (X) {
     ["todo", I.todo, "Završeno"],
     ["b", "<b>B</b>", "Bold"],
     ["i", "<i>I</i>", "Italic"],
+    ["color", '<span class="nb-tc ntc-a">A</span>', "Boja"],
     ["link", I.link, "Link"],
     ["open", I.open, "Otvori link"],
     ["done", I.kb, "Gotovo"],
@@ -6405,6 +6717,7 @@ window.SKNotes = function (X) {
     const el = touch() && live() ? spanBlock() : null;
     if (!el) {
       MB.hidden = true;
+      if (touch()) tcClose();
       return;
     }
     const tp = el.dataset.t,
@@ -6413,7 +6726,13 @@ window.SKNotes = function (X) {
     const a = s.rangeCount ? inTag(s.anchorNode, "a") : null;
     const multi = SP && el !== blockOf(s.focusNode);
     const show = SP
-      ? { b: ranged, i: ranged, link: ranged && !multi, done: true }
+      ? {
+          b: ranged,
+          i: ranged,
+          color: ranged,
+          link: ranged && !multi,
+          done: true,
+        }
       : {
           add: true,
           menu: true,
@@ -6423,6 +6742,7 @@ window.SKNotes = function (X) {
           todo: tp === "todo",
           b: ranged,
           i: ranged,
+          color: ranged,
           link: ranged || !!a,
           open: !!a,
           done: true,
@@ -6430,6 +6750,11 @@ window.SKNotes = function (X) {
     MB.querySelectorAll("[data-m]").forEach(
       (b) => (b.hidden = !show[b.dataset.m]),
     );
+    if (!ranged) tcClose();
+    const ca = MB.querySelector(".ntc-a"),
+      fg = ranged ? tcNow().fg : "";
+    if (fg) ca.dataset.c = fg;
+    else delete ca.dataset.c;
     MB.hidden = false;
     const vv = window.visualViewport,
       vt = vv ? vv.offsetTop : 0,
@@ -6460,7 +6785,10 @@ window.SKNotes = function (X) {
     } else if (k === "todo") toggleTodo(el);
     else if (k === "b") mark("bold");
     else if (k === "i") mark("italic");
-    else if (k === "link") linkPrompt();
+    else if (k === "color") {
+      if (!TCP.hidden) tcClose();
+      else tcOpen(() => [MB.getBoundingClientRect(), true]);
+    } else if (k === "link") linkPrompt();
     else if (k === "open") {
       const s = getSelection(),
         a = s.rangeCount && inTag(s.anchorNode, "a");
@@ -7125,6 +7453,9 @@ window.SKNotes = function (X) {
       } else if (tp !== "code" && !e.shiftKey && low === "k") {
         e.preventDefault();
         linkPrompt();
+      } else if (tp !== "code" && e.shiftKey && low === "h") {
+        e.preventDefault();
+        if (tcLast) tcApply(tcLast.kind, tcLast.v);
       } else if (low === "d" && !e.shiftKey) {
         e.preventDefault();
         const c = dup([el]);
@@ -7372,9 +7703,17 @@ window.SKNotes = function (X) {
     if (fbShown) fbPlace();
     mbarSync();
     placePicker();
+    tcPlace();
   };
   addEventListener("resize", reflow);
-  addEventListener("scroll", () => fbShown && fbPlace(), { passive: true });
+  addEventListener(
+    "scroll",
+    () => {
+      if (fbShown) fbPlace();
+      tcPlace();
+    },
+    { passive: true },
+  );
   if (window.visualViewport) {
     visualViewport.addEventListener("resize", reflow);
     visualViewport.addEventListener("scroll", reflow);
@@ -7395,6 +7734,12 @@ window.SKNotes = function (X) {
       closeMenu();
     if (SL && !slashEl.contains(e.target) && !root.contains(e.target))
       closeSlash();
+    if (
+      !TCP.hidden &&
+      !TCP.contains(e.target) &&
+      !e.target.closest("[data-nf=color],[data-m=color]")
+    )
+      tcClose();
     if (
       sel.length &&
       !e.target.closest(".nb.sel,.nmenu,.nmbar") &&

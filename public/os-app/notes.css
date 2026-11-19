@@ -1535,6 +1535,84 @@
   border: 1px solid var(--line);
   color: var(--gold);
 }
+/* boja teksta i pozadine (span.nb-tc[data-c], kao Notion). Paleta je u --tc-*,
+   pa je PDF (os-print) samo prepiše; slova idu i u b/kod/link unutar boje */
+:root {
+  --tc-gray: #a39a90;
+  --tc-brown: #c0916f;
+  --tc-orange: #e8914f;
+  --tc-yellow: #e9bb48;
+  --tc-green: #55c486;
+  --tc-blue: #62a2f2;
+  --tc-purple: #ae92ff;
+  --tc-pink: #e66fa1;
+  --tc-red: #ff7a6b;
+  --tc-bga: 24%;
+}
+span.nb-tc[data-c="gray"] {
+  --tcf: var(--tc-gray);
+}
+span.nb-tc[data-c="brown"] {
+  --tcf: var(--tc-brown);
+}
+span.nb-tc[data-c="orange"] {
+  --tcf: var(--tc-orange);
+}
+span.nb-tc[data-c="yellow"] {
+  --tcf: var(--tc-yellow);
+}
+span.nb-tc[data-c="green"] {
+  --tcf: var(--tc-green);
+}
+span.nb-tc[data-c="blue"] {
+  --tcf: var(--tc-blue);
+}
+span.nb-tc[data-c="purple"] {
+  --tcf: var(--tc-purple);
+}
+span.nb-tc[data-c="pink"] {
+  --tcf: var(--tc-pink);
+}
+span.nb-tc[data-c="red"] {
+  --tcf: var(--tc-red);
+}
+span.nb-tc[data-c="gray-bg"] {
+  --tcb: var(--tc-gray);
+}
+span.nb-tc[data-c="brown-bg"] {
+  --tcb: var(--tc-brown);
+}
+span.nb-tc[data-c="orange-bg"] {
+  --tcb: var(--tc-orange);
+}
+span.nb-tc[data-c="yellow-bg"] {
+  --tcb: var(--tc-yellow);
+}
+span.nb-tc[data-c="green-bg"] {
+  --tcb: var(--tc-green);
+}
+span.nb-tc[data-c="blue-bg"] {
+  --tcb: var(--tc-blue);
+}
+span.nb-tc[data-c="purple-bg"] {
+  --tcb: var(--tc-purple);
+}
+span.nb-tc[data-c="pink-bg"] {
+  --tcb: var(--tc-pink);
+}
+span.nb-tc[data-c="red-bg"] {
+  --tcb: var(--tc-red);
+}
+span.nb-tc[data-c]:not([data-c$="-bg"]),
+span.nb-tc[data-c]:not([data-c$="-bg"]) * {
+  color: var(--tcf);
+}
+span.nb-tc[data-c$="-bg"] {
+  background: color-mix(in srgb, var(--tcb) var(--tc-bga), transparent);
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
 .nb-t a,
 .tb-c a {
   color: var(--cream);
@@ -2041,6 +2119,86 @@ body.nb-dragging * {
 }
 .nmbar [data-m="done"] {
   color: var(--gold);
+}
+
+/* ---------- boja: "A" u trakama i meni (red slova, red pozadine) ---------- */
+.ntc-a {
+  font-family: var(--f-display);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 4px;
+}
+.ntc {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 98;
+  width: min(330px, calc(100vw - 16px));
+  padding: 6px 8px 8px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-2) 95%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--orange) 30%, var(--line));
+  box-shadow:
+    0 22px 50px -12px rgba(0, 0, 0, 0.85),
+    0 0 40px -16px var(--orange);
+}
+.ntc.show {
+  animation: ntcIn 0.3s var(--spring);
+}
+@keyframes ntcIn {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+.ntc-h {
+  padding: 6px 4px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ntc-r {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+}
+.ntc-r button {
+  aspect-ratio: 1;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  transition:
+    background 0.15s,
+    transform 0.25s var(--spring);
+}
+.ntc-r button:hover {
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+.ntc-r button:active {
+  transform: scale(0.88);
+}
+.ntc-r button.on {
+  box-shadow: inset 0 0 0 1.5px var(--orange);
+}
+.ntc-r button > span {
+  display: grid;
+  place-items: center;
+  width: 76%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--cream);
+}
+.ntc-r [data-tk="bg"] > span {
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 /* ---------- phones ---------- */
@@ -3295,6 +3453,16 @@ body.nb-dragging * {
     --grey: #6b645c;
     --glow: transparent;
     --on-accent: #fff;
+    --tc-gray: #787774;
+    --tc-brown: #9f6b53;
+    --tc-orange: #d9730d;
+    --tc-yellow: #cb912f;
+    --tc-green: #448361;
+    --tc-blue: #337ea9;
+    --tc-purple: #9065b0;
+    --tc-pink: #c14c8a;
+    --tc-red: #d44c47;
+    --tc-bga: 18%;
     color-scheme: light;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;

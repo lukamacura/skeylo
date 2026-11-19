@@ -4910,6 +4910,7 @@
     c = (c || "").toLowerCase().replace(/\s/g, "");
     return c === GREY || c === "rgb(138,133,128)";
   }
+  const TCV = /^(gray|brown|orange|yellow|green|blue|purple|pink|red)(-bg)?$/;
   function sanitize(html) {
     const t = document.createElement("template");
     t.innerHTML = html || "";
@@ -4939,6 +4940,14 @@
         walk(n);
         if (!ALLOWED.has(tag)) {
           n.replaceWith(...n.childNodes);
+          return;
+        }
+        /* boja iz blok editora (notes.js TCS): samo poznati nazivi */
+        if (tag === "SPAN" && TCV.test(n.getAttribute("data-c") || "")) {
+          const v = n.getAttribute("data-c");
+          [...n.attributes].forEach((a) => n.removeAttribute(a.name));
+          n.className = "nb-tc";
+          n.setAttribute("data-c", v);
           return;
         }
         if (tag === "SPAN" || tag === "FONT") {

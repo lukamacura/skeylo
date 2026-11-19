@@ -1390,6 +1390,7 @@ const RP = (function () {
     "AUDIO",
     "CANVAS",
   ]);
+  const TCV = /^(gray|brown|orange|yellow|green|blue|purple|pink|red)(-bg)?$/;
   function clean(html) {
     const t = document.createElement("template");
     t.innerHTML = html || "";
@@ -1411,7 +1412,12 @@ const RP = (function () {
           return;
         }
         const grey = tag === "SPAN" && n.classList.contains("grey");
-        if (tag === "SPAN" && !grey) {
+        /* boja teksta/pozadine iz OS editora: samo poznati nazivi */
+        const tc =
+          tag === "SPAN" && TCV.test(n.getAttribute("data-c") || "")
+            ? n.getAttribute("data-c")
+            : "";
+        if (tag === "SPAN" && !grey && !tc) {
           n.replaceWith(...n.childNodes);
           return;
         }
@@ -1464,6 +1470,7 @@ const RP = (function () {
           });
         }
         if (grey) keep.class = "grey";
+        if (tc) keep["data-c"] = tc;
         [...n.attributes].forEach((a) => n.removeAttribute(a.name));
         for (const k in keep) n.setAttribute(k, keep[k]);
       });
