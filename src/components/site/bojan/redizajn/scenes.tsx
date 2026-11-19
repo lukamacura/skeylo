@@ -180,12 +180,15 @@ export function StoreReel({ className = "" }: { className?: string }) {
 }
 
 /* ------------------------------------------------------------------------ */
-/* A schematic floor plan with the QR spots popping in one by one.          */
-/* Not the real layout: it only shows where a code can stand.               */
+/* The store's floor plan with the QR spots popping in one by one.          */
+/* Walls, windows, doors, the pillar, WC and storage follow the evacuation  */
+/* plan on the store wall (Fruškogorska 18, R 1:100), street at the bottom. */
+/* Till and ice cream chest by the door, and the fridges along the blind    */
+/* left wall, come from the store photos; the gondola rows are schematic.   */
 /* ------------------------------------------------------------------------ */
 
-const W = 360;
-const H = 250;
+const W = 390;
+const H = 328;
 
 type Spot = {
   x: number;
@@ -194,13 +197,14 @@ type Spot = {
   side: "left" | "right" | "top" | "bottom";
 };
 
+/* In the order a customer meets them. */
 const SPOTS: Spot[] = [
-  { x: 214, y: 244, label: "Izlog", side: "top" },
-  { x: 58, y: 222, label: "Vrata", side: "right" },
-  { x: 58, y: 168, label: "Kasa", side: "right" },
-  { x: 112, y: 52, label: "Rafovi", side: "right" },
-  { x: 232, y: 188, label: "Akcije", side: "right" },
-  { x: 300, y: 21, label: "Frižideri", side: "bottom" },
+  { x: 110, y: 315, label: "Izlog", side: "top" },
+  { x: 284, y: 312, label: "Vrata", side: "right" },
+  { x: 271, y: 240, label: "Akcije", side: "right" },
+  { x: 113, y: 150, label: "Rafovi", side: "right" },
+  { x: 22, y: 196, label: "Frižideri", side: "right" },
+  { x: 221, y: 272, label: "Kasa", side: "left" },
 ];
 
 const LABEL_POS: Record<Spot["side"], string> = {
@@ -214,6 +218,29 @@ export function FloorPlan({ className = "" }: { className?: string }) {
   const active = useSlideActive();
   const ink = "#1A1A1A";
   const shelf = "#ECE9E1";
+  const cold = "#DCEBFA";
+  const glass = "#BFDDF7";
+  const room = "#F4F2EC";
+  const wall = {
+    stroke: ink,
+    strokeWidth: 5,
+    strokeLinecap: "square" as const,
+    fill: "none",
+  };
+  const inner = { ...wall, strokeWidth: 3 };
+  const swing = {
+    fill: "none",
+    stroke: ink,
+    strokeWidth: 1,
+    strokeDasharray: "3 3",
+  };
+  const tag = {
+    fontFamily: MONO,
+    fontSize: 9,
+    letterSpacing: "0.12em",
+    fill: "#8A8A8A",
+    textAnchor: "middle" as const,
+  };
   return (
     <div
       className={`relative w-full ${className}`}
@@ -223,95 +250,193 @@ export function FloorPlan({ className = "" }: { className?: string }) {
         viewBox={`0 0 ${W} ${H}`}
         className="absolute inset-0 h-full w-full"
         role="img"
-        aria-label="Šematski prikaz lokala sa mestima za QR kod: izlog, vrata, kasa, rafovi, akcije i frižideri"
+        aria-label="Osnova lokala sa mestima za QR kod: izlog, vrata, akcije, rafovi, frižideri i kasa"
       >
+        {/* floor: the sales hall, then WC, storage and the back hallway */}
+        <path d="M11 68 H379 V315 H11 Z M182 11 H379 V68 H182 Z" fill="#fff" />
+        <rect x={182} y={68} width={54} height={67} fill={room} />
+        <path d="M236 68 H379 V122 H276 L236 122 Z" fill={room} />
+        <path d="M182 11 H379 V68 H182 Z" fill={room} />
+
+        {/* the step in front of the entrance */}
         <rect
-          x={6}
-          y={6}
-          width={348}
-          height={238}
-          rx={4}
-          fill="#fff"
+          x={228}
+          y={318}
+          width={110}
+          height={8}
+          fill={shelf}
           stroke={ink}
-          strokeWidth={3}
+          strokeWidth={1}
         />
-        {/* fridges along the back wall */}
+
+        {/* fixtures */}
         <rect
-          x={60}
-          y={12}
-          width={280}
-          height={18}
+          x={15}
+          y={92}
+          width={14}
+          height={204}
           rx={2}
-          fill="#DCEBFA"
+          fill={cold}
           stroke={ink}
           strokeWidth={1.5}
         />
-        {[100, 140, 180, 220, 260, 300].map((x) => (
+        {[126, 160, 194, 228, 262].map((y) => (
           <line
-            key={x}
-            x1={x}
-            y1={12}
-            x2={x}
-            y2={30}
+            key={y}
+            x1={15}
+            y1={y}
+            x2={29}
+            y2={y}
             stroke={ink}
             strokeWidth={1}
           />
         ))}
-        {/* wall shelves and four gondolas */}
         <rect
-          x={12}
-          y={40}
-          width={16}
-          height={112}
+          x={34}
+          y={72}
+          width={140}
+          height={12}
           rx={2}
           fill={shelf}
           stroke={ink}
           strokeWidth={1.5}
         />
         <rect
-          x={332}
-          y={40}
-          width={16}
-          height={190}
+          x={361}
+          y={130}
+          width={14}
+          height={168}
           rx={2}
           fill={shelf}
           stroke={ink}
           strokeWidth={1.5}
         />
-        {[100, 160, 220, 280].map((x) => (
+        {[60, 104, 148].map((x) => (
           <rect
             key={x}
             x={x}
-            y={58}
-            width={24}
-            height={124}
+            y={104}
+            width={18}
+            height={132}
             rx={2}
             fill={shelf}
             stroke={ink}
             strokeWidth={1.5}
           />
         ))}
-        {/* the till */}
-        <rect x={34} y={160} width={48} height={18} rx={3} fill={ink} />
-        {/* the shop window and the door */}
+        {[262, 310].map((x) => (
+          <rect
+            key={x}
+            x={x}
+            y={148}
+            width={18}
+            height={88}
+            rx={2}
+            fill={shelf}
+            stroke={ink}
+            strokeWidth={1.5}
+          />
+        ))}
+        {/* ice cream chest, then the till */}
         <rect
-          x={110}
-          y={240}
-          width={210}
-          height={8}
-          fill="#BFDDF7"
+          x={196}
+          y={238}
+          width={50}
+          height={16}
+          rx={2}
+          fill={cold}
+          stroke={ink}
+          strokeWidth={1.5}
+        />
+        <rect x={196} y={262} width={50} height={20} rx={3} fill={ink} />
+        {/* the pillar */}
+        <rect x={186} y={192} width={12} height={12} fill={ink} />
+        {/* electrical cabinets in the storage */}
+        <rect
+          x={367}
+          y={74}
+          width={8}
+          height={18}
+          fill={shelf}
+          stroke={ink}
+          strokeWidth={1}
+        />
+        <rect
+          x={367}
+          y={96}
+          width={8}
+          height={18}
+          fill={shelf}
+          stroke={ink}
+          strokeWidth={1}
+        />
+
+        {/* windows: two on the back wall, the shop window on the street */}
+        <rect
+          x={46}
+          y={66}
+          width={102}
+          height={5}
+          fill={glass}
           stroke={ink}
           strokeWidth={1.2}
         />
-        <rect x={32} y={240} width={52} height={8} fill="#fff" />
-        <path d="M32 244 V200" stroke={ink} strokeWidth={2} />
-        <path
-          d="M32 200 A44 44 0 0 1 76 244"
-          fill="none"
+        <rect
+          x={56}
+          y={312}
+          width={108}
+          height={6}
+          fill={glass}
           stroke={ink}
-          strokeWidth={1}
-          strokeDasharray="3 3"
+          strokeWidth={1.2}
         />
+        {/* glazed entrance with a double door */}
+        <rect
+          x={232}
+          y={312}
+          width={34}
+          height={6}
+          fill={glass}
+          stroke={ink}
+          strokeWidth={1.2}
+        />
+        <rect
+          x={302}
+          y={312}
+          width={36}
+          height={6}
+          fill={glass}
+          stroke={ink}
+          strokeWidth={1.2}
+        />
+        <path d="M266 315 V297 M302 315 V297" stroke={ink} strokeWidth={2} />
+        <path d="M266 297 A18 18 0 0 1 284 315" {...swing} />
+        <path d="M302 297 A18 18 0 0 0 284 315" {...swing} />
+
+        {/* outer walls */}
+        <path
+          d="M46 68 H11 V315 H56 M164 315 H232 M338 315 H379 V11 H318 M294 11 H182 V68 H148"
+          {...wall}
+        />
+        {/* WC, storage, back hallway */}
+        <path
+          d="M182 68 H294 M318 68 H379 M182 135 H208 M232 135 H236 V68 M276 122 H379 M236 11 V30 M330 11 V28 M330 48 V68"
+          {...inner}
+        />
+        {/* doors: WC, storage to hallway, back exit */}
+        <path d="M232 135 V113" stroke={ink} strokeWidth={2} />
+        <path d="M232 113 A22 22 0 0 0 210 135" {...swing} />
+        <path d="M294 68 V46" stroke={ink} strokeWidth={2} />
+        <path d="M294 46 A22 22 0 0 1 316 68" {...swing} />
+        <path d="M294 11 V33" stroke={ink} strokeWidth={2} />
+        <path d="M294 33 A22 22 0 0 0 316 11" {...swing} />
+
+        <text x={209} y={106} {...tag}>
+          WC
+        </text>
+        <text x={322} y={101} {...tag}>
+          MAGACIN
+        </text>
       </svg>
 
       {SPOTS.map((s, i) => (
