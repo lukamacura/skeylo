@@ -13315,16 +13315,16 @@ html.fcv-open {
     0 0 0 1.5px color-mix(in srgb, var(--fc) 80%, transparent) inset,
     0 18px 34px -22px #000;
 }
-.fcf.drop {
+.fcf:is(.drop, .gd-on) {
   transform: translateY(-6px) scale(1.035);
 }
-.fcf.drop .fcf-front {
+.fcf:is(.drop, .gd-on) .fcf-front {
   transform: perspective(700px) rotateX(-24deg);
   box-shadow:
     0 0 0 2px var(--fc) inset,
     0 24px 40px -18px color-mix(in srgb, var(--fc) 60%, #000);
 }
-.fcf.drop .fcf-th > * {
+.fcf:is(.drop, .gd-on) .fcf-th > * {
   transform: translateX(calc(var(--fo) * 62%)) translateY(-16px)
     rotate(calc(var(--fo) * 12deg));
 }
@@ -13411,7 +13411,7 @@ html.fcv-open {
   color: var(--cream);
   border-color: color-mix(in srgb, var(--cream) 35%, transparent);
 }
-.fcfh-up.drop {
+.fcfh-up:is(.drop, .gd-on) {
   border-style: solid;
   border-color: var(--fc);
   background: color-mix(in srgb, var(--fc) 18%, transparent);

@@ -71,7 +71,7 @@ import {
   type Spot,
 } from "./data";
 import { AppCard, FloorPlan, QrSticker, Receipt } from "./scenes";
-import { KnowledgeFlow, KnowledgeSearch } from "./knowledge";
+import { KnowledgeFlow, KnowledgeSearch, KnowledgeStory } from "./knowledge";
 import { Compare } from "./compare";
 /* The first offer's slides, word for word: the team, the site and its
    catalogue demo, the creatives, how they are made and the app demo. */
@@ -843,6 +843,17 @@ const GUARDS: [IconType, string][] = [
   [ShieldCheck, "Samo za Neto tim"],
 ];
 
+/* The way in, in Luka's words: the plans nobody could find. */
+function KnowledgeIntro() {
+  return (
+    <Slide id="knowledge-intro" theme="paper">
+      <Visual className="!mt-0">
+        <KnowledgeStory />
+      </Visual>
+    </Slide>
+  );
+}
+
 function Knowledge() {
   return (
     <Slide id="knowledge" theme="dark">
@@ -1178,6 +1189,12 @@ export const SLIDES: DeckSlide[] = [
     label: "Interaktivni Katalog: demo",
     theme: "light",
     Component: DemoPhone,
+  },
+  {
+    id: "knowledge-intro",
+    label: "Baza znanja: zašto",
+    theme: "paper",
+    Component: KnowledgeIntro,
   },
   {
     id: "knowledge",

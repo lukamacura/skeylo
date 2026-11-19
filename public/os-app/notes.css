@@ -2476,17 +2476,6 @@ body.nb-dragging * {
 .gfsec {
   animation: fade 0.6s 0.2s var(--ease) backwards;
 }
-/* prevlačenje stranice na folder */
-.gtile[draggable="true"] {
-  -webkit-user-drag: element;
-}
-.gtile.drag {
-  opacity: 0.35;
-  transform: scale(0.96);
-  transition:
-    opacity 0.2s,
-    transform 0.3s var(--ease);
-}
 /* meni stranice i putanja */
 .gpmenu .gm-fold > svg:first-child,
 .gp-cf svg {
@@ -2727,14 +2716,6 @@ body.nb-dragging * {
 .gfile.new {
   animation: rowPop 0.8s var(--spring) backwards;
 }
-.gfile[draggable="true"] {
-  -webkit-user-drag: element;
-}
-.gfile.drag,
-.gtile.drag {
-  opacity: 0.35;
-  transform: scale(0.96);
-}
 .gf-tag {
   position: absolute;
   top: 18px;
@@ -2917,12 +2898,13 @@ body.nb-dragging * {
 .gfile.up {
   cursor: progress;
 }
-/* stranica kao cilj: fajl sa računara ili iz mreže ide u nju */
-#gpages.fdrag .gtile[data-gid] {
+/* stranica kao cilj: fajl sa računara, ili karta koja se nosi, ide u nju */
+#gpages.fdrag .gtile[data-gid],
+#gpages.gd-drag .gtile[data-gid]:not(.gd-src) {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--orange) 45%, transparent);
 }
-#gpages .gtile.drop {
+#gpages .gtile.gd-on {
   transform: translateY(-6px) scale(1.02);
   border-color: var(--orange);
   box-shadow:
@@ -3616,4 +3598,213 @@ body.nb-dragging * {
 .gfh-lk svg {
   width: 14px;
   height: 14px;
+}
+
+/* ---------- prevlačenje stranica, foldera i fajlova (notes.js „prevlačenje“) ---------- */
+#gpages :is(.gtile[data-gid], .gfile[data-file], .fcf[data-gf]),
+#gpKids .gk[data-kid] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+html.gd-act,
+html.gd-act * {
+  cursor: grabbing !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+/* prst drži kartu: mali pritisak pre nego što se podigne */
+.gd-press {
+  transform: scale(0.97) !important;
+  transition: transform 0.25s var(--ease) !important;
+}
+/* original ostaje na mestu, providan; posle spuštanja nestaje dok se ostale ne pomere */
+.gd-src {
+  opacity: 0.28 !important;
+  transform: scale(0.95) !important;
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.35s var(--ease) !important;
+}
+.gd-src.gd-gone {
+  opacity: 0 !important;
+  transform: scale(0.9) !important;
+}
+/* karta u ruci (klon) */
+.gd-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9000;
+  pointer-events: none;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 28px 32px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+.gd-ghost,
+.gd-ghost * {
+  animation: none !important;
+  transition: none !important;
+}
+.gd-ghost > * {
+  margin: 0 !important;
+}
+.gd-ghost > .cptile {
+  border-color: color-mix(in srgb, var(--orange) 55%, var(--line));
+}
+.gd-ghost.gd-gk > .gk {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--orange) 45%, var(--line));
+  border-radius: 12px;
+}
+/* ciljevi u stranici: red u „Folderi / Podstranice“, putanja i „nazad“ */
+html.gd-act :is(#gpCrumbs button, #gpBack) {
+  outline: 1px dashed color-mix(in srgb, var(--cream) 30%, transparent);
+  outline-offset: 2px;
+}
+#gpKids .gk.gd-on,
+#gpCrumbs button.gd-on,
+#gpBack.gd-on {
+  color: var(--cream);
+  background: color-mix(in srgb, var(--fc, var(--orange)) 18%, transparent);
+  outline: 2px solid var(--fc, var(--orange));
+  outline-offset: 0;
+  transform: scale(1.02);
+}
+#gpKids .gk.gd-on .pi {
+  color: var(--fc, var(--orange));
+}
+/* cilj je primio kartu */
+.gd-got {
+  animation: gdGot 0.6s var(--spring);
+}
+@keyframes gdGot {
+  40% {
+    transform: scale(1.04);
+  }
+}
+/* kanta: izađe odozdo dok se nešto nosi */
+.gd-scrim {
+  position: fixed;
+  inset: auto 0 0;
+  height: 240px;
+  z-index: 8980;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(8, 5, 3, 0.78), transparent);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+.gd-scrim.on {
+  opacity: 1;
+}
+.gd-trash {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+  z-index: 8990;
+  width: min(480px, calc(100vw - 32px));
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 30px;
+  color: color-mix(in srgb, var(--cream) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1.5px dashed color-mix(in srgb, #ff6b5b 50%, transparent);
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 150%) scale(0.94);
+  transition:
+    transform 0.5s cubic-bezier(0.2, 0.9, 0.25, 1),
+    opacity 0.25s var(--ease),
+    background-color 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.gd-trash.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+.gd-trash.hot {
+  color: #fff;
+  background: color-mix(in srgb, #ff5a4a 34%, var(--surface-2));
+  border-style: solid;
+  border-color: #ff6b5b;
+  transform: translate(-50%, -6px) scale(1.05);
+}
+.gd-tr-i {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: color-mix(in srgb, #ff6b5b 16%, transparent);
+  color: #ff8a7d;
+  transition:
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease),
+    transform 0.35s var(--spring);
+}
+.gd-trash.hot .gd-tr-i {
+  color: #fff;
+  background: #ff5a4a;
+  transform: scale(1.1);
+}
+.gd-tr-i svg {
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+}
+.gd-lid {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  transition: transform 0.35s var(--spring);
+}
+.gd-trash.hot .gd-lid {
+  transform: translateY(-1.5px) rotate(-26deg);
+}
+.gd-trash b {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.gd-trash.gulp .gd-tr-i {
+  animation: gdGulp 0.38s var(--spring);
+}
+@keyframes gdGulp {
+  35% {
+    transform: scale(0.86);
+  }
+}
+@media (max-width: 600px) {
+  .gd-trash {
+    height: 84px;
+    border-radius: 26px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gd-trash {
+    transform: translate(-50%, 0);
+    transition: opacity 0.2s;
+  }
+  .gd-trash.hot {
+    transform: translate(-50%, 0);
+  }
+  .gd-src,
+  .gd-press {
+    transform: none !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gd-trash {
+    background: var(--surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

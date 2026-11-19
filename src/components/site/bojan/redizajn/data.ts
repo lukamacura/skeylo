@@ -60,6 +60,7 @@ export const SPOTS: Spot[] = [
     title: "Ulaz. [[Prvi utisak.]]",
     alt: "Ulaz u lokal",
     pre: "/clients/neto/pre-ulaz.webp",
+    posle: "/clients/neto/posle-ulaz.webp",
     w: 960,
     h: 1280,
     fixes: [
@@ -75,6 +76,7 @@ export const SPOTS: Spot[] = [
     title: "Sred radnje. [[Zid od papira.]]",
     alt: "Glavni prolaz",
     pre: "/clients/neto/pre-prolaz.webp",
+    posle: "/clients/neto/posle-prolaz.webp",
     w: 1600,
     h: 900,
     fixes: [
@@ -90,6 +92,7 @@ export const SPOTS: Spot[] = [
     title: "Kavez sa odećom. [[Haos u prolazu.]]",
     alt: "Kavez sa odećom u prolazu",
     pre: "/clients/neto/pre-kavez.webp",
+    posle: "/clients/neto/posle-kavez.webp",
     w: 960,
     h: 1280,
     fixes: [
@@ -104,6 +107,7 @@ export const SPOTS: Spot[] = [
     title: "Lavabo. [[Usred prodavnice.]]",
     alt: "Lavabo pored frižidera",
     pre: "/clients/neto/pre-lavabo.webp",
+    posle: "/clients/neto/posle-lavabo.webp",
     w: 960,
     h: 1280,
     fixes: [
@@ -118,6 +122,7 @@ export const SPOTS: Spot[] = [
     title: "Plafon. [[Fleke od vlage.]]",
     alt: "Plafon iznad rafa",
     pre: "/clients/neto/pre-plafon.webp",
+    posle: "/clients/neto/posle-plafon.webp",
     w: 960,
     h: 1280,
     fixes: [
@@ -132,6 +137,7 @@ export const SPOTS: Spot[] = [
     title: "Kasa. [[Poslednji utisak.]]",
     alt: "Kasa i izlaz",
     pre: "/clients/neto/pre-kasa.webp",
+    posle: "/clients/neto/posle-kasa.webp",
     w: 1600,
     h: 900,
     fixes: [
