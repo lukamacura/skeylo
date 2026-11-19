@@ -180,7 +180,7 @@ export function StoreReel({ className = "" }: { className?: string }) {
 }
 
 /* ------------------------------------------------------------------------ */
-/* The store's floor plan with the QR spots popping in one by one.          */
+/* The store's floor plan with the QR spots on it.                          */
 /* Walls, windows, doors, the pillar, WC and storage follow the evacuation  */
 /* plan on the store wall (Fruškogorska 18, R 1:100), street at the bottom. */
 /* Till and ice cream chest by the door, and the fridges along the blind    */
@@ -215,7 +215,6 @@ const LABEL_POS: Record<Spot["side"], string> = {
 };
 
 export function FloorPlan({ className = "" }: { className?: string }) {
-  const active = useSlideActive();
   const ink = "#1A1A1A";
   const shelf = "#ECE9E1";
   const cold = "#DCEBFA";
@@ -439,33 +438,12 @@ export function FloorPlan({ className = "" }: { className?: string }) {
         </text>
       </svg>
 
-      {SPOTS.map((s, i) => (
-        <motion.span
+      {SPOTS.map((s) => (
+        <span
           key={s.label}
           className="absolute -ml-[13px] -mt-[13px]"
           style={{ left: `${(s.x / W) * 100}%`, top: `${(s.y / H) * 100}%` }}
-          initial={{ opacity: 0, scale: 0.4 }}
-          animate={
-            active ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.4 }
-          }
-          transition={{ ...POP_SPRING, delay: 0.55 + i * 0.16 }}
         >
-          <motion.i
-            aria-hidden
-            className="absolute inset-0 rounded-[7px]"
-            style={{ border: `2px solid ${RED}` }}
-            animate={
-              active
-                ? { scale: [1, 1.9], opacity: [0.7, 0] }
-                : { scale: 1, opacity: 0 }
-            }
-            transition={{
-              duration: 1.8,
-              delay: 1.2 + i * 0.16,
-              repeat: Infinity,
-              ease: "easeOut",
-            }}
-          />
           <span
             className="relative grid h-[26px] w-[26px] place-items-center rounded-[7px] text-white"
             style={{ background: RED, boxShadow: "0 0 0 2px #fff" }}
@@ -477,7 +455,7 @@ export function FloorPlan({ className = "" }: { className?: string }) {
           >
             {s.label}
           </span>
-        </motion.span>
+        </span>
       ))}
     </div>
   );
