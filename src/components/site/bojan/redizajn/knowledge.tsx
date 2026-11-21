@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  Archive,
   ArrowRight,
   ClipboardList,
   Database,
@@ -30,6 +29,13 @@ import {
   pop,
   useSlideActive,
 } from "../primitives";
+import {
+  DataBase,
+  Fascikla,
+  FileDoc,
+  type FileKind,
+  type FolderTone,
+} from "./files";
 
 /* ------------------------------------------------------------------------ */
 /* The way in: the project plans Jovana could not find. A search types      */
@@ -149,68 +155,161 @@ function LostSearch() {
   );
 }
 
-/* Digital files and paper alike, into one locked base, found in a second. */
-const INTO: [React.ElementType, string][] = [
-  [FileText, "Digitalni podaci"],
-  [Archive, "Fizička dokumenta"],
-  [Database, "Jedna baza"],
-  [Zap, "Pretraga za sekund"],
-];
+/* Digital files and paper folders alike, into one locked base, found in a
+   second. Drawn rather than iconed: the files fan out, the folders pile up,
+   one of each drops into the base, then the search lights up. */
+const FLOW_AT = {
+  files: BEAT.flow,
+  plus: BEAT.flow + 0.22,
+  folders: BEAT.flow + 0.28,
+  arrow1: BEAT.flow + 0.55,
+  base: BEAT.flow + 0.62,
+  drop: BEAT.flow + 0.85,
+  arrow2: BEAT.flow + 1.35,
+  search: BEAT.flow + 1.42,
+};
+
+function FlowCol({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 text-center">
+      <div className="flex h-[3.9em] items-end justify-center">{children}</div>
+      <span className="text-[0.8em] font-bold leading-[1.15] text-[#111]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function FlowSep({ at, arrow = false }: { at: number; arrow?: boolean }) {
+  const active = useSlideActive();
+  return (
+    <motion.span
+      aria-hidden
+      className="mt-[1.5em] flex justify-center"
+      style={{ color: arrow ? RED : "#9A9A9A" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: active ? 1 : 0 }}
+      transition={{ delay: at, duration: 0.3 }}
+    >
+      {arrow ? (
+        <ArrowRight className="h-[1.15em] w-[1.15em]" strokeWidth={2.6} />
+      ) : (
+        <span className="text-[1.2em] font-black leading-none">+</span>
+      )}
+    </motion.span>
+  );
+}
 
 function OneBase() {
   const active = useSlideActive();
+  const drop = (delay: number, rotate = 0) => ({
+    initial: { opacity: 0, y: "-0.8em", scale: 0.9, rotate },
+    animate: active
+      ? { opacity: 1, y: "0em", scale: 1, rotate }
+      : { opacity: 0, y: "-0.8em", scale: 0.9, rotate },
+    transition: { ...POP_SPRING, delay },
+  });
+  /* a page and a folder falling into the base, once */
+  const into = (delay: number) => ({
+    initial: { opacity: 0 },
+    animate: active
+      ? {
+          opacity: [0, 1, 1, 0],
+          x: ["-2.6em", "-1.3em", "0em", "0em"],
+          y: ["-0.4em", "-1.3em", "-0.6em", "0.5em"],
+          scale: [0.9, 0.85, 0.6, 0.35],
+        }
+      : { opacity: 0 },
+    transition: { delay, duration: 0.8, ease: "easeInOut" as const },
+  });
+
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-start gap-1 md:gap-2">
-      {INTO.map(([Icon, label], i) => (
-        <motion.div
-          key={label}
-          className="contents"
-          initial={false}
-          animate={active ? "on" : "off"}
-        >
-          {i > 0 && (
-            <motion.span
-              aria-hidden
-              className="mt-[13px] md:mt-[17px]"
-              style={{ color: i === 2 ? RED : "#9A9A9A" }}
-              variants={{ off: { opacity: 0 }, on: { opacity: 1 } }}
-              transition={{ delay: BEAT.flow + i * 0.18 - 0.08 }}
-            >
-              {i === 1 ? (
-                <span className="text-[16px] font-black leading-none">+</span>
-              ) : (
-                <ArrowRight size={16} />
-              )}
-            </motion.span>
-          )}
+    <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-start gap-1 text-[14px] md:gap-2 md:text-[17px]">
+      <FlowCol label="Digitalni fajlovi">
+        <span className="relative block h-[3.6em] w-[4.1em]">
           <motion.span
-            className="flex flex-col items-center gap-1.5 text-center text-[11px] font-bold leading-[1.15] md:text-[13px]"
-            variants={{
-              off: { opacity: 0, y: 10, scale: 0.9 },
-              on: { opacity: 1, y: 0, scale: 1 },
-            }}
-            transition={{ ...POP_SPRING, delay: BEAT.flow + i * 0.18 }}
+            className="absolute left-0 top-[0.55em]"
+            {...drop(FLOW_AT.files, -9)}
           >
-            <span
-              className="relative grid h-10 w-10 place-items-center md:h-12 md:w-12"
-              style={{
-                background: i >= 2 ? RED : "#fff",
-                color: i >= 2 ? "#fff" : "#111",
-                border: i >= 2 ? undefined : "2px solid #000",
-                borderRadius: "10px 10px 10px 3px",
-              }}
-            >
-              <Icon size={19} />
-              {i === 2 && (
-                <span className="absolute -bottom-1.5 -right-1.5 grid h-5 w-5 place-items-center rounded-full bg-black text-white">
-                  <Lock size={10} strokeWidth={2.6} />
-                </span>
-              )}
-            </span>
-            {label}
+            <FileDoc kind="xlsx" size={2} />
           </motion.span>
-        </motion.div>
-      ))}
+          <motion.span
+            className="absolute left-[1.05em] top-[0.2em]"
+            {...drop(FLOW_AT.files + 0.07, 4)}
+          >
+            <FileDoc kind="docx" size={2} />
+          </motion.span>
+          <motion.span
+            className="absolute left-[2.05em] top-[0.45em]"
+            {...drop(FLOW_AT.files + 0.14, 10)}
+          >
+            <FileDoc kind="pdf" art="plan" size={2} />
+          </motion.span>
+        </span>
+      </FlowCol>
+      <FlowSep at={FLOW_AT.plus} />
+      <FlowCol label="Fizička dokumenta">
+        <span className="relative block h-[3.7em] w-[4em]">
+          <motion.span
+            className="absolute left-[0.45em] top-[1.1em]"
+            {...drop(FLOW_AT.folders, 4)}
+          >
+            <Fascikla label="Ugovori" tone="green" size={3.3} />
+          </motion.span>
+          <motion.span
+            className="absolute left-0 top-[0.6em]"
+            {...drop(FLOW_AT.folders + 0.08, -3)}
+          >
+            <Fascikla label="Fakture" tone="blue" size={3.3} />
+          </motion.span>
+          <motion.span
+            className="absolute left-[0.55em] top-[0.05em]"
+            {...drop(FLOW_AT.folders + 0.16, 2)}
+          >
+            <Fascikla label="Planovi" tone="kraft" size={3.3} />
+          </motion.span>
+        </span>
+      </FlowCol>
+      <FlowSep at={FLOW_AT.arrow1} arrow />
+      <FlowCol label="Jedna baza">
+        <span className="relative block">
+          <motion.span className="block" {...drop(FLOW_AT.base)}>
+            <DataBase size={2.7} />
+          </motion.span>
+          <motion.span
+            className="pointer-events-none absolute left-1/2 top-0 -ml-[0.6em]"
+            {...into(FLOW_AT.drop)}
+          >
+            <FileDoc kind="pdf" size={1.2} />
+          </motion.span>
+          <motion.span
+            className="pointer-events-none absolute left-1/2 top-0 -ml-[0.8em]"
+            {...into(FLOW_AT.drop + 0.3)}
+          >
+            <Fascikla label="Planovi" size={1.7} />
+          </motion.span>
+        </span>
+      </FlowCol>
+      <FlowSep at={FLOW_AT.arrow2} arrow />
+      <FlowCol label="Pretraga za sekund">
+        <motion.span
+          className="relative mb-[0.2em] grid h-[2.7em] w-[2.7em] place-items-center bg-white"
+          style={{
+            border: "2px solid #000",
+            borderRadius: "0.7em 0.7em 0.7em 0.2em",
+          }}
+          {...drop(FLOW_AT.search)}
+        >
+          <Search
+            className="h-[1.25em] w-[1.25em]"
+            style={{ color: RED }}
+            strokeWidth={2.8}
+          />
+          <span className="absolute -right-[0.45em] -top-[0.45em] grid h-[1.15em] w-[1.15em] place-items-center rounded-full bg-black text-[#FFD60A]">
+            <Zap className="h-[0.65em] w-[0.65em]" fill="currentColor" />
+          </span>
+        </motion.span>
+      </FlowCol>
     </div>
   );
 }
@@ -367,25 +466,83 @@ export function KnowledgeFlow() {
 /* documents it came from. The answers are made up for the demo.            */
 /* ------------------------------------------------------------------------ */
 
-const QA: { q: string; a: string; src: string[] }[] = [
+/* Where an answer came from: a file, or a paper folder that was scanned
+   into the base, with the page or row the answer sits on. */
+type Source =
+  | { name: string; kind: FileKind; art?: "plan"; where: string }
+  | {
+      name: string;
+      kind: "fascikla";
+      label: string;
+      tone: FolderTone;
+      where: string;
+    };
+
+const QA: { q: string; a: string; src: Source[] }[] = [
   {
     q: "Gde je plan novog izgleda lokala?",
     a: "Poslednja verzija je od arhitekte, sa rasporedom rafova, rasvetom i mestima za QR kod.",
-    src: ["Plan lokala v2.pdf", "Ponuda majstora.pdf"],
+    src: [
+      { name: "Plan lokala v2.pdf", kind: "pdf", art: "plan", where: "str. 2" },
+      {
+        name: "Ponude majstora",
+        kind: "fascikla",
+        label: "Ponude",
+        tone: "kraft",
+        where: "skenirano · str. 5",
+      },
+    ],
   },
   {
     q: "Koji ugovori ističu ovog meseca?",
     a: "Dva ugovora sa dobavljačima ističu do 30. novembra. Oba imaju opciju produženja.",
-    src: ["Ugovori 2026.xlsx", "Dobavljač A, ugovor.pdf"],
+    src: [
+      { name: "Ugovori 2026.xlsx", kind: "xlsx", where: "red 14" },
+      {
+        name: "Dobavljači",
+        kind: "fascikla",
+        label: "Ugovori",
+        tone: "blue",
+        where: "skenirano · str. 1",
+      },
+    ],
   },
   {
     q: "Kako se radi popis na kraju meseca?",
     a: "Šest koraka, od zatvaranja kase do potpisa zapisnika. Obrazac zapisnika je u prilogu.",
-    src: ["Procedura popisa.docx", "Zapisnik.xlsx"],
+    src: [
+      { name: "Procedura popisa.docx", kind: "docx", where: "str. 1" },
+      { name: "Zapisnik.xlsx", kind: "xlsx", where: "obrazac" },
+    ],
   },
 ];
 
-function Answer({ a, src }: { a: string; src: string[] }) {
+function SourceCard({ s }: { s: Source }) {
+  return (
+    <>
+      <span className="flex w-[2.5em] flex-none justify-center text-[14px] md:text-[15px]">
+        {s.kind === "fascikla" ? (
+          <Fascikla label={s.label} tone={s.tone} size={2.5} />
+        ) : (
+          <FileDoc kind={s.kind} art={s.art} size={1.65} />
+        )}
+      </span>
+      <span className="min-w-0 leading-[1.2]">
+        <b className="block text-[11.5px] font-bold text-[#111] md:text-[12.5px]">
+          {s.name}
+        </b>
+        <span
+          className="mt-0.5 block text-[9.5px] uppercase tracking-[0.08em] text-[#8A8A8A] md:text-[10.5px]"
+          style={{ fontFamily: MONO }}
+        >
+          {s.where}
+        </span>
+      </span>
+    </>
+  );
+}
+
+function Answer({ a, src }: { a: string; src: Source[] }) {
   const active = useSlideActive();
   const [shown, setShown] = useState(0);
 
@@ -441,18 +598,17 @@ function Answer({ a, src }: { a: string; src: string[] }) {
           </p>
         )}
       </div>
-      <div className="mt-2.5 flex flex-wrap gap-1.5 pl-[38px]">
+      <div className="mt-2.5 grid grid-cols-2 gap-1.5 pl-[38px]">
         {src.map((s, i) => (
           <motion.span
-            key={s}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-[#333] md:text-[12px]"
-            style={{ background: "#F2F0EA", fontFamily: MONO }}
+            key={s.name}
+            className="flex min-w-0 items-center gap-1.5 rounded-lg py-1.5 pl-1 pr-2"
+            style={{ background: "#F2F0EA" }}
             initial={{ opacity: 0, y: 6 }}
             animate={done ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }}
             transition={{ ...POP_SPRING, delay: i * 0.1 }}
           >
-            <FileText size={12} style={{ color: RED }} />
-            {s}
+            <SourceCard s={s} />
           </motion.span>
         ))}
       </div>
