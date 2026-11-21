@@ -977,7 +977,7 @@ export function AppPhone() {
 
 /* The proof wall and the four numbers of the landing page's Rezultati
    section, in the deck's own dress. */
-function Results() {
+export function Results({ big = false }: { big?: boolean } = {}) {
   const stats: [IconType, ReactNode, string][] = [
     [TrendingUp, "4.2x", "prosečan povrat na uloženo"],
     [
@@ -994,7 +994,7 @@ function Results() {
   ];
   return (
     <Slide id="results" theme="dark">
-      <Headline>Rezultati, [[crno na belo.]]</Headline>
+      <Headline size={big ? "xl" : "md"}>Rezultati, [[crno na belo.]]</Headline>
       <Visual>
         <div className="-mx-5 flex flex-col gap-3 [mask-image:linear-gradient(to_right,transparent,black_7%,black_93%,transparent)] max-md:-mx-[25px] max-md:[zoom:0.8] md:-mx-10 md:gap-4">
           <div className="flex h-[126px] items-center overflow-hidden sm:h-[148px]">

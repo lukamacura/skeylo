@@ -22,6 +22,7 @@ export default function RedizajnDeck({
       slides={SLIDES}
       storageKey="bojan-deck-open"
       contact={CONTACT}
+      eyebrows={false}
     />
   );
 }

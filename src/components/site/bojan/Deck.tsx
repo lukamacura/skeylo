@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   AnimatePresence,
   MotionConfig,
@@ -26,6 +27,10 @@ export type DeckSlide = {
   label: string;
   theme: Theme;
   Component: () => React.JSX.Element;
+  /* Photos the slide shows, with the `sizes` it shows them at. The deck
+     fetches them while the slide before is on screen, so a photo is there
+     the moment its slide opens instead of loading in mid-animation. */
+  preload?: { src: string; sizes: string }[];
 };
 
 /* One slide on screen at a time, sliding in from the side you are heading
@@ -72,11 +77,15 @@ export default function Deck({
   slides,
   storageKey,
   contact = CONTACT,
+  eyebrows = true,
 }: {
   fontClass?: string;
   slides: DeckSlide[];
   storageKey: string;
   contact?: string;
+  /* The small "02 / 17 · label" line on top of each slide. The bar at the
+     bottom says the same, so a deck can leave it out. */
+  eyebrows?: boolean;
 }) {
   const [open, setOpen] = useState<boolean | null>(null);
   const [index, setIndex] = useState(0);
@@ -358,13 +367,41 @@ export default function Deck({
                 style={{ WebkitOverflowScrolling: "touch" }}
               >
                 <SlidePositionContext.Provider
-                  value={{ index, total: slides.length, label: current.label }}
+                  value={{
+                    index,
+                    total: slides.length,
+                    label: current.label,
+                    eyebrow: eyebrows,
+                  }}
                 >
                   <Current />
                 </SlidePositionContext.Provider>
               </motion.div>
             </AnimatePresence>
           </motion.div>
+        </div>
+
+        {/* The next two slides' photos, loading in the background. Same
+            src and sizes as on the slide, so the browser asks for the same
+            file and the slide gets it from the cache. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
+        >
+          {[slides[index + 1], slides[index + 2]].flatMap(
+            (s) =>
+              s?.preload?.map((p) => (
+                <span key={p.src} className="relative block h-px w-px">
+                  <Image
+                    src={p.src}
+                    alt=""
+                    fill
+                    sizes={p.sizes}
+                    loading="eager"
+                  />
+                </span>
+              )) ?? [],
+          )}
         </div>
 
         {/* The bar is always black. It carries you to the offer, and on the

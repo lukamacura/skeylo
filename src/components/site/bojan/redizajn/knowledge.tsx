@@ -21,6 +21,7 @@ import {
 import {
   DISPLAY,
   EASE_OUT,
+  HEADLINE_XL,
   MONO,
   NETO_RADIUS,
   POP_SPRING,
@@ -226,7 +227,7 @@ export function KnowledgeStory() {
       <LostSearch />
       <div>
         <motion.h1
-          className="text-[clamp(1.75rem,7.4vw,3.2rem)] font-extrabold italic leading-[1.05] tracking-[-0.01em]"
+          className={`${HEADLINE_XL} font-extrabold italic tracking-[-0.01em]`}
           {...at(BEAT.punch)}
         >
           To se više{" "}
@@ -486,7 +487,7 @@ export function KnowledgeSearch() {
           style={{ fontFamily: MONO }}
         >
           <Lock size={11} />
-          Neto · baza znanja
+          Neto baza znanja · primer
         </span>
       </div>
       <div className="p-3 md:p-4">

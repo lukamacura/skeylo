@@ -517,7 +517,8 @@ export function QrGlyph({ size = 64 }: { size?: number }) {
   );
 }
 
-/* The sticker that goes on every spot in the plan. */
+/* The sticker that goes on every spot in the plan, in the words of the
+   real one on the door. */
 export function QrSticker() {
   return (
     <div
@@ -526,11 +527,11 @@ export function QrSticker() {
     >
       <QrGlyph size={68} />
       <div className="min-w-0">
-        <b className="block text-[24px] font-black italic leading-none md:text-[30px]">
-          Skeniraj.
+        <b className="block text-[22px] font-black italic leading-none md:text-[28px]">
+          Skeniraj QR kod
         </b>
         <span className="mt-1 block text-[13px] font-bold leading-[1.25] md:text-[15px]">
-          −{FIRST_BUY_OFF}% na prvu kupovinu u Neto aplikaciji
+          i ostvari {FIRST_BUY_OFF}% popusta na 1. kupovinu.
         </span>
       </div>
     </div>
@@ -558,7 +559,7 @@ const BARS = (() => {
   return { bars: out, width: x };
 })();
 
-function Barcode() {
+export function Barcode() {
   return (
     <svg
       viewBox={`0 0 ${BARS.width} 30`}

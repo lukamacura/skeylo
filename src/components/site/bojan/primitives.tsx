@@ -88,8 +88,15 @@ export const THEMES: Record<
 };
 
 /* Phones get a cheaper version of every animation in here. */
+/* Slides mount only after the gate's client-side check, never during
+   hydration, so the first render can read the real width: a phone gets
+   the phone headline from the first frame instead of swapping to it. */
 export function useIsPhone() {
-  const [phone, setPhone] = useState(false);
+  const [phone, setPhone] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches,
+  );
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
     const sync = () => setPhone(mq.matches);
@@ -150,6 +157,8 @@ export const SlidePositionContext = createContext<{
   index: number;
   total: number;
   label: string;
+  /* Off when the deck's bar already says where you are. */
+  eyebrow?: boolean;
 }>({ index: 0, total: 0, label: "" });
 
 /* A slide never scrolls: if its content is taller than the stage, the
@@ -261,8 +270,14 @@ export function Slide({
 }
 
 function Eyebrow() {
-  const { index, total, label } = useContext(SlidePositionContext);
+  const {
+    index,
+    total,
+    label,
+    eyebrow = true,
+  } = useContext(SlidePositionContext);
   const t = useTheme();
+  if (!eyebrow) return null;
   return (
     <motion.p
       variants={item}
@@ -287,6 +302,9 @@ function Eyebrow() {
   );
 }
 
+export const HEADLINE_XL =
+  "text-[length:clamp(1.95rem,min(8.8vw,6.2svh),3.9rem)] leading-[1.02]";
+
 /* --- Headline ------------------------------------------------------------
    Rubik, heavy italic, exactly the `.h2` of the strategy page. Words wrapped
    in [[ ]] go red and get a marker swipe once they have landed. */
@@ -296,7 +314,9 @@ export function Headline({
   center = false,
 }: {
   children: string;
-  size?: "md" | "lg";
+  /* xl: the follow-up offers' slide titles, big enough to read at a
+     glance on a phone. */
+  size?: "md" | "lg" | "xl";
   center?: boolean;
 }) {
   const active = useSlideActive();
@@ -307,7 +327,9 @@ export function Headline({
   const cls =
     size === "lg"
       ? "text-[clamp(2.1rem,10vw,4.6rem)] leading-[1.02]"
-      : "text-[clamp(1.75rem,7.4vw,3.2rem)] leading-[1.05]";
+      : size === "xl"
+        ? HEADLINE_XL
+        : "text-[clamp(1.75rem,7.4vw,3.2rem)] leading-[1.05]";
 
   let wordIndex = 0;
 
