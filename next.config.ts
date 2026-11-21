@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
     return [
       // Zakazivanje je bilo na /poziv pre nego što je preimenovano u sastanak.
       { source: "/poziv", destination: "/sastanak", permanent: false },
+      // Neto ponude su bile na /bojan i /bojan/redizajn.
+      {
+        source: "/bojan/:path*",
+        destination: "/neto/:path*",
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

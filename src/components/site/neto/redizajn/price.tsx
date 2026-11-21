@@ -9,6 +9,7 @@ import {
   QrCode,
   Smartphone,
   Store,
+  Target,
   Video,
 } from "lucide-react";
 import {
@@ -19,7 +20,6 @@ import {
   POP_SPRING,
   RED,
   Slide,
-  fmt,
   item,
   useSlideActive,
 } from "../primitives";
@@ -31,7 +31,10 @@ import { AGENCY_FEE, FULL_PACK_TEAM, MONTHS } from "./data";
    the first lines are the Full package from the first offer, the client
    already knows them and what they cost; everything under "Novo" comes on
    top for the same monthly fee. The receipt prints out of a slot, the new
-   lines light up as they come out, the total counts up.
+   lines light up as they come out, the total counts up. Only the total is
+   printed: Luka dropped the monthly line on 2026-11-21. Making the videos
+   and running the Meta ads are in the price; the ad budget and the works on
+   the store are not, Neto pays those.
    ------------------------------------------------------------------------ */
 
 type Row = { icon: React.ElementType; label: string; tag?: string };
@@ -39,6 +42,7 @@ type Row = { icon: React.ElementType; label: string; tag?: string };
 const FROM_FIRST: Row[] = [
   { icon: Globe, label: "Sajt + Interaktivni katalog" },
   { icon: Clapperboard, label: "Kreative: plaćene i organske" },
+  { icon: Target, label: "Vođenje Meta reklama" },
 ];
 
 const ADDED: Row[] = [
@@ -189,21 +193,7 @@ function OfferReceipt() {
             </ul>
 
             <div className="my-2.5 border-t-2 border-black md:my-3.5" />
-            <p
-              className="flex items-baseline justify-between gap-3 text-[12.5px] md:text-[14px]"
-              style={{ fontFamily: MONO }}
-            >
-              <span>
-                Mesečno
-                {SAME && (
-                  <span className="text-[#6B6B6B]"> · kao Full paket</span>
-                )}
-              </span>
-              <b className="whitespace-nowrap font-semibold">
-                {fmt(MONTHLY)} €
-              </b>
-            </p>
-            <p className="mt-1.5 flex items-end justify-between gap-3">
+            <p className="flex items-end justify-between gap-3">
               <span
                 className="pb-1 text-[12.5px] font-semibold uppercase tracking-[0.08em] md:text-[14px]"
                 style={{ fontFamily: MONO }}
@@ -248,7 +238,8 @@ export function Price() {
         className="mx-auto mt-2.5 max-w-[440px] text-center text-[12px] leading-[1.35] md:mt-4 md:text-[13.5px]"
         style={{ color: "#FFE3E0" }}
       >
-        Bez PDV-a. Radovi na lokalu, Meta oglasi i modeli se plaćaju posebno.
+        Kreiranje videa i vođenje Meta reklama su u ceni. Budžet za oglase i
+        građevinske radove na lokalu plaća Neto.
       </motion.p>
     </Slide>
   );

@@ -9,7 +9,7 @@ const CONTACT =
     "Zdravo Luka, želimo da krenemo sa ponudom za tri meseca: redizajn lokala, sajt, aplikacija i baza znanja. Hajde da zakažemo sastanak.",
   );
 
-/* Same gate, same password and the same "unlocked" key as /bojan: whoever
+/* Same gate, same password and the same "unlocked" key as /neto: whoever
    opened the first offer in this tab walks straight into this one. */
 export default function RedizajnDeck({
   fontClass = "",
@@ -20,7 +20,7 @@ export default function RedizajnDeck({
     <Deck
       fontClass={fontClass}
       slides={SLIDES}
-      storageKey="bojan-deck-open"
+      storageKey="neto-deck-open"
       contact={CONTACT}
       eyebrows={false}
     />

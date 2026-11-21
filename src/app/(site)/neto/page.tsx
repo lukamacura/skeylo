@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import BojanDeck from "@/components/site/bojan/BojanDeck";
+import NetoDeck from "@/components/site/neto/NetoDeck";
 
 /* Local fonts, not next/font/google: Google sometimes serves /l/font?kit= URLs
    and Turbopack then fails the whole build (vidi /ils). Files are the official
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function BojanOfferPage() {
+export default function NetoOfferPage() {
   return (
-    <BojanDeck
+    <NetoDeck
       fontClass={`${rubik.variable} ${plexMono.variable} ${grandHotel.variable}`}
     />
   );

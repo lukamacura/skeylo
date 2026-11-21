@@ -67,7 +67,7 @@ type Swipe = {
 };
 
 /* The shell every Neto deck runs in: the password gate, one slide at a
-   time, swipe and keys, and the black bar. /bojan and the follow-up offers
+   time, swipe and keys, and the black bar. /neto and the follow-up offers
    pass their own slides, their own "already unlocked" key and, if they
    want, their own WhatsApp text for the last slide's button. Each deck
    imports only its own slides, so one deck's phone demos never ship with

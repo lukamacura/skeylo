@@ -6,7 +6,7 @@ import { ArrowRight, Lock } from "lucide-react";
 import { DISPLAY, MONO, RED } from "./primitives";
 import { NetoLogo } from "./visuals";
 
-export const PASS = "bojanneto26";
+export const PASS = "netostrategija123";
 
 export default function Gate({ onUnlock }: { onUnlock: () => void }) {
   const [value, setValue] = useState("");
@@ -60,11 +60,11 @@ export default function Gate({ onUnlock }: { onUnlock: () => void }) {
         </p>
 
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
-          <label htmlFor="bojan-pass" className="sr-only">
+          <label htmlFor="neto-pass" className="sr-only">
             Lozinka
           </label>
           <input
-            id="bojan-pass"
+            id="neto-pass"
             type="password"
             autoFocus
             autoComplete="off"

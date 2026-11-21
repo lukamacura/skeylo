@@ -37,7 +37,7 @@ export const LOCATION = "Patrijarha Pavla / Fruškogorska";
 export const AGENCY_FEE = 10500;
 export const MONTHS = 3;
 
-/* What the first offer's Full package charged a month for the team (/bojan,
+/* What the first offer's Full package charged a month for the team (/neto,
    PACKS "Full paket"): site + catalogue, paid and organic creatives. The
    price slide compares against it: same monthly fee, the rest on top. */
 export const FULL_PACK_TEAM = 3500;

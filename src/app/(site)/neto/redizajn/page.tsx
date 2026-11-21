@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import RedizajnDeck from "@/components/site/bojan/redizajn/RedizajnDeck";
+import RedizajnDeck from "@/components/site/neto/redizajn/RedizajnDeck";
 
-/* The follow-up to /bojan: three months of Skeylo, starting with the
+/* The follow-up to /neto: three months of Skeylo, starting with the
    redesign of one store. Same type as the first deck, from the same local
-   files (next/font/google trips Turbopack, see /bojan). */
+   files (next/font/google trips Turbopack, see /neto). */
 const rubik = localFont({
   src: [
     { path: "../fonts/Rubik.woff2", weight: "300 900", style: "normal" },
