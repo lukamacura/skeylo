@@ -8,13 +8,16 @@ import { ArrowRight, MousePointerClick, Star } from "lucide-react";
 import Vsl from "./Vsl";
 import OsMock from "./OsMock";
 import GalleryStack from "./GalleryStack";
+import ServicesReel from "./ServicesReel";
+import CustomerPath from "./CustomerPath";
 import { Counter, ProofRow, rowA, rowB } from "@/components/site/BentoGrid";
 import { logos, testimonials } from "@/components/site/SocialProof";
 
 /*
  * Početna (od 22.11.2026): VSL landing na jednoj strani.
- * Hero sa videom → operativni sistem (interaktivan) → rezultati i preporuke →
- * kako radimo (špil fotografija) → zakaži sastanak.
+ * Hero sa videom → šta radimo (animirane usluge) → put jednog kupca (oglas →
+ * sajt → porudžbina → sistem) → operativni sistem (interaktivan) → rezultati i
+ * preporuke → kako radimo (špil fotografija) → zakaži sastanak.
  * Svaki CTA vodi na /sastanak: zakazan termin postaje event u OS-u i odmah
  * stiže timu kao 🗓️ poruka u Telegram grupu (vidi src/app/sastanak/page.tsx).
  * Stari landing sa uslugama, studijama, timom i paketima je na /starilanding.
@@ -359,6 +362,60 @@ function Results() {
   );
 }
 
+/* ---------------------------------------------------------------- šta radimo */
+
+function Services() {
+  return (
+    <section
+      id="usluge"
+      className="relative scroll-mt-16 border-t border-border py-16 md:py-24"
+    >
+      <div className="container-x">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <Eyebrow>Šta radimo</Eyebrow>
+          <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
+            Od strategije <span className="text-gradient">do sajta.</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
+            Strategija, skripte, snimanje, montaža, Meta i Google oglasi i
+            kompletan sajt. Sve radi jedan tim.
+          </p>
+        </Reveal>
+        <Reveal className="mx-auto mt-8 max-w-6xl sm:mt-12">
+          <ServicesReel />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ----------------------------------------------------------- put jednog kupca */
+
+function Journey() {
+  return (
+    <section
+      id="put-kupca"
+      className="relative scroll-mt-16 overflow-x-clip border-t border-border py-16 md:py-24"
+    >
+      <div className="container-x">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <Eyebrow>Put jednog kupca</Eyebrow>
+          <h2 className="mt-3 text-balance text-3xl font-extrabold sm:text-5xl">
+            Od oglasa <span className="text-gradient">do tvog sistema.</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
+            Kupac vidi oglas, klikne i poruči. Porudžbina istog trenutka stiže u
+            tvoj operativni sistem, sa oglasom iz kog je došla.
+          </p>
+        </Reveal>
+        <Reveal className="mx-auto mt-8 max-w-5xl sm:mt-12">
+          <CustomerPath />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 /* --------------------------------------------------------- operativni sistem */
 
 const STEPS = [
@@ -537,6 +594,8 @@ export default function HomeLanding() {
       <Header />
       <main>
         <Hero />
+        <Services />
+        <Journey />
         <OperatingSystem />
         <Results />
         <HowWeWork />
