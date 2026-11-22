@@ -323,7 +323,7 @@ export default function PersonBio({ person }: { person: Person }) {
               </a>
 
               <Link
-                href="/#tim"
+                href="/starilanding#tim"
                 className="group inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
               >
                 Upoznaj ostatak tima

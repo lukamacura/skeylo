@@ -36,10 +36,13 @@ import {
   type Spot,
 } from "./data";
 import { FloorPlan, QrSticker } from "./scenes";
-import { KnowledgeSearch, KnowledgeStory } from "./knowledge";
+import { KnowledgeSearch } from "./knowledge";
 import { Compare, SPOT_SIZES } from "./compare";
 import { QrJourney } from "./journey";
 import { Price } from "./price";
+import { Creatives } from "./creatives";
+import { Meeting } from "./meeting";
+import { NetoOs, OsAlerts, OsProof } from "./os";
 /* The first offer's results slide, word for word. */
 import { Results } from "../slides";
 
@@ -54,7 +57,7 @@ const TICKER = [
   "QR kod svuda",
   `−${FIRST_BUY_OFF}% na prvu kupovinu`,
   "Neto aplikacija",
-  "Baza znanja",
+  "Neto OS",
   "Fruškogorska",
   "Svaki dinar je bitan",
 ];
@@ -416,20 +419,12 @@ function CatalogPhone() {
 /* Neto's knowledge base                                                     */
 /* ------------------------------------------------------------------------ */
 
-/* The way in, in Luka's words: the plans nobody could find. */
-function KnowledgeIntro() {
-  return (
-    <Slide id="knowledge-intro" theme="paper">
-      <Visual className="!mt-0">
-        <KnowledgeStory />
-      </Visual>
-    </Slide>
-  );
-}
-
+/* One slide since 2026-11-22 ("OS jedan slajd"): the story of the project
+   plans nobody could find is now the demo's first question, and it gets
+   found. The intro slide (KnowledgeStory) is in git history. */
 function KnowledgeDemo() {
   return (
-    <Slide id="knowledge-demo" theme="paper">
+    <Slide id="knowledge" theme="paper">
       <Headline size="xl">Jedan klik. [[Svaki dokument.]]</Headline>
       <Visual className="!mt-4 md:!mt-7">
         <KnowledgeSearch />
@@ -446,7 +441,9 @@ function ResultsSlide() {
 
 /* The order an offer sells in, shown rather than told: the promise, the
    store as it is today and after, the customer's way from the door to the
-   discount, the three things to try with a finger, the proof, the price.
+   discount, the three things to try with a finger, Neto OS (the modules,
+   the knowledge base, the alerts, the proof), what the creatives are,
+   the proof, the price, and the meeting where the decision gets made.
    Slides that were only text in boxes (scope, redesign, builders, budget,
    app tiles, site, knowledge flow, creatives, production, team, months)
    left on 2026-11-21; they are in git history. */
@@ -473,18 +470,27 @@ export const SLIDES: DeckSlide[] = [
     theme: "light",
     Component: CatalogPhone,
   },
+  { id: "os", label: "Neto OS", theme: "dark", Component: NetoOs },
   {
-    id: "knowledge-intro",
-    label: "Baza znanja: zašto",
-    theme: "paper",
-    Component: KnowledgeIntro,
-  },
-  {
-    id: "knowledge-demo",
-    label: "Baza znanja: demo",
+    id: "knowledge",
+    label: "Neto OS: baza znanja",
     theme: "paper",
     Component: KnowledgeDemo,
   },
+  {
+    id: "os-telefon",
+    label: "Neto OS: obaveštenja",
+    theme: "dark",
+    Component: OsAlerts,
+  },
+  {
+    id: "os-dokaz",
+    label: "Neto OS: već radi",
+    theme: "paper",
+    Component: OsProof,
+  },
+  { id: "kreative", label: "Kreative", theme: "dark", Component: Creatives },
   { id: "results", label: "Rezultati", theme: "dark", Component: ResultsSlide },
   { id: "price", label: "Ponuda", theme: "red", Component: Price },
+  { id: "sastanak", label: "Sastanak", theme: "dark", Component: Meeting },
 ];

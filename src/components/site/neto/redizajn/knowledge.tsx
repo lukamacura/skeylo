@@ -1,26 +1,21 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowRight,
   ClipboardList,
   Database,
   FileSignature,
   FileText,
-  FolderX,
   Lock,
   Map,
   ReceiptText,
   Search,
   Sparkles,
   Tag,
-  Zap,
 } from "lucide-react";
 import {
   DISPLAY,
-  EASE_OUT,
-  HEADLINE_XL,
   MONO,
   NETO_RADIUS,
   POP_SPRING,
@@ -29,345 +24,7 @@ import {
   pop,
   useSlideActive,
 } from "../primitives";
-import {
-  DataBase,
-  Fascikla,
-  FileDoc,
-  type FileKind,
-  type FolderTone,
-} from "./files";
-
-/* ------------------------------------------------------------------------ */
-/* The way in: the project plans Jovana could not find. A search types      */
-/* itself and comes back empty, then the promise lands, one beat at a time. */
-/* ------------------------------------------------------------------------ */
-
-const LOST = "projektni planovi";
-/* When each beat of the story lands, in seconds after the slide opens. */
-const BEAT = { type: 0.5, empty: 2.0, punch: 2.4, promise: 2.9, flow: 3.3 };
-
-function LostSearch() {
-  const active = useSlideActive();
-  const reduce = useReducedMotion();
-  const [typed, setTyped] = useState(0);
-  const [found, setFound] = useState<"wait" | "looking" | "none">("wait");
-
-  useEffect(() => {
-    if (!active) return;
-    if (reduce) {
-      setTyped(LOST.length);
-      setFound("none");
-      return;
-    }
-    const step = ((BEAT.empty - BEAT.type - 0.6) * 1000) / LOST.length;
-    let n = 0;
-    let iv: ReturnType<typeof setInterval> | undefined;
-    const start = setTimeout(() => {
-      iv = setInterval(() => {
-        n += 1;
-        setTyped(n);
-        if (n >= LOST.length && iv) {
-          clearInterval(iv);
-          setFound("looking");
-        }
-      }, step);
-    }, BEAT.type * 1000);
-    const empty = setTimeout(() => setFound("none"), BEAT.empty * 1000);
-    return () => {
-      clearTimeout(start);
-      clearTimeout(empty);
-      if (iv) clearInterval(iv);
-    };
-  }, [active, reduce]);
-
-  return (
-    <motion.div
-      variants={pop}
-      custom={-1.5}
-      className="w-full bg-white p-3 text-[#111] md:p-4"
-      style={{ border: "2px solid #000", borderRadius: "10px 30px 10px 10px" }}
-    >
-      <div className="flex items-center gap-2.5">
-        <span
-          aria-hidden
-          className="grid h-9 w-9 flex-none place-items-center rounded-full bg-black text-[15px] font-black italic text-white md:h-10 md:w-10"
-        >
-          J
-        </span>
-        <b className="text-[14.5px] font-extrabold leading-[1.25] md:text-[17px]">
-          Tražili smo projektne planove od Jovane.
-        </b>
-      </div>
-      <div
-        className="mt-2.5 flex items-center gap-2 rounded-full px-3.5 py-2.5 text-[13.5px] font-bold md:mt-3 md:text-[15px]"
-        style={{ background: "#F7F6F2", border: "1px solid #E4E2DC" }}
-      >
-        <Search size={16} className="flex-none" style={{ color: RED }} />
-        <span className="truncate">{LOST.slice(0, typed)}</span>
-        {found === "wait" && typed < LOST.length && (
-          <motion.i
-            aria-hidden
-            className="-ml-1.5 block h-4 w-[2px] bg-[#111]"
-            animate={{ opacity: [1, 0, 1] }}
-            transition={{ duration: 0.9, repeat: Infinity }}
-          />
-        )}
-      </div>
-      <div className="mt-2 flex min-h-[44px] items-center gap-2.5 px-1 md:mt-2.5">
-        {found === "none" ? (
-          <motion.span
-            className="flex items-center gap-2.5"
-            initial={{ opacity: 0, x: 0 }}
-            animate={{ opacity: 1, x: [0, -6, 6, -4, 4, 0] }}
-            transition={{ duration: 0.5 }}
-          >
-            <span
-              className="grid h-9 w-9 flex-none place-items-center rounded-[10px]"
-              style={{ background: "rgba(226,35,26,0.1)", color: RED }}
-            >
-              <FolderX size={19} />
-            </span>
-            <b
-              className="text-[14px] font-extrabold leading-[1.2] md:text-[16px]"
-              style={{ color: RED }}
-            >
-              Nije uspela da ih pronađe.
-            </b>
-          </motion.span>
-        ) : found === "looking" ? (
-          <span aria-label="Traži" className="flex h-9 items-center gap-1 pl-1">
-            {[0, 1, 2].map((k) => (
-              <motion.i
-                key={k}
-                className="block h-1.5 w-1.5 rounded-full bg-[#9A9A9A]"
-                animate={{ y: [0, -4, 0] }}
-                transition={{
-                  duration: 0.6,
-                  repeat: Infinity,
-                  delay: k * 0.12,
-                }}
-              />
-            ))}
-          </span>
-        ) : null}
-      </div>
-    </motion.div>
-  );
-}
-
-/* Digital files and paper folders alike, into one locked base, found in a
-   second. Drawn rather than iconed: the files fan out, the folders pile up,
-   one of each drops into the base, then the search lights up. */
-const FLOW_AT = {
-  files: BEAT.flow,
-  plus: BEAT.flow + 0.22,
-  folders: BEAT.flow + 0.28,
-  arrow1: BEAT.flow + 0.55,
-  base: BEAT.flow + 0.62,
-  drop: BEAT.flow + 0.85,
-  arrow2: BEAT.flow + 1.35,
-  search: BEAT.flow + 1.42,
-};
-
-function FlowCol({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col items-center gap-1.5 text-center">
-      <div className="flex h-[3.9em] items-end justify-center">{children}</div>
-      <span className="text-[0.8em] font-bold leading-[1.15] text-[#111]">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function FlowSep({ at, arrow = false }: { at: number; arrow?: boolean }) {
-  const active = useSlideActive();
-  return (
-    <motion.span
-      aria-hidden
-      className="mt-[1.5em] flex justify-center"
-      style={{ color: arrow ? RED : "#9A9A9A" }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: active ? 1 : 0 }}
-      transition={{ delay: at, duration: 0.3 }}
-    >
-      {arrow ? (
-        <ArrowRight className="h-[1.15em] w-[1.15em]" strokeWidth={2.6} />
-      ) : (
-        <span className="text-[1.2em] font-black leading-none">+</span>
-      )}
-    </motion.span>
-  );
-}
-
-function OneBase() {
-  const active = useSlideActive();
-  const drop = (delay: number, rotate = 0) => ({
-    initial: { opacity: 0, y: "-0.8em", scale: 0.9, rotate },
-    animate: active
-      ? { opacity: 1, y: "0em", scale: 1, rotate }
-      : { opacity: 0, y: "-0.8em", scale: 0.9, rotate },
-    transition: { ...POP_SPRING, delay },
-  });
-  /* a page and a folder falling into the base, once */
-  const into = (delay: number) => ({
-    initial: { opacity: 0 },
-    animate: active
-      ? {
-          opacity: [0, 1, 1, 0],
-          x: ["-2.6em", "-1.3em", "0em", "0em"],
-          y: ["-0.4em", "-1.3em", "-0.6em", "0.5em"],
-          scale: [0.9, 0.85, 0.6, 0.35],
-        }
-      : { opacity: 0 },
-    transition: { delay, duration: 0.8, ease: "easeInOut" as const },
-  });
-
-  return (
-    <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-start gap-1 text-[14px] md:gap-2 md:text-[17px]">
-      <FlowCol label="Digitalni fajlovi">
-        <span className="relative block h-[3.6em] w-[4.1em]">
-          <motion.span
-            className="absolute left-0 top-[0.55em]"
-            {...drop(FLOW_AT.files, -9)}
-          >
-            <FileDoc kind="xlsx" size={2} />
-          </motion.span>
-          <motion.span
-            className="absolute left-[1.05em] top-[0.2em]"
-            {...drop(FLOW_AT.files + 0.07, 4)}
-          >
-            <FileDoc kind="docx" size={2} />
-          </motion.span>
-          <motion.span
-            className="absolute left-[2.05em] top-[0.45em]"
-            {...drop(FLOW_AT.files + 0.14, 10)}
-          >
-            <FileDoc kind="pdf" art="plan" size={2} />
-          </motion.span>
-        </span>
-      </FlowCol>
-      <FlowSep at={FLOW_AT.plus} />
-      <FlowCol label="Fizička dokumenta">
-        <span className="relative block h-[3.7em] w-[4em]">
-          <motion.span
-            className="absolute left-[0.45em] top-[1.1em]"
-            {...drop(FLOW_AT.folders, 4)}
-          >
-            <Fascikla label="Ugovori" tone="green" size={3.3} />
-          </motion.span>
-          <motion.span
-            className="absolute left-0 top-[0.6em]"
-            {...drop(FLOW_AT.folders + 0.08, -3)}
-          >
-            <Fascikla label="Fakture" tone="blue" size={3.3} />
-          </motion.span>
-          <motion.span
-            className="absolute left-[0.55em] top-[0.05em]"
-            {...drop(FLOW_AT.folders + 0.16, 2)}
-          >
-            <Fascikla label="Planovi" tone="kraft" size={3.3} />
-          </motion.span>
-        </span>
-      </FlowCol>
-      <FlowSep at={FLOW_AT.arrow1} arrow />
-      <FlowCol label="Jedna baza">
-        <span className="relative block">
-          <motion.span className="block" {...drop(FLOW_AT.base)}>
-            <DataBase size={2.7} />
-          </motion.span>
-          <motion.span
-            className="pointer-events-none absolute left-1/2 top-0 -ml-[0.6em]"
-            {...into(FLOW_AT.drop)}
-          >
-            <FileDoc kind="pdf" size={1.2} />
-          </motion.span>
-          <motion.span
-            className="pointer-events-none absolute left-1/2 top-0 -ml-[0.8em]"
-            {...into(FLOW_AT.drop + 0.3)}
-          >
-            <Fascikla label="Planovi" size={1.7} />
-          </motion.span>
-        </span>
-      </FlowCol>
-      <FlowSep at={FLOW_AT.arrow2} arrow />
-      <FlowCol label="Pretraga za sekund">
-        <motion.span
-          className="relative mb-[0.2em] grid h-[2.7em] w-[2.7em] place-items-center bg-white"
-          style={{
-            border: "2px solid #000",
-            borderRadius: "0.7em 0.7em 0.7em 0.2em",
-          }}
-          {...drop(FLOW_AT.search)}
-        >
-          <Search
-            className="h-[1.25em] w-[1.25em]"
-            style={{ color: RED }}
-            strokeWidth={2.8}
-          />
-          <span className="absolute -right-[0.45em] -top-[0.45em] grid h-[1.15em] w-[1.15em] place-items-center rounded-full bg-black text-[#FFD60A]">
-            <Zap className="h-[0.65em] w-[0.65em]" fill="currentColor" />
-          </span>
-        </motion.span>
-      </FlowCol>
-    </div>
-  );
-}
-
-export function KnowledgeStory() {
-  const active = useSlideActive();
-  const at = (delay: number) => ({
-    initial: { opacity: 0, y: 14 },
-    animate: active ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 },
-    transition: { duration: 0.55, delay, ease: EASE_OUT },
-  });
-  return (
-    <div className="grid items-center gap-4 md:gap-6 lg:grid-cols-[1fr_1.1fr] lg:gap-12">
-      <LostSearch />
-      <div>
-        <motion.h1
-          className={`${HEADLINE_XL} font-extrabold italic tracking-[-0.01em]`}
-          {...at(BEAT.punch)}
-        >
-          To se više{" "}
-          <motion.span
-            className="rounded-[2px] px-[0.06em]"
-            style={{
-              color: RED,
-              backgroundImage:
-                "linear-gradient(100deg, rgba(226,35,26,0.16), rgba(226,35,26,0.16))",
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "left 88%",
-              WebkitBoxDecorationBreak: "clone",
-              boxDecorationBreak: "clone",
-            }}
-            initial={{ backgroundSize: "0% 70%" }}
-            animate={{ backgroundSize: active ? "100% 70%" : "0% 70%" }}
-            transition={{
-              delay: BEAT.punch + 0.35,
-              duration: 0.45,
-              ease: EASE_OUT,
-            }}
-          >
-            neće dešavati.
-          </motion.span>
-        </motion.h1>
-        <motion.p
-          className="mt-3 text-[14px] leading-[1.45] md:mt-4 md:text-[17px]"
-          style={{ color: "#333" }}
-          {...at(BEAT.promise)}
-        >
-          Pomoći ćemo Vam da sve digitalne, pa i fizičke podatke firme{" "}
-          <b className="text-black">bezbedno skladištimo u jednu bazu</b>, gde
-          ćete u sekundi moći da ih pretražite.
-        </motion.p>
-        <div className="mt-4 md:mt-6">
-          <OneBase />
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Fascikla, FileDoc, type FileKind, type FolderTone } from "./files";
 
 /* ------------------------------------------------------------------------ */
 /* Everything Neto keeps on paper and in mailboxes, falling into one locked */
@@ -479,9 +136,11 @@ type Source =
     };
 
 const QA: { q: string; a: string; src: Source[] }[] = [
+  /* The project plans nobody could find (the old "Baza znanja: zašto"
+     slide, folded into this one on 2026-11-22). */
   {
-    q: "Gde je plan novog izgleda lokala?",
-    a: "Poslednja verzija je od arhitekte, sa rasporedom rafova, rasvetom i mestima za QR kod.",
+    q: "Gde su projektni planovi?",
+    a: "Poslednja verzija je od arhitekte, sa rasporedom rafova i rasvetom. Ponude majstora su skenirane iz fascikle.",
     src: [
       { name: "Plan lokala v2.pdf", kind: "pdf", art: "plan", where: "str. 2" },
       {
@@ -542,7 +201,16 @@ function SourceCard({ s }: { s: Source }) {
   );
 }
 
-function Answer({ a, src }: { a: string; src: Source[] }) {
+function Answer({
+  a,
+  src,
+  after,
+}: {
+  a: string;
+  src: Source[];
+  /* ms to wait: the question is still typing itself */
+  after: number;
+}) {
   const active = useSlideActive();
   const [shown, setShown] = useState(0);
 
@@ -556,12 +224,12 @@ function Answer({ a, src }: { a: string; src: Source[] }) {
         setShown(n);
         if (n >= a.length && iv) clearInterval(iv);
       }, 20);
-    }, 650);
+    }, after);
     return () => {
       clearTimeout(start);
       if (iv) clearInterval(iv);
     };
-  }, [a, active]);
+  }, [a, active, after]);
 
   const done = shown >= a.length;
 
@@ -616,6 +284,40 @@ function Answer({ a, src }: { a: string; src: Source[] }) {
   );
 }
 
+/* The question types itself, quickly, before the answer comes. */
+const TYPE_MS = 22;
+
+function Typed({ text }: { text: string }) {
+  const active = useSlideActive();
+  const reduce = useReducedMotion();
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    if (reduce) {
+      setN(text.length);
+      return;
+    }
+    let k = 0;
+    const iv = setInterval(() => {
+      k += 1;
+      setN(k);
+      if (k >= text.length) clearInterval(iv);
+    }, TYPE_MS);
+    return () => clearInterval(iv);
+  }, [text, active, reduce]);
+  return (
+    <span className="truncate" aria-label={text}>
+      {text.slice(0, n)}
+      {n < text.length && (
+        <i
+          aria-hidden
+          className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[0.15em] bg-[#111]"
+        />
+      )}
+    </span>
+  );
+}
+
 export function KnowledgeSearch() {
   const [at, setAt] = useState(0);
   const cur = QA[at];
@@ -643,7 +345,7 @@ export function KnowledgeSearch() {
           style={{ fontFamily: MONO }}
         >
           <Lock size={11} />
-          Neto baza znanja · primer
+          Neto OS · baza znanja · primer
         </span>
       </div>
       <div className="p-3 md:p-4">
@@ -652,10 +354,15 @@ export function KnowledgeSearch() {
           style={{ background: "#F7F6F2", border: "1px solid #E4E2DC" }}
         >
           <Search size={16} className="flex-none" style={{ color: RED }} />
-          <span className="truncate">{cur.q}</span>
+          <Typed key={at} text={cur.q} />
         </div>
         <div className="mt-3">
-          <Answer key={at} a={cur.a} src={cur.src} />
+          <Answer
+            key={at}
+            a={cur.a}
+            src={cur.src}
+            after={cur.q.length * TYPE_MS + 300}
+          />
         </div>
         <div className="mt-2 grid gap-1.5 border-t border-[#E4E2DC] pt-3">
           {QA.map((x, i) => (

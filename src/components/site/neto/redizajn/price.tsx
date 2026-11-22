@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Clapperboard,
-  Database,
   Globe,
-  Megaphone,
+  LayoutDashboard,
+  MessageCircle,
   QrCode,
   Smartphone,
   Store,
@@ -25,6 +26,7 @@ import {
 } from "../primitives";
 import { MiniLogo } from "../visuals";
 import { AGENCY_FEE, FULL_PACK_TEAM, MONTHS } from "./data";
+import { prefetchTermini } from "./meeting";
 
 /* ------------------------------------------------------------------------
    The offer as a Neto till receipt. Why the price is fair, in one look:
@@ -32,25 +34,33 @@ import { AGENCY_FEE, FULL_PACK_TEAM, MONTHS } from "./data";
    already knows them and what they cost; everything under "Novo" comes on
    top for the same monthly fee. The receipt prints out of a slot, the new
    lines light up as they come out, the total counts up. Only the total is
-   printed: Luka dropped the monthly line on 2026-11-21. Making the videos
-   and running the Meta ads are in the price; the ad budget and the works on
-   the store are not, Neto pays those.
+   printed: Luka dropped the monthly line on 2026-11-21. All of Skeylo's
+   work is in the price; the ad budget and the works on the store are not,
+   Neto pays those.
+
+   2026-11-22 (Luka and Filip): it was Bojan who brought up a three-month
+   test, so the slide opens with that, and for the same price he gets a plan
+   for longer than the test: the plan for building the app (not in the
+   first offer) and the plan for fixing up the store. Neto OS (the ERP,
+   os.tsx) is in the price too, with the knowledge base as one of its
+   parts. The creatives are
+   what the creatives slide says: filming organic content starts, and one
+   or two whole Meta campaigns, depending on how fast the works go.
    ------------------------------------------------------------------------ */
 
 type Row = { icon: React.ElementType; label: string; tag?: string };
 
 const FROM_FIRST: Row[] = [
   { icon: Globe, label: "Sajt + Interaktivni katalog" },
-  { icon: Clapperboard, label: "Kreative: plaćene i organske" },
-  { icon: Target, label: "Vođenje Meta reklama" },
+  { icon: Clapperboard, label: "Organski sadržaj: početak snimanja" },
+  { icon: Target, label: "1–2 cele Meta kampanje" },
 ];
 
 const ADDED: Row[] = [
-  { icon: Smartphone, label: "Neto aplikacija", tag: "Glavni deo" },
-  { icon: Store, label: "Redizajn lokala" },
-  { icon: Database, label: "Neto baza znanja" },
+  { icon: Smartphone, label: "Plan izgradnje aplikacije", tag: "Glavni deo" },
+  { icon: Store, label: "Plan sređivanja lokala" },
+  { icon: LayoutDashboard, label: "Neto OS (ERP) + baza znanja" },
   { icon: QrCode, label: "QR kod na svakom koraku" },
-  { icon: Megaphone, label: "Kampanja otvaranja" },
   { icon: Video, label: "Video cele promene", tag: "Bonus" },
 ];
 
@@ -119,7 +129,7 @@ function Line({ row, i, fresh }: { row: Row; i: number; fresh: boolean }) {
         <Icon size={14} strokeWidth={2.4} />
       </span>
       <span
-        className={`min-w-0 flex-1 truncate text-[14.5px] leading-[1.2] md:text-[16px] ${fresh ? "font-extrabold text-black" : "font-bold text-[#6B6B6B]"}`}
+        className={`min-w-0 flex-1 text-[14.5px] leading-[1.15] md:text-[16px] ${fresh ? "font-extrabold text-black" : "font-bold text-[#6B6B6B]"}`}
       >
         {row.label}
       </span>
@@ -220,14 +230,26 @@ function OfferReceipt() {
   );
 }
 
-/* The price. The headline says what the receipt proves: the Full package's
-   monthly fee, with the app, the redesign and the rest on top. */
+/* The price. Bojan's own idea first (the three-month test), then what the
+   receipt proves: the Full package's fee, and a plan for longer than the
+   test on top. The meeting slide's slots start loading here. */
 export function Price() {
+  useEffect(() => {
+    prefetchTermini();
+  }, []);
   return (
     <Slide id="price" theme="red" className="md:!py-8">
+      <motion.p
+        variants={item}
+        className="mx-auto mb-2.5 flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-[13.5px] font-bold md:mb-4 md:text-[16px]"
+        style={{ background: "rgba(0,0,0,0.22)", color: "#fff" }}
+      >
+        <MessageCircle size={15} className="flex-none" />
+        Pominjali ste test od {MONTHS} meseca.
+      </motion.p>
       <Headline size="xl" center>
         {SAME
-          ? "Ista cena. [[Mnogo više.]]"
+          ? "Ista cena. [[Plan na duže staze.]]"
           : `Novi Neto. [[Za ${MONTHS * 30} dana.]]`}
       </Headline>
       <motion.div variants={item} className="mt-4 md:mt-6">
@@ -238,8 +260,8 @@ export function Price() {
         className="mx-auto mt-2.5 max-w-[440px] text-center text-[12px] leading-[1.35] md:mt-4 md:text-[13.5px]"
         style={{ color: "#FFE3E0" }}
       >
-        Kreiranje videa i vođenje Meta reklama su u ceni. Budžet za oglase i
-        građevinske radove na lokalu plaća Neto.
+        U ceni su sve naše usluge. Građevinske radove na marketu i budžet za
+        oglase plaća Neto.
       </motion.p>
     </Slide>
   );

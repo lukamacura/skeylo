@@ -2,11 +2,14 @@
 
 import Deck from "../Deck";
 import { SLIDES } from "./slides";
+import { WHATSAPP } from "./data";
 
+/* The bar's button on the last slide, for a time other than the three the
+   meeting slide offers. */
 const CONTACT =
-  "https://wa.me/381631012474?text=" +
+  `${WHATSAPP}?text=` +
   encodeURIComponent(
-    "Zdravo Luka, želimo da krenemo sa ponudom za tri meseca: redizajn lokala, sajt, aplikacija i baza znanja. Hajde da zakažemo sastanak.",
+    "Zdravo Luka, hajde da sednemo zajedno, Bojan, Jovana i vi, i donesemo odluku. Predlažemo termin: ",
   );
 
 /* Same gate, same password and the same "unlocked" key as /neto: whoever

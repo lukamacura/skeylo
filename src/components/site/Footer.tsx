@@ -72,7 +72,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/#paketi"
+                  href="/starilanding#paketi"
                   className="text-foreground/80 transition-colors hover:text-primary"
                 >
                   Paketi

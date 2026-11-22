@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Hero from "@/components/site/Hero";
 import SocialProof from "@/components/site/SocialProof";
 import BentoGrid from "@/components/site/BentoGrid";
@@ -7,6 +8,13 @@ import Process from "@/components/site/Process";
 import Team from "@/components/site/Team";
 import Packages from "@/components/site/Packages";
 import FinalCta from "@/components/site/FinalCta";
+
+// Bivša početna (do 22.11.2026). Nova početna je VSL landing u src/app/page.tsx;
+// ovde ostaju usluge, studije, tim i paketi, i na njih vode linkovi iz headera.
+export const metadata: Metadata = {
+  title: "Marketing koji donosi profit",
+  robots: { index: false, follow: true },
+};
 
 export default function Home() {
   return (

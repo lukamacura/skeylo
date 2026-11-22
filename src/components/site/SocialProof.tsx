@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 
-const logos = [
+export const logos = [
   { name: "Kinged" },
   { name: "Infinity Laser Studio", img: "/logos/ils-logo.webp" },
   { name: "Ego tike", img: "/logos/egotike.webp" },
@@ -28,7 +28,7 @@ type Testimonial = {
   imgPosition?: string;
 };
 
-const testimonials: Testimonial[] = [
+export const testimonials: Testimonial[] = [
   {
     quote:
       "Momci su veoma profesionalni, kulturni, u toku sa dešavanjima, imaju veoma individualan i inovativan pristup. Njihov marketing je pokrenuo naš posao napred u najkraćem mogućem roku kada je bilo najpotrebnije. Rezultati su neverovatni, sarađujemo već neko vreme i planiramo da nastavimo! Iskrene preporuke, vredi uložiti u njihove ideje.",

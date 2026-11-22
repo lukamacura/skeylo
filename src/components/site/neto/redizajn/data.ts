@@ -42,6 +42,22 @@ export const MONTHS = 3;
    price slide compares against it: same monthly fee, the rest on top. */
 export const FULL_PACK_TEAM = 3500;
 
+/* Luka's WhatsApp: the deck's last button and the meeting slots open it. */
+export const WHATSAPP = "https://wa.me/381631012474";
+
+/* The decision meeting the deck ends on (Filip, 2026-11-22: "sa Bojanom i
+   Jovanom sednemo na sastanak i dogovorimo sve", three slots, presented as
+   the meeting where the decision gets made). The slots are not fixed: the
+   slide takes the next free ones from Luka's calendar (/api/sastanak, the
+   same free slots /sastanak shows), one per working day, the one closest
+   to `prefer` that leaves `minutes` free. */
+export const MEETING = {
+  people: ["Bojan", "Jovana"],
+  prefer: "12:00",
+  minutes: 60,
+  slots: 3,
+};
+
 /* The first purchase discount the app's barcode gives. */
 export const FIRST_BUY_OFF = 5;
 

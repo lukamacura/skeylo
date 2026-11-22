@@ -241,7 +241,7 @@ export function ProofRow({ shots, anim }: { shots: Shot[]; anim: string }) {
 
 /* ------------------------------------------------------------------ counters */
 
-function Counter({
+export function Counter({
   to,
   format,
 }: {
@@ -249,7 +249,9 @@ function Counter({
   format: (v: number) => string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
+  // Margina samo odozdo: "-60px" sa sve četiri strane suzi i levu ivicu, pa broj
+  // bliže od 60px levoj ivici telefona nikad ne "uđe" i ostane na 0.
+  const inView = useInView(ref, { once: true, margin: "0px 0px -60px 0px" });
   const reduce = useReducedMotion();
   const [value, setValue] = useState(0);
 

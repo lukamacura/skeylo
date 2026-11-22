@@ -21,29 +21,30 @@ import {
 /**
  * Jedan izvor istine za navigaciju - isti niz crta i desktop meni i mobilni
  * panel, pa nova stavka ne mora da se dodaje na dva mesta.
- * `id` je id sekcije na početnoj (koristi ga scroll-spy za aktivno stanje).
+ * `id` je id sekcije na starom landingu (/starilanding), koji i dalje drži
+ * usluge, studije, tim i pakete; scroll-spy ga koristi za aktivno stanje.
  */
 type NavItem = { label: string; href: string; id: string };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Usluge", href: "/#usluge", id: "usluge" },
-  { label: "Rezultati", href: "/#rezultati", id: "rezultati" },
+  { label: "Usluge", href: "/starilanding#usluge", id: "usluge" },
+  { label: "Rezultati", href: "/starilanding#rezultati", id: "rezultati" },
   {
     label: "Studije slučaja",
-    href: "/#rezultati-studije",
+    href: "/starilanding#rezultati-studije",
     id: "rezultati-studije",
   },
-  { label: "Tim", href: "/#tim", id: "tim" },
+  { label: "Tim", href: "/starilanding#tim", id: "tim" },
 ];
 
 /** Sekcije koje scroll-spy prati; "paketi" pali dropdown u meniju. */
 const SPY_IDS = ["paketi", ...NAV_ITEMS.map((i) => i.id)];
 
-const CTA_HREF = "/#paketi";
+const CTA_HREF = "/starilanding#paketi";
 
 /**
  * Prati koja je sekcija trenutno u fokusu i vraća njen id.
- * Radi samo na početnoj - na ostalim stranicama aktivno stanje ide po ruti.
+ * Radi samo na /starilanding - na ostalim stranicama aktivno stanje ide po ruti.
  */
 function useActiveSection(enabled: boolean) {
   const [active, setActive] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export default function HeaderClient() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const isHome = pathname === "/";
+  const isHome = pathname === "/starilanding";
   const activeSection = useActiveSection(isHome);
   const onPackagePage = pathname.startsWith("/paketi");
 
