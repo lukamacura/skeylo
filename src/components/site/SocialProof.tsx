@@ -34,7 +34,7 @@ export const testimonials: Testimonial[] = [
       "Momci su veoma profesionalni, kulturni, u toku sa dešavanjima, imaju veoma individualan i inovativan pristup. Njihov marketing je pokrenuo naš posao napred u najkraćem mogućem roku kada je bilo najpotrebnije. Rezultati su neverovatni, sarađujemo već neko vreme i planiramo da nastavimo! Iskrene preporuke, vredi uložiti u njihove ideje.",
     name: "Ana Kasap",
     role: "Vlasnik, Infinity Laser Studio",
-    result: "1.600.000RSD u mesecu",
+    result: "±3.900.000RSD u mesecu",
     initials: "AK",
     img: "/site/testimonials/ana.webp",
     imgPosition: "object-top",

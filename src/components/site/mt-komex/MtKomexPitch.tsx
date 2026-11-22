@@ -706,7 +706,7 @@ export default function MtKomexPitch() {
                 className="mt-3 font-display text-4xl font-extrabold sm:text-6xl"
                 style={gradientText}
               >
-                1.600.000 RSD
+                ±3.900.000 RSD
               </p>
               <p className="mt-1 text-lg font-semibold">
                 prihoda u jednom mesecu

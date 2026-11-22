@@ -1207,10 +1207,10 @@ function Results() {
             </div>
             <div className="min-w-0">
               <p
-                className="font-display text-[34px] font-extrabold leading-none sm:text-5xl"
+                className="font-display text-[30px] font-extrabold leading-none sm:text-5xl"
                 style={gradientText}
               >
-                <Count to={1600000} duration={2} step={10000} />
+                ±<Count to={3900000} duration={2} step={10000} />
               </p>
               <p className="mt-2 text-base font-semibold sm:text-lg">
                 RSD prihoda u jednom mesecu
