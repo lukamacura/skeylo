@@ -437,23 +437,19 @@ const MODULES = [
 
 const BEAT = 3600;
 
-export function OsWindow() {
-  const active = useSlideActive();
-  const [at, setAt] = useState(0);
-  /* bumped on a tap, so the timer starts over from the chosen module */
-  const [run, setRun] = useState(0);
-
-  useEffect(() => {
-    if (!active) return;
-    const t = setTimeout(() => setAt((a) => (a + 1) % MODULES.length), BEAT);
-    return () => clearTimeout(t);
-  }, [active, at, run]);
-
-  const { Screen } = MODULES[at];
-
+/* The white "Neto OS · primer" window, shared with the customer path. */
+export function Chrome({
+  children,
+  title = "Neto OS · primer",
+  className = "",
+}: {
+  children: ReactNode;
+  title?: string;
+  className?: string;
+}) {
   return (
     <div
-      className="w-full max-w-[900px] overflow-hidden bg-white text-[#111]"
+      className={`w-full overflow-hidden bg-white text-[#111] ${className}`}
       style={{
         border: "2px solid #000",
         borderRadius: "10px 30px 10px 10px",
@@ -475,9 +471,30 @@ export function OsWindow() {
           style={{ fontFamily: MONO }}
         >
           <Lock size={11} />
-          Neto OS · primer
+          {title}
         </span>
       </div>
+      {children}
+    </div>
+  );
+}
+
+export function OsWindow() {
+  const active = useSlideActive();
+  const [at, setAt] = useState(0);
+  /* bumped on a tap, so the timer starts over from the chosen module */
+  const [run, setRun] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(() => setAt((a) => (a + 1) % MODULES.length), BEAT);
+    return () => clearTimeout(t);
+  }, [active, at, run]);
+
+  const { Screen } = MODULES[at];
+
+  return (
+    <Chrome className="max-w-[900px]">
       <div className="md:grid md:grid-cols-[176px_minmax(0,1fr)]">
         {/* modules: tabs on a phone, a rail on a wide screen */}
         <nav className="grid grid-cols-4 gap-1 border-b border-[#E4E2DC] p-1.5 md:grid-cols-1 md:content-start md:gap-1 md:border-b-0 md:border-r md:p-2.5">
@@ -530,7 +547,7 @@ export function OsWindow() {
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </Chrome>
   );
 }
 
@@ -682,12 +699,19 @@ function Chat() {
 }
 
 /* The same em-sized phone as the QR journey: the height comes from the
-   screen, the font size from the height. */
-function Phone({ children }: { children: ReactNode }) {
+   screen, the font size from the height. `reserve` sets --ph-r, the room
+   the rest of the slide needs. */
+export function Phone({
+  children,
+  reserve = "[--ph-r:250px] md:[--ph-r:300px] lg:[--ph-r:230px]",
+}: {
+  children: ReactNode;
+  reserve?: string;
+}) {
   return (
     <div
       aria-hidden
-      className="relative mx-auto flex-none select-none [--ph-r:250px] md:[--ph-r:300px] lg:[--ph-r:230px]"
+      className={`relative mx-auto flex-none select-none ${reserve}`}
       style={
         {
           "--ph": "clamp(320px, calc(100svh - var(--ph-r)), 600px)",
@@ -740,9 +764,10 @@ export function OsAlerts() {
 /* Proof: the same system already runs Infinity Laser Studio                 */
 /* ------------------------------------------------------------------------ */
 
-/* The Ciklon deck's proof, same screenshot and the same claim: Infinity's
-   control center, two locations in one system, client names blurred. */
-const INFINITY_MONTH = 4000000;
+/* The Ciklon deck's proof and screenshot: Infinity's control center, two
+   locations in one system, client names blurred. The figure follows the
+   site's SocialProof (±3.900.000 RSD u mesecu, Luka's update 2026-11-22). */
+const INFINITY_MONTH = 3900000;
 
 function Laptop({ children }: { children: ReactNode }) {
   return (
@@ -776,7 +801,7 @@ export function OsProof() {
             <p className="mt-1 text-[clamp(2.4rem,9vw,4.4rem)] font-black italic leading-none tracking-[-0.02em]">
               <Count
                 to={INFINITY_MONTH}
-                suffix="+"
+                prefix="±"
                 duration={1.6}
                 delay={0.3}
               />
@@ -786,7 +811,7 @@ export function OsProof() {
               style={{ fontFamily: MONO }}
             >
               <MapPin size={13} className="flex-none" style={{ color: RED }} />
-              RSD prošlog meseca · Novi Sad + Sombor
+              RSD u mesecu · Novi Sad + Sombor
             </p>
           </motion.div>
         </div>

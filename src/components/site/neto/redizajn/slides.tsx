@@ -43,6 +43,8 @@ import { Price } from "./price";
 import { Creatives } from "./creatives";
 import { Meeting } from "./meeting";
 import { NetoOs, OsAlerts, OsProof } from "./os";
+import { Services } from "./services";
+import { CustomerPathSlide } from "./funnel";
 /* The first offer's results slide, word for word. */
 import { Results } from "../slides";
 
@@ -441,7 +443,9 @@ function ResultsSlide() {
 
 /* The order an offer sells in, shown rather than told: the promise, the
    store as it is today and after, the customer's way from the door to the
-   discount, the three things to try with a finger, Neto OS (the modules,
+   discount, the three things to try with a finger, what Skeylo does (from
+   strategy to the site) and one customer's way from an Instagram ad into
+   the ERP, Neto OS (the modules,
    the knowledge base, the alerts, the proof), what the creatives are,
    the proof, the price, and the meeting where the decision gets made.
    Slides that were only text in boxes (scope, redesign, builders, budget,
@@ -469,6 +473,13 @@ export const SLIDES: DeckSlide[] = [
     label: "Interaktivni Katalog: demo",
     theme: "light",
     Component: CatalogPhone,
+  },
+  { id: "radimo", label: "Šta radimo", theme: "dark", Component: Services },
+  {
+    id: "put-kupca",
+    label: "Put kupca",
+    theme: "paper",
+    Component: CustomerPathSlide,
   },
   { id: "os", label: "Neto OS", theme: "dark", Component: NetoOs },
   {
