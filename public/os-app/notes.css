@@ -2557,6 +2557,43 @@ body.nb-dragging * {
     display: none;
   }
 }
+/* javni link foldera: „Link“ pored „Uredi“ (tačka u boji foldera dok link važi) i meni */
+.gfh .gfl-b {
+  position: relative;
+  margin-left: auto;
+}
+.gfh .gfl-b + .fcfh-ed {
+  margin-left: 0;
+}
+.gfh .gfl-b.on {
+  border-color: color-mix(in srgb, var(--fc) 45%, var(--line));
+}
+.gfh .gfl-b.on svg {
+  color: var(--fc);
+}
+.gfh .gfl-b.on::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fc);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.gfl-m {
+  transform-origin: top right;
+}
+.gfl-u {
+  padding: 8px 10px 10px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
 /* nazad u roditeljski folder ili stranicu: dugo ime se skraćuje */
 .gfh .fcfh-up {
   min-width: 0;

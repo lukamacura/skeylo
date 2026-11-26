@@ -2636,6 +2636,7 @@ window.SKNotes = function (X) {
       <span class="fcfh-ic" aria-hidden="true">${I.fold}</span>
       <h2 class="fcfh-n">${esc(F.name || "Folder")}</h2>
       <span class="fcfh-c">${F.privateTo ? `<span class="gfh-lk" title="Samo za tebe">${I.lock}</span>` : ""}${typeof n === "string" ? n : n + " " + pagesWord(n)}</span>
+      <button class="fcfh-ed gfl-b${F.share ? " on" : ""}" type="button" data-gf-link="${esc(F.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="Link za preuzimanje">${I.link}<span>Link</span></button>
       <button class="fcfh-ed" type="button" data-gf-edit="${esc(F.id)}" aria-label="Uredi folder">${SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', 2)}<span>Uredi</span></button>
     </div>`;
   }
@@ -9447,12 +9448,178 @@ window.SKNotes = function (X) {
       openFv(fe0.dataset.file, shownFiles());
       return;
     }
+    const fl = e.target.closest("[data-gf-link]");
+    if (fl) {
+      linkMenu(fl, e.detail === 0);
+      return;
+    }
     const fe = e.target.closest("[data-gf-edit]");
     if (fe) {
       const F = folderOf(fe.dataset.gfEdit, hubSpace);
       if (F) editFolder(F);
     }
   });
+  /* ---------------- javni link foldera ----------------
+     noteFolders.share = nasumičan token. /f/<token> na sajtu prikazuje fajlove foldera i
+     njegovih podfoldera za preuzimanje (os.folder_share_get, samo preko servera). „Ugasi
+     link“ briše token i link odmah prestaje da važi; „Poništi“ vraća isti token. Token se
+     pravi ovde, pa se link kopira još u kliku (Safari ne da clipboard posle čekanja mreže). */
+  const shareUrl = (t) => location.origin + "/f/" + t;
+  function shareToken() {
+    const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    return Array.from(
+      crypto.getRandomValues(new Uint8Array(24)),
+      (b) => A[b % 62],
+    ).join("");
+  }
+  function copyText(s) {
+    let p;
+    try {
+      p = navigator.clipboard.writeText(s).then(() => true);
+    } catch (e) {
+      p = Promise.reject(e);
+    }
+    return p.catch(() => {
+      try {
+        const t = document.createElement("textarea");
+        t.value = s;
+        t.setAttribute("readonly", "");
+        t.style.cssText = "position:fixed;left:-9999px;top:0";
+        document.body.appendChild(t);
+        t.select();
+        const ok = document.execCommand("copy");
+        t.remove();
+        return ok;
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+  const linkBtn = (fid) => $(`#gpages [data-gf-link="${CSS.escape(fid)}"]`);
+  let lmenu = null;
+  function closeLink(back) {
+    if (!lmenu) return;
+    const fid = lmenu.fid;
+    lmenu.remove();
+    lmenu = null;
+    const b = linkBtn(fid);
+    if (b) {
+      b.setAttribute("aria-expanded", "false");
+      if (back) b.focus();
+    }
+  }
+  function linkMenu(a, kb) {
+    const fid = a.dataset.gfLink;
+    if (lmenu) {
+      const same = lmenu.fid === fid;
+      closeLink();
+      if (same) return;
+    }
+    const F = folderOf(fid, hubSpace);
+    if (!F) return;
+    const r = a.getBoundingClientRect();
+    let t = F.share;
+    const copied = t ? null : copyText(shareUrl((t = shareToken())));
+    if (copied) {
+      api.upd("noteFolders", F.id, { share: t }).catch((e) => {
+        const loc = folderAny(F.id);
+        if (loc && loc.share === t) loc.share = null;
+        closeLink();
+        foldUI();
+        toast(errMsg(e));
+      });
+      foldUI();
+      copied.then((ok) => ok && toast("Link je kopiran"));
+    }
+    const url = shareUrl(t),
+      M = (lmenu = document.createElement("div"));
+    M.fid = F.id;
+    M.className = "pop nmenu gfl-m";
+    M.setAttribute("role", "menu");
+    M.innerHTML =
+      `<div class="gfl-u" title="${esc(url)}">${esc(url.replace(/^https?:\/\/(www\.)?/, ""))}</div>` +
+      `<button type="button" role="menuitem" data-gfl="copy">${I.copy}<span>Kopiraj link</span></button>` +
+      `<button type="button" role="menuitem" data-gfl="open">${SV('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>')}<span>Otvori</span></button>` +
+      `<div class="nm-sep"></div>` +
+      `<button type="button" role="menuitem" class="danger" data-gfl="off">${SV('<path d="M9 15l6-6"/><path d="M11 6l.5-.5a5 5 0 0 1 7 7l-.5.5M13 18l-.5.5a5 5 0 0 1-7-7l.5-.5M4 4l16 16"/>')}<span>Ugasi link</span></button>`;
+    document.body.appendChild(M);
+    const W = Math.min(260, innerWidth - 16);
+    M.style.width = W + "px";
+    const h = M.offsetHeight;
+    M.style.left =
+      Math.max(8, Math.min(r.right - W, innerWidth - W - 8)) + "px";
+    M.style.top =
+      Math.max(8, Math.min(r.bottom + 8, innerHeight - h - 8)) + "px";
+    const b = linkBtn(F.id);
+    if (b) b.setAttribute("aria-expanded", "true");
+    if (kb) M.querySelector("button").focus();
+  }
+  document.addEventListener("click", (e) => {
+    const b = lmenu && e.target.closest("[data-gfl]");
+    if (!b || !lmenu.contains(b)) return;
+    const F = folderAny(lmenu.fid),
+      t = F && F.share,
+      k = b.dataset.gfl;
+    closeLink(e.detail === 0);
+    if (!F || !t) return;
+    if (k === "copy")
+      copyText(shareUrl(t)).then((ok) =>
+        toast(ok ? "Link je kopiran" : shareUrl(t)),
+      );
+    else if (k === "open") window.open(shareUrl(t), "_blank", "noopener");
+    else if (k === "off") {
+      api
+        .upd("noteFolders", F.id, { share: null })
+        .catch((e) => toast(errMsg(e)));
+      foldUI();
+      toast(
+        "Link je ugašen",
+        () => {
+          api
+            .upd("noteFolders", F.id, { share: t })
+            .catch((e) => toast(errMsg(e)));
+          foldUI();
+        },
+        "Poništi",
+      );
+    }
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (
+      lmenu &&
+      !lmenu.contains(e.target) &&
+      !e.target.closest("[data-gf-link]")
+    )
+      closeLink();
+  });
+  addEventListener(
+    "keydown",
+    (e) => {
+      if (!lmenu) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeLink(true);
+      } else if (e.key === "Tab") closeLink();
+      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const bs = [...lmenu.querySelectorAll("button")],
+          i = bs.indexOf(document.activeElement),
+          n = e.key === "ArrowDown" ? i + 1 : i < 0 ? bs.length - 1 : i - 1;
+        bs[(n + bs.length) % bs.length].focus();
+      }
+    },
+    true,
+  );
+  addEventListener(
+    "scroll",
+    (e) => {
+      if (lmenu && !lmenu.contains(e.target)) closeLink();
+    },
+    { capture: true, passive: true },
+  );
+  addEventListener("resize", () => closeLink());
+  addEventListener("hashchange", () => closeLink());
   /* dugmad (folder, „Sve stranice“) Enter već pretvara u klik */
   $("#gpages").addEventListener("keydown", (e) => {
     const fe =
